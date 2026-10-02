@@ -7,8 +7,23 @@ Static, mobile-first coloring-page catalogue planned for `coloring.rozkalns.net`
 - [V1 project plan](docs/PROJECT_PLAN.md)
 - [UI mockups](docs/mockups/README.md)
 
-Current phase: **planning / UI reference only**.
+Current phase: **V1 source implementation started**.
 
-The intended V1 stack is HTML + CSS + vanilla JavaScript + JSON + a small Python build script, served as static files by `nginx-unprivileged` on RPi5.
+Implemented so far:
 
-No LIVE deployment or Cloudflare change is part of the current documentation work.
+- responsive home-page shell in real HTML/CSS
+- mobile navigation
+- local search and category filtering over the initial placeholder cards
+- mobile-first 2-column gallery behavior
+
+Still planned:
+
+- canonical catalogue metadata + Python build pipeline
+- real original coloring-page assets and generated WebP/PNG/PDF derivatives
+- detail view and dedicated print view
+- Docker image and SIMPLE-DEPLOY consumer contract
+- separate RPi5 / Cloudflare LIVE work
+
+The V1 stack remains HTML + CSS + vanilla JavaScript + JSON + a small Python build script, served as static files by `nginx-unprivileged` on RPi5.
+
+No LIVE deployment or Cloudflare change is part of the current source work.
