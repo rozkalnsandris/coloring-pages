@@ -16,7 +16,7 @@ concurrency:
 jobs:
   source:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - name: Checkout exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -24,10 +24,19 @@ jobs:
           persist-credentials: false
 
       - name: Validate Python syntax
-        run: python3 -m py_compile tools/build_catalog.py tests/test_build_catalog.py
+        run: python3 -m compileall -q tools tests
 
       - name: Run unit tests
         run: python3 -m unittest discover -s tests -v
 
       - name: Validate current catalogue inputs
         run: python3 tools/build_catalog.py --check
+
+      - name: Exercise catalogue generation
+        run: python3 tools/build_catalog.py --output /tmp/catalog.json
+
+      - name: Validate SIMPLE-DEPLOY JSON
+        run: python3 -m json.tool .simple-deploy.json >/dev/null
+
+      - name: Validate Compose source
+        run: docker compose -f deploy/docker-compose.simple.yml config >/dev/null
