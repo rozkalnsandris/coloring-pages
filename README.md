@@ -17,13 +17,14 @@ Implemented so far:
 - catalogue-driven detail page and dedicated A4 print page
 - canonical metadata contract under `metadata/`
 - deterministic Python catalogue validator/generator
+- deterministic A4/WebP/PDF media derivative generator from canonical PNG masters
 - hardened static Docker runtime source using `nginx-unprivileged`
 - SIMPLE-DEPLOY v1 consumer contract and compose source
 - CI coverage for catalogue, UI/runtime source, consumer JSON and Compose validation
 
 Still planned:
 
-- real original coloring-page assets and generated WebP/PNG/PDF derivatives
+- real original coloring-page assets
 - GHCR image publication under a separately reviewed/authorized lane
 - separate RPi5 / Cloudflare LIVE work
 
