@@ -546,6 +546,7 @@ Implemented source layers:
 - catalogue-driven detail view and dedicated A4 print view
 - canonical catalogue metadata contract
 - deterministic `catalog.json` validator/generator
+- deterministic A4/WebP/PDF derivative generator from canonical PNG masters
 - focused catalogue/runtime unit tests and GitHub Actions CI
 - static multi-stage Docker image source using `nginxinc/nginx-unprivileged`
 - hardened stateless Compose source with `/health` and `/ready`
@@ -554,7 +555,6 @@ Implemented source layers:
 Not yet implemented or activated:
 
 - real original coloring-page artwork
-- image normalization / WebP / printable PNG / PDF derivative generation
 - GHCR image publication/promotion
 - RPi5 target registration/deployment
 - Cloudflare hostname / tunnel route
