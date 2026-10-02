@@ -29,4 +29,4 @@ Rules:
 - The referenced original must exist before the catalogue build succeeds.
 - Web/print derivative URLs are generated deterministically from `id`; do not duplicate them in metadata.
 
-Current pipeline scope is catalogue validation + `dist/catalog.json` generation only. Image normalization/WebP/PDF generation remains a later slice once real master artwork exists.
+Current pipeline validates canonical metadata/original references, generates `dist/catalog.json`, and then uses `tools/build_media.py` to generate normalized A4 print PNG, WebP thumbnail/preview, and PDF derivatives from canonical PNG masters.
