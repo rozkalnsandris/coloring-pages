@@ -542,17 +542,20 @@ V1 source implementation is in progress.
 Implemented source layers:
 
 - responsive production HTML/CSS/vanilla-JS home shell
+- generated-`catalog.json` hydration for real catalogue entries with a graceful static fallback
+- catalogue-driven detail view and dedicated A4 print view
 - canonical catalogue metadata contract
 - deterministic `catalog.json` validator/generator
-- focused catalogue unit tests and GitHub Actions CI
+- focused catalogue/runtime unit tests and GitHub Actions CI
+- static multi-stage Docker image source using `nginxinc/nginx-unprivileged`
+- hardened stateless Compose source with `/health` and `/ready`
+- `.simple-deploy.json` consumer contract for linux/arm64 / `rpi5-compose`
 
-Not yet implemented:
+Not yet implemented or activated:
 
 - real original coloring-page artwork
 - image normalization / WebP / printable PNG / PDF derivative generation
-- detail and dedicated print views
-- Docker image
-- `.simple-deploy.json` consumer contract
-- RPi5 deployment
+- GHCR image publication/promotion
+- RPi5 target registration/deployment
 - Cloudflare hostname / tunnel route
 - LIVE site
