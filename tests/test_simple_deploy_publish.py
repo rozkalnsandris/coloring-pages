@@ -39,6 +39,34 @@ class SimpleDeployPublishTests(unittest.TestCase):
         self.assertNotIn("secrets:", workflow)
         self.assertNotIn("\n    run:", workflow)
 
+    def test_publication_paths_cover_runtime_inputs_and_skip_docs_only_changes(self):
+        workflow = (ROOT / ".github/workflows/simple-deploy.yml").read_text(
+            encoding="utf-8"
+        )
+
+        required_paths = [
+            ".github/workflows/simple-deploy.yml",
+            ".simple-deploy.json",
+            "Dockerfile",
+            "requirements-build.txt",
+            "index.html",
+            "detail.html",
+            "print.html",
+            "css/**",
+            "js/**",
+            "assets/**",
+            "metadata/**",
+            "originals/**",
+            "tools/**",
+            "deploy/**",
+        ]
+        self.assertIn("paths:", workflow)
+        for path in required_paths:
+            self.assertIn(f'      - "{path}"', workflow)
+
+        for docs_only_path in ("README.md", "AGENTS.md", "docs/**", "tests/**"):
+            self.assertNotIn(f'      - "{docs_only_path}"', workflow)
+
     def test_manifest_binds_expected_image_and_target(self):
         manifest = json.loads(
             (ROOT / ".simple-deploy.json").read_text(encoding="utf-8")
