@@ -22,7 +22,7 @@ Store one JSON object per coloring page. Generated `dist/catalog.json` is derive
 Rules:
 
 - `id` must be unique and use lowercase letters, digits and hyphens.
-- `age` must be one of `3-4`, `4-6`, `6+`.
+- `age` must be one of `3-6`, `4-8`.
 - `difficulty` must be one of `easy`, `normal`, `detailed`.
 - `language` is currently `de`.
 - `original` must be a repository-relative path below `originals/`.
