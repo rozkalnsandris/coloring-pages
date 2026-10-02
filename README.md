@@ -15,10 +15,12 @@ Implemented so far:
 - mobile navigation
 - local search and category filtering over the initial placeholder cards
 - mobile-first 2-column gallery behavior
+- canonical metadata contract under `metadata/`
+- deterministic Python catalogue validator/generator
+- CI coverage for catalogue validation and unit tests
 
 Still planned:
 
-- canonical catalogue metadata + Python build pipeline
 - real original coloring-page assets and generated WebP/PNG/PDF derivatives
 - detail view and dedicated print view
 - Docker image and SIMPLE-DEPLOY consumer contract
