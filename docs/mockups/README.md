@@ -4,13 +4,37 @@ These images are the visual reference for the first HTML/CSS implementation.
 
 They are **design references, not production assets**. The implementation should reproduce the layout system, hierarchy, spacing, responsive behavior and interaction priorities with real HTML/CSS rather than slicing the mockup images.
 
-## Files
+The repository contains compact JPEG reference copies so the planning branch stays lightweight. They are sufficient for implementation guidance; production UI must be built from HTML/CSS and real catalog assets.
 
-- `00-overview-collage.png` — earlier combined exploration showing home, mobile, detail, filters/search and print ideas.
-- `01-desktop-home.png` — desktop home-page target.
-- `02-mobile-home.png` — mobile home-page target.
-- `03-print-view.png` — dedicated A4 print screen.
-- `04-coloring-detail.png` — coloring-page detail screen after opening an item.
+## Overview exploration
+
+`00-overview-collage.jpg` — earlier combined exploration showing home, mobile, detail, filters/search and print ideas.
+
+![Overview UI exploration](00-overview-collage.jpg)
+
+## Desktop home
+
+`01-desktop-home.jpg` — desktop home-page target.
+
+![Desktop home mockup](01-desktop-home.jpg)
+
+## Mobile home
+
+`02-mobile-home.jpg` — mobile home-page target.
+
+![Mobile home mockup](02-mobile-home.jpg)
+
+## Print view
+
+`03-print-view.jpg` — dedicated A4 print screen.
+
+![A4 print view mockup](03-print-view.jpg)
+
+## Coloring-page detail
+
+`04-coloring-detail.jpg` — coloring-page detail screen after opening an item.
+
+![Coloring detail mockup](04-coloring-detail.jpg)
 
 ## Implementation split
 
