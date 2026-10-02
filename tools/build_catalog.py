@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 ID_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
-ALLOWED_AGES = {"3-4", "4-6", "6+"}
+ALLOWED_AGES = {"3-6", "4-8"}
 ALLOWED_DIFFICULTIES = {"easy", "normal", "detailed"}
 ALLOWED_LANGUAGES = {"de"}
 REQUIRED_FIELDS = {
