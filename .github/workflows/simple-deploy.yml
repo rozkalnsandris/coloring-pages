@@ -1,0 +1,15 @@
+name: SIMPLE-DEPLOY Coloring Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  deploy:
+    uses: rozkalnsandris/ops-workflows/.github/workflows/simple-deploy.yml@94187cc447fc80757db10ac25d49717d00dc8430
+    with:
+      source_sha: ${{ github.sha }}
