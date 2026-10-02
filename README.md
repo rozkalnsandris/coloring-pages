@@ -6,6 +6,7 @@ Static, mobile-first coloring-page catalogue planned for `coloring.rozkalns.net`
 
 - [V1 project plan](docs/PROJECT_PLAN.md)
 - [UI mockups](docs/mockups/README.md)
+- [SIMPLE-DEPLOY publication contract](docs/SIMPLE_DEPLOY.md)
 
 Current phase: **V1 source implementation started**.
 
@@ -25,7 +26,7 @@ Implemented so far:
 Still planned:
 
 - real original coloring-page assets
-- GHCR image publication under a separately reviewed/authorized lane
+- first reviewed GHCR image publication after merge of the pinned SIMPLE-DEPLOY caller
 - separate RPi5 / Cloudflare LIVE work
 
 The V1 stack remains HTML + CSS + vanilla JavaScript + JSON + a small Python build script, served as static files by `nginx-unprivileged` on RPi5.

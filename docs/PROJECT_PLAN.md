@@ -551,11 +551,12 @@ Implemented source layers:
 - static multi-stage Docker image source using `nginxinc/nginx-unprivileged`
 - hardened stateless Compose source with `/health` and `/ready`
 - `.simple-deploy.json` consumer contract for linux/arm64 / `rpi5-compose`
+- pinned SIMPLE-DEPLOY main-push caller for immutable GHCR image publication
 
 Not yet implemented or activated:
 
 - real original coloring-page artwork
-- GHCR image publication/promotion
+- first GHCR image publication/promotion after the caller is merged to `main`
 - RPi5 target registration/deployment
 - Cloudflare hostname / tunnel route
 - LIVE site
