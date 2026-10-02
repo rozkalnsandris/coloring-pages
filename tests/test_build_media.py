@@ -48,7 +48,7 @@ class BuildMediaTests(unittest.TestCase):
         )
         return record
 
-    def write_master(self, size=(1240, 1754)):
+    def write_master(self, size=(2480, 3508)):
         image = Image.new("L", size, color=255)
         for x in range(100, min(size[0] - 100, 400)):
             image.putpixel((x, 150), 0)
@@ -104,6 +104,30 @@ class BuildMediaTests(unittest.TestCase):
             self.assertLessEqual(preview.height, 1415)
 
         self.assertTrue(paths["pdf"].read_bytes().startswith(b"%PDF"))
+
+    def test_undersized_master_fails_closed(self):
+        self.write_master(size=(1240, 1754))
+        self.write_record()
+
+        with self.assertRaisesRegex(
+            build_media.MediaError,
+            "original must be exactly 2480x3508 pixels; got 1240x1754",
+        ):
+            build_media.build_all(self.metadata, self.root, self.output)
+
+        self.assertFalse((self.output / "media" / "ben-001").exists())
+
+    def test_wrong_dimension_master_fails_closed(self):
+        self.write_master(size=(2480, 2480))
+        self.write_record()
+
+        with self.assertRaisesRegex(
+            build_media.MediaError,
+            "original must be exactly 2480x3508 pixels; got 2480x2480",
+        ):
+            build_media.build_all(self.metadata, self.root, self.output)
+
+        self.assertFalse((self.output / "media" / "ben-001").exists())
 
     def test_invalid_image_fails_closed(self):
         self.write_record()
