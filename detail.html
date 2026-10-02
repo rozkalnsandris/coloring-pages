@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Ben hilft einem Kind – Malvorlage für Kinder, optimiert für A4.">
-  <title>Ben hilft einem Kind | Coloring Pages</title>
+  <meta name="description" content="Malvorlage für Kinder, optimiert für A4.">
+  <title>Malvorlage | Coloring Pages</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -34,22 +34,23 @@
     </nav>
   </header>
 
-  <main id="main" class="detail-main">
+  <main id="main" class="detail-main" data-detail-root>
     <div class="container">
       <nav class="breadcrumbs" aria-label="Breadcrumb">
         <a href="index.html" aria-label="Startseite">⌂</a><span>›</span>
-        <a href="index.html#kategorien">Rettungshunde</a><span>›</span>
-        <span aria-current="page">Ben hilft einem Kind</span>
+        <a href="index.html#kategorien" data-breadcrumb-category>Rettungshunde</a><span>›</span>
+        <span aria-current="page" data-breadcrumb-current>Ben hilft einem Kind</span>
       </nav>
 
       <section class="detail-grid">
         <div class="detail-media">
           <div class="detail-preview" aria-label="Malvorlagen-Vorschau">
-            <div class="detail-art-placeholder">
+            <div class="detail-art-placeholder" data-detail-placeholder>
               <span aria-hidden="true">🐕‍🦺</span>
               <strong>Ben hilft einem Kind</strong>
               <small>Die echte A4-Malvorlage wird aus dem kanonischen Katalog erzeugt.</small>
             </div>
+            <img class="detail-preview-image" data-detail-preview alt="" hidden>
           </div>
           <div class="detail-thumbs" aria-label="Vorschauen">
             <button class="is-selected" type="button" aria-label="Gesamtansicht"><span aria-hidden="true">🐕‍🦺</span></button>
@@ -59,22 +60,22 @@
         </div>
 
         <aside class="detail-copy">
-          <h1>Ben hilft einem Kind</h1>
+          <h1 data-detail-title>Ben hilft einem Kind</h1>
           <div class="detail-badges">
-            <span class="age">3–6 Jahre</span>
-            <span class="easy">Einfach</span>
-            <span class="rescue">🐾 Rettungshunde</span>
-            <span class="character">🐶 Ben</span>
+            <span class="age" data-detail-age>3–6 Jahre</span>
+            <span class="easy" data-detail-difficulty>Einfach</span>
+            <span class="rescue" data-detail-category>🐾 Rettungshunde</span>
+            <span class="character" data-detail-character>🐶 Ben</span>
           </div>
-          <p>
+          <p data-detail-description>
             Rettungshund Ben ist immer zur Stelle! In dieser Malvorlage hilft er einem Kind und zeigt,
             wie wichtig Freundschaft, Mut und gegenseitige Hilfe sind. Perfekt zum Ausdrucken und kreativ Gestalten.
           </p>
 
           <div class="detail-actions">
-            <button class="action-primary" type="button" disabled><span>▣</span>A4 drucken <b>→</b></button>
-            <button type="button" disabled><span>▤</span>PDF herunterladen <b>→</b></button>
-            <button type="button" disabled><span>▧</span>PNG herunterladen <b>→</b></button>
+            <a class="action-primary is-disabled" data-action-print aria-disabled="true"><span>▣</span>A4 drucken <b>→</b></a>
+            <a class="is-disabled" data-action-pdf aria-disabled="true"><span>▤</span>PDF herunterladen <b>→</b></a>
+            <a class="is-disabled" data-action-png aria-disabled="true"><span>▧</span>PNG herunterladen <b>→</b></a>
           </div>
 
           <div class="detail-note">
@@ -88,5 +89,6 @@
   </main>
 
   <script src="js/app.js" defer></script>
+  <script src="js/detail.js" defer></script>
 </body>
 </html>

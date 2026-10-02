@@ -11,19 +11,20 @@ Current phase: **V1 source implementation started**.
 
 Implemented so far:
 
-- responsive home-page shell in real HTML/CSS
+- responsive desktop/mobile home-page UI in real HTML/CSS
 - mobile navigation
-- local search and category filtering over the initial placeholder cards
-- mobile-first 2-column gallery behavior
+- local search/category filtering with automatic `catalog.json` hydration when entries exist
+- catalogue-driven detail page and dedicated A4 print page
 - canonical metadata contract under `metadata/`
 - deterministic Python catalogue validator/generator
-- CI coverage for catalogue validation and unit tests
+- hardened static Docker runtime source using `nginx-unprivileged`
+- SIMPLE-DEPLOY v1 consumer contract and compose source
+- CI coverage for catalogue, UI/runtime source, consumer JSON and Compose validation
 
 Still planned:
 
 - real original coloring-page assets and generated WebP/PNG/PDF derivatives
-- detail view and dedicated print view
-- Docker image and SIMPLE-DEPLOY consumer contract
+- GHCR image publication under a separately reviewed/authorized lane
 - separate RPi5 / Cloudflare LIVE work
 
 The V1 stack remains HTML + CSS + vanilla JavaScript + JSON + a small Python build script, served as static files by `nginx-unprivileged` on RPi5.
