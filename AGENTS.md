@@ -122,6 +122,7 @@ Default V1 artwork standard:
 - large coloring areas
 - few small details
 - primary age group 3–6 years
+- canonical master PNGs must already be exactly 2480 × 3508 px; do not upscale smaller originals into printable assets
 
 ## Public-content rule
 
