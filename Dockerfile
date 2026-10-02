@@ -1,6 +1,9 @@
 FROM python:3.12.14-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254 AS build
 WORKDIR /src
 
+COPY requirements-build.txt ./
+RUN python3 -m pip install --no-cache-dir -r requirements-build.txt
+
 COPY metadata ./metadata
 COPY originals ./originals
 COPY tools ./tools
@@ -10,6 +13,7 @@ COPY js ./js
 COPY assets ./assets
 
 RUN python3 tools/build_catalog.py --output /tmp/site/catalog.json \
+    && python3 tools/build_media.py --output-root /tmp/site \
     && mkdir -p /tmp/site/css /tmp/site/js /tmp/site/assets \
     && cp index.html detail.html print.html /tmp/site/ \
     && cp -R css/. /tmp/site/css/ \
