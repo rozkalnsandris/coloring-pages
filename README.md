@@ -8,7 +8,7 @@ Static, mobile-first coloring-page catalogue planned for `coloring.rozkalns.net`
 - [UI mockups](docs/mockups/README.md)
 - [SIMPLE-DEPLOY publication contract](docs/SIMPLE_DEPLOY.md)
 
-Current phase: **V1 source implementation started**.
+Current phase: **V1 application runtime is online on the trusted RPi5 loopback origin; public ingress and real catalogue content are still pending**.
 
 Implemented so far:
 
@@ -22,13 +22,20 @@ Implemented so far:
 - hardened static Docker runtime source using `nginx-unprivileged`
 - SIMPLE-DEPLOY v1 consumer contract and compose source
 - CI coverage for catalogue, UI/runtime source, consumer JSON and Compose validation
+- pinned main-push SIMPLE-DEPLOY publication workflow
+- reviewed `linux/arm64` GHCR image publication
+- RPi5 target registration in `rozkalnsandris/RPi5_main`
+- first bounded RPi5 loopback deployment at `127.0.0.1:9191`
+
+Last verified LIVE evidence on 2026-10-03 showed the exact reviewed image healthy on `127.0.0.1:9191`, with `/`, `/health`, and `/ready` returning HTTP 200. Runtime state must still be re-read from RPi5 for any future consequential operation.
 
 Still planned:
 
-- real original coloring-page assets
-- first reviewed GHCR image publication after merge of the pinned SIMPLE-DEPLOY caller
-- separate RPi5 / Cloudflare LIVE work
+- real original coloring-page assets and populated catalogue metadata
+- public ingress for `coloring.rozkalns.net`
+- Cloudflare tunnel/DNS activation and public verification
+- standing generic SIMPLE-DEPLOY adoption/receipt for `coloring-pages-public-rpi5`
 
 The V1 stack remains HTML + CSS + vanilla JavaScript + JSON + a small Python build script, served as static files by `nginx-unprivileged` on RPi5.
 
-No LIVE deployment or Cloudflare change is part of the current source work.
+Source work, application deployment, standing SIMPLE-DEPLOY adoption, and public ingress remain separate authorization boundaries.
