@@ -160,13 +160,14 @@ Design priorities:
 - minimal tiny decorative details
 - printer-friendly black-and-white output
 
-Future difficulty levels may be:
+V1 age ranges are:
 
 ```text
-Easy       3–4
-Normal     4–6
-Detailed   6+
+3-6
+4-8
 ```
+
+Difficulty remains a separate metadata field with `easy`, `normal`, and `detailed`.
 
 ---
 
@@ -364,11 +365,10 @@ Initial filters:
 - Schwierigkeit
 - Charakter
 
-Example age values:
+V1 age values:
 
-- 3–4
-- 4–6
-- 6+
+- 3-6
+- 4-8
 
 Example difficulty values:
 
