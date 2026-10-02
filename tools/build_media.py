@@ -64,6 +64,16 @@ def _open_master(path: Path) -> Image.Image:
         raise MediaError(f"{path}: failed to decode original: {exc}") from exc
 
 
+def validate_master_size(path: Path, master: Image.Image) -> None:
+    """Require canonical masters to already match the print-quality contract."""
+    if master.size != PRINT_SIZE:
+        raise MediaError(
+            f"{path}: original must be exactly "
+            f"{PRINT_SIZE[0]}x{PRINT_SIZE[1]} pixels; "
+            f"got {master.width}x{master.height}"
+        )
+
+
 def normalize_a4(master: Image.Image) -> Image.Image:
     """Fit source onto a white A4 portrait canvas without stretching."""
     if master.width <= 0 or master.height <= 0:
@@ -88,11 +98,13 @@ def resized_copy(image: Image.Image, max_width: int) -> Image.Image:
 def build_record_media(record: dict[str, str], repo_root: Path, output_root: Path) -> dict[str, Path]:
     page_id = record["id"]
     master_path = repo_root / record["original"]
-    target_dir = output_root / "media" / page_id
-    target_dir.mkdir(parents=True, exist_ok=True)
 
     master = _open_master(master_path)
+    validate_master_size(master_path, master)
     printable = normalize_a4(master)
+
+    target_dir = output_root / "media" / page_id
+    target_dir.mkdir(parents=True, exist_ok=True)
 
     print_path = target_dir / f"{page_id}.png"
     thumb_path = target_dir / f"{page_id}-thumb.webp"
