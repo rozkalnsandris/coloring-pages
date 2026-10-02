@@ -537,12 +537,20 @@ The V1 product should do one thing very well:
 
 ## Current status
 
-Planning and UI mockups only.
+V1 source implementation is in progress.
+
+Implemented source layers:
+
+- responsive production HTML/CSS/vanilla-JS home shell
+- canonical catalogue metadata contract
+- deterministic `catalog.json` validator/generator
+- focused catalogue unit tests and GitHub Actions CI
 
 Not yet implemented:
 
-- production HTML/CSS/JS
-- catalogue build pipeline
+- real original coloring-page artwork
+- image normalization / WebP / printable PNG / PDF derivative generation
+- detail and dedicated print views
 - Docker image
 - `.simple-deploy.json` consumer contract
 - RPi5 deployment
