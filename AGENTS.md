@@ -103,7 +103,8 @@ Do not add a framework, CMS, database or backend API without a documented need.
 
 - `originals/` contains canonical master artwork.
 - `metadata/` contains canonical catalogue metadata.
-- `tools/build_catalog.py` will validate inputs and generate web/print derivatives.
+- `tools/build_catalog.py` validates canonical metadata/original references and generates `dist/catalog.json`.
+- `tools/build_media.py` generates normalized A4 print PNG, WebP thumbnail/preview, and PDF derivatives from canonical PNG masters.
 - `dist/` is generated output and is not canonical source.
 - `dist/catalog.json` is generated from canonical metadata; do not hand-edit it.
 - Generated thumbnails, previews and PDFs should be reproducible from canonical inputs.
