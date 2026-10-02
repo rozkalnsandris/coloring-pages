@@ -110,6 +110,8 @@ Store:
 
 Generated WebP previews and PDFs can be produced during the build instead of being permanently committed.
 
+Canonical catalogue inputs live under `metadata/`. The build produces `dist/catalog.json`; that generated file is **not** a second source of truth and must not be hand-edited.
+
 ### Raspberry Pi 5
 
 RPi5 stores the deployed production copy inside the static Docker image.
@@ -232,7 +234,6 @@ coloring-pages/
 │   └── app.css
 ├── js/
 │   └── app.js
-├── catalog.json
 │
 ├── originals/
 │   ├── rettungshunde/
@@ -247,6 +248,7 @@ coloring-pages/
 │   └── build_catalog.py
 │
 ├── Dockerfile
+├── .simple-deploy.json
 ├── deploy/
 │   ├── nginx.conf
 │   └── docker-compose.simple.yml
@@ -257,7 +259,9 @@ coloring-pages/
     └── mockups/
 ```
 
-This document records the intended structure; V1 implementation files do not need to be created until implementation starts.
+This document records the intended source structure; V1 implementation files do not need to be created until implementation starts.
+
+`dist/` is generated build output and is not canonical source. In particular, `dist/catalog.json` is generated from `metadata/` plus the validated originals.
 
 ---
 
@@ -431,22 +435,47 @@ ready endpoint
 
 Application runtime should stay simple and stateless.
 
+The repository should also carry a SIMPLE-DEPLOY consumer contract at `.simple-deploy.json`, following the established RPi5 application pattern. The intended contract is:
+
+```text
+schema:          rozkalns.simple-deploy.consumer.v1
+repository:      rozkalnsandris/coloring-pages
+build arch:      linux/arm64
+runtime_class:   rpi5-compose
+health:          /health
+readiness:       /ready
+persistence:     no volumes for V1
+registry pull:   public-anonymous-pull
+```
+
+The application deployment contract must keep Cloudflare/DNS/network mutation, secrets/credentials/permissions changes, destructive recovery, database mutation, private-provider activation and unrelated host control outside the application deploy lane.
+
 ---
 
 ## Cloudflare / ingress target
 
-Planned future public service:
+The future `RPi5_main` registry candidate should match the current ingress-registry schema:
 
-```text
-service_id:       coloring-pages
-hostname:         coloring.rozkalns.net
-zone:             PUBLIC
-origin:           loopback
-Cloudflare Access: NONE
-LAN exposure:     NONE
-runtime owner:    RPi5_main
-repository owner: coloring-pages
+```json
+{
+  "service_id": "coloring-pages",
+  "hostname": "coloring.rozkalns.net",
+  "zone": "PUBLIC",
+  "current_origin_class": "unknown",
+  "desired_origin_class": "loopback",
+  "runtime_owner": "rozkalnsandris/RPi5_main",
+  "repository_owner": "rozkalnsandris/coloring-pages",
+  "access_required": false,
+  "access_class": "NONE",
+  "lan_break_glass": "forbidden",
+  "firewall_expectation": "no-lan-origin-required",
+  "health_check_method": "anonymous-http-contract"
+}
 ```
+
+`current_origin_class` remains `unknown` until fresh authorized runtime evidence exists. Source policy may declare the desired loopback state, but it must not claim unverified LIVE state.
+
+The service is **not yet present** in the canonical RPi5 ingress registry. Adding it to source policy, applying the tunnel/DNS route and verifying LIVE runtime are separate steps.
 
 Cloudflare / tunnel / RPi5 LIVE changes are separate deployment actions and are **not** implied by source work or a repository merge.
 
@@ -515,6 +544,7 @@ Not yet implemented:
 - production HTML/CSS/JS
 - catalogue build pipeline
 - Docker image
+- `.simple-deploy.json` consumer contract
 - RPi5 deployment
 - Cloudflare hostname / tunnel route
 - LIVE site
