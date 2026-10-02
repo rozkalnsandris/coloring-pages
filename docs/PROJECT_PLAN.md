@@ -475,9 +475,9 @@ The future `RPi5_main` registry candidate should match the current ingress-regis
 
 `current_origin_class` remains `unknown` until fresh authorized runtime evidence exists. Source policy may declare the desired loopback state, but it must not claim unverified LIVE state.
 
-The service is **not yet present** in the canonical RPi5 ingress registry. Adding it to source policy, applying the tunnel/DNS route and verifying LIVE runtime are separate steps.
+The application runtime is now verified on the trusted RPi5 loopback origin at `127.0.0.1:9191`, but the public ingress surface is still separate. The service is not yet activated as `coloring.rozkalns.net` in the canonical RPi5 ingress/tunnel path. Adding the public ingress source policy, applying the tunnel/DNS route and verifying public HTTPS remain separate owner-gated steps.
 
-Cloudflare / tunnel / RPi5 LIVE changes are separate deployment actions and are **not** implied by source work or a repository merge.
+Cloudflare / tunnel changes are separate deployment actions and are **not** implied by source work, repository merge, GHCR publication, or the existing loopback runtime.
 
 ---
 
@@ -537,9 +537,9 @@ The V1 product should do one thing very well:
 
 ## Current status
 
-V1 source implementation is in progress.
+V1 application source and the first trusted RPi5 loopback runtime are implemented. Public ingress and real catalogue content are still pending.
 
-Implemented source layers:
+Implemented source/runtime layers:
 
 - responsive production HTML/CSS/vanilla-JS home shell
 - generated-`catalog.json` hydration for real catalogue entries with a graceful static fallback
@@ -552,11 +552,15 @@ Implemented source layers:
 - hardened stateless Compose source with `/health` and `/ready`
 - `.simple-deploy.json` consumer contract for linux/arm64 / `rpi5-compose`
 - pinned SIMPLE-DEPLOY main-push caller for immutable GHCR image publication
+- reviewed `linux/arm64` image publication to `ghcr.io/rozkalnsandris/coloring-pages`
+- RPi5 target registration in `rozkalnsandris/RPi5_main`
+- first bounded RPi5 loopback deployment at `127.0.0.1:9191`
+
+Last verified LIVE evidence on 2026-10-03 showed the exact reviewed Coloring Pages image healthy on `127.0.0.1:9191`; `/`, `/health`, and `/ready` returned HTTP 200. This is runtime evidence, not a permanent source guarantee, so future runtime claims must be revalidated on RPi5.
 
 Not yet implemented or activated:
 
-- real original coloring-page artwork
-- first GHCR image publication/promotion after the caller is merged to `main`
-- RPi5 target registration/deployment
-- Cloudflare hostname / tunnel route
-- LIVE site
+- real original coloring-page artwork and populated production catalogue metadata
+- public hostname / Cloudflare tunnel-DNS route for `coloring.rozkalns.net`
+- public HTTPS verification
+- standing generic SIMPLE-DEPLOY registry/receipt adoption for `coloring-pages-public-rpi5`
