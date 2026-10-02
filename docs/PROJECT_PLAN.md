@@ -54,15 +54,18 @@ GitHub
 │ source + original images + metadata
 │
 ▼
-Python build_catalog.py
+Python build pipeline
 │
-├── validate originals
-├── normalize A4 / 300 DPI
-├── generate WebP thumbnails
-├── generate WebP previews
-├── generate printable PNG
-├── generate PDF
-└── generate catalog.json
+├── build_catalog.py
+│   ├── validate canonical metadata/original references
+│   └── generate catalog.json
+│
+├── build_media.py
+│   ├── normalize A4 / 300 DPI
+│   ├── generate WebP thumbnails
+│   ├── generate WebP previews
+│   ├── generate printable PNG
+│   └── generate PDF
 │
 ▼
 dist/
@@ -245,7 +248,8 @@ coloring-pages/
 ├── metadata/
 │
 ├── tools/
-│   └── build_catalog.py
+│   ├── build_catalog.py
+│   └── build_media.py
 │
 ├── Dockerfile
 ├── .simple-deploy.json
@@ -496,7 +500,7 @@ GitHub branch
 ↓
 build_catalog.py
 ↓
-generate thumbnail / preview / PDF
+build_media.py
 ↓
 tests
 ↓
