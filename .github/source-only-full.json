@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "repository": "rozkalnsandris/coloring-pages",
+  "mode": "source-only-issue-scoped-full-to-ready",
+  "availability": "owner-command-only",
+  "default_active": false,
+  "activation": {
+    "command_regex": "^AUTO-RUN FULL coloring-pages #([1-9][0-9]*)$",
+    "issue_scoped": true,
+    "owner_explicit": true,
+    "issue_must_be_open": true,
+    "issue_creation_activates": false,
+    "issue_body_activates": false,
+    "label_activates": false,
+    "start_sync_or_continue_activates": false,
+    "freeze_at_activation": [
+      "issue_number",
+      "issue_scope_digest",
+      "default_branch",
+      "base_sha",
+      "policy_revision"
+    ]
+  },
+  "normalized_state": {
+    "contract": "AUTO_RUN_FULL_SINGLE_ISSUE_STATE_V2",
+    "shared_revision": "94187cc447fc80757db10ac25d49717d00dc8430",
+    "document": "docs/AUTO_RUN_FULL_SINGLE_ISSUE_STATE_V2.md",
+    "policy": "policy/auto-run-full-single-issue-state-v2.json",
+    "target_schema": "rozkalns.auto-run-full-single-issue-run-state.v2",
+    "controller_schema": "rozkalns.auto-run-full-single-issue-controller.v2",
+    "controller_issue": 5,
+    "maximum_active_runs": 1,
+    "target_issue_owns_mutable_run_state": true,
+    "controller_owns_only_lock_and_active_run_pointer": true,
+    "receipts_are_evidence_only": true,
+    "fresh_github_only": [
+      "CI_STATUS",
+      "REVIEWS",
+      "UNRESOLVED_THREADS",
+      "MERGEABILITY"
+    ],
+    "stale_writer_disposition": "STOP",
+    "transition_collision_disposition": "STOP",
+    "exact_replay_is_idempotent": true,
+    "write_preflight_contract": "WRITE_PREFLIGHT_COMPACT_V1",
+    "queue_vnext_activated": false
+  },
+  "allowed_sequence": [
+    "fresh_github_revalidation",
+    "controller_activate",
+    "target_issue_state_activate",
+    "branch_create",
+    "source_content_docs_tests_changes",
+    "draft_pr_create",
+    "exact_head_ci_review_convergence",
+    "bounded_scope_preserving_corrections",
+    "ready_for_review",
+    "target_issue_ready_state",
+    "stop_for_explicit_merge_authorization"
+  ],
+  "corrections": {
+    "scope_preserving_only": true,
+    "maximum": 2
+  },
+  "merge": {
+    "authorized_by_full": false,
+    "explicit_owner_command_required": true,
+    "expected_command": "MERGE coloring-pages #<pr> HEAD=<exact-head-sha>"
+  },
+  "live": {
+    "authorized_by_full": false
+  },
+  "fail_closed": {
+    "conditions": [
+      "scope_expansion",
+      "controller_binding_conflict",
+      "stale_revision_or_writer",
+      "branch_or_head_drift",
+      "base_or_policy_drift_without_safe_revalidation",
+      "unexpected_failure",
+      "tool_error_or_timeout",
+      "authorization_ambiguity",
+      "post_dispatch_outcome_ambiguity"
+    ],
+    "automatic_retry_after_mutation_error": false,
+    "automatic_rollback": false,
+    "automatic_cleanup": false,
+    "alternate_mutation_path": false
+  },
+  "github_actions_security": {
+    "issue_and_pr_event_text_is_untrusted_input": true,
+    "explicit_least_privilege_permissions_required": true,
+    "immutable_full_sha_action_and_reusable_workflow_pins_required": true,
+    "native_concurrency_is_scheduling_not_authority": true,
+    "future_queue_max_requires_separate_executor_review": true
+  },
+  "forbidden_mutation_classes": [
+    "merge_without_explicit_owner_command",
+    "production_deploy",
+    "host_or_runtime_mutation",
+    "cloudflare_dns_or_tunnel_mutation",
+    "secret_or_credential_mutation",
+    "permission_or_repository_settings_mutation",
+    "production_data_write",
+    "retry_rollback_cleanup_after_consumed_failure"
+  ]
+}
