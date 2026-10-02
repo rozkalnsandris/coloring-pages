@@ -4,7 +4,7 @@ These images are the visual reference for the first HTML/CSS implementation.
 
 They are **design references, not production assets**. The implementation should reproduce the layout system, hierarchy, spacing, responsive behavior and interaction priorities with real HTML/CSS rather than slicing the mockup images.
 
-The repository contains compact JPEG reference copies so the planning branch stays lightweight. They are sufficient for implementation guidance; production UI must be built from HTML/CSS and real catalog assets.
+The repository contains compact JPEG reference copies so the repository stays lightweight. They are sufficient for implementation guidance; production UI must be built from HTML/CSS and real catalog assets.
 
 ## Overview exploration
 
