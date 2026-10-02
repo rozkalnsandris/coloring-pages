@@ -2,6 +2,7 @@ const menuButton = document.querySelector(".menu-button");
 const mobileNav = document.querySelector("#mobile-nav");
 const searchForm = document.querySelector("[data-search-form]");
 const searchInput = document.querySelector("#site-search");
+const headerSearch = document.querySelector("[data-header-search]");
 const cards = [...document.querySelectorAll(".coloring-card")];
 const categoryButtons = [...document.querySelectorAll("[data-filter]")];
 const resultCount = document.querySelector("[data-result-count]");
@@ -44,9 +45,7 @@ if (menuButton && mobileNav) {
     mobileNav.hidden = expanded;
 
     const label = menuButton.querySelector(".sr-only");
-    if (label) {
-      label.textContent = expanded ? "Menü öffnen" : "Menü schließen";
-    }
+    if (label) label.textContent = expanded ? "Menü öffnen" : "Menü schließen";
   });
 
   mobileNav.addEventListener("click", (event) => {
@@ -57,6 +56,10 @@ if (menuButton && mobileNav) {
   });
 }
 
+headerSearch?.addEventListener("click", () => {
+  searchInput?.focus();
+});
+
 searchForm?.addEventListener("submit", (event) => {
   event.preventDefault();
   applyFilters();
@@ -66,6 +69,7 @@ searchForm?.addEventListener("submit", (event) => {
 searchInput?.addEventListener("input", applyFilters);
 
 categoryButtons.forEach((button) => {
+  button.setAttribute("aria-pressed", "false");
   button.addEventListener("click", () => {
     const category = button.dataset.filter ?? "";
     activeCategory = activeCategory === category ? "" : category;
@@ -81,5 +85,4 @@ categoryButtons.forEach((button) => {
   });
 });
 
-categoryButtons.forEach((button) => button.setAttribute("aria-pressed", "false"));
-applyFilters();
+if (cards.length) applyFilters();
