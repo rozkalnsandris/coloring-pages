@@ -22,6 +22,40 @@ This repository owns the Coloring Pages application source and its static media 
 - Use RPi5-local/remote-desktop tooling only when host-local execution or observation is genuinely required and is not supported through GitHub.
 - If runtime state is uncertain, do not infer it from source; stop and require fresh authorized evidence.
 
+## FAST-LANE v2.3 — lightweight adoption
+
+This repository adopts the shared FAST-LANE v2.3 / Agent Work Cycle behavior from
+`rozkalnsandris/ops-workflows@94187cc447fc80757db10ac25d49717d00dc8430`.
+
+Canonical shared surfaces at that accepted revision:
+
+- `docs/AGENT_WORK_CYCLE_V1.md`
+- `docs/GITHUB_API_ACCESS_V1.md`
+- `docs/WRITE_PREFLIGHT_COMPACT_V1.md`
+- `docs/BOOTSTRAP_MANIFEST_V1.md`
+
+Use the lightweight profile deliberately:
+
+- `AGENTS.md` stays the compact repository-local routing and rules surface.
+- Do not add a local `.github/agent-bootstrap.json` merely for fleet uniformity while this file remains small and unambiguous; the shared bootstrap contract explicitly permits repository-local fallback.
+- Do not add AUTO-RUN FULL state/controllers, Queue mode, GITHUB-ONLY compatibility state or copied shared policy files unless a concrete repository need is separately reviewed.
+- Current automation profile is FAST source work only. Planned SIMPLE-DEPLOY is not activated by this adoption.
+- Repository-local rules in this file remain authoritative when they are stricter than shared policy.
+
+Command behavior:
+
+- `START coloring-pages` — freshly read minimum-sufficient GitHub state, select exactly one current lane, and continue all immediately safe same-scope source work until a genuine owner gate, external wait, fail-closed error/drift/ambiguity, or DONE.
+- `SYNC coloring-pages` — incrementally refresh only the selected/current lane and mutable GitHub evidence needed for it.
+- `turpini` — continue the exact same safe scope; it creates no merge, LIVE, retry, rollback, cleanup, credential, permission, settings or runtime authority.
+- `AUDIT-HANDOFF coloring-pages` — explicit deeper continuity audit; do not turn ordinary START/SYNC into a repo-wide historical scan.
+
+GitHub write discipline:
+
+- Before a branch, PR, issue, comment or metadata write, use minimum-sufficient read-only preflight and reconcile an already-existing exact intended object instead of blindly duplicating it.
+- Conflicting branch/PR identity, stale writer state or ambiguous post-dispatch outcome is a STOP; do not force, recreate, retry through another path or silently choose a different target.
+- Before merge, refresh exact PR head, mergeability, required CI/status, reviews/threads and the exact owner authorization binding.
+- Merge remains an explicit owner decision and never implies LIVE.
+
 ## Secrets and protected data
 
 - Never commit secrets, tokens, credentials, private keys, environment files or protected runtime configuration.
