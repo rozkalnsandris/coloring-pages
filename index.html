@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Kostenlose Malvorlagen für Kinder zum Suchen, Anschauen und Ausdrucken.">
   <title>Coloring Pages – Malvorlagen für Kinder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
@@ -12,158 +15,159 @@
 
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="/" aria-label="Coloring Pages Startseite">
-        <span class="brand-mark" aria-hidden="true">🐾</span>
-        <span>Coloring Pages</span>
+      <a class="brand" href="#hero" aria-label="Coloring Pages Startseite">
+        <span class="brand-paw" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i>
+        </span>
+        <span class="brand-word">
+          <span>Coloring</span>
+          <span class="brand-pages"><b>P</b><b>a</b><b>g</b><b>e</b><b>s</b></span>
+        </span>
       </a>
 
       <nav class="desktop-nav" aria-label="Hauptnavigation">
+        <a class="is-active" href="#hero">Startseite</a>
         <a href="#kategorien">Kategorien</a>
-        <a href="#neu">Neue Malvorlagen</a>
-        <a href="#drucken">Drucken</a>
+        <a href="#neu">Über uns</a>
       </nav>
+
+      <button class="header-search" type="button" aria-label="Suche öffnen" data-header-search>
+        <span aria-hidden="true"></span>
+      </button>
 
       <button class="menu-button" type="button" aria-expanded="false" aria-controls="mobile-nav">
         <span class="sr-only">Menü öffnen</span>
-        <span aria-hidden="true">☰</span>
+        <span class="menu-lines" aria-hidden="true"></span>
       </button>
     </div>
 
     <nav id="mobile-nav" class="mobile-nav container" aria-label="Mobile Navigation" hidden>
+      <a href="#hero">Startseite</a>
       <a href="#kategorien">Kategorien</a>
-      <a href="#neu">Neue Malvorlagen</a>
-      <a href="#drucken">Drucken</a>
+      <a href="#neu">Über uns</a>
     </nav>
   </header>
 
   <main id="main">
-    <section class="hero">
+    <section id="hero" class="hero">
       <div class="container hero-grid">
         <div class="hero-copy">
-          <p class="eyebrow">Einfach finden. Anschauen. Drucken.</p>
-          <h1>Malvorlagen für Kinder</h1>
+          <h1 class="desktop-hero-title">
+            Schöne Malvorlagen<br>
+            <span class="title-blue">für kleine</span>
+            <span class="title-rainbow" aria-label="Entdecker">
+              <span>E</span><span>n</span><span>t</span><span>d</span><span>e</span><span>c</span><span>k</span><span>e</span><span>r</span>
+            </span>
+          </h1>
+          <h1 class="mobile-hero-title">
+            Malvorlagen<br>
+            <span class="title-blue">für</span>
+            <span class="title-rainbow" aria-label="Kinder">
+              <span>K</span><span>i</span><span>n</span><span>d</span><span>e</span><span>r</span>
+            </span>
+          </h1>
           <p class="hero-text">
-            Entdecke liebevoll gestaltete Malvorlagen zum Ausdrucken – für Kreativität,
-            Spaß und kleine Abenteuer im Alltag.
+            Entdecke eine große Auswahl an liebevoll gestalteten Malvorlagen zum Ausdrucken –
+            für mehr Kreativität, Spielspaß und kleine Abenteuer im Alltag.
           </p>
-
-          <form class="search" role="search" data-search-form>
-            <label class="sr-only" for="site-search">Malvorlagen suchen</label>
-            <input id="site-search" name="q" type="search" placeholder="Malvorlage suchen…" autocomplete="off">
-            <button type="submit">Suchen</button>
-          </form>
         </div>
 
-        <div class="hero-art" aria-hidden="true">
-          <div class="hero-card">
-            <div class="hero-paw">🐾</div>
-            <p>Rettungshunde, Tiere, Fahrzeuge & mehr</p>
-          </div>
+        <div class="hero-art">
+          <img src="assets/hero-illustration.png" alt="Fröhlicher Rettungshund mit Rucksack in einer Berglandschaft neben einem Wegweiser">
         </div>
+
+        <form class="search" role="search" data-search-form>
+          <label class="sr-only" for="site-search">Malvorlagen suchen</label>
+          <span class="search-icon" aria-hidden="true"></span>
+          <input id="site-search" name="q" type="search" placeholder="Malvorlagen suchen ..." autocomplete="off">
+          <button type="submit">Suchen</button>
+        </form>
       </div>
     </section>
 
-    <section id="kategorien" class="section">
+    <section id="kategorien" class="categories">
       <div class="container">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Stöbern</p>
-            <h2>Beliebte Kategorien</h2>
-          </div>
-        </div>
-
         <div class="category-grid" data-category-grid>
-          <button class="category-card" type="button" data-filter="Rettungshunde">
+          <button class="category-card category-rescue" type="button" data-filter="Rettungshunde">
             <span class="category-icon" aria-hidden="true">🐶</span>
-            <span>Rettungshunde</span>
+            <span class="category-name">Rettungshunde</span><span class="category-arrow" aria-hidden="true">›</span>
           </button>
-          <button class="category-card" type="button" data-filter="Tiere">
-            <span class="category-icon" aria-hidden="true">🦊</span>
-            <span>Tiere</span>
+          <button class="category-card category-animals" type="button" data-filter="Tiere">
+            <span class="category-icon" aria-hidden="true">🐱</span>
+            <span class="category-name">Tiere</span><span class="category-arrow" aria-hidden="true">›</span>
           </button>
-          <button class="category-card" type="button" data-filter="Fahrzeuge">
+          <button class="category-card category-vehicles" type="button" data-filter="Fahrzeuge">
             <span class="category-icon" aria-hidden="true">🚒</span>
-            <span>Fahrzeuge</span>
+            <span class="category-name">Fahrzeuge</span><span class="category-arrow" aria-hidden="true">›</span>
           </button>
-          <button class="category-card" type="button" data-filter="Alphabet">
-            <span class="category-icon" aria-hidden="true">🔤</span>
-            <span>Alphabet</span>
+          <button class="category-card category-alphabet" type="button" data-filter="Alphabet">
+            <span class="category-icon category-abc" aria-hidden="true"><b>A</b><b>B</b><b>C</b></span>
+            <span class="category-name">Alphabet</span><span class="category-arrow" aria-hidden="true">›</span>
           </button>
-          <button class="category-card" type="button" data-filter="Lernen">
-            <span class="category-icon" aria-hidden="true">✏️</span>
-            <span>Lernen</span>
+          <button class="category-card category-learning" type="button" data-filter="Lernen">
+            <span class="category-icon" aria-hidden="true">💡</span>
+            <span class="category-name">Lernen</span><span class="category-arrow" aria-hidden="true">›</span>
           </button>
-          <button class="category-card" type="button" data-filter="Jahreszeiten">
-            <span class="category-icon" aria-hidden="true">❄️</span>
-            <span>Jahreszeiten</span>
+          <button class="category-card category-seasons" type="button" data-filter="Jahreszeiten">
+            <span class="category-icon" aria-hidden="true">☀️</span>
+            <span class="category-name">Jahreszeiten</span><span class="category-arrow" aria-hidden="true">›</span>
           </button>
         </div>
       </div>
     </section>
 
-    <section id="neu" class="section section-muted">
+    <section id="neu" class="new-pages">
       <div class="container">
         <div class="section-heading">
-          <div>
-            <p class="eyebrow">Neu</p>
-            <h2>Neue Malvorlagen</h2>
-          </div>
-          <p class="result-count" aria-live="polite" data-result-count>3 Malvorlagen</p>
+          <h2>Neue Malvorlagen</h2>
+          <a class="outline-link" href="#neu">Alle Malvorlagen ansehen <span aria-hidden="true">→</span></a>
         </div>
 
         <div class="gallery" data-gallery>
-          <article class="coloring-card" data-title="Ben hilft bei der Feuerwehr" data-category="Rettungshunde">
-            <div class="preview-placeholder" aria-hidden="true">🐕‍🦺</div>
-            <div class="card-body">
-              <div class="badges"><span>3–6</span><span>Einfach</span></div>
-              <h3>Ben hilft bei der Feuerwehr</h3>
-              <p>Rettungshunde</p>
-              <button class="text-button" type="button" disabled>Vorschau folgt</button>
-            </div>
+          <article class="coloring-card" data-title="Rettungshund in den Bergen" data-category="Rettungshunde">
+            <a class="preview-placeholder" href="detail.html" aria-label="Rettungshund in den Bergen ansehen">
+              <span aria-hidden="true">🐕‍🦺</span><small>Vorschau folgt</small>
+            </a>
+            <h3><a href="detail.html">Rettungshund in den Bergen</a></h3>
+            <div class="badges"><span class="age">3–6 Jahre</span><span class="easy">Einfach</span></div>
           </article>
 
-          <article class="coloring-card" data-title="Fuchs im Wald" data-category="Tiere">
-            <div class="preview-placeholder" aria-hidden="true">🦊</div>
-            <div class="card-body">
-              <div class="badges"><span>3–6</span><span>Einfach</span></div>
-              <h3>Fuchs im Wald</h3>
-              <p>Tiere</p>
-              <button class="text-button" type="button" disabled>Vorschau folgt</button>
-            </div>
+          <article class="coloring-card" data-title="Süße Katze mit Schmetterling" data-category="Tiere">
+            <div class="preview-placeholder"><span aria-hidden="true">🐱</span><small>Vorschau folgt</small></div>
+            <h3>Süße Katze mit Schmetterling</h3>
+            <div class="badges"><span class="age">3–6 Jahre</span><span class="easy">Einfach</span></div>
           </article>
 
-          <article class="coloring-card" data-title="Feuerwehrauto" data-category="Fahrzeuge">
-            <div class="preview-placeholder" aria-hidden="true">🚒</div>
-            <div class="card-body">
-              <div class="badges"><span>4–6</span><span>Einfach</span></div>
-              <h3>Feuerwehrauto</h3>
-              <p>Fahrzeuge</p>
-              <button class="text-button" type="button" disabled>Vorschau folgt</button>
-            </div>
+          <article class="coloring-card" data-title="Feuerwehrfahrzeug" data-category="Fahrzeuge">
+            <div class="preview-placeholder"><span aria-hidden="true">🚒</span><small>Vorschau folgt</small></div>
+            <h3>Feuerwehrfahrzeug</h3>
+            <div class="badges"><span class="age age-older">4–8 Jahre</span><span class="medium">Mittel</span></div>
+          </article>
+
+          <article class="coloring-card" data-title="Schildkröte im Meer" data-category="Tiere">
+            <div class="preview-placeholder"><span aria-hidden="true">🐢</span><small>Vorschau folgt</small></div>
+            <h3>Schildkröte im Meer</h3>
+            <div class="badges"><span class="age">3–6 Jahre</span><span class="easy">Einfach</span></div>
+          </article>
+
+          <article class="coloring-card" data-title="Verspielter Welpe" data-category="Tiere">
+            <div class="preview-placeholder"><span aria-hidden="true">🐶</span><small>Vorschau folgt</small></div>
+            <h3>Verspielter Welpe</h3>
+            <div class="badges"><span class="age">3–6 Jahre</span><span class="easy">Einfach</span></div>
+          </article>
+
+          <article class="coloring-card" data-title="Baumhaus Abenteuer" data-category="Lernen">
+            <div class="preview-placeholder"><span aria-hidden="true">🌳</span><small>Vorschau folgt</small></div>
+            <h3>Baumhaus Abenteuer</h3>
+            <div class="badges"><span class="age age-older">4–8 Jahre</span><span class="medium">Mittel</span></div>
           </article>
         </div>
 
+        <p class="result-count sr-only" aria-live="polite" data-result-count>6 Malvorlagen</p>
         <p class="empty-state" data-empty-state hidden>Keine passenden Malvorlagen gefunden.</p>
       </div>
     </section>
-
-    <section id="drucken" class="section print-teaser">
-      <div class="container print-teaser-inner">
-        <div>
-          <p class="eyebrow">A4 optimiert</p>
-          <h2>Ein Klick bis zum Ausdruck</h2>
-          <p>Die Detailansicht und echte A4/300-DPI-Dateien kommen im nächsten Produkt-Slice.</p>
-        </div>
-        <span class="a4-badge" aria-hidden="true">A4</span>
-      </div>
-    </section>
   </main>
-
-  <footer class="site-footer">
-    <div class="container">
-      <p>Coloring Pages · schnell, einfach und druckerfreundlich</p>
-    </div>
-  </footer>
 
   <script src="js/app.js" defer></script>
 </body>
