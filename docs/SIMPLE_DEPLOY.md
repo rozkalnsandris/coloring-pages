@@ -14,7 +14,7 @@ Canonical consumer contract:
 
 ## Publication
 
-`.github/workflows/simple-deploy.yml` runs only on a push to the default `main` branch and delegates to the immutable reusable workflow:
+`.github/workflows/simple-deploy.yml` runs on pushes to the default `main` branch only when a current site/build/consumer/deploy input changes, and delegates to the immutable reusable workflow:
 
 `rozkalnsandris/ops-workflows/.github/workflows/simple-deploy.yml@94187cc447fc80757db10ac25d49717d00dc8430`
 
@@ -26,6 +26,8 @@ The reusable workflow requires only:
 - `packages: write`
 
 No repository secret forwarding is declared by the consumer caller.
+
+The caller intentionally skips documentation/test-only changes so a docs merge does not mint a new immutable image identity. Publication remains enabled for the workflow itself, the consumer manifest, Docker/build inputs, application HTML/CSS/JS/assets, canonical metadata/originals, build tooling, and deployment source under `deploy/**`.
 
 ## Immutable deployment evidence
 
