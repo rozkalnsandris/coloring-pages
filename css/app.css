@@ -355,3 +355,147 @@ a { color: inherit; }
     transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
   }
 }
+
+
+.preview-image {
+  aspect-ratio: 185 / 195;
+  display: block;
+  overflow: hidden;
+  border: 1px solid #dde5ef;
+  border-radius: 10px;
+  background: #fff;
+}
+.preview-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.detailed { background: #eee8ff; color: #7546c8; }
+
+.detail-preview-image {
+  width: 100%;
+  height: 100%;
+  max-height: 720px;
+  object-fit: contain;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.detail-actions a {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 17px 22px;
+  border: 1px solid #d9e5f2;
+  border-radius: 18px;
+  background: #fff;
+  color: var(--text);
+  text-align: left;
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: 800;
+}
+.detail-actions a.action-primary {
+  border-color: transparent;
+  background: var(--blue);
+  color: #fff;
+  box-shadow: 0 9px 24px rgb(46 143 240 / 22%);
+}
+.detail-actions a b {
+  justify-self: end;
+  font-size: 23px;
+}
+.detail-actions a.is-disabled {
+  pointer-events: none;
+  opacity: .5;
+}
+
+.print-page {
+  min-height: 100vh;
+  background: #f2f5f9;
+}
+.print-shell {
+  width: min(calc(100% - 32px), 900px);
+  margin: 0 auto;
+  padding: 24px 0 48px;
+}
+.print-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.print-button {
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 22px;
+  background: var(--blue);
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+.print-button:disabled {
+  opacity: .45;
+  cursor: default;
+}
+.print-sheet {
+  aspect-ratio: 210 / 297;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 12px 40px rgb(20 48 82 / 14%);
+}
+.print-sheet img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.print-placeholder {
+  padding: 32px;
+  color: var(--muted);
+  text-align: center;
+}
+.print-status {
+  margin: 12px 0 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  body.print-page {
+    background: #fff;
+  }
+
+  .print-shell {
+    width: 210mm;
+    margin: 0;
+    padding: 0;
+  }
+
+  .print-toolbar,
+  .print-status,
+  .print-placeholder {
+    display: none !important;
+  }
+
+  .print-sheet {
+    width: 210mm;
+    height: 297mm;
+    box-shadow: none;
+    overflow: hidden;
+  }
+
+  .print-sheet img {
+    width: 210mm;
+    height: 297mm;
+    object-fit: contain;
+  }
+}
