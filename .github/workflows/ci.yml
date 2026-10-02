@@ -23,6 +23,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install build dependencies
+        run: python3 -m pip install --disable-pip-version-check -r requirements-build.txt
+
       - name: Validate Python syntax
         run: python3 -m compileall -q tools tests
 
@@ -33,7 +36,10 @@ jobs:
         run: python3 tools/build_catalog.py --check
 
       - name: Exercise catalogue generation
-        run: python3 tools/build_catalog.py --output /tmp/catalog.json
+        run: python3 tools/build_catalog.py --output /tmp/coloring-pages-dist/catalog.json
+
+      - name: Exercise media generation
+        run: python3 tools/build_media.py --output-root /tmp/coloring-pages-dist
 
       - name: Validate SIMPLE-DEPLOY JSON
         run: python3 -m json.tool .simple-deploy.json >/dev/null
