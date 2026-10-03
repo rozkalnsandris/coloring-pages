@@ -1,0 +1,29 @@
+{
+  "schema": "rozkalns.coloring-pages.categories.v1",
+  "categories": [
+    {
+      "id": "rettungshunde",
+      "label": "Rettungshunde"
+    },
+    {
+      "id": "tiere",
+      "label": "Tiere"
+    },
+    {
+      "id": "fahrzeuge",
+      "label": "Fahrzeuge"
+    },
+    {
+      "id": "alphabet",
+      "label": "Alphabet"
+    },
+    {
+      "id": "lernen",
+      "label": "Lernen"
+    },
+    {
+      "id": "jahreszeiten",
+      "label": "Jahreszeiten"
+    }
+  ]
+}
