@@ -27,6 +27,7 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertFalse(authority["source_merge_authorizes_production_import"])
         self.assertFalse(authority["source_merge_authorizes_drive_archive_or_delete"])
         self.assertTrue(authority["live_content_import_requires_fresh_owner_authorization"])
+        self.assertTrue(authority["category_binding_required_before_first_mutation"])
 
     def test_activation_evidence_records_first_production_pass(self):
         evidence = self.contract["activation_evidence"]
@@ -62,6 +63,7 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertTrue(staging["manifest_is_readiness_signal"])
         self.assertTrue(staging["exact_source_bytes_required"])
         self.assertTrue(staging["preupload_sha256_required"])
+        self.assertTrue(staging["category_binding_required_before_upload"])
 
     def test_manifest_contract_binds_integrity_and_importer_metadata(self):
         manifest = self.contract["manifest"]
@@ -87,6 +89,18 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertIsNotNone(re.fullmatch(manifest["id_pattern"], "aviator-pup-001"))
         self.assertEqual(manifest["source_kind"], "chatgpt-generated-png")
         self.assertEqual(manifest["approval_class"], "explicit-owner-chat-approval")
+        self.assertEqual(
+            manifest["allowed_category"],
+            [
+                "rettungshunde",
+                "tiere",
+                "fahrzeuge",
+                "alphabet",
+                "lernen",
+                "jahreszeiten",
+            ],
+        )
+        self.assertEqual(manifest["category_registry"], "metadata/categories.json")
         self.assertEqual(manifest["unknown_fields"], "reject")
 
     def test_activation_requires_end_to_end_integrity_canary(self):
@@ -115,6 +129,7 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertEqual(host["inbox_publish"], "atomic-rename-after-integrity-pass")
         self.assertEqual(host["importer_contract_ref"], "deploy/importer-runtime.json")
         self.assertTrue(host["immutable_importer_image_digest_required_at_live"])
+        self.assertIn("category", host["verify_before_inbox_publish"])
         self.assertFalse(host["application_redeploy_required"])
 
     def test_post_import_proof_preserves_source_and_checks_publication(self):
@@ -151,6 +166,7 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
             "automatic-overwrite-of-existing-page-id",
             self.contract["forbidden"],
         )
+        self.assertIn("category-not-allowed", self.contract["fail_closed"]["conditions"])
         self.assertEqual(
             self.contract["fail_closed"]["after_first_mutation"],
             "stop-without-retry-rollback-cleanup-or-alternate-mutation",
