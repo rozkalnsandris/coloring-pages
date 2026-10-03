@@ -9,13 +9,13 @@ const resultCount = document.querySelector("[data-result-count]");
 const emptyState = document.querySelector("[data-empty-state]");
 
 const CATEGORY_LABELS = {
-  rettungshunde: "Rettungshunde",
   tiere: "Tiere",
   fahrzeuge: "Fahrzeuge",
   alphabet: "Alphabet",
   lernen: "Lernen",
-  jahreszeiten: "Jahreszeiten",
-  seasonal: "Jahreszeiten",
+  figuren: "Figuren & Helden",
+  jahreszeiten: "Jahreszeiten & Feste",
+  seasonal: "Jahreszeiten & Feste",
 };
 
 const DIFFICULTY_LABELS = {

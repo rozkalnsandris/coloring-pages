@@ -2,10 +2,6 @@
   "schema": "rozkalns.coloring-pages.categories.v1",
   "categories": [
     {
-      "id": "rettungshunde",
-      "label": "Rettungshunde"
-    },
-    {
       "id": "tiere",
       "label": "Tiere"
     },
@@ -22,8 +18,12 @@
       "label": "Lernen"
     },
     {
+      "id": "figuren",
+      "label": "Figuren & Helden"
+    },
+    {
       "id": "jahreszeiten",
-      "label": "Jahreszeiten"
+      "label": "Jahreszeiten & Feste"
     }
   ]
 }

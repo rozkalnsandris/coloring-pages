@@ -100,11 +100,11 @@
     "unknown_fields": "reject",
     "category_registry": "metadata/categories.json",
     "allowed_category": [
-      "rettungshunde",
       "tiere",
       "fahrzeuge",
       "alphabet",
       "lernen",
+      "figuren",
       "jahreszeiten"
     ]
   },

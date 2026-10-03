@@ -107,11 +107,11 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertEqual(
             manifest["allowed_category"],
             [
-                "rettungshunde",
                 "tiere",
                 "fahrzeuge",
                 "alphabet",
                 "lernen",
+                "figuren",
                 "jahreszeiten",
             ],
         )

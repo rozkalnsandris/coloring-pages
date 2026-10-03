@@ -43,7 +43,7 @@ class ImportPageTests(unittest.TestCase):
             "id": "fire-pup-001",
             "title": "Fire Pup 001",
             "character": "",
-            "category": "rettungshunde",
+            "category": "tiere",
             "age": "3-6",
             "difficulty": "easy",
             "language": "de",
@@ -90,11 +90,11 @@ class ImportPageTests(unittest.TestCase):
             importer.load_allowed_categories(),
             frozenset(
                 {
-                    "rettungshunde",
                     "tiere",
                     "fahrzeuge",
                     "alphabet",
                     "lernen",
+                    "figuren",
                     "jahreszeiten",
                 }
             ),
