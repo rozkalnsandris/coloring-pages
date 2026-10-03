@@ -186,6 +186,8 @@ a { color: inherit; }
 .category-alphabet .category-arrow { background: #ffeab6; color: #ef9b00; }
 .category-learning { background: #f6eeff; }
 .category-learning .category-arrow { background: #eadcff; color: #7c45d4; }
+.category-figures { background: #fff1f7; }
+.category-figures .category-arrow { background: #ffdceb; color: #c9437f; }
 .category-seasons { background: #eefcf5; }
 .category-seasons .category-arrow { background: #daf6e3; color: #2b9350; }
 .category-abc { display: flex; align-items: center; gap: 1px; font-family: var(--font-display); font-weight: 800; filter: none; }
