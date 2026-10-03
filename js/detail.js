@@ -9,6 +9,7 @@ const detailPreview = document.querySelector("[data-detail-preview]");
 const detailPlaceholder = document.querySelector("[data-detail-placeholder]");
 const printLink = document.querySelector("[data-action-print]");
 const pdfLink = document.querySelector("[data-action-pdf]");
+let activePrintFrame = null;
 
 const DETAIL_CATEGORY_LABELS = {
   rettungshunde: "Rettungshunde",
@@ -38,6 +39,66 @@ function setAction(link, href) {
     link.classList.add("is-disabled");
   }
 }
+
+function startDirectPrint(href) {
+  activePrintFrame?.remove();
+
+  const printUrl = new URL(href, window.location.href);
+  printUrl.searchParams.set("embedded", "1");
+
+  const frame = document.createElement("iframe");
+  frame.title = "Druckansicht";
+  frame.tabIndex = -1;
+  frame.setAttribute("aria-hidden", "true");
+  frame.style.position = "fixed";
+  frame.style.width = "1px";
+  frame.style.height = "1px";
+  frame.style.right = "0";
+  frame.style.bottom = "0";
+  frame.style.border = "0";
+  frame.style.opacity = "0";
+  frame.style.pointerEvents = "none";
+
+  function cleanup() {
+    window.removeEventListener("message", handleMessage);
+    frame.remove();
+    if (activePrintFrame === frame) activePrintFrame = null;
+  }
+
+  function handleMessage(event) {
+    if (event.origin !== window.location.origin || event.source !== frame.contentWindow) return;
+    if (!event.data || typeof event.data !== "object") return;
+
+    if (event.data.type === "coloring-pages-print-error") {
+      cleanup();
+      return;
+    }
+
+    if (event.data.type !== "coloring-pages-print-ready") return;
+
+    window.removeEventListener("message", handleMessage);
+    const printWindow = frame.contentWindow;
+    if (!printWindow) {
+      cleanup();
+      return;
+    }
+
+    printWindow.addEventListener("afterprint", cleanup, { once: true });
+    printWindow.focus();
+    printWindow.print();
+  }
+
+  window.addEventListener("message", handleMessage);
+  frame.src = printUrl.toString();
+  activePrintFrame = frame;
+  document.body.append(frame);
+}
+
+printLink?.addEventListener("click", (event) => {
+  if (!printLink.href || printLink.getAttribute("aria-disabled") === "true") return;
+  event.preventDefault();
+  startDirectPrint(printLink.href);
+});
 
 async function loadDetail() {
   const id = new URLSearchParams(window.location.search).get("id");
