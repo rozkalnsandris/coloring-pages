@@ -7,6 +7,7 @@ Make the normal content workflow close to:
 ```text
 generate PNG in ChatGPT
 → owner approves the page
+→ bind one valid category from metadata/categories.json
 → upload the exact PNG blob plus a small SHA-256 manifest to Google Drive
 → trusted RPi5 operator pulls and verifies it
 → immutable coloring-pages importer publishes it
@@ -27,7 +28,7 @@ Canonical ownership remains unchanged:
 - Google Drive is a temporary transport/staging surface.
 - `rozkalnsandris/RPi5_main` owns host-side rclone binding, credentials, trusted execution and runtime coordination.
 
-This content-contract source does not itself authorize a content import. The owner's explicit approval of one exact image becomes the ingest authority only after its page ID, SHA-256 and byte size are frozen. That authority is limited to Drive staging, the reviewed RPi5 verify/import path and public verification; archive/delete, overwrite and unrelated runtime actions remain outside it.
+This content-contract source does not itself authorize a content import. The owner's explicit approval of one exact image becomes the ingest authority only after its page ID, SHA-256, byte size and one valid category are frozen. Category selection must happen before the first Drive mutation. That authority is limited to Drive staging, the reviewed RPi5 verify/import path and public verification; archive/delete, overwrite and unrelated runtime actions remain outside it.
 
 ## Why raw Drive blob files are acceptable
 
@@ -86,7 +87,9 @@ Example:
 }
 ```
 
-Unknown manifest fields fail closed. Metadata values must stay inside the importer-supported age, difficulty and language sets.
+Unknown manifest fields fail closed. Metadata values must stay inside the importer-supported age, difficulty, language and category sets.
+
+The canonical category registry is `metadata/categories.json`. The current allowed category IDs are `rettungshunde`, `tiere`, `fahrzeuge`, `alphabet`, `lernen` and `jahreszeiten`. The normal workflow must choose one of these before Drive staging; no default or arbitrary free-text category is accepted. Adding a future category is a reviewed source change that updates the registry and the corresponding public UI category surface.
 
 ## Historical activation canary
 
@@ -116,7 +119,7 @@ The first owner-authorized production import completed successfully on 2026-10-0
 - exactly one matching catalogue entry;
 - all five required public verification URLs returning HTTP 200.
 
-This is historical activation evidence, not reusable authorization. Every future production import requires a fresh explicit approval of the exact image, then binding of the page ID, SHA-256 and byte size before staging/import begins. Drive archive/delete remains a separate owner-gated mutation.
+This is historical activation evidence, not reusable authorization. Every future production import requires a fresh explicit approval of the exact image, then binding of the page ID, SHA-256, byte size and one allowed category before staging/import begins. Drive archive/delete remains a separate owner-gated mutation.
 
 ## RPi5 pull and publish sequence
 
@@ -166,7 +169,7 @@ With the transport canary and trusted host operator activated, the normal human 
 
 ```text
 User: "Liekam iekšā."
-ChatGPT: freeze exact approved image + manifest
+ChatGPT: determine one allowed category and freeze exact approved image + manifest
 → Drive staging
 → RPi5 pull + SHA verification
 → immutable import
