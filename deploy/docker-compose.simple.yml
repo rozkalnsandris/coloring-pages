@@ -6,10 +6,7 @@ services:
     ports:
       - "${COLORING_PAGES_ORIGIN_PORT:-9190}:8080"
     volumes:
-      - type: bind
-        source: "${COLORING_PAGES_CONTENT_PUBLIC:-/srv/coloring-pages-content/public}"
-        target: /var/lib/coloring-pages/public
-        read_only: true
+      - coloring_pages_content:/var/lib/coloring-pages/public:ro
     read_only: true
     tmpfs:
       - /tmp
@@ -24,3 +21,6 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
+
+volumes:
+  coloring_pages_content:
