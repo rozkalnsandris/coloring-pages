@@ -48,24 +48,29 @@ class SimpleDeployPublishTests(unittest.TestCase):
             ".github/workflows/simple-deploy.yml",
             ".simple-deploy.json",
             "Dockerfile",
-            "requirements-build.txt",
             "index.html",
             "detail.html",
             "print.html",
             "css/**",
             "js/**",
             "assets/**",
-            "metadata/**",
-            "originals/**",
-            "tools/**",
             "deploy/**",
         ]
         self.assertIn("paths:", workflow)
         for path in required_paths:
             self.assertIn(f'      - "{path}"', workflow)
 
-        for docs_only_path in ("README.md", "AGENTS.md", "docs/**", "tests/**"):
-            self.assertNotIn(f'      - "{docs_only_path}"', workflow)
+        for non_image_input in (
+            "requirements-build.txt",
+            "metadata/**",
+            "originals/**",
+            "tools/**",
+            "README.md",
+            "AGENTS.md",
+            "docs/**",
+            "tests/**",
+        ):
+            self.assertNotIn(f'      - "{non_image_input}"', workflow)
 
     def test_manifest_binds_expected_image_and_target(self):
         manifest = json.loads(
