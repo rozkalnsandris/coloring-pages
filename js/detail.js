@@ -9,7 +9,7 @@ const detailPreview = document.querySelector("[data-detail-preview]");
 const detailPlaceholder = document.querySelector("[data-detail-placeholder]");
 const printLink = document.querySelector("[data-action-print]");
 const pdfLink = document.querySelector("[data-action-pdf]");
-let activePrintFrame = null;
+let activePrintSession = null;
 
 const DETAIL_CATEGORY_LABELS = {
   rettungshunde: "Rettungshunde",
@@ -41,7 +41,7 @@ function setAction(link, href) {
 }
 
 function startDirectPrint(href) {
-  activePrintFrame?.remove();
+  activePrintSession?.cleanup();
 
   const printUrl = new URL(href, window.location.href);
   printUrl.searchParams.set("embedded", "1");
@@ -62,7 +62,7 @@ function startDirectPrint(href) {
   function cleanup() {
     window.removeEventListener("message", handleMessage);
     frame.remove();
-    if (activePrintFrame === frame) activePrintFrame = null;
+    if (activePrintSession?.frame === frame) activePrintSession = null;
   }
 
   function handleMessage(event) {
@@ -83,14 +83,17 @@ function startDirectPrint(href) {
       return;
     }
 
-    printWindow.addEventListener("afterprint", cleanup, { once: true });
     printWindow.focus();
-    printWindow.print();
+    try {
+      printWindow.print();
+    } finally {
+      cleanup();
+    }
   }
 
   window.addEventListener("message", handleMessage);
   frame.src = printUrl.toString();
-  activePrintFrame = frame;
+  activePrintSession = { frame, cleanup };
   document.body.append(frame);
 }
 
