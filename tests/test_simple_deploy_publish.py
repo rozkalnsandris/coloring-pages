@@ -45,23 +45,26 @@ class SimpleDeployPublishTests(unittest.TestCase):
         )
 
         required_paths = [
-            ".github/workflows/simple-deploy.yml",
-            ".simple-deploy.json",
             "Dockerfile",
             "tools/coloring-pages-import",
+            "deploy/nginx.conf",
             "index.html",
             "detail.html",
             "print.html",
             "css/**",
             "js/**",
             "assets/**",
-            "deploy/**",
         ]
         self.assertIn("paths:", workflow)
         for path in required_paths:
             self.assertIn(f'      - "{path}"', workflow)
 
         for non_image_input in (
+            ".github/workflows/simple-deploy.yml",
+            ".simple-deploy.json",
+            "deploy/**",
+            "deploy/chat-to-drive-ingestion.json",
+            "deploy/docker-compose.simple.yml",
             "requirements-build.txt",
             "metadata/**",
             "originals/**",
