@@ -4,17 +4,15 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/simple-deploy.yml"
-      - ".simple-deploy.json"
       - "Dockerfile"
       - "tools/coloring-pages-import"
+      - "deploy/nginx.conf"
       - "index.html"
       - "detail.html"
       - "print.html"
       - "css/**"
       - "js/**"
       - "assets/**"
-      - "deploy/**"
 
 permissions:
   contents: read
