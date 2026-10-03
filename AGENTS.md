@@ -52,6 +52,14 @@ Command behavior:
 - `turpini` — continue the exact same safe scope; it creates no merge, LIVE, retry, rollback, cleanup, credential, permission, settings or runtime authority.
 - `AUDIT-HANDOFF coloring-pages` — explicit deeper continuity audit; do not turn ordinary START/SYNC into a repo-wide historical scan.
 
+Content creation conversation commands:
+
+- `MAKE <subject>` — immediately generate one original coloring-page candidate using the canonical media/art standard; everything after `MAKE` is the subject or scene.
+- `REMAKE` — generate a new composition for the same subject without approving or publishing it.
+- `EDIT <instruction>` — edit the exact latest generated candidate; it remains unapproved until a separate `PUBLISH`.
+- `PUBLISH` — explicit owner approval of the exact latest generated image in the current conversation. Before the first content mutation, freeze page ID, SHA-256 and byte size, then use only the bounded Chat-to-Drive → trusted RPi5 verify/import → public verification path. It never authorizes overwrite, Drive archive/delete, app deploy, Cloudflare/network, secrets/permissions, cleanup, rollback or an alternate path.
+- Detailed command contract: `docs/CHAT_IMAGE_COMMANDS_V1.md`.
+
 GitHub write discipline:
 
 - Before a branch, PR, issue, comment or metadata write, use minimum-sufficient read-only preflight and reconcile an already-existing exact intended object instead of blindly duplicating it.
