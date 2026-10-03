@@ -66,6 +66,19 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertTrue(staging["exact_source_bytes_required"])
         self.assertTrue(staging["preupload_sha256_required"])
         self.assertTrue(staging["category_binding_required_before_upload"])
+        self.assertTrue(staging["manifest_materialization_required_before_first_mutation"])
+        self.assertTrue(staging["manifest_validation_required_before_first_mutation"])
+        self.assertTrue(staging["manifest_preparation_after_image_upload_forbidden"])
+        self.assertEqual(
+            staging["preflight_order"],
+            [
+                "freeze-id-sha256-size-category-and-metadata",
+                "materialize-manifest-locally",
+                "validate-manifest-locally",
+                "upload-image",
+                "upload-manifest",
+            ],
+        )
 
     def test_manifest_contract_binds_integrity_and_importer_metadata(self):
         manifest = self.contract["manifest"]
