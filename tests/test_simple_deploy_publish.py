@@ -101,6 +101,30 @@ class SimpleDeployPublishTests(unittest.TestCase):
         self.assertIn("branches: [main]", workflow)
         self.assertIn("source_sha: ${{ github.sha }}", workflow)
 
+    def test_release_authority_documents_bounded_auto_live(self):
+        agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        simple_deploy = (ROOT / "docs/SIMPLE_DEPLOY.md").read_text(
+            encoding="utf-8"
+        )
+        chat_to_drive = (ROOT / "docs/CHAT_TO_DRIVE_INGESTION_V1.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("bounded application auto-LIVE flow", agents)
+        self.assertIn("coloring-pages-public-rpi5", simple_deploy)
+        self.assertIn("to LIVE automatically", readme)
+        self.assertIn(
+            "No second generic `AUTHORIZE LIVE` command is required",
+            chat_to_drive,
+        )
+
+        self.assertNotIn("A merge never authorizes RPi5 deployment", agents)
+        self.assertNotIn(
+            "No repository source change grants LIVE authority",
+            simple_deploy,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
