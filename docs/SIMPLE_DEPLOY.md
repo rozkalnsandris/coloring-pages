@@ -45,6 +45,8 @@ That RPi5-side mapping and any filesystem/runtime mutation remain separate owner
 
 The content lane is deliberately separate. Changes to the Chat-to-Drive contract, metadata, documentation, tests, Compose source, SIMPLE-DEPLOY manifest or the workflow definition itself do not mint a new application image on their own. Production coloring-page media is imported through Drive/RPi5 and does not require application rebuild or redeploy.
 
+The application-image workflow may publish automatically after an eligible `main` merge. That publication is registry work only; RPi5 deployment/redeployment remains governed by the separate LIVE/runtime authority boundary.
+
 The reusable workflow remains pinned to:
 
 `rozkalnsandris/ops-workflows/.github/workflows/simple-deploy.yml@94187cc447fc80757db10ac25d49717d00dc8430`

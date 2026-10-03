@@ -96,19 +96,20 @@ V1 source requirements:
 
 The generated PNG is preserved byte-for-byte as `source.png`.
 
-## One-command import
+## Daily content import
 
 Repository source tool: `tools/coloring-pages-import`.
 
-The production importer runtime is embedded in the immutable Coloring Pages image. A trusted RPi5 wrapper may later expose the daily command:
+The production path is activated and uses two reviewed RPi5 operator layers:
 
-```bash
-coloring-pages-import /srv/coloring-pages-content/inbox/fire-pup-001.png
-```
+1. the Drive-ingest operator verifies the exact staged manifest, byte size and SHA-256, then atomically publishes the PNG into `inbox/`;
+2. the importer wrapper runs the immutable Coloring Pages image under the isolation contract in `deploy/importer-runtime.json`.
 
-The wrapper must use the exact reviewed image digest and isolation contract from `deploy/importer-runtime.json`. Host Python/Pillow installation is not required. Installing the wrapper and executing production imports remain outside source-only authority.
+The first end-to-end production import passed on 2026-10-03. That is historical activation evidence only; each future content import remains separately owner-authorized for the exact page ID, SHA-256 and byte size.
 
-The importer may accept metadata flags, but filename-derived defaults keep the one-image path simple.
+Host Python/Pillow installation is not required. Installing/replacing operator wrappers and executing production imports remain outside source-only authority.
+
+The importer may accept metadata flags, but manifest metadata keeps the normal Drive-ingest path explicit and deterministic.
 
 The importer requires the pre-created content-store layout and accepts only direct files from `inbox/`.
 
