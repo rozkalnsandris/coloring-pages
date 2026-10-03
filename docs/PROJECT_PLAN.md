@@ -16,7 +16,7 @@ V1 remains intentionally small:
 - plain CSS
 - vanilla JavaScript
 - JSON catalogue
-- Python/Pillow host-side importer
+- Python/Pillow importer embedded in the immutable application image
 - Docker
 - `nginx-unprivileged`
 - Raspberry Pi 5 runtime
@@ -98,15 +98,19 @@ The generated PNG is preserved byte-for-byte as `source.png`.
 
 ## One-command import
 
-Repository tool:
+Repository source tool: `tools/coloring-pages-import`.
+
+The production importer runtime is embedded in the immutable Coloring Pages image. A trusted RPi5 wrapper may later expose the daily command:
 
 ```bash
-python3 tools/coloring-pages-import /srv/coloring-pages-content/inbox/fire-pup-001.png
+coloring-pages-import /srv/coloring-pages-content/inbox/fire-pup-001.png
 ```
 
-During LIVE installation this tool may be exposed as the convenience command `coloring-pages-import`; that host installation is outside source-only authority.
+The wrapper must use the exact reviewed image digest and isolation contract from `deploy/importer-runtime.json`. Host Python/Pillow installation is not required. Installing the wrapper and executing production imports remain outside source-only authority.
 
 The importer may accept metadata flags, but filename-derived defaults keep the one-image path simple.
+
+The importer requires the pre-created content-store layout and accepts only direct files from `inbox/`.
 
 The importer:
 
