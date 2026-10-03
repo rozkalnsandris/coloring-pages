@@ -25,7 +25,7 @@ This repository owns the Coloring Pages application source, importer contract an
 ## FAST-LANE v2.3 — lightweight adoption
 
 This repository adopts the shared FAST-LANE v2.3 / Agent Work Cycle behavior from
-`rozkalnsandris/ops-workflows@94187cc447fc80757db10ac25d49717d00dc8430`.
+`rozkalnsandris/ops-workflows@1d982675a95383aa23cfadd3cd3203a08d2ecfd3`.
 
 Canonical shared surfaces at that accepted revision:
 
@@ -40,7 +40,7 @@ Use the lightweight profile deliberately:
 - `AGENTS.md` stays the compact repository-local routing and rules surface.
 - Do not add a local `.github/agent-bootstrap.json` merely for fleet uniformity while this file remains small and unambiguous; the shared bootstrap contract explicitly permits repository-local fallback.
 - AUTO-RUN FULL single-issue v2 is explicitly adopted through `.github/source-only-full.json` and controller issue #5; Queue mode and GITHUB-ONLY compatibility state remain unadopted.
-- Current automation profile is FAST source work plus owner-command-only source-only AUTO-RUN FULL through Ready for review. Planned SIMPLE-DEPLOY is not activated by this adoption.
+- Current automation profile is FAST source work plus owner-command-only source-only AUTO-RUN FULL through Ready for review. SIMPLE-DEPLOY image publication is configured separately; this FAST-LANE/AUTO-RUN adoption does not grant LIVE authority.
 - Repository-local rules in this file remain authoritative when they are stricter than shared policy.
 
 Command behavior:
@@ -61,7 +61,7 @@ GitHub write discipline:
 
 Machine contract: `.github/source-only-full.json`.
 Durable controller: issue #5.
-Shared normalized state contract: `rozkalnsandris/ops-workflows@94187cc447fc80757db10ac25d49717d00dc8430`.
+Shared normalized state contract: `rozkalnsandris/ops-workflows@1d982675a95383aa23cfadd3cd3203a08d2ecfd3`.
 
 - AUTO-RUN FULL is off by default. The only activation form is a fresh explicit owner command for one open issue: `AUTO-RUN FULL coloring-pages #<issue>`.
 - Issue creation, issue text, labels, `START`, `SYNC`, `turpini` and FAST-LANE do not activate FULL.
@@ -139,9 +139,9 @@ Default V1 source artwork standard:
 
 - This repository owns the application origin.
 - `rozkalnsandris/RPi5_main` owns shared RPi5 ingress/tunnel policy and runtime coordination.
-- Planned public hostname: `coloring.rozkalns.net`.
-- Desired public origin class: loopback.
-- Until fresh authorized runtime evidence exists, do not claim a current LIVE origin state.
+- Configured public hostname: `coloring.rozkalns.net`.
+- Expected public origin class: loopback.
+- Source records configuration intent only; current LIVE deployment, health and deployed revision must always be read fresh from RPi5/runtime evidence.
 
 ## V1 product priority
 
