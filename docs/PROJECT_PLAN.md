@@ -146,13 +146,21 @@ The existing frontend keeps fetching `catalog.json`. New content therefore does 
 
 ## Runtime mount
 
-Compose binds only:
+The SIMPLE-DEPLOY consumer contract exposes one stable persistence identity:
 
 ```text
-/srv/coloring-pages-content/public
+coloring_pages_content
 → /var/lib/coloring-pages/public
 → read-only
 ```
+
+The consumer manifest intentionally does not carry an arbitrary host path. The trusted `RPi5_main` adapter must separately map `coloring_pages_content` to the approved host content path:
+
+```text
+/srv/coloring-pages-content/public
+```
+
+That RPi5-side mapping is a separate source/LIVE boundary.
 
 nginx maps:
 
