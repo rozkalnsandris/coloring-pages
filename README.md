@@ -19,9 +19,9 @@ generate PNG in ChatGPT
 → determine one valid category from metadata/categories.json
 → fully materialize + validate the manifest before any Drive write
 → stage exact PNG first, then the prebuilt manifest in Google Drive
-→ trusted RPi5 operator pulls and verifies it
+→ trusted RPi5 publish operator pulls and verifies it
 → atomically publish verified PNG into /srv/coloring-pages-content/inbox/
-→ run coloring-pages-import
+→ directly run the immutable importer image
 → verify catalogue, derivatives and public URLs
 ```
 
