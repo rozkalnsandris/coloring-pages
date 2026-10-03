@@ -21,7 +21,7 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertEqual(contract["health"]["readiness"]["path"], "/ready")
         self.assertEqual(
             contract["persistence"]["volumes"],
-            ["/srv/coloring-pages-content/public:/var/lib/coloring-pages/public:ro"],
+            ["coloring_pages_content"],
         )
 
     def test_compose_mounts_only_public_content_read_only(self):
@@ -33,10 +33,12 @@ class RuntimeContractTests(unittest.TestCase):
             "- ALL",
             "tmpfs:",
             "http://127.0.0.1:8080/ready",
-            "/srv/coloring-pages-content/public",
-            "/var/lib/coloring-pages/public",
+            "coloring_pages_content:/var/lib/coloring-pages/public:ro",
+            "volumes:",
+            "coloring_pages_content:",
         ):
             self.assertIn(required, compose)
+        self.assertNotIn("/srv/coloring-pages-content/public", compose)
         self.assertNotIn("/srv/coloring-pages-content/inbox", compose)
         self.assertNotIn("/srv/coloring-pages-content/originals", compose)
         self.assertNotIn("/srv/coloring-pages-content/state", compose)
