@@ -23,6 +23,8 @@ generate PNG in ChatGPT
 → verify catalogue, derivatives and public URLs
 ```
 
+This path is production-activated. The first owner-authorized end-to-end import passed on 2026-10-03. That activation record is historical continuity only: each future content import remains separately owner-authorized and exact-ID/hash/size bound.
+
 The application keeps the simple V1 journey:
 
 **find → preview → print**

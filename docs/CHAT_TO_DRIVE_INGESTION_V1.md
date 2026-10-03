@@ -100,6 +100,24 @@ Before this path is activated for production, run one separately authorized non-
 
 A mismatch, conversion or re-encode blocks activation.
 
+## Production activation evidence
+
+The path is now production-activated.
+
+The first owner-authorized production import completed successfully on 2026-10-03 with:
+
+- ID: `bauarbeiter-hund-001`;
+- source size: `1258789` bytes;
+- SHA-256: `d3162381a26ba47d847d28f6dc6349efa003f69807f4e902f8d116634130e8df`;
+- trusted runtime owner: `rozkalnsandris/RPi5_main`;
+- runtime revision used for the successful import: `d663073e4a0b7e33bba3b73b84643b4035839640`;
+- success receipt present;
+- original and public source bytes matching the approved size and SHA-256;
+- exactly one matching catalogue entry;
+- all five required public verification URLs returning HTTP 200.
+
+This is historical activation evidence, not current LIVE authorization. Every future production import still requires fresh owner authorization for the exact page ID, SHA-256 and byte size. Drive archive/delete remains a separate owner-gated mutation.
+
 ## RPi5 pull and publish sequence
 
 The host implementation belongs in `RPi5_main`, not this repository.

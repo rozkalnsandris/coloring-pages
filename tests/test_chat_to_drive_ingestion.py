@@ -18,7 +18,7 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
             self.contract["schema"],
             "rozkalns.coloring-pages.chat-to-drive-ingestion.v1",
         )
-        self.assertEqual(self.contract["status"], "source-defined-not-activated")
+        self.assertEqual(self.contract["status"], "production-activated")
         self.assertEqual(self.contract["canonical_domains"]["drive_role"], "transport-only")
         authority = self.contract["authority"]
         self.assertFalse(authority["source_merge_authorizes_drive_upload"])
@@ -27,6 +27,29 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertFalse(authority["source_merge_authorizes_production_import"])
         self.assertFalse(authority["source_merge_authorizes_drive_archive_or_delete"])
         self.assertTrue(authority["live_content_import_requires_fresh_owner_authorization"])
+
+    def test_activation_evidence_records_first_production_pass(self):
+        evidence = self.contract["activation_evidence"]
+        self.assertEqual(evidence["activated_at"], "2026-10-03")
+        self.assertEqual(
+            evidence["proof_class"],
+            "first-owner-authorized-production-import",
+        )
+        self.assertEqual(evidence["id"], "bauarbeiter-hund-001")
+        self.assertEqual(
+            evidence["sha256"],
+            "d3162381a26ba47d847d28f6dc6349efa003f69807f4e902f8d116634130e8df",
+        )
+        self.assertEqual(evidence["size_bytes"], 1258789)
+        self.assertEqual(evidence["runtime_owner"], "rozkalnsandris/RPi5_main")
+        self.assertEqual(
+            evidence["runtime_revision"],
+            "d663073e4a0b7e33bba3b73b84643b4035839640",
+        )
+        self.assertTrue(evidence["receipt_present"])
+        self.assertEqual(evidence["catalog_match_count"], 1)
+        self.assertEqual(evidence["required_public_url_count"], 5)
+        self.assertEqual(evidence["required_public_http_status"], 200)
 
     def test_drive_staging_requires_exact_blob_bytes_and_manifest_last(self):
         staging = self.contract["drive_staging"]

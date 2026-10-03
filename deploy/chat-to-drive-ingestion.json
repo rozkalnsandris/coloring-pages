@@ -1,9 +1,22 @@
 {
   "schema": "rozkalns.coloring-pages.chat-to-drive-ingestion.v1",
   "schema_version": 1,
-  "status": "source-defined-not-activated",
+  "status": "production-activated",
   "repository": "rozkalnsandris/coloring-pages",
   "purpose": "Transfer one owner-approved ChatGPT-generated PNG through Google Drive into the canonical RPi5 content store without changing the application deployment.",
+  "activation_evidence": {
+    "activated_at": "2026-10-03",
+    "proof_class": "first-owner-authorized-production-import",
+    "id": "bauarbeiter-hund-001",
+    "sha256": "d3162381a26ba47d847d28f6dc6349efa003f69807f4e902f8d116634130e8df",
+    "size_bytes": 1258789,
+    "runtime_owner": "rozkalnsandris/RPi5_main",
+    "runtime_revision": "d663073e4a0b7e33bba3b73b84643b4035839640",
+    "receipt_present": true,
+    "catalog_match_count": 1,
+    "required_public_url_count": 5,
+    "required_public_http_status": 200
+  },
   "authority": {
     "source_merge_authorizes_drive_upload": false,
     "source_merge_authorizes_drive_download": false,
