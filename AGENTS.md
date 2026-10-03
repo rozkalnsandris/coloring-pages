@@ -56,8 +56,8 @@ Content creation conversation commands:
 
 - `MAKE <subject>` — immediately generate one original coloring-page candidate using the canonical media/art standard; everything after `MAKE` is the subject or scene.
 - `REMAKE` — generate a new composition for the same subject without approving or publishing it.
-- `EDIT <instruction>` — edit the exact latest generated candidate; it remains unapproved until a separate `OK`.
-- `OK` — explicit owner approval of the exact latest generated image in the current conversation. Before the first content mutation, freeze page ID, SHA-256, byte size **and one valid category**. Select the category automatically when exactly one current category clearly fits; if classification is ambiguous or none fits, STOP before Drive staging and ask the owner to choose or add a category. Then use only the bounded Chat-to-Drive → trusted RPi5 verify/import → public verification path. It never authorizes overwrite, Drive archive/delete, app deploy, Cloudflare/network, secrets/permissions, cleanup, rollback or an alternate path.
+- `EDIT <instruction>` — edit the exact latest generated candidate; it remains unapproved until a separate `PUBLISH`.
+- `PUBLISH` — explicit owner approval of the exact latest generated image in the current conversation. Before the first content mutation, freeze page ID, SHA-256, byte size **and one valid category**. Select the category automatically when exactly one current category clearly fits; if classification is ambiguous or none fits, STOP before Drive staging and ask the owner to choose or add a category. Then use only the bounded Chat-to-Drive → trusted RPi5 verify/import → public verification path. `OK` is an ordinary acknowledgement and never grants publication authority. It never authorizes overwrite, Drive archive/delete, app deploy, Cloudflare/network, secrets/permissions, cleanup, rollback or an alternate path.
 - Current category IDs are defined canonically in `metadata/categories.json`; no silent fallback/default category is allowed.
 - Detailed command contract: `docs/CHAT_IMAGE_COMMANDS_V1.md`.
 
