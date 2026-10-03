@@ -56,8 +56,8 @@ Content creation conversation commands:
 
 - `MAKE <subject>` — immediately generate one original coloring-page candidate using the canonical media/art standard; everything after `MAKE` is the subject or scene.
 - `REMAKE` — generate a new composition for the same subject without approving or publishing it.
-- `EDIT <instruction>` — edit the exact latest generated candidate; it remains unapproved until a separate `PUBLISH`.
-- `PUBLISH` — explicit owner approval of the exact latest generated image in the current conversation. Before the first content mutation, freeze page ID, SHA-256 and byte size, then use only the bounded Chat-to-Drive → trusted RPi5 verify/import → public verification path. It never authorizes overwrite, Drive archive/delete, app deploy, Cloudflare/network, secrets/permissions, cleanup, rollback or an alternate path.
+- `EDIT <instruction>` — edit the exact latest generated candidate; it remains unapproved until a separate `OK`.
+- `OK` — explicit owner approval of the exact latest generated image in the current conversation. Before the first content mutation, freeze page ID, SHA-256 and byte size, then use only the bounded Chat-to-Drive → trusted RPi5 verify/import → public verification path. It never authorizes overwrite, Drive archive/delete, app deploy, Cloudflare/network, secrets/permissions, cleanup, rollback or an alternate path.
 - Detailed command contract: `docs/CHAT_IMAGE_COMMANDS_V1.md`.
 
 GitHub write discipline:
