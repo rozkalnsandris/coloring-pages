@@ -52,10 +52,10 @@ Coloring_pages/
 ├── pending/
 │   ├── <id>.png
 │   └── <id>.json
-└── processed/
+└── processed/   # optional; used only after separately authorized archive
 ```
 
-The visible folder name is convenience only. A future LIVE operator must bind an exact Drive folder ID in trusted `RPi5_main` configuration. Runtime selection by folder title alone is forbidden.
+The visible folder name is convenience only. The trusted LIVE operator must bind an exact Drive folder ID in `RPi5_main` configuration. Runtime selection by folder title alone is forbidden.
 
 The PNG is uploaded first. The matching JSON manifest is uploaded last and acts as the readiness signal, so a half-uploaded PNG is never eligible for import.
 
@@ -88,9 +88,9 @@ Example:
 
 Unknown manifest fields fail closed. Metadata values must stay inside the importer-supported age, difficulty and language sets.
 
-## Integrity canary before activation
+## Historical activation canary
 
-Before this path is activated for production, run one separately authorized non-production canary:
+Production activation required one separately authorized non-production canary:
 
 1. take one generated PNG and calculate its SHA-256 before upload;
 2. upload that exact file as a normal Drive blob;
@@ -156,13 +156,13 @@ No application rebuild, redeploy or restart is required merely to publish one ne
 
 ## Drive post-success handling
 
-Moving the PNG+manifest pair from `pending/` to `processed/` is useful for queue hygiene, but it is a separate Drive mutation and requires whatever fresh authority the future runtime operation defines.
+Moving the PNG+manifest pair from `pending/` to `processed/` is optional queue hygiene and is a separate Drive mutation requiring fresh authority. A successfully imported pair may therefore remain in `pending/`; the matching success receipt and SHA-256 make a repeat import idempotent.
 
-A Drive archive failure must not rewrite or roll back a production import that has already passed. Production remains canonical on RPi5.
+A Drive archive failure or an intentionally deferred archive must not rewrite or roll back a production import that has already passed. Production remains canonical on RPi5.
 
 ## Intended user experience
 
-After the transport canary and trusted host operator are activated, the human workflow should be:
+With the transport canary and trusted host operator activated, the normal human workflow is:
 
 ```text
 User: "Liekam iekšā."
@@ -174,4 +174,4 @@ ChatGPT: freeze exact approved image + manifest
 ChatGPT: report PASS or STOP
 ```
 
-The owner approval is content authority for that exact image only when the future LIVE command explicitly binds the file/hash/ID and the runtime operation.
+The owner approval is content authority for that exact image only when the LIVE command explicitly binds the file/hash/ID and the runtime operation.
