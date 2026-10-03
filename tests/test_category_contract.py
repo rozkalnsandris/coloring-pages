@@ -33,7 +33,6 @@ class CategoryContractTests(unittest.TestCase):
         self.assertEqual(
             ids,
             [
-                "rettungshunde",
                 "tiere",
                 "fahrzeuge",
                 "alphabet",
