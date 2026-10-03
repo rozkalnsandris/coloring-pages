@@ -53,7 +53,17 @@
     "manifest_is_readiness_signal": true,
     "exact_source_bytes_required": true,
     "preupload_sha256_required": true,
-    "category_binding_required_before_upload": true
+    "category_binding_required_before_upload": true,
+    "manifest_materialization_required_before_first_mutation": true,
+    "manifest_validation_required_before_first_mutation": true,
+    "manifest_preparation_after_image_upload_forbidden": true,
+    "preflight_order": [
+      "freeze-id-sha256-size-category-and-metadata",
+      "materialize-manifest-locally",
+      "validate-manifest-locally",
+      "upload-image",
+      "upload-manifest"
+    ]
   },
   "manifest": {
     "schema": "rozkalns.coloring-pages.drive-staging-manifest.v1",
