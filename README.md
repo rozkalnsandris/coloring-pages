@@ -17,7 +17,8 @@ Daily content flow:
 generate PNG in ChatGPT
 → owner approves exact image
 → determine one valid category from metadata/categories.json
-→ stage exact PNG + SHA-256 manifest in Google Drive
+→ fully materialize + validate the manifest before any Drive write
+→ stage exact PNG first, then the prebuilt manifest in Google Drive
 → trusted RPi5 operator pulls and verifies it
 → atomically publish verified PNG into /srv/coloring-pages-content/inbox/
 → run coloring-pages-import
