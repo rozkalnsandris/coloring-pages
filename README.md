@@ -9,14 +9,18 @@ Application source and media content are deliberately separated:
 - **GitHub** is canonical for HTML/CSS/JavaScript, importer/tooling, schemas, tests, Docker/nginx source and operational documentation.
 - **RPi5 content store** is canonical for coloring-page PNG originals, generated web/print derivatives and the live `catalog.json`.
 - Production coloring-page image binaries are **not committed to GitHub**.
+- **Google Drive** may be used only as a bounded transport/staging queue for owner-approved ChatGPT-generated PNGs; it is not a production source of truth.
 
 Daily content flow:
 
 ```text
-generate PNG
-→ copy to /srv/coloring-pages-content/inbox/
+generate PNG in ChatGPT
+→ owner approves exact image
+→ stage exact PNG + SHA-256 manifest in Google Drive
+→ trusted RPi5 operator pulls and verifies it
+→ atomically publish verified PNG into /srv/coloring-pages-content/inbox/
 → run coloring-pages-import
-→ catalogue entry becomes visible
+→ verify catalogue, derivatives and public URLs
 ```
 
 The application keeps the simple V1 journey:
@@ -48,9 +52,10 @@ Only `public/` is exposed to the nginx container, read-only. The consumer contra
 - [V1 project plan](docs/PROJECT_PLAN.md)
 - [Media Standard v1](docs/MEDIA_STANDARD_V1.md)
 - [Importer Runtime v1](docs/IMPORTER_RUNTIME_V1.md)
+- [Chat-to-Drive ingestion v1](docs/CHAT_TO_DRIVE_INGESTION_V1.md)
 - [SIMPLE-DEPLOY publication contract](docs/SIMPLE_DEPLOY.md)
 - [UI mockups](docs/mockups/README.md)
 
 ## Authorization boundary
 
-GitHub source work, merge, application deployment, RPi5 content-store mutation and public ingress are separate authority boundaries. A source merge never authorizes content import or any LIVE mutation.
+GitHub source work, merge, Drive staging, RPi5 content-store mutation, application deployment and public ingress are separate authority boundaries. A source merge never authorizes a Drive upload, content import or any other LIVE mutation.
