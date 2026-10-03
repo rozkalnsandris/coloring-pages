@@ -34,7 +34,7 @@ The importer accepts a source only when it resolves to a direct child of:
 /srv/coloring-pages-content/inbox/
 ```
 
-It rejects a source outside the inbox, a nested inbox source, a missing content root, missing required directories or a missing published `catalog.json`.
+It rejects a source outside the inbox, a nested inbox source, a missing content root, missing required directories or a missing published `catalog.json`. It also requires an explicit `--category` whose ID exists in `metadata/categories.json`; there is no implicit default category.
 
 The importer does not bootstrap host directories. Content-store creation is a separate trusted RPi5 operation.
 
@@ -53,7 +53,7 @@ See [Chat-to-Drive ingestion v1](CHAT_TO_DRIVE_INGESTION_V1.md).
 After the trusted RPi5 wrapper is installed, the intended daily importer command remains:
 
 ```bash
-coloring-pages-import /srv/coloring-pages-content/inbox/fire-pup-001.png
+coloring-pages-import /srv/coloring-pages-content/inbox/fire-pup-001.png --category rettungshunde
 ```
 
 The wrapper is host-control policy and therefore belongs to the trusted `RPi5_main` runtime boundary. It must supply the exact immutable image digest and the isolation flags from `deploy/importer-runtime.json`.
