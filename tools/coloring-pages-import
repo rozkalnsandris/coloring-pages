@@ -17,7 +17,8 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 
 ID_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 A4_RATIO = 210 / 297
-ASPECT_TOLERANCE = 0.04
+MIN_SOURCE_RATIO = 2 / 3
+MAX_SOURCE_RATIO = A4_RATIO + 0.04
 MIN_SOURCE_WIDTH = 800
 MIN_SOURCE_HEIGHT = 1100
 THUMB_MAX_WIDTH = 400
@@ -129,9 +130,9 @@ def open_validated_source(path: Path) -> Image.Image:
             f"source must be at least {MIN_SOURCE_WIDTH}x{MIN_SOURCE_HEIGHT} pixels"
         )
     ratio = image.width / image.height
-    if abs(ratio - A4_RATIO) > ASPECT_TOLERANCE:
+    if not MIN_SOURCE_RATIO <= ratio <= MAX_SOURCE_RATIO:
         raise ImportError(
-            f"source must be approximately A4 portrait ratio; got {image.width}x{image.height}"
+            f"source must be approximately A4/2:3 portrait ratio; got {image.width}x{image.height}"
         )
 
     corners = (
