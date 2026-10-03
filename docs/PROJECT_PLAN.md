@@ -109,7 +109,7 @@ The first end-to-end production import passed on 2026-10-03. That is historical 
 
 Host Python/Pillow installation is not required. Installing/replacing operator wrappers and executing production imports remain outside source-only authority.
 
-The importer may accept metadata flags, but manifest metadata keeps the normal Drive-ingest path explicit and deterministic.
+The importer may accept metadata flags, but manifest metadata keeps the normal Drive-ingest path explicit and deterministic. Category is mandatory and must match the canonical registry in `metadata/categories.json`; unknown/free-text categories fail closed before publication.
 
 The importer requires the pre-created content-store layout and accepts only direct files from `inbox/`.
 
