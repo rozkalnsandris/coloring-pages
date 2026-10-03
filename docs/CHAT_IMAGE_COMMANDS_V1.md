@@ -10,7 +10,7 @@ Normal happy path:
 MAKE lapsa
 → ChatGPT generates one coloring-page PNG candidate
 → owner visually approves the exact latest generated image
-PUBLISH
+OK
 → freeze page ID + SHA-256 + byte size
 → Drive staging
 → trusted RPi5 verify/import
@@ -74,9 +74,9 @@ EDIT noņem mākoni labajā augšējā stūrī
 
 The edited result becomes the latest candidate. `EDIT` is not publication approval.
 
-### `PUBLISH`
+### `OK`
 
-`PUBLISH` is explicit owner approval of the exact latest generated image in the current conversation.
+`OK` is explicit owner approval of the exact latest generated image in the current conversation.
 
 Before the first content mutation, the operator must freeze:
 
@@ -97,7 +97,7 @@ exact approved PNG
 → public catalogue/media verification
 ```
 
-`PUBLISH` does **not** authorize:
+`OK` does **not** authorize:
 
 - a different generated image;
 - overwrite of an existing page ID;
@@ -117,7 +117,7 @@ The intended human interaction is deliberately terse:
 User: MAKE lapsa
 Assistant: [generated image]
 
-User: PUBLISH
+User: OK
 Assistant: [freeze exact identity, execute bounded ingest, report PASS or STOP]
 ```
 
@@ -133,7 +133,13 @@ or:
 User: EDIT vienkāršāks fons
 ```
 
-Because the image-generation surface may return the generated image without an additional text message, the owner should treat `PUBLISH` as the stable next command whenever the displayed result is accepted.
+Because the image-generation surface may return the generated image without an additional text message, the owner should treat `OK` as the stable next command whenever the displayed result is accepted.
+
+The four commands to remember are:
+
+```text
+MAKE / REMAKE / EDIT / OK
+```
 
 ## Relationship to existing contracts
 
