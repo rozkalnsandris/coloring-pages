@@ -44,3 +44,9 @@ The current V1 category IDs are:
 - `jahreszeiten`
 
 A production record must use exactly one registered category. The importer rejects unknown category IDs, and category selection must be bound before Drive staging. Future categories are added through a reviewed source change that keeps the registry and public category UI aligned.
+
+## Published file mode
+
+The live `public/catalog.json` must remain readable by the unprivileged nginx container. Every atomic catalogue replacement performed by repository-owned tooling must publish the replacement with mode `0644` before the final `os.replace()`.
+
+A temporary file mode such as `0600` must never become the final published catalogue, because nginx runs as a different unprivileged UID and would return HTTP 403 for `/catalog.json`.
