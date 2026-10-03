@@ -45,7 +45,11 @@ That RPi5-side mapping and any filesystem/runtime mutation remain separate owner
 
 The content lane is deliberately separate. Changes to the Chat-to-Drive contract, metadata, documentation, tests, Compose source, SIMPLE-DEPLOY manifest or the workflow definition itself do not mint a new application image on their own. Production coloring-page media is imported through Drive/RPi5 and does not require application rebuild or redeploy.
 
-The application-image workflow may publish automatically after an eligible `main` merge. That publication is registry work only; RPi5 deployment/redeployment remains governed by the separate LIVE/runtime authority boundary.
+After an owner-authorized eligible `main` merge, this application lane is allowed to continue automatically through the reviewed release chain:
+
+`merge → immutable GHCR image → :production pointer → RPi5 SIMPLE-DEPLOY reconcile → container deploy/redeploy/restart → /health + /ready verification`.
+
+That authority is limited to the exact merged `main` SHA, its immutable image digest, target `coloring-pages-public-rpi5`, the reviewed Compose/runtime/mount contract and the existing SIMPLE-DEPLOY verifier.
 
 The reusable workflow remains pinned to:
 
@@ -53,4 +57,6 @@ The reusable workflow remains pinned to:
 
 ## Authority boundary
 
-Image publication, merge, RPi5 deployment, creation of the content store, importing artwork, Docker restart/redeploy and Cloudflare/DNS/tunnel work are separate operations. No repository source change grants LIVE authority.
+The application auto-LIVE exception does not authorize Cloudflare/DNS/tunnel work, secrets/credentials, permissions/ownership, repository settings, host package installation, production content mutation, Drive mutation, cleanup, rollback or an alternate deployment path.
+
+Content publication is a separate lane and does not rebuild/redeploy the application. Manual deploy/restart or any runtime mutation outside the reviewed auto-LIVE flow still requires separate explicit owner authorization.
