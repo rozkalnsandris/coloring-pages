@@ -38,6 +38,7 @@ class CategoryContractTests(unittest.TestCase):
                 "fahrzeuge",
                 "alphabet",
                 "lernen",
+                "figuren",
                 "jahreszeiten",
             ],
         )
