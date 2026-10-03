@@ -58,7 +58,9 @@ Coloring_pages/
 
 The visible folder name is convenience only. The trusted LIVE operator must bind an exact Drive folder ID in `RPi5_main` configuration. Runtime selection by folder title alone is forbidden.
 
-The PNG is uploaded first. The matching JSON manifest is uploaded last and acts as the readiness signal, so a half-uploaded PNG is never eligible for import.
+Before the first Drive mutation, both staging artifacts must already be ready locally: the exact PNG identity/metadata must be frozen, the complete `<id>.json` manifest must be materialized, and that manifest must be parsed/validated against this contract. Manifest preparation after the PNG upload is forbidden.
+
+Only after that preflight passes are Drive writes allowed. The PNG is still uploaded first and the already-prepared matching JSON manifest is uploaded last. The manifest therefore remains the readiness signal, while file-generation or JSON-validation failures happen before any Drive mutation.
 
 ## Manifest
 
