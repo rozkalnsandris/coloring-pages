@@ -11,7 +11,7 @@ This repository is a SIMPLE-DEPLOY v1 consumer for the static application image.
 - runtime class: `rpi5-compose`
 - pull profile: `public-anonymous-pull`
 
-The image contains only the application shell: HTML/CSS/JS/assets and nginx configuration. Production coloring-page binaries and the live catalogue are not baked into the image.
+The image contains the application shell plus the isolated importer runtime (`python3`, Pillow and `/usr/local/bin/coloring-pages-import`). Production coloring-page binaries and the live catalogue are not baked into the image. The long-running nginx service still receives only the public content surface, read-only.
 
 ## Required content persistence identity
 
@@ -35,7 +35,7 @@ That RPi5-side mapping and any filesystem/runtime mutation remain separate owner
 
 ## Publication
 
-`.github/workflows/simple-deploy.yml` publishes application images only when application/deployment inputs change. Media importer/content changes do not need to mint a new application image.
+`.github/workflows/simple-deploy.yml` publishes the immutable application image when application/deployment inputs or `tools/coloring-pages-import` change. Production media content changes do not mint a new image and do not require application redeploy.
 
 The reusable workflow remains pinned to:
 
