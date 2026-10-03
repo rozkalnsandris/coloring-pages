@@ -25,7 +25,9 @@
     "source_merge_authorizes_drive_archive_or_delete": false,
     "source_merge_authorizes_credentials_or_settings_mutation": false,
     "live_content_import_requires_fresh_owner_authorization": true,
-    "category_binding_required_before_first_mutation": true
+    "category_binding_required_before_first_mutation": true,
+    "publication_command": "PUBLISH",
+    "ok_is_publication_authority": false
   },
   "canonical_domains": {
     "application_source": "github",
