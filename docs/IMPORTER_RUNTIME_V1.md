@@ -38,9 +38,19 @@ It rejects a source outside the inbox, a nested inbox source, a missing content 
 
 The importer does not bootstrap host directories. Content-store creation is a separate trusted RPi5 operation.
 
+## Chat-to-Drive staging boundary
+
+Google Drive staging does not change the importer trust model.
+
+The transport contract in `deploy/chat-to-drive-ingestion.json` requires a trusted RPi5 operator to pull the staged PNG outside the inbox, verify its manifest, size and SHA-256, then atomically rename the verified file into the inbox. The importer never receives Drive credentials and remains networkless.
+
+The host-side rclone binding and execution belong to `rozkalnsandris/RPi5_main`. This repository only defines the consumer contract.
+
+See [Chat-to-Drive ingestion v1](CHAT_TO_DRIVE_INGESTION_V1.md).
+
 ## One-command operator model
 
-After the trusted RPi5 wrapper is installed, the intended daily command is:
+After the trusted RPi5 wrapper is installed, the intended daily importer command remains:
 
 ```bash
 coloring-pages-import /srv/coloring-pages-content/inbox/fire-pup-001.png
@@ -48,7 +58,7 @@ coloring-pages-import /srv/coloring-pages-content/inbox/fire-pup-001.png
 
 The wrapper is host-control policy and therefore belongs to the trusted `RPi5_main` runtime boundary. It must supply the exact immutable image digest and the isolation flags from `deploy/importer-runtime.json`.
 
-The repository does not authorize installing that wrapper, running Docker or importing production media.
+The repository does not authorize installing that wrapper, running Docker, downloading Drive content or importing production media.
 
 ## Publication
 
@@ -63,6 +73,8 @@ Publishing a new image does not itself import media. Once an approved importer i
 
 ## Host dependencies
 
-The intended host dependency is Docker only.
+The importer runtime itself requires Docker only.
+
+A future Chat-to-Drive transport operator additionally uses host-managed rclone under the trusted `RPi5_main` boundary. Its Drive credentials are not part of this repository and must never be committed or emitted.
 
 Do not install host Python/Pillow merely to run the importer.

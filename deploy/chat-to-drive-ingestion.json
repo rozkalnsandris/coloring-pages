@@ -1,0 +1,160 @@
+{
+  "schema": "rozkalns.coloring-pages.chat-to-drive-ingestion.v1",
+  "schema_version": 1,
+  "status": "source-defined-not-activated",
+  "repository": "rozkalnsandris/coloring-pages",
+  "purpose": "Transfer one owner-approved ChatGPT-generated PNG through Google Drive into the canonical RPi5 content store without changing the application deployment.",
+  "authority": {
+    "source_merge_authorizes_drive_upload": false,
+    "source_merge_authorizes_drive_download": false,
+    "source_merge_authorizes_host_execution": false,
+    "source_merge_authorizes_production_import": false,
+    "source_merge_authorizes_drive_archive_or_delete": false,
+    "source_merge_authorizes_credentials_or_settings_mutation": false,
+    "live_content_import_requires_fresh_owner_authorization": true
+  },
+  "canonical_domains": {
+    "application_source": "github",
+    "production_media_originals": "/srv/coloring-pages-content/originals",
+    "production_catalog": "/srv/coloring-pages-content/public/catalog.json",
+    "drive_role": "transport-only"
+  },
+  "drive_staging": {
+    "provider": "google-drive",
+    "object_class": "blob-file",
+    "google_workspace_conversion_forbidden": true,
+    "exact_folder_id_binding_required_at_live": true,
+    "folder_name_is_not_authority": true,
+    "advisory_root_name": "Coloring_pages",
+    "pending_subdirectory": "pending",
+    "processed_subdirectory": "processed",
+    "image_name": "<id>.png",
+    "manifest_name": "<id>.json",
+    "publish_order": [
+      "image",
+      "manifest"
+    ],
+    "manifest_is_readiness_signal": true,
+    "exact_source_bytes_required": true,
+    "preupload_sha256_required": true
+  },
+  "manifest": {
+    "schema": "rozkalns.coloring-pages.drive-staging-manifest.v1",
+    "required_fields": [
+      "schema",
+      "id",
+      "sha256",
+      "size_bytes",
+      "title",
+      "character",
+      "category",
+      "age",
+      "difficulty",
+      "language",
+      "source_kind",
+      "approval_class"
+    ],
+    "id_pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+    "sha256_pattern": "^[0-9a-f]{64}$",
+    "source_kind": "chatgpt-generated-png",
+    "approval_class": "explicit-owner-chat-approval",
+    "allowed_age": [
+      "3-6",
+      "4-8"
+    ],
+    "allowed_difficulty": [
+      "easy",
+      "normal",
+      "detailed"
+    ],
+    "allowed_language": [
+      "de"
+    ],
+    "unknown_fields": "reject"
+  },
+  "integrity_canary": {
+    "required_before_activation": true,
+    "method": "upload-one-nonproduction-png-as-blob-then-download-with-rclone-and-compare-sha256",
+    "pass_condition": "preupload_sha256_equals_downloaded_sha256",
+    "conversion_or_reencode_allowed": false
+  },
+  "host_ingestion": {
+    "runtime_owner": "rozkalnsandris/RPi5_main",
+    "transport_client": "rclone",
+    "drive_remote_binding": "exact-host-config-binding-required",
+    "credential_values_must_not_be_read_or_emitted": true,
+    "fresh_pending_fast_list_allowed": false,
+    "download_target": "/srv/coloring-pages-content/state/drive-ingest/<id>.png.partial",
+    "verify_before_inbox_publish": [
+      "manifest-schema",
+      "id",
+      "size-bytes",
+      "sha256"
+    ],
+    "inbox_target": "/srv/coloring-pages-content/inbox/<id>.png",
+    "inbox_publish": "atomic-rename-after-integrity-pass",
+    "importer_contract_ref": "deploy/importer-runtime.json",
+    "immutable_importer_image_digest_required_at_live": true,
+    "application_redeploy_required": false
+  },
+  "idempotency": {
+    "receipt_path": "/srv/coloring-pages-content/state/drive-ingest/<id>.receipt.json",
+    "matching_success_receipt_and_sha256": "already-processed",
+    "existing_id_without_matching_success_receipt": "stop",
+    "automatic_overwrite": false,
+    "automatic_retry_after_mutation_error": false
+  },
+  "post_import_verification": {
+    "required": [
+      "original-source-sha256-matches-manifest",
+      "public-source-sha256-matches-manifest",
+      "catalog-has-exactly-one-id",
+      "catalog-metadata-matches-manifest",
+      "thumb-webp-exists",
+      "preview-webp-exists",
+      "print-pdf-exists",
+      "public-catalog-http-200",
+      "public-thumb-http-200",
+      "public-preview-http-200",
+      "public-source-http-200",
+      "public-pdf-http-200"
+    ],
+    "web_origin": "https://coloring.rozkalns.net",
+    "application_restart_required": false
+  },
+  "drive_post_success": {
+    "archive_pair_to_processed_allowed_only_with_fresh_authority": true,
+    "archive_requires_image_and_manifest_pair": true,
+    "delete_instead_of_archive": false,
+    "archive_failure_changes_production_import_result": false
+  },
+  "fail_closed": {
+    "conditions": [
+      "manifest-invalid",
+      "drive-folder-binding-ambiguous",
+      "source-hash-mismatch",
+      "source-size-mismatch",
+      "page-id-conflict",
+      "importer-error",
+      "catalog-mismatch",
+      "public-verification-failure",
+      "authorization-ambiguity"
+    ],
+    "after_first_mutation": "stop-without-retry-rollback-cleanup-or-alternate-mutation"
+  },
+  "forbidden": [
+    "production-media-in-github",
+    "google-workspace-image-conversion",
+    "drive-as-production-source-of-truth",
+    "folder-name-only-runtime-selection",
+    "credential-output",
+    "host-python-or-pillow-install",
+    "application-redeploy-per-import",
+    "automatic-overwrite-of-existing-page-id"
+  ],
+  "references": [
+    "https://developers.google.com/workspace/drive/api/guides/manage-uploads",
+    "https://developers.google.com/workspace/drive/api/guides/manage-downloads",
+    "https://rclone.org/drive/"
+  ]
+}
