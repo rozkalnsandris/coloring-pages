@@ -138,6 +138,24 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn("host-pillow-install", contract["forbidden"])
         self.assertIn("production-image-redeploy-per-import", contract["forbidden"])
 
+    def test_category_registry_is_reflected_in_detail_ui_and_ingest_docs(self):
+        registry = json.loads(
+            (ROOT / "metadata/categories.json").read_text(encoding="utf-8")
+        )
+        detail_js = (ROOT / "js/detail.js").read_text(encoding="utf-8")
+        ingest_docs = (
+            ROOT / "docs/CHAT_TO_DRIVE_INGESTION_V1.md"
+        ).read_text(encoding="utf-8")
+
+        for category in registry["categories"]:
+            self.assertIn(
+                f'{category["id"]}: "{category["label"]}"',
+                detail_js,
+            )
+            self.assertIn(f'`{category["id"]}`', ingest_docs)
+
+        self.assertNotIn('`rettungshunde`', ingest_docs)
+
     def test_detail_print_action_opens_dialog_without_navigation(self):
         detail_js = (ROOT / "js/detail.js").read_text(encoding="utf-8")
         print_js = (ROOT / "js/print.js").read_text(encoding="utf-8")
