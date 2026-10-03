@@ -1,3 +1,4 @@
+import hashlib
 import json
 import unittest
 from pathlib import Path
@@ -42,6 +43,25 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn("location = /health", nginx)
         self.assertIn("location = /ready", nginx)
         self.assertIn("listen 8080", nginx)
+        self.assertIn('Cache-Control "no-cache"', nginx)
+        self.assertIn('Cache-Control "public, max-age=31536000, immutable"', nginx)
+
+    def test_html_uses_content_versioned_css_and_js(self):
+        versions = {}
+        for path in ("css/app.css", "js/app.js", "js/detail.js", "js/print.js"):
+            versions[path] = hashlib.sha256((ROOT / path).read_bytes()).hexdigest()[:12]
+
+        index = (ROOT / "index.html").read_text(encoding="utf-8")
+        detail = (ROOT / "detail.html").read_text(encoding="utf-8")
+        print_html = (ROOT / "print.html").read_text(encoding="utf-8")
+
+        self.assertIn(f'href="css/app.css?v={versions["css/app.css"]}"', index)
+        self.assertIn(f'src="js/app.js?v={versions["js/app.js"]}"', index)
+        self.assertIn(f'href="css/app.css?v={versions["css/app.css"]}"', detail)
+        self.assertIn(f'src="js/app.js?v={versions["js/app.js"]}"', detail)
+        self.assertIn(f'src="js/detail.js?v={versions["js/detail.js"]}"', detail)
+        self.assertIn(f'href="css/app.css?v={versions["css/app.css"]}"', print_html)
+        self.assertIn(f'src="js/print.js?v={versions["js/print.js"]}"', print_html)
 
     def test_dockerfile_builds_static_site(self):
         dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
