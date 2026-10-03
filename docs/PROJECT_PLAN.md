@@ -105,7 +105,7 @@ The production path is activated and uses two reviewed RPi5 operator layers:
 1. the Drive-ingest operator verifies the exact staged manifest, byte size and SHA-256, then atomically publishes the PNG into `inbox/`;
 2. the importer wrapper runs the immutable Coloring Pages image under the isolation contract in `deploy/importer-runtime.json`.
 
-The first end-to-end production import passed on 2026-10-03. That is historical activation evidence only; each future content import remains separately owner-authorized for the exact page ID, SHA-256 and byte size.
+The first end-to-end production import passed on 2026-10-03. That is historical activation evidence only. For each future page, the owner's explicit approval of the exact image is the content-ingest authorization once page ID, SHA-256 and byte size are frozen; that authority is limited to staging, verified ingest/import and public verification.
 
 Host Python/Pillow installation is not required. Installing/replacing operator wrappers and executing production imports remain outside source-only authority.
 
@@ -205,4 +205,9 @@ Do not add yet:
 
 ## Authority boundary
 
-The repository owns source contracts and importer code. RPi5 filesystem creation, copying images, running the importer against production content, changing Docker runtime mounts, restarting/redeploying and any Cloudflare/DNS/tunnel mutation are separate LIVE operations requiring explicit owner authorization.
+The repository owns source contracts and importer code. Two bounded production paths are authorized by the project policy:
+
+- owner-authorized eligible application merge → immutable image → existing RPi5 SIMPLE-DEPLOY auto-LIVE flow for `coloring-pages-public-rpi5`;
+- owner-approved exact image → Drive staging → verified RPi5 ingest/import → public verification after ID/SHA/size binding.
+
+Everything outside those paths—Cloudflare/DNS/tunnel, secrets/credentials, permissions, host packages, manual/alternate deploys, Drive archive/delete, production overwrite, cleanup or rollback—requires separate explicit owner authorization.
