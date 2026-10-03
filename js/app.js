@@ -14,8 +14,9 @@ const CATEGORY_LABELS = {
   fahrzeuge: "Fahrzeuge",
   alphabet: "Alphabet",
   lernen: "Lernen",
-  jahreszeiten: "Jahreszeiten",
-  seasonal: "Jahreszeiten",
+  figuren: "Figuren & Helden",
+  jahreszeiten: "Jahreszeiten & Feste",
+  seasonal: "Jahreszeiten & Feste",
 };
 
 const DIFFICULTY_LABELS = {
