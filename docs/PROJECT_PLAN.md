@@ -100,14 +100,13 @@ The generated PNG is preserved byte-for-byte as `source.png`.
 
 Repository source tool: `tools/coloring-pages-import`.
 
-The production path is activated and uses two reviewed RPi5 operator layers:
+The production path is activated and uses one reviewed RPi5 publish operator.
 
-1. the Drive-ingest operator verifies the exact staged manifest, byte size and SHA-256, then atomically publishes the PNG into `inbox/`;
-2. the importer wrapper runs the immutable Coloring Pages image under the isolation contract in `deploy/importer-runtime.json`.
+The operator verifies the exact staged manifest, byte size and SHA-256, atomically publishes the PNG into `inbox/`, then directly runs the immutable Coloring Pages importer image under the isolation contract in `deploy/importer-runtime.json`.
 
 The first end-to-end production import passed on 2026-10-03. That is historical activation evidence only. For each future page, the owner's explicit `PUBLISH` command for the exact latest image is the content-ingest authorization once page ID, SHA-256 and byte size are frozen; that authority is limited to staging, verified ingest/import and public verification.
 
-Host Python/Pillow installation is not required. Installing/replacing operator wrappers and executing production imports remain outside source-only authority.
+Host Python/Pillow installation is not required. Installing/replacing the publish operator and executing production imports remain outside source-only authority.
 
 The importer may accept metadata flags, but manifest metadata keeps the normal Drive-ingest path explicit and deterministic. Category is mandatory and must match the canonical registry in `metadata/categories.json`; unknown/free-text categories fail closed before publication.
 
