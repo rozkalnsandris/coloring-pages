@@ -1,0 +1,271 @@
+#!/usr/bin/env python3
+"""Import one coloring-page PNG into the RPi5 content store safely."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import shutil
+import sys
+import tempfile
+from pathlib import Path
+from typing import Any
+
+from PIL import Image, ImageOps, UnidentifiedImageError
+
+ID_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+A4_RATIO = 210 / 297
+ASPECT_TOLERANCE = 0.04
+MIN_SOURCE_WIDTH = 800
+MIN_SOURCE_HEIGHT = 1100
+THUMB_MAX_WIDTH = 400
+PREVIEW_MAX_WIDTH = 1000
+A4_PRINT_SIZE = (2480, 3508)
+PRINT_DPI = 300
+ALLOWED_AGES = {"3-6", "4-8"}
+ALLOWED_DIFFICULTIES = {"easy", "normal", "detailed"}
+ALLOWED_LANGUAGES = {"de"}
+
+
+class ImportError(ValueError):
+    """Raised when a page cannot be imported safely."""
+
+
+def slug_from_path(path: Path) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", path.stem.lower()).strip("-")
+    if not slug or not ID_PATTERN.fullmatch(slug):
+        raise ImportError("cannot derive a safe page id from the file name")
+    return slug
+
+
+def default_title(page_id: str) -> str:
+    return " ".join(part.capitalize() for part in page_id.split("-"))
+
+
+def validate_metadata(metadata: dict[str, str]) -> None:
+    page_id = metadata["id"]
+    if not ID_PATTERN.fullmatch(page_id):
+        raise ImportError(f"id must match {ID_PATTERN.pattern}")
+    if metadata["age"] not in ALLOWED_AGES:
+        raise ImportError(f"age must be one of {', '.join(sorted(ALLOWED_AGES))}")
+    if metadata["difficulty"] not in ALLOWED_DIFFICULTIES:
+        raise ImportError(
+            f"difficulty must be one of {', '.join(sorted(ALLOWED_DIFFICULTIES))}"
+        )
+    if metadata["language"] not in ALLOWED_LANGUAGES:
+        raise ImportError(
+            f"language must be one of {', '.join(sorted(ALLOWED_LANGUAGES))}"
+        )
+    for key in ("title", "category"):
+        if not metadata[key].strip():
+            raise ImportError(f"{key} must be a non-empty string")
+
+
+def open_validated_source(path: Path) -> Image.Image:
+    if not path.is_file():
+        raise ImportError(f"input file does not exist: {path}")
+    try:
+        with Image.open(path) as source:
+            source.load()
+            if source.format != "PNG":
+                raise ImportError("source must be PNG")
+            image = ImageOps.exif_transpose(source).convert("L")
+    except UnidentifiedImageError as exc:
+        raise ImportError("source is not a decodable image") from exc
+    except OSError as exc:
+        raise ImportError(f"failed to decode source: {exc}") from exc
+
+    if image.width >= image.height:
+        raise ImportError("source must use portrait orientation")
+    if image.width < MIN_SOURCE_WIDTH or image.height < MIN_SOURCE_HEIGHT:
+        raise ImportError(
+            f"source must be at least {MIN_SOURCE_WIDTH}x{MIN_SOURCE_HEIGHT} pixels"
+        )
+    ratio = image.width / image.height
+    if abs(ratio - A4_RATIO) > ASPECT_TOLERANCE:
+        raise ImportError(
+            f"source must be approximately A4 portrait ratio; got {image.width}x{image.height}"
+        )
+
+    corners = (
+        image.getpixel((0, 0)),
+        image.getpixel((image.width - 1, 0)),
+        image.getpixel((0, image.height - 1)),
+        image.getpixel((image.width - 1, image.height - 1)),
+    )
+    if min(corners) < 240:
+        raise ImportError("source page corners must be white/light")
+
+    return image
+
+
+def resized_copy(image: Image.Image, max_width: int) -> Image.Image:
+    copy = image.copy()
+    copy.thumbnail(
+        (max_width, round(max_width / A4_RATIO)),
+        Image.Resampling.LANCZOS,
+    )
+    return copy
+
+
+def build_derivatives(image: Image.Image, source_path: Path, target: Path) -> None:
+    target.mkdir(parents=True, exist_ok=False)
+    shutil.copyfile(source_path, target / "source.png")
+
+    thumb = resized_copy(image, THUMB_MAX_WIDTH)
+    preview = resized_copy(image, PREVIEW_MAX_WIDTH)
+    thumb.save(target / "thumb.webp", format="WEBP", lossless=True, quality=100, method=6)
+    preview.save(target / "preview.webp", format="WEBP", lossless=True, quality=100, method=6)
+
+    fitted = ImageOps.contain(image, A4_PRINT_SIZE, method=Image.Resampling.LANCZOS)
+    canvas = Image.new("L", A4_PRINT_SIZE, color=255)
+    x = (A4_PRINT_SIZE[0] - fitted.width) // 2
+    y = (A4_PRINT_SIZE[1] - fitted.height) // 2
+    canvas.paste(fitted, (x, y))
+    canvas.convert("RGB").save(target / "print.pdf", format="PDF", resolution=PRINT_DPI)
+
+
+def load_catalog(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ImportError(f"published catalog is invalid JSON: {exc.msg}") from exc
+    if not isinstance(raw, list):
+        raise ImportError("published catalog must be a JSON array")
+
+    seen: set[str] = set()
+    for entry in raw:
+        if not isinstance(entry, dict) or not isinstance(entry.get("id"), str):
+            raise ImportError("published catalog contains an invalid entry")
+        page_id = entry["id"]
+        if not ID_PATTERN.fullmatch(page_id):
+            raise ImportError(f"published catalog contains invalid id: {page_id}")
+        if page_id in seen:
+            raise ImportError(f"published catalog contains duplicate id: {page_id}")
+        seen.add(page_id)
+    return raw
+
+
+def build_catalog_entry(metadata: dict[str, str]) -> dict[str, str]:
+    page_id = metadata["id"]
+    root = f"/media/{page_id}"
+    return {
+        "id": page_id,
+        "title": metadata["title"],
+        "character": metadata["character"],
+        "category": metadata["category"],
+        "age": metadata["age"],
+        "difficulty": metadata["difficulty"],
+        "language": metadata["language"],
+        "thumb": f"{root}/thumb.webp",
+        "preview": f"{root}/preview.webp",
+        "print": f"{root}/source.png",
+        "pdf": f"{root}/print.pdf",
+    }
+
+
+def serialize_catalog(entries: list[dict[str, Any]]) -> str:
+    ordered = sorted(entries, key=lambda item: item["id"])
+    return json.dumps(ordered, ensure_ascii=False, indent=2) + "\n"
+
+
+def import_page(
+    source_path: Path,
+    content_root: Path,
+    metadata: dict[str, str],
+) -> dict[str, str]:
+    source_path = source_path.resolve()
+    content_root = content_root.resolve()
+    validate_metadata(metadata)
+    image = open_validated_source(source_path)
+
+    page_id = metadata["id"]
+    originals_root = content_root / "originals"
+    public_root = content_root / "public"
+    media_root = public_root / "media"
+    state_root = content_root / "state"
+    catalog_path = public_root / "catalog.json"
+    final_original = originals_root / page_id
+    final_media = media_root / page_id
+
+    existing = load_catalog(catalog_path)
+    if any(entry["id"] == page_id for entry in existing):
+        raise ImportError(f"duplicate page id: {page_id}")
+    if final_original.exists() or final_media.exists():
+        raise ImportError(f"page id already exists on disk: {page_id}")
+
+    state_root.mkdir(parents=True, exist_ok=True)
+    originals_root.mkdir(parents=True, exist_ok=True)
+    media_root.mkdir(parents=True, exist_ok=True)
+    public_root.mkdir(parents=True, exist_ok=True)
+
+    entry = build_catalog_entry(metadata)
+    new_catalog = serialize_catalog(existing + [entry])
+
+    with tempfile.TemporaryDirectory(prefix=f"{page_id}-", dir=state_root) as temp_name:
+        stage = Path(temp_name)
+        stage_original = stage / "originals" / page_id
+        stage_media = stage / "media" / page_id
+        stage_catalog = stage / "catalog.json"
+
+        stage_original.mkdir(parents=True)
+        shutil.copyfile(source_path, stage_original / "source.png")
+        build_derivatives(image, source_path, stage_media)
+        stage_catalog.write_text(new_catalog, encoding="utf-8")
+
+        os.replace(stage_original, final_original)
+        os.replace(stage_media, final_media)
+
+        catalog_tmp = public_root / f".catalog.{page_id}.{os.getpid()}.tmp"
+        shutil.copyfile(stage_catalog, catalog_tmp)
+        os.replace(catalog_tmp, catalog_path)
+
+    return entry
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("source", type=Path)
+    parser.add_argument(
+        "--content-root",
+        type=Path,
+        default=Path("/srv/coloring-pages-content"),
+    )
+    parser.add_argument("--id", dest="page_id")
+    parser.add_argument("--title")
+    parser.add_argument("--character", default="")
+    parser.add_argument("--category", default="rettungshunde")
+    parser.add_argument("--age", default="3-6")
+    parser.add_argument("--difficulty", default="easy")
+    parser.add_argument("--language", default="de")
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+    try:
+        page_id = args.page_id or slug_from_path(args.source)
+        metadata = {
+            "id": page_id,
+            "title": args.title or default_title(page_id),
+            "character": args.character.strip(),
+            "category": args.category.strip(),
+            "age": args.age.strip(),
+            "difficulty": args.difficulty.strip(),
+            "language": args.language.strip(),
+        }
+        entry = import_page(args.source, args.content_root, metadata)
+    except ImportError as exc:
+        print(f"IMPORT_ERROR: {exc}", file=sys.stderr)
+        return 1
+
+    print(f"IMPORTED={entry['id']}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
