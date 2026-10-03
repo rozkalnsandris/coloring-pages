@@ -11,7 +11,8 @@ MAKE lapsa
 → ChatGPT generates one coloring-page PNG candidate
 → owner visually approves the exact latest generated image
 OK
-→ freeze page ID + SHA-256 + byte size
+→ determine one valid category
+→ freeze page ID + SHA-256 + byte size + category
 → Drive staging
 → trusted RPi5 verify/import
 → public verification
@@ -83,7 +84,19 @@ Before the first content mutation, the operator must freeze:
 - one stable page ID;
 - SHA-256 of the exact approved PNG bytes;
 - exact byte size;
+- exactly one valid category;
 - required catalogue metadata.
+
+The category is selected from the canonical registry in `metadata/categories.json`. Current category IDs are:
+
+- `rettungshunde` — Rettungshunde;
+- `tiere` — Tiere;
+- `fahrzeuge` — Fahrzeuge;
+- `alphabet` — Alphabet;
+- `lernen` — Lernen;
+- `jahreszeiten` — Jahreszeiten.
+
+When exactly one category clearly fits the approved page, choose it automatically and include it in the frozen manifest metadata. If more than one category is plausible, or none of the current categories fits, STOP before Drive upload and ask the owner to choose an existing category or create a new category through a reviewed source change. Never use a silent default category.
 
 Only after those values are frozen does the approval bind to the reviewed content-ingest operation.
 
@@ -107,7 +120,7 @@ exact approved PNG
 - secrets, credentials, permissions or repository settings;
 - cleanup, rollback or an alternate mutation path.
 
-If there is ambiguity about which image is the latest approved candidate, if the image bytes cannot be bound exactly, if the intended page ID already exists, or if state drifts after mutation begins, STOP rather than guessing or retrying.
+If there is ambiguity about which image is the latest approved candidate, if the image bytes cannot be bound exactly, if category selection is ambiguous, if the intended page ID already exists, or if state drifts after mutation begins, STOP rather than guessing or retrying.
 
 ## Conversation behavior
 
@@ -118,7 +131,7 @@ User: MAKE lapsa
 Assistant: [generated image]
 
 User: OK
-Assistant: [freeze exact identity, execute bounded ingest, report PASS or STOP]
+Assistant: [determine category, freeze exact identity + category, execute bounded ingest, report PASS or STOP]
 ```
 
 If the image needs work:

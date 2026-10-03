@@ -31,5 +31,7 @@
     "network-access",
     "privileged-container",
     "production-image-redeploy-per-import"
-  ]
+  ],
+  "category_registry": "/usr/local/share/coloring-pages/categories.json",
+  "category_argument_required": true
 }

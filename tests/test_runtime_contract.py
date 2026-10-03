@@ -77,12 +77,16 @@ class RuntimeContractTests(unittest.TestCase):
             "COPY tools/coloring-pages-import /usr/local/bin/coloring-pages-import",
             dockerfile,
         )
+        self.assertIn(
+            "COPY metadata/categories.json /usr/local/share/coloring-pages/categories.json",
+            dockerfile,
+        )
         self.assertIn("chmod 0555 /usr/local/bin/coloring-pages-import", dockerfile)
         self.assertIn("USER 101", dockerfile)
         self.assertNotIn("build_catalog.py", dockerfile)
         self.assertNotIn("build_media.py", dockerfile)
         self.assertNotIn("COPY originals", dockerfile)
-        self.assertNotIn("COPY metadata", dockerfile)
+        self.assertNotIn("COPY metadata /usr/share/nginx/html", dockerfile)
 
     def test_importer_runtime_contract_is_isolated_and_digest_bound(self):
         contract = json.loads(
@@ -116,6 +120,11 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertTrue(contract["run_as_host_operator"])
         self.assertEqual(contract["source_scope"], "direct-child-of-inbox")
         self.assertEqual(contract["content_mount"], "read-write")
+        self.assertEqual(
+            contract["category_registry"],
+            "/usr/local/share/coloring-pages/categories.json",
+        )
+        self.assertTrue(contract["category_argument_required"])
         self.assertEqual(contract["host_dependencies"], ["docker"])
         self.assertEqual(
             contract["long_running_web_mount"],

@@ -3,6 +3,7 @@ FROM nginxinc/nginx-unprivileged:1.29.1-alpine
 USER root
 RUN apk add --no-cache python3 py3-pillow
 COPY tools/coloring-pages-import /usr/local/bin/coloring-pages-import
+COPY metadata/categories.json /usr/local/share/coloring-pages/categories.json
 RUN chmod 0555 /usr/local/bin/coloring-pages-import
 USER 101
 
