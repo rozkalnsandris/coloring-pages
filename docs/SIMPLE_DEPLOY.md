@@ -13,19 +13,25 @@ This repository is a SIMPLE-DEPLOY v1 consumer for the static application image.
 
 The image contains only the application shell: HTML/CSS/JS/assets and nginx configuration. Production coloring-page binaries and the live catalogue are not baked into the image.
 
-## Required content bind
+## Required content persistence identity
 
-The runtime requires one read-only host bind:
+The consumer declares one stable SIMPLE-DEPLOY persistence identity:
 
 ```text
-/srv/coloring-pages-content/public
-→ /var/lib/coloring-pages/public
-→ read-only
+coloring_pages_content
 ```
 
-Only `public/` is exposed to the container. `inbox/`, `originals/` and `state/` remain outside the container.
+The consumer Compose mounts that identity read-only at:
 
-The bind is a runtime prerequisite, not authority to create or modify the host path. Any RPi5 filesystem/runtime mutation remains separately owner-gated.
+```text
+/var/lib/coloring-pages/public
+```
+
+The consumer manifest does not embed `/srv` host paths. The trusted `RPi5_main` adapter must separately map `coloring_pages_content` to the approved host path `/srv/coloring-pages-content/public`.
+
+Only the public content surface is exposed to the container. `inbox/`, `originals/` and `state/` remain outside the container.
+
+That RPi5-side mapping and any filesystem/runtime mutation remain separate owner-gated work.
 
 ## Publication
 
