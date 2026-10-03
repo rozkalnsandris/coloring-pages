@@ -27,7 +27,7 @@ Canonical ownership remains unchanged:
 - Google Drive is a temporary transport/staging surface.
 - `rozkalnsandris/RPi5_main` owns host-side rclone binding, credentials, trusted execution and runtime coordination.
 
-Merging this source does not authorize a Drive upload, Drive download, RPi5 command, content import, archive/delete action, credential read, settings change or application deployment.
+This content-contract source does not itself authorize a content import. The owner's explicit approval of one exact image becomes the ingest authority only after its page ID, SHA-256 and byte size are frozen. That authority is limited to Drive staging, the reviewed RPi5 verify/import path and public verification; archive/delete, overwrite and unrelated runtime actions remain outside it.
 
 ## Why raw Drive blob files are acceptable
 
@@ -116,7 +116,7 @@ The first owner-authorized production import completed successfully on 2026-10-0
 - exactly one matching catalogue entry;
 - all five required public verification URLs returning HTTP 200.
 
-This is historical activation evidence, not current LIVE authorization. Every future production import still requires fresh owner authorization for the exact page ID, SHA-256 and byte size. Drive archive/delete remains a separate owner-gated mutation.
+This is historical activation evidence, not reusable authorization. Every future production import requires a fresh explicit approval of the exact image, then binding of the page ID, SHA-256 and byte size before staging/import begins. Drive archive/delete remains a separate owner-gated mutation.
 
 ## RPi5 pull and publish sequence
 
@@ -174,4 +174,4 @@ ChatGPT: freeze exact approved image + manifest
 ChatGPT: report PASS or STOP
 ```
 
-The owner approval is content authority for that exact image only when the LIVE command explicitly binds the file/hash/ID and the runtime operation.
+The owner approval is the content authority for that exact image once the operator freezes its page ID, SHA-256 and byte size and binds the reviewed staging/import operation. No second generic `AUTHORIZE LIVE` command is required for that exact ingest.
