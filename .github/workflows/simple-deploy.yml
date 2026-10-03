@@ -7,16 +7,12 @@ on:
       - ".github/workflows/simple-deploy.yml"
       - ".simple-deploy.json"
       - "Dockerfile"
-      - "requirements-build.txt"
       - "index.html"
       - "detail.html"
       - "print.html"
       - "css/**"
       - "js/**"
       - "assets/**"
-      - "metadata/**"
-      - "originals/**"
-      - "tools/**"
       - "deploy/**"
 
 permissions:

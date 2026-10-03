@@ -2,14 +2,14 @@
 
 ## Scope
 
-This repository owns the Coloring Pages application source and its static media catalogue.
+This repository owns the Coloring Pages application source, importer contract and deployment source. Production coloring-page binary media is intentionally external to GitHub.
 
 ## Canonical source
 
-- GitHub is the source of truth.
-- Original master images, metadata, application source, build tooling, tests and deployment source belong in this repository.
-- Google Drive is archive/backup only and must not override GitHub state.
-- RPi5 contains the deployed runtime copy, not the canonical source.
+- GitHub is canonical for application source, schemas, importer/tooling, tests, documentation and deployment source.
+- The RPi5 content store is canonical for production coloring-page PNG originals, generated derivatives and the live catalogue.
+- Production coloring-page image binaries must not be committed to GitHub.
+- Backup/archive copies do not override either canonical domain.
 
 ## Working model
 
@@ -99,30 +99,31 @@ V1 intentionally uses:
 
 Do not add a framework, CMS, database or backend API without a documented need.
 
-## Source/generated boundary
+## Source/content boundary
 
-- `originals/` contains canonical master artwork.
-- `metadata/` contains canonical catalogue metadata.
-- `tools/build_catalog.py` validates canonical metadata/original references and generates `dist/catalog.json`.
-- `tools/build_media.py` generates normalized A4 print PNG, WebP thumbnail/preview, and PDF derivatives from canonical PNG masters.
-- `dist/` is generated output and is not canonical source.
-- `dist/catalog.json` is generated from canonical metadata; do not hand-edit it.
-- Generated thumbnails, previews and PDFs should be reproducible from canonical inputs.
+- Production artwork does not live under repository `originals/`.
+- `metadata/` documents the runtime catalogue schema; production records live in the RPi5 content store.
+- `tools/coloring-pages-import` is the canonical one-page importer.
+- RPi5 content root: `/srv/coloring-pages-content/`.
+- Only `/srv/coloring-pages-content/public` may be mounted into the web container, read-only.
+- `inbox/`, `originals/` and `state/` must remain outside the public container surface.
+- New content publication must not require an application rebuild or redeploy.
 
 ## Coloring-page standard
 
-Default V1 artwork standard:
+Default V1 source artwork standard:
 
-- A4 portrait
-- 300 DPI
-- 2480 × 3508 px
-- black and white
-- white background
-- thick, clean outlines
+- PNG
+- portrait, approximately A4 aspect ratio
+- black and white on white background
+- thick, clean, high-contrast outlines
 - large coloring areas
 - few small details
 - primary age group 3–6 years
-- canonical master PNGs must already be exactly 2480 × 3508 px; do not upscale smaller originals into printable assets
+- preserve the generated PNG as the source master
+- no mandatory vectorization or mandatory 2480 × 3508 source upscale
+- generate lossless WebP browse derivatives and an A4 portrait PDF during import
+- detailed contract: `docs/MEDIA_STANDARD_V1.md`
 
 ## Public-content rule
 

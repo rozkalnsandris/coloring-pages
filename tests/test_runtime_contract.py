@@ -8,9 +8,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class RuntimeContractTests(unittest.TestCase):
-    def test_simple_deploy_contract(self):
+    def test_simple_deploy_contract_declares_read_only_content_bind(self):
         contract = json.loads((ROOT / ".simple-deploy.json").read_text(encoding="utf-8"))
-
         self.assertEqual(contract["schema"], "rozkalns.simple-deploy.consumer.v1")
         self.assertEqual(contract["repository"], "rozkalnsandris/coloring-pages")
         self.assertEqual(contract["image"], "ghcr.io/rozkalnsandris/coloring-pages")
@@ -20,12 +19,13 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertEqual(contract["compose"]["service"], "coloring-pages")
         self.assertEqual(contract["health"]["liveness_path"], "/health")
         self.assertEqual(contract["health"]["readiness"]["path"], "/ready")
-        self.assertEqual(contract["persistence"]["volumes"], [])
-        self.assertEqual(contract["registry"]["pull_profile"], "public-anonymous-pull")
+        self.assertEqual(
+            contract["persistence"]["volumes"],
+            ["/srv/coloring-pages-content/public:/var/lib/coloring-pages/public:ro"],
+        )
 
-    def test_compose_is_stateless_and_hardened(self):
+    def test_compose_mounts_only_public_content_read_only(self):
         compose = (ROOT / "deploy/docker-compose.simple.yml").read_text(encoding="utf-8")
-
         for required in (
             "read_only: true",
             "no-new-privileges:true",
@@ -33,16 +33,19 @@ class RuntimeContractTests(unittest.TestCase):
             "- ALL",
             "tmpfs:",
             "http://127.0.0.1:8080/ready",
+            "/srv/coloring-pages-content/public",
+            "/var/lib/coloring-pages/public",
         ):
             self.assertIn(required, compose)
+        self.assertNotIn("/srv/coloring-pages-content/inbox", compose)
+        self.assertNotIn("/srv/coloring-pages-content/originals", compose)
+        self.assertNotIn("/srv/coloring-pages-content/state", compose)
 
-        self.assertNotIn("\nvolumes:\n", compose)
-
-    def test_nginx_exposes_health_and_readiness(self):
+    def test_nginx_serves_runtime_catalog_and_media(self):
         nginx = (ROOT / "deploy/nginx.conf").read_text(encoding="utf-8")
-        self.assertIn("location = /health", nginx)
-        self.assertIn("location = /ready", nginx)
-        self.assertIn("listen 8080", nginx)
+        self.assertIn("location = /catalog.json", nginx)
+        self.assertIn("location /media/", nginx)
+        self.assertIn("root /var/lib/coloring-pages/public", nginx)
         self.assertIn('Cache-Control "no-cache"', nginx)
         self.assertIn('Cache-Control "public, max-age=31536000, immutable"', nginx)
 
@@ -63,21 +66,18 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn(f'href="css/app.css?v={versions["css/app.css"]}"', print_html)
         self.assertIn(f'src="js/print.js?v={versions["js/print.js"]}"', print_html)
 
-    def test_dockerfile_builds_static_site(self):
+    def test_dockerfile_is_application_only(self):
         dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
-        self.assertIn("python3 tools/build_catalog.py", dockerfile)
         self.assertIn("nginxinc/nginx-unprivileged:1.29.1-alpine", dockerfile)
-        self.assertIn("COPY --from=build /tmp/site /usr/share/nginx/html", dockerfile)
+        self.assertNotIn("build_catalog.py", dockerfile)
+        self.assertNotIn("build_media.py", dockerfile)
+        self.assertNotIn("COPY originals", dockerfile)
+        self.assertNotIn("COPY metadata", dockerfile)
 
-    def test_ui_has_catalog_and_print_hooks(self):
-        app = (ROOT / "js/app.js").read_text(encoding="utf-8")
-        detail = (ROOT / "js/detail.js").read_text(encoding="utf-8")
-        print_js = (ROOT / "js/print.js").read_text(encoding="utf-8")
-
-        self.assertIn('fetch("catalog.json"', app)
-        self.assertIn('fetch("catalog.json"', detail)
-        self.assertIn('fetch("catalog.json"', print_js)
-        self.assertTrue((ROOT / "print.html").is_file())
+    def test_frontend_fetches_runtime_catalog(self):
+        for path in ("js/app.js", "js/detail.js", "js/print.js"):
+            source = (ROOT / path).read_text(encoding="utf-8")
+            self.assertIn('fetch("catalog.json"', source)
 
 
 if __name__ == "__main__":

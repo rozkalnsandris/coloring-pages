@@ -1,33 +1,31 @@
-# Catalogue metadata
+# Runtime catalogue schema reference
 
-This directory is the canonical source for coloring-page catalogue records.
+Production catalogue records are no longer canonical GitHub content.
 
-Store one JSON object per coloring page. Generated `dist/catalog.json` is derived from these files and must not be edited by hand.
+The live `catalog.json` belongs to the RPi5 content store:
 
-## Required fields
+```text
+/srv/coloring-pages-content/public/catalog.json
+```
+
+This directory documents the record shape only.
+
+Example:
 
 ```json
 {
-  "id": "ben-001",
-  "title": "Ben hilft bei der Feuerwehr",
-  "character": "Ben",
+  "id": "fire-pup-001",
+  "title": "Fire Pup 001",
+  "character": "",
   "category": "rettungshunde",
   "age": "3-6",
   "difficulty": "easy",
   "language": "de",
-  "original": "originals/rettungshunde/ben-001.png"
+  "thumb": "/media/fire-pup-001/thumb.webp",
+  "preview": "/media/fire-pup-001/preview.webp",
+  "print": "/media/fire-pup-001/source.png",
+  "pdf": "/media/fire-pup-001/print.pdf"
 }
 ```
 
-Rules:
-
-- `id` must be unique and use lowercase letters, digits and hyphens.
-- `age` must be one of `3-6`, `4-8`.
-- `difficulty` must be one of `easy`, `normal`, `detailed`.
-- `language` is currently `de`.
-- `original` must be a repository-relative path below `originals/`.
-- The referenced original must exist before the catalogue build succeeds.
-- Canonical master PNG files must already be A4 portrait at exactly `2480 × 3508` pixels. The media pipeline rejects non-standard master dimensions instead of upscaling them.
-- Web/print derivative URLs are generated deterministically from `id`; do not duplicate them in metadata.
-
-Current pipeline validates canonical metadata/original references, generates `dist/catalog.json`, and then uses `tools/build_media.py` to generate normalized A4 print PNG, WebP thumbnail/preview, and PDF derivatives from canonical PNG masters.
+The repository-owned `tools/coloring-pages-import` creates and validates these records. Do not commit production page JSON or production artwork here.

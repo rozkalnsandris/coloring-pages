@@ -24,7 +24,9 @@
     }
   },
   "persistence": {
-    "volumes": []
+    "volumes": [
+      "/srv/coloring-pages-content/public:/var/lib/coloring-pages/public:ro"
+    ]
   },
   "registry": {
     "pull_profile": "public-anonymous-pull"
