@@ -2,569 +2,194 @@
 
 ## Goal
 
-Build a modern, very simple children’s coloring-page website that works well on mobile and desktop.
-
-Primary user journey:
+Build a simple, fast, mobile-first coloring-page website whose primary journey is:
 
 **open → find → preview → print A4**
 
-Planned public hostname:
+Public hostname: `https://coloring.rozkalns.net`.
 
-`https://coloring.rozkalns.net`
+## Technology
 
-The V1 target is deliberately small, static, fast, and easy to maintain.
+V1 remains intentionally small:
 
----
-
-## V1 technology stack
-
-Use only:
-
-- HTML
-- CSS
+- semantic HTML5
+- plain CSS
 - vanilla JavaScript
-- JSON
-- a small Python build script
+- JSON catalogue
+- Python/Pillow host-side importer
 - Docker
 - `nginx-unprivileged`
 - Raspberry Pi 5 runtime
-- the existing shared Cloudflare Tunnel
 
-Do **not** add for V1:
+No framework, CMS, database or backend API is required.
 
-- Hugo
-- Astro
-- React / Next.js
-- Node.js / npm
-- Tailwind / Bootstrap
-- WordPress or another CMS
-- database
-- backend API
-- Cloudflare Workers / Pages / R2 / D1
-
-The reason is simple: this project is a static media catalogue with search, filters, preview, download and printing. A framework or database would add maintenance without improving the core result.
-
----
-
-## Architecture
+## Source/content architecture
 
 ```text
 GitHub
-│
-│ source + original images + metadata
-│
-▼
-Python build pipeline
-│
-├── build_catalog.py
-│   ├── validate canonical metadata/original references
-│   └── generate catalog.json
-│
-├── build_media.py
-│   ├── normalize A4 / 300 DPI
-│   ├── generate WebP thumbnails
-│   ├── generate WebP previews
-│   ├── generate printable PNG
-│   └── generate PDF
-│
-▼
-dist/
-│
-├── index.html
-├── css/
-├── js/
+├── HTML/CSS/JS
+├── importer + tests
+├── Docker/nginx source
+└── docs/contracts
+        │
+        │ reviewed source
+        ▼
+RPi5 application container
+        │
+        ├── static application files
+        │
+        └── read-only content mount
+                │
+                ▼
+/srv/coloring-pages-content/public
 ├── catalog.json
 └── media/
-│   ├── thumbnails
-│   ├── previews
-│   ├── print PNG
-│   └── PDF
-│
-▼
-Docker image
-│
-▼
-nginx-unprivileged on RPi5
-│
-▼
-existing shared cloudflared.service
-│
-▼
-coloring.rozkalns.net
 ```
 
-Cloudflare is only the public HTTPS / tunnel transport layer.
+Coloring-page binary media does not live in GitHub.
 
----
+## RPi5 content store
 
-## Source of truth and storage
-
-### GitHub
-
-GitHub is the canonical source of truth.
-
-Store:
-
-- original master PNG files
-- metadata
-- HTML/CSS/JS source
-- Python build tooling
-- tests and deployment source
-
-Generated WebP previews and PDFs can be produced during the build instead of being permanently committed.
-
-Canonical catalogue inputs live under `metadata/`. The build produces `dist/catalog.json`; that generated file is **not** a second source of truth and must not be hand-edited.
-
-### Raspberry Pi 5
-
-RPi5 stores the deployed production copy inside the static Docker image.
-
-For V1, do **not** create a separate `/srv/.../media` storage system. Keep deployment simple.
-
-If the catalogue later becomes large enough that image size materially affects the repository or image deployment, media storage can be separated then.
-
-### Google Drive
-
-Google Drive remains an archive / backup / convenient browsing location.
+Canonical LIVE content layout:
 
 ```text
-GitHub = canonical source
-RPi5   = LIVE runtime copy
-Drive  = archive / backup
+/srv/coloring-pages-content/
+├── inbox/
+├── originals/
+│   └── <page-id>/
+│       └── source.png
+├── public/
+│   ├── catalog.json
+│   └── media/
+│       └── <page-id>/
+│           ├── source.png
+│           ├── thumb.webp
+│           ├── preview.webp
+│           └── print.pdf
+└── state/
 ```
 
----
+Responsibilities:
 
-## Coloring-page quality standard
+- `inbox/`: operator drop location; never public.
+- `originals/`: preserved canonical source PNGs; never public directly.
+- `public/`: the only directory mounted into nginx.
+- `state/`: importer staging/work state; never public.
 
-Default target:
+## Coloring Pages Media Standard v1
 
-```text
-Paper:         A4 portrait
-Resolution:    300 DPI
-Dimensions:    2480 × 3508 px
-Color:         black and white
-Background:    white
-Outline:       thick and clean
-Small details: minimal
-```
+See `docs/MEDIA_STANDARD_V1.md`.
 
-Primary age group: **3–6 years**.
+V1 source requirements:
 
-Design priorities:
-
+- PNG
+- portrait / approximately A4 aspect ratio
+- black-and-white line art on a white background
+- thick, clean, high-contrast outlines
 - large coloring areas
-- clear contours
-- few objects
-- simple shapes
-- minimal tiny decorative details
-- printer-friendly black-and-white output
+- minimal tiny details
+- primary age target 3–6
+- no JPEG
+- no watermark
+- no mandatory vectorization
+- no mandatory 2480×3508 source upscale
 
-V1 age ranges are:
+The generated PNG is preserved byte-for-byte as `source.png`.
 
-```text
-3-6
-4-8
+## One-command import
+
+Repository tool:
+
+```bash
+python3 tools/coloring-pages-import /srv/coloring-pages-content/inbox/fire-pup-001.png
 ```
 
-Difficulty remains a separate metadata field with `easy`, `normal`, and `detailed`.
+During LIVE installation this tool may be exposed as the convenience command `coloring-pages-import`; that host installation is outside source-only authority.
 
----
+The importer may accept metadata flags, but filename-derived defaults keep the one-image path simple.
 
-## Image pipeline
+The importer:
 
-One master image produces the web and print variants:
+1. validates PNG and safe A4-like portrait geometry;
+2. derives/validates a stable lowercase-hyphen page ID;
+3. rejects duplicate IDs;
+4. preserves `originals/<page-id>/source.png`;
+5. creates lossless `thumb.webp` and `preview.webp`;
+6. copies the exact source PNG into the public media directory;
+7. creates an A4 portrait `print.pdf` without stretching;
+8. stages a new catalogue;
+9. atomically replaces `catalog.json` only after all derivatives are ready.
 
-```text
-original.png
-2480 × 3508 / 300 DPI
-       │
-       ├── thumb.webp      ~400 px
-       ├── preview.webp    ~1000 px
-       ├── print.png       A4 / 300 DPI
-       └── print.pdf       A4
-```
+Validation/generation failure must not modify the currently published catalogue.
 
-The gallery should never load the full 300 DPI image unless the user explicitly prints or downloads it.
-
-This keeps mobile browsing fast.
-
----
-
-## Catalogue model
-
-The website reads one generated `catalog.json`.
+## Catalogue contract
 
 Example:
 
 ```json
 {
-  "id": "ben-001",
-  "title": "Ben hilft einem Kind",
-  "character": "Ben",
+  "id": "fire-pup-001",
+  "title": "Fire Pup 001",
+  "character": "",
   "category": "rettungshunde",
   "age": "3-6",
   "difficulty": "easy",
   "language": "de",
-  "thumb": "/media/ben/001-thumb.webp",
-  "preview": "/media/ben/001-preview.webp",
-  "print": "/media/ben/001.png",
-  "pdf": "/media/ben/001.pdf"
+  "thumb": "/media/fire-pup-001/thumb.webp",
+  "preview": "/media/fire-pup-001/preview.webp",
+  "print": "/media/fire-pup-001/source.png",
+  "pdf": "/media/fire-pup-001/print.pdf"
 }
 ```
 
-No database is required.
+The existing frontend keeps fetching `catalog.json`. New content therefore does not require an HTML/JS edit, GitHub PR, image rebuild or application redeploy.
 
-The frontend JavaScript uses this catalogue for:
+## Runtime mount
 
-- rendering cards
-- search
-- filters
-- sorting
-- detail view
-- print/download actions
-
----
-
-## Initial repository layout
+Compose binds only:
 
 ```text
-coloring-pages/
-├── README.md
-├── AGENTS.md
-│
-├── index.html
-├── css/
-│   └── app.css
-├── js/
-│   └── app.js
-│
-├── originals/
-│   ├── rettungshunde/
-│   ├── alphabet/
-│   ├── tiere/
-│   ├── fahrzeuge/
-│   └── seasonal/
-│
-├── metadata/
-│
-├── tools/
-│   ├── build_catalog.py
-│   └── build_media.py
-│
-├── Dockerfile
-├── .simple-deploy.json
-├── deploy/
-│   ├── nginx.conf
-│   └── docker-compose.simple.yml
-│
-├── tests/
-└── docs/
-    ├── PROJECT_PLAN.md
-    └── mockups/
+/srv/coloring-pages-content/public
+→ /var/lib/coloring-pages/public
+→ read-only
 ```
 
-This document records the intended source structure; V1 implementation files do not need to be created until implementation starts.
+nginx maps:
 
-`dist/` is generated build output and is not canonical source. In particular, `dist/catalog.json` is generated from `metadata/` plus the validated originals.
+- `/catalog.json` → mounted runtime catalogue
+- `/media/...` → mounted runtime media
 
----
+The container gets no access to `inbox/`, `originals/` or `state/`.
 
-## UI principles
+## Caching
 
-The site is **mobile-first**.
+- `catalog.json`: `no-cache`
+- published media: long-lived immutable cache
 
-### Home page
+V1 rejects duplicate IDs; replacement semantics require a separate reviewed workflow.
 
-Core elements:
+## Backup
 
-- logo / brand header
-- large search field
-- category cards
-- “Neue Malvorlagen”
-- simple coloring-page cards
-- age and difficulty badges
+Critical content to back up:
 
-Expected category examples:
+- `originals/`
+- `public/catalog.json`
 
-- Rettungshunde
-- Tiere
-- Fahrzeuge
-- Alphabet
-- Lernen
-- Jahreszeiten
+Web derivatives can be regenerated if needed.
 
-Mobile target:
-
-- 2 coloring cards per row
-- large touch targets
-- compact category grid
-
-Desktop target:
-
-- wider hero section
-- 4–6 coloring cards per row
-- category row or grid
-- generous whitespace
-
----
-
-## Coloring-page detail view
-
-The detail screen contains:
-
-- breadcrumb
-- large preview
-- title
-- age badge
-- difficulty badge
-- category badge
-- character badge where applicable
-- short description
-- strong primary **A4 drucken** button
-- PDF download
-- PNG download
-- short A4 / 300 DPI note
-
-Primary action order:
-
-1. **A4 drucken**
-2. PDF herunterladen
-3. PNG herunterladen
-
----
-
-## Print view
-
-The print flow should be extremely simple.
-
-```text
-detail page
-↓
-A4 drucken
-↓
-dedicated clean print view
-↓
-browser print dialog
-```
-
-The print view must remove navigation and unrelated UI and show only the A4 page and a print action before the browser dialog opens.
-
-Use standard browser print support with print CSS.
-
----
-
-## Search and filters
-
-V1 filtering happens entirely in the browser.
-
-Initial filters:
-
-- Alter
-- Thema / Kategorie
-- Schwierigkeit
-- Charakter
-
-V1 age values:
-
-- 3-6
-- 4-8
-
-Example difficulty values:
-
-- Einfach
-- Mittel
-- Detailliert
-
-No backend request is needed after `catalog.json` is loaded.
-
----
-
-## Initial content categories
-
-Start with:
-
-- Rettungshunde
-- Tiere
-- Fahrzeuge
-- Alphabet
-- Lernen
-- Jahreszeiten / Feiertage
-
-The first complete collection can be **Rettungshunde**.
-
-Example original characters:
-
-- Ben — Feuerwehrhund
-- Bruno — Polizeihund
-- Luna — Hubschrauber-Rettung
-- Nala — Wasserrettung
-- Kira — Berg-/Schneerettung
-
----
-
-## IP / content rule
-
-The public site should publish original characters and original illustrations.
-
-Generic roles and themes are fine, for example:
-
-- police puppy
-- firefighter puppy
-- construction puppy
-- water rescue puppy
-- helicopter rescue puppy
-
-Do not build the public catalogue around direct copies of protected branded characters.
-
----
-
-## RPi5 deployment pattern
-
-Use the same lightweight static-container pattern already proven elsewhere in the home infrastructure:
-
-```text
-static build
-↓
-nginxinc/nginx-unprivileged
-↓
-read-only runtime
-↓
-no-new-privileges
-↓
-health endpoint
-↓
-ready endpoint
-```
-
-Application runtime should stay simple and stateless.
-
-The repository should also carry a SIMPLE-DEPLOY consumer contract at `.simple-deploy.json`, following the established RPi5 application pattern. The intended contract is:
-
-```text
-schema:          rozkalns.simple-deploy.consumer.v1
-repository:      rozkalnsandris/coloring-pages
-build arch:      linux/arm64
-runtime_class:   rpi5-compose
-health:          /health
-readiness:       /ready
-persistence:     no volumes for V1
-registry pull:   public-anonymous-pull
-```
-
-The application deployment contract must keep Cloudflare/DNS/network mutation, secrets/credentials/permissions changes, destructive recovery, database mutation, private-provider activation and unrelated host control outside the application deploy lane.
-
----
-
-## Cloudflare / ingress target
-
-The future `RPi5_main` registry candidate should match the current ingress-registry schema:
-
-```json
-{
-  "service_id": "coloring-pages",
-  "hostname": "coloring.rozkalns.net",
-  "zone": "PUBLIC",
-  "current_origin_class": "unknown",
-  "desired_origin_class": "loopback",
-  "runtime_owner": "rozkalnsandris/RPi5_main",
-  "repository_owner": "rozkalnsandris/coloring-pages",
-  "access_required": false,
-  "access_class": "NONE",
-  "lan_break_glass": "forbidden",
-  "firewall_expectation": "no-lan-origin-required",
-  "health_check_method": "anonymous-http-contract"
-}
-```
-
-`current_origin_class` remains `unknown` until fresh authorized runtime evidence exists. Source policy may declare the desired loopback state, but it must not claim unverified LIVE state.
-
-The application runtime is now verified on the trusted RPi5 loopback origin at `127.0.0.1:9191`, but the public ingress surface is still separate. The service is not yet activated as `coloring.rozkalns.net` in the canonical RPi5 ingress/tunnel path. Adding the public ingress source policy, applying the tunnel/DNS route and verifying public HTTPS remain separate owner-gated steps.
-
-Cloudflare / tunnel changes are separate deployment actions and are **not** implied by source work, repository merge, GHCR publication, or the existing loopback runtime.
-
----
-
-## Content workflow
-
-Typical new-page flow:
-
-```text
-generate image
-↓
-normalize A4 / 300 DPI
-↓
-add metadata
-↓
-GitHub branch
-↓
-build_catalog.py
-↓
-build_media.py
-↓
-tests
-↓
-PR
-↓
-review
-↓
-merge after explicit authorization
-↓
-separate RPi5 deploy
-```
-
-Normal source changes should use GitHub. RPi5-local tooling is only for LIVE/runtime work when required.
-
----
-
-## V1 intentionally excludes
+## V1 exclusions
 
 Do not add yet:
 
-- accounts
-- login
-- favorites
-- ratings
-- comments
+- accounts/login
+- ratings/comments
 - CMS
 - browser uploads
-- on-site AI generator
+- on-site AI generation
 - database
 - ads
 - advanced analytics
 
-The V1 product should do one thing very well:
+## Authority boundary
 
-> **find → preview → print**
-
----
-
-## Current status
-
-V1 application source and the first trusted RPi5 loopback runtime are implemented. Public ingress and real catalogue content are still pending.
-
-Implemented source/runtime layers:
-
-- responsive production HTML/CSS/vanilla-JS home shell
-- generated-`catalog.json` hydration for real catalogue entries with a graceful static fallback
-- catalogue-driven detail view and dedicated A4 print view
-- canonical catalogue metadata contract
-- deterministic `catalog.json` validator/generator
-- deterministic A4/WebP/PDF derivative generator from canonical PNG masters
-- focused catalogue/runtime unit tests and GitHub Actions CI
-- static multi-stage Docker image source using `nginxinc/nginx-unprivileged`
-- hardened stateless Compose source with `/health` and `/ready`
-- `.simple-deploy.json` consumer contract for linux/arm64 / `rpi5-compose`
-- pinned SIMPLE-DEPLOY main-push caller for immutable GHCR image publication
-- reviewed `linux/arm64` image publication to `ghcr.io/rozkalnsandris/coloring-pages`
-- RPi5 target registration in `rozkalnsandris/RPi5_main`
-- first bounded RPi5 loopback deployment at `127.0.0.1:9191`
-
-Last verified LIVE evidence on 2026-10-03 showed the exact reviewed Coloring Pages image healthy on `127.0.0.1:9191`; `/`, `/health`, and `/ready` returned HTTP 200. This is runtime evidence, not a permanent source guarantee, so future runtime claims must be revalidated on RPi5.
-
-Not yet implemented or activated:
-
-- real original coloring-page artwork and populated production catalogue metadata
-- public hostname / Cloudflare tunnel-DNS route for `coloring.rozkalns.net`
-- public HTTPS verification
-- standing generic SIMPLE-DEPLOY registry/receipt adoption for `coloring-pages-public-rpi5`
+The repository owns source contracts and importer code. RPi5 filesystem creation, copying images, running the importer against production content, changing Docker runtime mounts, restarting/redeploying and any Cloudflare/DNS/tunnel mutation are separate LIVE operations requiring explicit owner authorization.
