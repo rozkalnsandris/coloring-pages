@@ -32,10 +32,10 @@ For normal ChatGPT use, the convenience command layer is:
 MAKE <subject>   # generate one candidate
 REMAKE           # same subject, new composition
 EDIT <change>    # edit the latest candidate
-OK                # approve image, bind category, then run the bounded ingest path
+PUBLISH           # approve image, bind category, then run the bounded ingest path
 ```
 
-See [Chat image commands v1](docs/CHAT_IMAGE_COMMANDS_V1.md). `OK` does not weaken the exact-image ID/SHA-256/byte-size binding or any existing owner/runtime boundary. Before Drive staging, one category must be bound from the canonical registry in `metadata/categories.json`; an unknown category is rejected rather than silently published outside the visible filters.
+See [Chat image commands v1](docs/CHAT_IMAGE_COMMANDS_V1.md). `PUBLISH` does not weaken the exact-image ID/SHA-256/byte-size binding or any existing owner/runtime boundary. `OK` is not a publication command. Before Drive staging, one category must be bound from the canonical registry in `metadata/categories.json`; an unknown category is rejected rather than silently published outside the visible filters.
 
 Application release is a separate lane. An owner-authorized merge that changes an approved application-image input (Dockerfile, importer, nginx, HTML, CSS, JavaScript or assets) publishes an immutable GHCR image and may proceed through the existing bounded RPi5 SIMPLE-DEPLOY reconciler to LIVE automatically. Content-contract/docs/tests changes do not mint or redeploy an application image.
 

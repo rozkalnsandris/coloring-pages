@@ -28,6 +28,8 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertFalse(authority["source_merge_authorizes_drive_archive_or_delete"])
         self.assertTrue(authority["live_content_import_requires_fresh_owner_authorization"])
         self.assertTrue(authority["category_binding_required_before_first_mutation"])
+        self.assertEqual(authority["publication_command"], "PUBLISH")
+        self.assertFalse(authority["ok_is_publication_authority"])
 
     def test_activation_evidence_records_first_production_pass(self):
         evidence = self.contract["activation_evidence"]
