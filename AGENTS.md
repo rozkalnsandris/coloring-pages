@@ -54,9 +54,10 @@ Command behavior:
 
 Content creation conversation commands:
 
-- `MAKE <subject>` — immediately generate one original coloring-page candidate using the canonical media/art standard; everything after `MAKE` is the subject or scene.
-- `REMAKE` — generate a new composition for the same subject without approving or publishing it.
-- `EDIT <instruction>` — edit the exact latest generated candidate; it remains unapproved until a separate `PUBLISH`.
+- `MAKE <subject>` — immediately generate one original coloring-page candidate using the canonical media/art standard on an exact `1024×1536` PNG portrait canvas; everything after `MAKE` is the subject or scene.
+- `REMAKE` — generate a new composition for the same subject on the same exact `1024×1536` PNG portrait canvas without approving or publishing it.
+- `EDIT <instruction>` — edit the exact latest generated candidate and request the result on the same exact `1024×1536` PNG portrait canvas; it remains unapproved until a separate `PUBLISH`.
+- The `1024×1536` dimensions describe the whole page canvas, not the subject. Wide subjects such as cars, trains or aircraft stay horizontally composed inside the portrait page with comfortable white margins and no cropping. When the image-generation surface exposes an output-size control, set it directly instead of relying only on prompt wording.
 - `PUBLISH` — explicit owner approval of the exact latest generated image in the current conversation. Before the first content mutation, freeze page ID, SHA-256, byte size **and one valid category**, then fully materialize and locally validate the matching JSON manifest. Manifest preparation after the PNG upload is forbidden. Select the category automatically when exactly one current category clearly fits; if classification is ambiguous or none fits, STOP before Drive staging and ask the owner to choose or add a category. Then use only the bounded Chat-to-Drive → trusted RPi5 verify/import → public verification path. `OK` is an ordinary acknowledgement and never grants publication authority. It never authorizes overwrite, Drive archive/delete, app deploy, Cloudflare/network, secrets/permissions, cleanup, rollback or an alternate path.
 - Current category IDs are defined canonically in `metadata/categories.json`; no silent fallback/default category is allowed.
 - Detailed command contract: `docs/CHAT_IMAGE_COMMANDS_V1.md`.
@@ -128,7 +129,9 @@ Do not add a framework, CMS, database or backend API without a documented need.
 Default V1 source artwork standard:
 
 - PNG
-- portrait, approximately A4 aspect ratio
+- Chat image generation uses an exact `1024×1536` portrait (2:3) full-page canvas for `MAKE`, `REMAKE` and `EDIT`
+- subject orientation is independent of page orientation; wide subjects are composed horizontally inside the portrait canvas
+- importer/media acceptance remains approximately A4/2:3 portrait as defined in `docs/MEDIA_STANDARD_V1.md`
 - black and white on white background
 - thick, clean, high-contrast outlines
 - large coloring areas

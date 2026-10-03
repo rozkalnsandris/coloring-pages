@@ -37,8 +37,10 @@ MAKE ugunsdzēsēju mašīna pie stacijas
 Default generation contract:
 
 - original illustration suitable for public project use;
-- PNG-oriented source artwork;
-- portrait composition, approximately A4 ratio;
+- output as PNG on an exact `1024×1536` pixel portrait (2:3) canvas;
+- `1024×1536` describes the whole page/canvas, not the subject dimensions;
+- when the image-generation surface exposes output-size/aspect-ratio controls, set the output size directly to `1024×1536` rather than relying only on prompt wording;
+- wide subjects such as cars, trains, buses or aircraft may be composed horizontally inside the portrait page; keep the complete subject visible, centered naturally, with comfortable white space and no cropping;
 - white background;
 - black/high-contrast line art;
 - thick, clean contours;
@@ -57,7 +59,9 @@ If the requested subject would require directly copying a protected branded char
 
 ### `REMAKE`
 
-Generate a new composition for the same subject using the same project art standard.
+Generate a new composition for the same subject using the same project art standard and the same exact `1024×1536` PNG portrait canvas.
+
+The subject itself does not need to be vertical. A wide vehicle or other horizontal subject should remain horizontally composed inside the portrait page rather than forcing the subject into a vertical pose.
 
 `REMAKE` does not approve or publish either the old or new image.
 
@@ -73,7 +77,7 @@ EDIT resnākas kontūras
 EDIT noņem mākoni labajā augšējā stūrī
 ```
 
-The edited result becomes the latest candidate. `EDIT` is not publication approval.
+The edited result becomes the latest candidate. Request the edited output on the same exact `1024×1536` PNG portrait canvas; do not use automatic output sizing. `EDIT` is not publication approval.
 
 `OK` is intentionally not a publication command. It is treated only as a normal conversational acknowledgement so it cannot accidentally authorize content ingestion.
 
@@ -103,6 +107,8 @@ When exactly one category clearly fits the approved page, choose it automaticall
 After those values are frozen, the complete JSON manifest must be materialized and validated locally before any Drive write. Do not upload the PNG first and then attempt to construct the manifest. The Drive write order remains PNG first, manifest last; only manifest **preparation** moves before the first mutation.
 
 Only after the frozen identity, metadata, and prebuilt manifest all pass preflight does the approval bind to the reviewed content-ingest operation.
+
+This generation-size rule does not add a new `PUBLISH`-only geometry preflight. The existing media/importer contract remains authoritative for ingestion; the workflow change is to request the correct `1024×1536` canvas at `MAKE` / `REMAKE` / `EDIT` time.
 
 The authorized path is only:
 
