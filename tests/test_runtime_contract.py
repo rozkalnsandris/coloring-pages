@@ -138,6 +138,20 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn("host-pillow-install", contract["forbidden"])
         self.assertIn("production-image-redeploy-per-import", contract["forbidden"])
 
+    def test_detail_print_action_opens_dialog_without_navigation(self):
+        detail_js = (ROOT / "js/detail.js").read_text(encoding="utf-8")
+        print_js = (ROOT / "js/print.js").read_text(encoding="utf-8")
+
+        self.assertIn('document.createElement("iframe")', detail_js)
+        self.assertIn('searchParams.set("embedded", "1")', detail_js)
+        self.assertIn('event.source !== frame.contentWindow', detail_js)
+        self.assertIn('printWindow.print()', detail_js)
+        self.assertIn('"coloring-pages-print-ready"', detail_js)
+        self.assertIn('"coloring-pages-print-error"', detail_js)
+        self.assertIn("window.parent.postMessage", print_js)
+        self.assertIn('"coloring-pages-print-ready"', print_js)
+        self.assertIn('"coloring-pages-print-error"', print_js)
+
     def test_frontend_fetches_runtime_catalog(self):
         for path in ("js/app.js", "js/detail.js", "js/print.js"):
             source = (ROOT / path).read_text(encoding="utf-8")
