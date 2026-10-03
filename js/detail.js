@@ -9,7 +9,6 @@ const detailPreview = document.querySelector("[data-detail-preview]");
 const detailPlaceholder = document.querySelector("[data-detail-placeholder]");
 const printLink = document.querySelector("[data-action-print]");
 const pdfLink = document.querySelector("[data-action-pdf]");
-const pngLink = document.querySelector("[data-action-png]");
 
 const DETAIL_CATEGORY_LABELS = {
   rettungshunde: "Rettungshunde",
@@ -75,7 +74,7 @@ async function loadDetail() {
     }
     if (detailDescription) {
       detailDescription.textContent =
-        `Diese Malvorlage „${entry.title}“ ist für den A4-Druck vorbereitet und kann direkt als PNG oder PDF geöffnet werden.`;
+        `Diese Malvorlage „${entry.title}“ ist für den A4-Druck vorbereitet und kann direkt gedruckt oder als PDF geöffnet werden.`;
     }
 
     const breadcrumbCurrent = document.querySelector("[data-breadcrumb-current]");
@@ -93,7 +92,6 @@ async function loadDetail() {
 
     setAction(printLink, `print.html?id=${encodeURIComponent(entry.id)}`);
     setAction(pdfLink, entry.pdf);
-    setAction(pngLink, entry.print);
   } catch {
     // The static fallback remains usable when catalog.json is absent or invalid.
   }
