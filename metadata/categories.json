@@ -22,8 +22,12 @@
       "label": "Lernen"
     },
     {
+      "id": "figuren",
+      "label": "Figuren & Helden"
+    },
+    {
       "id": "jahreszeiten",
-      "label": "Jahreszeiten"
+      "label": "Jahreszeiten & Feste"
     }
   ]
 }
