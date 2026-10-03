@@ -8,7 +8,7 @@ The importer runtime is embedded in the same immutable Coloring Pages image that
 
 ## Runtime boundary
 
-A future trusted RPi5 wrapper must execute the reviewed immutable image by exact digest and apply all of these controls:
+The trusted RPi5 publish operator executes the reviewed immutable image by exact digest and applies all of these controls:
 
 ```text
 image              ghcr.io/rozkalnsandris/coloring-pages@sha256:<reviewed-digest>
@@ -50,15 +50,11 @@ See [Chat-to-Drive ingestion v1](CHAT_TO_DRIVE_INGESTION_V1.md).
 
 ## One-command operator model
 
-After the trusted RPi5 wrapper is installed, the intended daily importer command remains:
+The host has one publish operator owned by the trusted `RPi5_main` runtime boundary. It verifies the staged manifest and PNG, publishes the exact source into `inbox/`, then directly runs this immutable importer image with the isolation flags from `deploy/importer-runtime.json`.
 
-```bash
-coloring-pages-import /srv/coloring-pages-content/inbox/fire-pup-001.png --category rettungshunde
-```
+There is no separate host `coloring-pages-import` wrapper. The importer command exists inside the immutable application image as `/usr/local/bin/coloring-pages-import`.
 
-The wrapper is host-control policy and therefore belongs to the trusted `RPi5_main` runtime boundary. It must supply the exact immutable image digest and the isolation flags from `deploy/importer-runtime.json`.
-
-The repository does not authorize installing that wrapper, running Docker, downloading Drive content or importing production media.
+This repository does not authorize installing/replacing the publish operator, running Docker, downloading Drive content or importing production media.
 
 ## Publication
 
@@ -69,7 +65,7 @@ Because the importer is embedded in the application image, changes to either:
 
 trigger the normal SIMPLE-DEPLOY image publication on merged `main`.
 
-Publishing a new image does not itself import media. Once an approved importer image is installed for the wrapper, individual coloring-page imports do not require an application rebuild or redeploy.
+Publishing a new image does not itself import media. Once the publish operator is aligned to an approved immutable importer image, individual coloring-page imports do not require an application rebuild or redeploy.
 
 ## Host dependencies
 
