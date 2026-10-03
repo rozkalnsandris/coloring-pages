@@ -29,3 +29,18 @@ Example:
 ```
 
 The repository-owned `tools/coloring-pages-import` creates and validates these records. Do not commit production page JSON or production artwork here.
+
+## Categories
+
+`metadata/categories.json` is the canonical source-level category registry.
+
+The current V1 category IDs are:
+
+- `rettungshunde`
+- `tiere`
+- `fahrzeuge`
+- `alphabet`
+- `lernen`
+- `jahreszeiten`
+
+A production record must use exactly one registered category. The importer rejects unknown category IDs, and category selection must be bound before Drive staging. Future categories are added through a reviewed source change that keeps the registry and public category UI aligned.
