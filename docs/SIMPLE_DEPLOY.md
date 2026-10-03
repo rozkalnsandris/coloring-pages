@@ -35,7 +35,15 @@ That RPi5-side mapping and any filesystem/runtime mutation remain separate owner
 
 ## Publication
 
-`.github/workflows/simple-deploy.yml` publishes the immutable application image when application/deployment inputs or `tools/coloring-pages-import` change. Production media content changes do not mint a new image and do not require application redeploy.
+`.github/workflows/simple-deploy.yml` publishes the immutable application image only when an actual image input changes:
+
+- `Dockerfile`;
+- `tools/coloring-pages-import`;
+- `deploy/nginx.conf`;
+- the three HTML entry points;
+- `css/**`, `js/**` or `assets/**`.
+
+The content lane is deliberately separate. Changes to the Chat-to-Drive contract, metadata, documentation, tests, Compose source, SIMPLE-DEPLOY manifest or the workflow definition itself do not mint a new application image on their own. Production coloring-page media is imported through Drive/RPi5 and does not require application rebuild or redeploy.
 
 The reusable workflow remains pinned to:
 
