@@ -25,6 +25,8 @@ generate PNG in ChatGPT
 
 This path is production-activated. The first owner-authorized end-to-end import passed on 2026-10-03. That activation record is historical continuity only: each future content import remains separately owner-authorized and exact-ID/hash/size bound.
 
+Application-image publication is a separate lane. Only actual image inputs (Dockerfile, importer, nginx, HTML, CSS, JavaScript or assets) publish a new GHCR image; content-contract/docs/tests changes do not. Publication does not change the content store and does not itself grant LIVE/runtime authority.
+
 The application keeps the simple V1 journey:
 
 **find → preview → print**
