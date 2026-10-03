@@ -72,6 +72,10 @@ class ImportPageTests(unittest.TestCase):
         self.assertEqual(entry["preview"], "/media/fire-pup-001/preview.webp")
         self.assertEqual(entry["print"], "/media/fire-pup-001/source.png")
         self.assertEqual(entry["pdf"], "/media/fire-pup-001/print.pdf")
+        self.assertEqual(
+            (self.content / "public/catalog.json").stat().st_mode & 0o777,
+            0o644,
+        )
 
     def test_unknown_category_rejected_before_publication(self):
         with self.assertRaisesRegex(importer.ImportError, "category must be one of"):
