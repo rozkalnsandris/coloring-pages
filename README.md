@@ -25,6 +25,17 @@ generate PNG in ChatGPT
 
 This path is production-activated. The first owner-authorized end-to-end import passed on 2026-10-03. That activation record is historical continuity only: each future content import remains separately owner-authorized and exact-ID/hash/size bound.
 
+For normal ChatGPT use, the convenience command layer is:
+
+```text
+MAKE <subject>   # generate one candidate
+REMAKE           # same subject, new composition
+EDIT <change>    # edit the latest candidate
+PUBLISH          # approve the exact latest image and run the bounded ingest path
+```
+
+See [Chat image commands v1](docs/CHAT_IMAGE_COMMANDS_V1.md). `PUBLISH` does not weaken the exact-image ID/SHA-256/byte-size binding or any existing owner/runtime boundary.
+
 Application release is a separate lane. An owner-authorized merge that changes an approved application-image input (Dockerfile, importer, nginx, HTML, CSS, JavaScript or assets) publishes an immutable GHCR image and may proceed through the existing bounded RPi5 SIMPLE-DEPLOY reconciler to LIVE automatically. Content-contract/docs/tests changes do not mint or redeploy an application image.
 
 The application keeps the simple V1 journey:
@@ -57,6 +68,7 @@ Only `public/` is exposed to the nginx container, read-only. The consumer contra
 - [Media Standard v1](docs/MEDIA_STANDARD_V1.md)
 - [Importer Runtime v1](docs/IMPORTER_RUNTIME_V1.md)
 - [Chat-to-Drive ingestion v1](docs/CHAT_TO_DRIVE_INGESTION_V1.md)
+- [Chat image commands v1](docs/CHAT_IMAGE_COMMANDS_V1.md)
 - [SIMPLE-DEPLOY publication contract](docs/SIMPLE_DEPLOY.md)
 - [UI mockups](docs/mockups/README.md)
 
