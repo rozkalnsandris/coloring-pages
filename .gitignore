@@ -1,3 +1,7 @@
 dist/
 __pycache__/
 *.pyc
+
+# Production coloring-page binaries live on the RPi5 content store, not GitHub.
+originals/*
+!originals/.gitkeep
