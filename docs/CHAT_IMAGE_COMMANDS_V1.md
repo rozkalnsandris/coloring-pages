@@ -100,7 +100,9 @@ The category is selected from the canonical registry in `metadata/categories.jso
 
 When exactly one category clearly fits the approved page, choose it automatically and include it in the frozen manifest metadata. If more than one category is plausible, or none of the current categories fits, STOP before Drive upload and ask the owner to choose an existing category or create a new category through a reviewed source change. Never use a silent default category.
 
-Only after those values are frozen does the approval bind to the reviewed content-ingest operation.
+After those values are frozen, the complete JSON manifest must be materialized and validated locally before any Drive write. Do not upload the PNG first and then attempt to construct the manifest. The Drive write order remains PNG first, manifest last; only manifest **preparation** moves before the first mutation.
+
+Only after the frozen identity, metadata, and prebuilt manifest all pass preflight does the approval bind to the reviewed content-ingest operation.
 
 The authorized path is only:
 
