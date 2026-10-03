@@ -23,7 +23,7 @@
   },
   "normalized_state": {
     "contract": "AUTO_RUN_FULL_SINGLE_ISSUE_STATE_V2",
-    "shared_revision": "94187cc447fc80757db10ac25d49717d00dc8430",
+    "shared_revision": "1d982675a95383aa23cfadd3cd3203a08d2ecfd3",
     "document": "docs/AUTO_RUN_FULL_SINGLE_ISSUE_STATE_V2.md",
     "policy": "policy/auto-run-full-single-issue-state-v2.json",
     "target_schema": "rozkalns.auto-run-full-single-issue-run-state.v2",
