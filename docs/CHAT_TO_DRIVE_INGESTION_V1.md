@@ -80,7 +80,7 @@ Example:
   "size_bytes": 1162127,
   "title": "Aviator Pup",
   "character": "",
-  "category": "rettungshunde",
+  "category": "figuren",
   "age": "3-6",
   "difficulty": "easy",
   "language": "de",
@@ -91,7 +91,7 @@ Example:
 
 Unknown manifest fields fail closed. Metadata values must stay inside the importer-supported age, difficulty, language and category sets.
 
-The canonical category registry is `metadata/categories.json`. The current allowed category IDs are `rettungshunde`, `tiere`, `fahrzeuge`, `alphabet`, `lernen` and `jahreszeiten`. The normal workflow must choose one of these before Drive staging; no default or arbitrary free-text category is accepted. Adding a future category is a reviewed source change that updates the registry and the corresponding public UI category surface.
+The canonical category registry is `metadata/categories.json`. The current allowed category IDs are `tiere`, `fahrzeuge`, `alphabet`, `lernen`, `figuren` and `jahreszeiten`. The normal workflow must choose one of these before Drive staging; no default or arbitrary free-text category is accepted. Adding a future category is a reviewed source change that updates the registry and the corresponding public UI category surface.
 
 ## Historical activation canary
 
