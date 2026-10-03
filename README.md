@@ -1,41 +1,55 @@
 # coloring-pages
 
-Static, mobile-first coloring-page catalogue planned for `coloring.rozkalns.net`.
+Static, mobile-first coloring-page catalogue for `coloring.rozkalns.net`.
+
+## V1 content model
+
+Application source and media content are deliberately separated:
+
+- **GitHub** is canonical for HTML/CSS/JavaScript, importer/tooling, schemas, tests, Docker/nginx source and operational documentation.
+- **RPi5 content store** is canonical for coloring-page PNG originals, generated web/print derivatives and the live `catalog.json`.
+- Production coloring-page image binaries are **not committed to GitHub**.
+
+Daily content flow:
+
+```text
+generate PNG
+→ copy to /srv/coloring-pages-content/inbox/
+→ run coloring-pages-import
+→ catalogue entry becomes visible
+```
+
+The application keeps the simple V1 journey:
+
+**find → preview → print**
+
+## Media standard
+
+See [Coloring Pages Media Standard v1](docs/MEDIA_STANDARD_V1.md).
+
+The source artwork is preserved as the generated PNG. V1 does not require vector tracing or a mandatory 2480×3508 upscale. The importer creates lightweight WebP browsing derivatives and an A4 portrait PDF.
+
+## Runtime content layout
+
+```text
+/srv/coloring-pages-content/
+├── inbox/
+├── originals/
+├── public/
+│   ├── catalog.json
+│   └── media/
+└── state/
+```
+
+Only `public/` is mounted into the nginx container, read-only. `inbox/`, `originals/` and `state/` remain host-side and are not web-served.
 
 ## Project documents
 
 - [V1 project plan](docs/PROJECT_PLAN.md)
-- [UI mockups](docs/mockups/README.md)
+- [Media Standard v1](docs/MEDIA_STANDARD_V1.md)
 - [SIMPLE-DEPLOY publication contract](docs/SIMPLE_DEPLOY.md)
+- [UI mockups](docs/mockups/README.md)
 
-Current phase: **V1 application runtime is online on the trusted RPi5 loopback origin; public ingress and real catalogue content are still pending**.
+## Authorization boundary
 
-Implemented so far:
-
-- responsive desktop/mobile home-page UI in real HTML/CSS
-- mobile navigation
-- local search/category filtering with automatic `catalog.json` hydration when entries exist
-- catalogue-driven detail page and dedicated A4 print page
-- canonical metadata contract under `metadata/`
-- deterministic Python catalogue validator/generator
-- deterministic A4/WebP/PDF media derivative generator from canonical PNG masters
-- hardened static Docker runtime source using `nginx-unprivileged`
-- SIMPLE-DEPLOY v1 consumer contract and compose source
-- CI coverage for catalogue, UI/runtime source, consumer JSON and Compose validation
-- pinned main-push SIMPLE-DEPLOY publication workflow
-- reviewed `linux/arm64` GHCR image publication
-- RPi5 target registration in `rozkalnsandris/RPi5_main`
-- first bounded RPi5 loopback deployment at `127.0.0.1:9191`
-
-Last verified LIVE evidence on 2026-10-03 showed the exact reviewed image healthy on `127.0.0.1:9191`, with `/`, `/health`, and `/ready` returning HTTP 200. Runtime state must still be re-read from RPi5 for any future consequential operation.
-
-Still planned:
-
-- real original coloring-page assets and populated catalogue metadata
-- public ingress for `coloring.rozkalns.net`
-- Cloudflare tunnel/DNS activation and public verification
-- standing generic SIMPLE-DEPLOY adoption/receipt for `coloring-pages-public-rpi5`
-
-The V1 stack remains HTML + CSS + vanilla JavaScript + JSON + a small Python build script, served as static files by `nginx-unprivileged` on RPi5.
-
-Source work, application deployment, standing SIMPLE-DEPLOY adoption, and public ingress remain separate authorization boundaries.
+GitHub source work, merge, application deployment, RPi5 content-store mutation and public ingress are separate authority boundaries. A source merge never authorizes content import or any LIVE mutation.
