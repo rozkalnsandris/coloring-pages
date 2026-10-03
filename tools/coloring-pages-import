@@ -27,10 +27,51 @@ PRINT_DPI = 300
 ALLOWED_AGES = {"3-6", "4-8"}
 ALLOWED_DIFFICULTIES = {"easy", "normal", "detailed"}
 ALLOWED_LANGUAGES = {"de"}
+CATEGORY_REGISTRY_SCHEMA = "rozkalns.coloring-pages.categories.v1"
+CONTAINER_CATEGORY_REGISTRY = Path("/usr/local/share/coloring-pages/categories.json")
 
 
 class ImportError(ValueError):
     """Raised when a page cannot be imported safely."""
+
+
+def category_registry_path() -> Path:
+    if CONTAINER_CATEGORY_REGISTRY.is_file():
+        return CONTAINER_CATEGORY_REGISTRY
+    return Path(__file__).resolve().parents[1] / "metadata/categories.json"
+
+
+def load_allowed_categories() -> frozenset[str]:
+    path = category_registry_path()
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ImportError(f"category registry is unavailable or invalid: {path}") from exc
+
+    if not isinstance(raw, dict) or raw.get("schema") != CATEGORY_REGISTRY_SCHEMA:
+        raise ImportError("category registry schema is invalid")
+    categories = raw.get("categories")
+    if not isinstance(categories, list) or not categories:
+        raise ImportError("category registry must contain at least one category")
+
+    ids: set[str] = set()
+    for category in categories:
+        if not isinstance(category, dict):
+            raise ImportError("category registry contains an invalid entry")
+        category_id = category.get("id")
+        label = category.get("label")
+        if (
+            not isinstance(category_id, str)
+            or not ID_PATTERN.fullmatch(category_id)
+            or not isinstance(label, str)
+            or not label.strip()
+        ):
+            raise ImportError("category registry contains an invalid id or label")
+        if category_id in ids:
+            raise ImportError(f"category registry contains duplicate id: {category_id}")
+        ids.add(category_id)
+
+    return frozenset(ids)
 
 
 def slug_from_path(path: Path) -> str:
@@ -58,9 +99,13 @@ def validate_metadata(metadata: dict[str, str]) -> None:
         raise ImportError(
             f"language must be one of {', '.join(sorted(ALLOWED_LANGUAGES))}"
         )
-    for key in ("title", "category"):
-        if not metadata[key].strip():
-            raise ImportError(f"{key} must be a non-empty string")
+    if not metadata["title"].strip():
+        raise ImportError("title must be a non-empty string")
+    allowed_categories = load_allowed_categories()
+    if metadata["category"] not in allowed_categories:
+        raise ImportError(
+            f"category must be one of {', '.join(sorted(allowed_categories))}"
+        )
 
 
 def open_validated_source(path: Path) -> Image.Image:
@@ -257,7 +302,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--id", dest="page_id")
     parser.add_argument("--title")
     parser.add_argument("--character", default="")
-    parser.add_argument("--category", default="rettungshunde")
+    parser.add_argument("--category", required=True)
     parser.add_argument("--age", default="3-6")
     parser.add_argument("--difficulty", default="easy")
     parser.add_argument("--language", default="de")
