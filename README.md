@@ -25,7 +25,7 @@ generate PNG in ChatGPT
 
 This path is production-activated. The first owner-authorized end-to-end import passed on 2026-10-03. That activation record is historical continuity only: each future content import remains separately owner-authorized and exact-ID/hash/size bound.
 
-Application-image publication is a separate lane. Only actual image inputs (Dockerfile, importer, nginx, HTML, CSS, JavaScript or assets) publish a new GHCR image; content-contract/docs/tests changes do not. Publication does not change the content store and does not itself grant LIVE/runtime authority.
+Application release is a separate lane. An owner-authorized merge that changes an approved application-image input (Dockerfile, importer, nginx, HTML, CSS, JavaScript or assets) publishes an immutable GHCR image and may proceed through the existing bounded RPi5 SIMPLE-DEPLOY reconciler to LIVE automatically. Content-contract/docs/tests changes do not mint or redeploy an application image.
 
 The application keeps the simple V1 journey:
 
@@ -62,4 +62,4 @@ Only `public/` is exposed to the nginx container, read-only. The consumer contra
 
 ## Authorization boundary
 
-GitHub source work, merge, Drive staging, RPi5 content-store mutation, application deployment and public ingress are separate authority boundaries. A source merge never authorizes a Drive upload, content import or any other LIVE mutation.
+Authority is intentionally narrow. An owner-authorized eligible application merge grants only the reviewed auto-LIVE flow for `coloring-pages-public-rpi5`. Explicit approval of one exact image (after page ID, SHA-256 and byte size are frozen) grants only its Drive staging + verified RPi5 ingest/import + public verification. Cloudflare/network, secrets/permissions, Drive archive/delete, overwrite, manual/alternate deploy and unrelated host mutations remain separately owner-gated.
