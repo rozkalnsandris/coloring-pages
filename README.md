@@ -41,7 +41,7 @@ The source artwork is preserved as the generated PNG. V1 does not require vector
 └── state/
 ```
 
-Only `public/` is mounted into the nginx container, read-only. `inbox/`, `originals/` and `state/` remain host-side and are not web-served.
+Only `public/` is exposed to the nginx container, read-only. The consumer contract names this persistence surface `coloring_pages_content`; the exact mapping from that stable identity to `/srv/coloring-pages-content/public` belongs to the trusted `RPi5_main` adapter. `inbox/`, `originals/` and `state/` remain host-side and are not web-served.
 
 ## Project documents
 
