@@ -22,17 +22,21 @@ class ImportPageTests(unittest.TestCase):
         self.tempdir = tempfile.TemporaryDirectory()
         self.root = Path(self.tempdir.name)
         self.content = self.root / "content"
-        self.source = self.root / "fire-pup-001.png"
+        for relative in ("inbox", "originals", "public/media", "state"):
+            (self.content / relative).mkdir(parents=True, exist_ok=True)
+        (self.content / "public/catalog.json").write_text("[]\n", encoding="utf-8")
+        self.source = self.content / "inbox/fire-pup-001.png"
         self.write_source()
 
     def tearDown(self):
         self.tempdir.cleanup()
 
-    def write_source(self, size=(1055, 1491), fmt="PNG"):
+    def write_source(self, size=(1055, 1491), fmt="PNG", path=None):
+        target = path or self.source
         image = Image.new("L", size, color=255)
         for x in range(150, min(size[0] - 150, 700)):
             image.putpixel((x, min(300, size[1] - 1)), 0)
-        image.save(self.source, format=fmt)
+        image.save(target, format=fmt)
 
     def metadata(self, **overrides):
         value = {
@@ -85,10 +89,8 @@ class ImportPageTests(unittest.TestCase):
             importer.import_page(self.source, self.content, self.metadata())
 
     def test_failure_keeps_published_catalog_unchanged(self):
-        public = self.content / "public"
-        public.mkdir(parents=True)
         sentinel = [{"id": "existing-001"}]
-        catalog = public / "catalog.json"
+        catalog = self.content / "public/catalog.json"
         catalog.write_text(json.dumps(sentinel) + "\n", encoding="utf-8")
 
         Image.new("L", (1200, 1200), 255).save(self.source, format="PNG")
@@ -97,6 +99,25 @@ class ImportPageTests(unittest.TestCase):
             importer.import_page(self.source, self.content, self.metadata())
 
         self.assertEqual(catalog.read_bytes(), before)
+
+    def test_source_outside_inbox_is_rejected(self):
+        outside = self.root / "outside.png"
+        self.write_source(path=outside)
+        with self.assertRaisesRegex(importer.ImportError, "inside the content inbox"):
+            importer.import_page(outside, self.content, self.metadata())
+
+    def test_nested_inbox_source_is_rejected(self):
+        nested_dir = self.content / "inbox/nested"
+        nested_dir.mkdir()
+        nested = nested_dir / "fire-pup-001.png"
+        self.write_source(path=nested)
+        with self.assertRaisesRegex(importer.ImportError, "direct child"):
+            importer.import_page(nested, self.content, self.metadata())
+
+    def test_missing_bootstrap_layout_is_rejected(self):
+        (self.content / "state").rmdir()
+        with self.assertRaisesRegex(importer.ImportError, "required content directory"):
+            importer.import_page(self.source, self.content, self.metadata())
 
     def test_filename_defaults_are_stable(self):
         path = self.root / "Water Rescue Pup 001.png"

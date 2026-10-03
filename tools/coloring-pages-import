@@ -180,15 +180,39 @@ def import_page(
 ) -> dict[str, str]:
     source_path = source_path.resolve()
     content_root = content_root.resolve()
-    validate_metadata(metadata)
-    image = open_validated_source(source_path)
 
-    page_id = metadata["id"]
+    inbox_root = content_root / "inbox"
     originals_root = content_root / "originals"
     public_root = content_root / "public"
     media_root = public_root / "media"
     state_root = content_root / "state"
     catalog_path = public_root / "catalog.json"
+
+    if not content_root.is_dir():
+        raise ImportError("content root must already exist")
+    for required_dir in (
+        inbox_root,
+        originals_root,
+        public_root,
+        media_root,
+        state_root,
+    ):
+        if not required_dir.is_dir():
+            raise ImportError(f"required content directory is missing: {required_dir}")
+    if not catalog_path.is_file():
+        raise ImportError("published catalog must already exist")
+
+    try:
+        source_path.relative_to(inbox_root)
+    except ValueError as exc:
+        raise ImportError("source must be inside the content inbox") from exc
+    if source_path.parent != inbox_root:
+        raise ImportError("source must be a direct child of the content inbox")
+
+    validate_metadata(metadata)
+    image = open_validated_source(source_path)
+
+    page_id = metadata["id"]
     final_original = originals_root / page_id
     final_media = media_root / page_id
 
@@ -197,11 +221,6 @@ def import_page(
         raise ImportError(f"duplicate page id: {page_id}")
     if final_original.exists() or final_media.exists():
         raise ImportError(f"page id already exists on disk: {page_id}")
-
-    state_root.mkdir(parents=True, exist_ok=True)
-    originals_root.mkdir(parents=True, exist_ok=True)
-    media_root.mkdir(parents=True, exist_ok=True)
-    public_root.mkdir(parents=True, exist_ok=True)
 
     entry = build_catalog_entry(metadata)
     new_catalog = serialize_catalog(existing + [entry])

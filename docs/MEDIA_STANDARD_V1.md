@@ -21,7 +21,7 @@ Required:
 - no JPEG input
 - primary age target: 3–6
 
-The importer validates file type, portrait geometry, A4-like ratio, minimum geometry and light page corners. Visual/editorial properties such as clean outlines and lack of unwanted shading remain content-review requirements.
+The importer validates file type, portrait geometry, A4-like ratio, minimum geometry and light page corners. It accepts production inputs only as direct children of the pre-created content-store `inbox/`. Visual/editorial properties such as clean outlines and lack of unwanted shading remain content-review requirements.
 
 ## No mandatory upscale
 
@@ -70,6 +70,10 @@ For `fire-pup-001`:
 /media/fire-pup-001/source.png
 /media/fire-pup-001/print.pdf
 ```
+
+## Runtime
+
+The importer executes from the immutable Coloring Pages container image under the isolation contract in `docs/IMPORTER_RUNTIME_V1.md`. Host Python/Pillow is not a V1 requirement.
 
 ## Quality principle
 

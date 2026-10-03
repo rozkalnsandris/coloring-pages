@@ -48,6 +48,7 @@ class SimpleDeployPublishTests(unittest.TestCase):
             ".github/workflows/simple-deploy.yml",
             ".simple-deploy.json",
             "Dockerfile",
+            "tools/coloring-pages-import",
             "index.html",
             "detail.html",
             "print.html",

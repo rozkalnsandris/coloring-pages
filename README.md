@@ -27,7 +27,7 @@ The application keeps the simple V1 journey:
 
 See [Coloring Pages Media Standard v1](docs/MEDIA_STANDARD_V1.md).
 
-The source artwork is preserved as the generated PNG. V1 does not require vector tracing or a mandatory 2480×3508 upscale. The importer creates lightweight WebP browsing derivatives and an A4 portrait PDF.
+The source artwork is preserved as the generated PNG. V1 does not require vector tracing or a mandatory 2480×3508 upscale. The importer creates lightweight WebP browsing derivatives and an A4 portrait PDF. The importer runtime is embedded in the immutable Coloring Pages image, so the RPi5 host does not need Python/Pillow installed.
 
 ## Runtime content layout
 
@@ -47,6 +47,7 @@ Only `public/` is exposed to the nginx container, read-only. The consumer contra
 
 - [V1 project plan](docs/PROJECT_PLAN.md)
 - [Media Standard v1](docs/MEDIA_STANDARD_V1.md)
+- [Importer Runtime v1](docs/IMPORTER_RUNTIME_V1.md)
 - [SIMPLE-DEPLOY publication contract](docs/SIMPLE_DEPLOY.md)
 - [UI mockups](docs/mockups/README.md)
 

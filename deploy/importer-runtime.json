@@ -1,0 +1,35 @@
+{
+  "schema": "rozkalns.coloring-pages.importer-runtime.v1",
+  "image": "ghcr.io/rozkalnsandris/coloring-pages",
+  "image_identity": "immutable-digest-required-at-live",
+  "entrypoint": "/usr/local/bin/coloring-pages-import",
+  "host_content_root": "/srv/coloring-pages-content",
+  "container_content_root": "/srv/coloring-pages-content",
+  "source_scope": "direct-child-of-inbox",
+  "content_mount": "read-write",
+  "network": "none",
+  "read_only_root": true,
+  "tmpfs": [
+    "/tmp"
+  ],
+  "cap_drop": [
+    "ALL"
+  ],
+  "no_new_privileges": true,
+  "run_as_host_operator": true,
+  "long_running_web_mount": {
+    "source_identity": "coloring_pages_content",
+    "target": "/var/lib/coloring-pages/public",
+    "mode": "read-only"
+  },
+  "host_dependencies": [
+    "docker"
+  ],
+  "forbidden": [
+    "host-python-install",
+    "host-pillow-install",
+    "network-access",
+    "privileged-container",
+    "production-image-redeploy-per-import"
+  ]
+}

@@ -68,13 +68,66 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn(f'href="css/app.css?v={versions["css/app.css"]}"', print_html)
         self.assertIn(f'src="js/print.js?v={versions["js/print.js"]}"', print_html)
 
-    def test_dockerfile_is_application_only(self):
+    def test_dockerfile_embeds_importer_runtime_without_media(self):
         dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
         self.assertIn("nginxinc/nginx-unprivileged:1.29.1-alpine", dockerfile)
+        self.assertIn("USER root", dockerfile)
+        self.assertIn("apk add --no-cache python3 py3-pillow", dockerfile)
+        self.assertIn(
+            "COPY tools/coloring-pages-import /usr/local/bin/coloring-pages-import",
+            dockerfile,
+        )
+        self.assertIn("chmod 0555 /usr/local/bin/coloring-pages-import", dockerfile)
+        self.assertIn("USER 101", dockerfile)
         self.assertNotIn("build_catalog.py", dockerfile)
         self.assertNotIn("build_media.py", dockerfile)
         self.assertNotIn("COPY originals", dockerfile)
         self.assertNotIn("COPY metadata", dockerfile)
+
+    def test_importer_runtime_contract_is_isolated_and_digest_bound(self):
+        contract = json.loads(
+            (ROOT / "deploy/importer-runtime.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            contract["schema"],
+            "rozkalns.coloring-pages.importer-runtime.v1",
+        )
+        self.assertEqual(
+            contract["image"],
+            "ghcr.io/rozkalnsandris/coloring-pages",
+        )
+        self.assertEqual(
+            contract["image_identity"],
+            "immutable-digest-required-at-live",
+        )
+        self.assertEqual(
+            contract["entrypoint"],
+            "/usr/local/bin/coloring-pages-import",
+        )
+        self.assertEqual(
+            contract["host_content_root"],
+            "/srv/coloring-pages-content",
+        )
+        self.assertEqual(contract["network"], "none")
+        self.assertTrue(contract["read_only_root"])
+        self.assertEqual(contract["tmpfs"], ["/tmp"])
+        self.assertEqual(contract["cap_drop"], ["ALL"])
+        self.assertTrue(contract["no_new_privileges"])
+        self.assertTrue(contract["run_as_host_operator"])
+        self.assertEqual(contract["source_scope"], "direct-child-of-inbox")
+        self.assertEqual(contract["content_mount"], "read-write")
+        self.assertEqual(contract["host_dependencies"], ["docker"])
+        self.assertEqual(
+            contract["long_running_web_mount"],
+            {
+                "source_identity": "coloring_pages_content",
+                "target": "/var/lib/coloring-pages/public",
+                "mode": "read-only",
+            },
+        )
+        self.assertIn("host-python-install", contract["forbidden"])
+        self.assertIn("host-pillow-install", contract["forbidden"])
+        self.assertIn("production-image-redeploy-per-import", contract["forbidden"])
 
     def test_frontend_fetches_runtime_catalog(self):
         for path in ("js/app.js", "js/detail.js", "js/print.js"):

@@ -32,6 +32,12 @@ jobs:
       - name: Run unit tests
         run: python3 -m unittest discover -s tests -v
 
+      - name: Build importer runtime image
+        run: docker build --pull=false -t coloring-pages-ci .
+
+      - name: Smoke importer runtime
+        run: docker run --rm --network none --read-only --tmpfs /tmp --entrypoint /usr/local/bin/coloring-pages-import coloring-pages-ci --help >/dev/null
+
       - name: Validate SIMPLE-DEPLOY JSON
         run: python3 -m json.tool .simple-deploy.json >/dev/null
 
