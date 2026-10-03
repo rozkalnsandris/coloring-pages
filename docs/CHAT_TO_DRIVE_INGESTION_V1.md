@@ -28,7 +28,7 @@ Canonical ownership remains unchanged:
 - Google Drive is a temporary transport/staging surface.
 - `rozkalnsandris/RPi5_main` owns host-side rclone binding, credentials, trusted execution and runtime coordination.
 
-This content-contract source does not itself authorize a content import. The owner's explicit approval of one exact image becomes the ingest authority only after its page ID, SHA-256, byte size and one valid category are frozen. Category selection must happen before the first Drive mutation. That authority is limited to Drive staging, the reviewed RPi5 verify/import path and public verification; archive/delete, overwrite and unrelated runtime actions remain outside it.
+This content-contract source does not itself authorize a content import. The owner's explicit `PUBLISH` command for one exact latest image becomes the ingest authority only after its page ID, SHA-256, byte size and one valid category are frozen. A plain `OK` is not publication authority. Category selection must happen before the first Drive mutation. That authority is limited to Drive staging, the reviewed RPi5 verify/import path and public verification; archive/delete, overwrite and unrelated runtime actions remain outside it.
 
 ## Why raw Drive blob files are acceptable
 
@@ -168,7 +168,7 @@ A Drive archive failure or an intentionally deferred archive must not rewrite or
 With the transport canary and trusted host operator activated, the normal human workflow is:
 
 ```text
-User: "Liekam iekšā."
+User: `PUBLISH`
 ChatGPT: determine one allowed category and freeze exact approved image + manifest
 → Drive staging
 → RPi5 pull + SHA verification
