@@ -95,7 +95,6 @@ Before the first content mutation, the operator must freeze:
 
 The category is selected from the canonical registry in `metadata/categories.json`. Current category IDs are:
 
-- `rettungshunde` — Rettungshunde;
 - `tiere` — Tiere;
 - `fahrzeuge` — Fahrzeuge;
 - `alphabet` — Alphabet;
