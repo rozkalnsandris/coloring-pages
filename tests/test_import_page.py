@@ -73,6 +73,29 @@ class ImportPageTests(unittest.TestCase):
         self.assertEqual(entry["print"], "/media/fire-pup-001/source.png")
         self.assertEqual(entry["pdf"], "/media/fire-pup-001/print.pdf")
 
+    def test_unknown_category_rejected_before_publication(self):
+        with self.assertRaisesRegex(importer.ImportError, "category must be one of"):
+            importer.import_page(
+                self.source,
+                self.content,
+                self.metadata(category="berufe"),
+            )
+
+    def test_category_registry_contains_current_public_filters(self):
+        self.assertEqual(
+            importer.load_allowed_categories(),
+            frozenset(
+                {
+                    "rettungshunde",
+                    "tiere",
+                    "fahrzeuge",
+                    "alphabet",
+                    "lernen",
+                    "jahreszeiten",
+                }
+            ),
+        )
+
     def test_non_png_rejected(self):
         Image.new("RGB", (1055, 1491), "white").save(self.source, format="JPEG")
         with self.assertRaisesRegex(importer.ImportError, "source must be PNG"):
