@@ -136,19 +136,28 @@ async function hydrateCatalog() {
 }
 
 if (menuButton && mobileNav) {
+  function setMenuOpen(open) {
+    menuButton.setAttribute("aria-expanded", String(open));
+    mobileNav.hidden = !open;
+    const label = menuButton.querySelector(".sr-only");
+    if (label) label.textContent = open ? "Menü schließen" : "Menü öffnen";
+  }
+
   menuButton.addEventListener("click", () => {
     const expanded = menuButton.getAttribute("aria-expanded") === "true";
-    menuButton.setAttribute("aria-expanded", String(!expanded));
-    mobileNav.hidden = expanded;
-
-    const label = menuButton.querySelector(".sr-only");
-    if (label) label.textContent = expanded ? "Menü öffnen" : "Menü schließen";
+    setMenuOpen(!expanded);
   });
 
   mobileNav.addEventListener("click", (event) => {
     if (event.target instanceof HTMLAnchorElement) {
-      menuButton.setAttribute("aria-expanded", "false");
-      mobileNav.hidden = true;
+      setMenuOpen(false);
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !mobileNav.hidden) {
+      setMenuOpen(false);
+      menuButton.focus();
     }
   });
 }
@@ -160,7 +169,7 @@ headerSearch?.addEventListener("click", () => {
 searchForm?.addEventListener("submit", (event) => {
   event.preventDefault();
   applyFilters();
-  document.querySelector("#neu")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  document.querySelector("#neu")?.scrollIntoView({ block: "start" });
 });
 
 searchInput?.addEventListener("input", applyFilters);
@@ -178,8 +187,18 @@ categoryButtons.forEach((button) => {
     });
 
     applyFilters();
-    document.querySelector("#neu")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.querySelector("#neu")?.scrollIntoView({ block: "start" });
   });
+});
+
+document.querySelector("[data-reset-filters]")?.addEventListener("click", () => {
+  activeCategory = "";
+  if (searchInput) searchInput.value = "";
+  categoryButtons.forEach((button) => {
+    button.classList.remove("is-active");
+    button.setAttribute("aria-pressed", "false");
+  });
+  applyFilters();
 });
 
 if (gallery) {

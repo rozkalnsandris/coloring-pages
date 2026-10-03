@@ -20,7 +20,7 @@
         <span class="brand-word"><span>Coloring</span> <span class="brand-pages"><b>P</b><b>a</b><b>g</b><b>e</b><b>s</b></span></span>
       </a>
       <nav class="desktop-nav" aria-label="Hauptnavigation">
-        <a class="is-active" href="index.html">Startseite</a>
+        <a href="index.html">Startseite</a>
         <a href="index.html#kategorien">Kategorien</a>
         <a href="index.html#neu">Über uns</a>
       </nav>
@@ -34,33 +34,28 @@
     </nav>
   </header>
 
-  <main id="main" class="detail-main" data-detail-root>
+  <main id="main" class="detail-main" tabindex="-1" data-detail-root>
     <div class="container">
-      <nav class="breadcrumbs" aria-label="Breadcrumb">
-        <a href="index.html" aria-label="Startseite">⌂</a><span>›</span>
-        <a href="index.html#kategorien" data-breadcrumb-category>Rettungshunde</a><span>›</span>
+      <nav class="breadcrumbs" aria-label="Brotkrümelnavigation">
+        <a href="index.html" aria-label="Startseite"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></svg></a><span aria-hidden="true">›</span>
+        <a href="index.html#kategorien" data-breadcrumb-category>Rettungshunde</a><span aria-hidden="true">›</span>
         <span aria-current="page" data-breadcrumb-current>Ben hilft einem Kind</span>
       </nav>
 
-      <section class="detail-grid">
+      <section class="detail-grid" aria-labelledby="detail-title">
         <div class="detail-media">
           <div class="detail-preview" aria-label="Malvorlagen-Vorschau">
             <div class="detail-art-placeholder" data-detail-placeholder>
               <span aria-hidden="true">🐕‍🦺</span>
               <strong>Ben hilft einem Kind</strong>
-              <small>Die echte A4-Malvorlage wird aus dem kanonischen Katalog erzeugt.</small>
+              <small>Diese Malvorlage ist bald verfügbar. Sobald sie bereitsteht, kannst du sie hier ansehen, herunterladen und drucken.</small>
             </div>
             <img class="detail-preview-image" data-detail-preview alt="" hidden>
           </div>
-          <div class="detail-thumbs" aria-label="Vorschauen">
-            <button class="is-selected" type="button" aria-label="Gesamtansicht"><span aria-hidden="true">🐕‍🦺</span></button>
-            <button type="button" aria-label="Ben Detail"><span aria-hidden="true">🐶</span></button>
-            <button type="button" aria-label="Kind Detail"><span aria-hidden="true">🧒</span></button>
-          </div>
         </div>
 
-        <aside class="detail-copy">
-          <h1 data-detail-title>Ben hilft einem Kind</h1>
+        <div class="detail-copy">
+          <h1 id="detail-title" data-detail-title>Ben hilft einem Kind</h1>
           <div class="detail-badges">
             <span class="age" data-detail-age>3–6 Jahre</span>
             <span class="easy" data-detail-difficulty>Einfach</span>
@@ -73,9 +68,9 @@
           </p>
 
           <div class="detail-actions">
-            <a class="action-primary is-disabled" data-action-print aria-disabled="true"><span>▣</span>A4 drucken <b>→</b></a>
-            <a class="is-disabled" data-action-pdf aria-disabled="true"><span>▤</span>PDF herunterladen <b>→</b></a>
-            <a class="is-disabled" data-action-png aria-disabled="true"><span>▧</span>PNG herunterladen <b>→</b></a>
+            <a class="action-primary is-disabled" data-action-print aria-disabled="true"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V3h10v5M7 17H4V9h16v8h-3M7 14h10v7H7zM17 11h1"/></svg><span>A4 drucken</span><b aria-hidden="true">→</b></a>
+            <a class="is-disabled" data-action-pdf aria-disabled="true"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H5v18h14V8zM14 3v5h5M8 13h8M8 17h5"/></svg><span>PDF herunterladen</span><b aria-hidden="true">→</b></a>
+            <a class="is-disabled" data-action-png aria-disabled="true"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg><span>PNG herunterladen</span><b aria-hidden="true">→</b></a>
           </div>
 
           <div class="detail-note">
@@ -83,7 +78,7 @@
             <div><strong>Optimiert für A4 (300 DPI)</strong>
             <p>Diese Malvorlage wird hochwertig und für den Druck auf A4 optimiert. Perfekt für zu Hause, Kindergarten oder die Schule.</p></div>
           </div>
-        </aside>
+        </div>
       </section>
     </div>
   </main>

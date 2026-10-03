@@ -11,7 +11,7 @@ const printLink = document.querySelector("[data-action-print]");
 const pdfLink = document.querySelector("[data-action-pdf]");
 const pngLink = document.querySelector("[data-action-png]");
 
-const CATEGORY_LABELS = {
+const DETAIL_CATEGORY_LABELS = {
   rettungshunde: "Rettungshunde",
   tiere: "Tiere",
   fahrzeuge: "Fahrzeuge",
@@ -21,7 +21,7 @@ const CATEGORY_LABELS = {
   seasonal: "Jahreszeiten",
 };
 
-const DIFFICULTY_LABELS = {
+const DETAIL_DIFFICULTY_LABELS = {
   easy: "Einfach",
   normal: "Mittel",
   detailed: "Detailliert",
@@ -54,8 +54,8 @@ async function loadDetail() {
     const entry = catalog.find((item) => item && item.id === id);
     if (!entry) return;
 
-    const categoryLabel = CATEGORY_LABELS[entry.category] || entry.category;
-    const difficultyLabel = DIFFICULTY_LABELS[entry.difficulty] || entry.difficulty;
+    const categoryLabel = DETAIL_CATEGORY_LABELS[entry.category] || entry.category;
+    const difficultyLabel = DETAIL_DIFFICULTY_LABELS[entry.difficulty] || entry.difficulty;
 
     document.title = `${entry.title} | Coloring Pages`;
     detailRoot?.setAttribute("data-loaded-id", entry.id);
@@ -65,8 +65,14 @@ async function loadDetail() {
       detailCharacter.textContent = entry.character ? `🐶 ${entry.character}` : "";
       detailCharacter.hidden = !entry.character;
     }
-    if (detailAge) detailAge.textContent = `${entry.age} Jahre`;
-    if (detailDifficulty) detailDifficulty.textContent = difficultyLabel;
+    if (detailAge) {
+      detailAge.textContent = `${entry.age} Jahre`;
+      detailAge.classList.toggle("age-older", entry.age === "4-8");
+    }
+    if (detailDifficulty) {
+      detailDifficulty.textContent = difficultyLabel;
+      detailDifficulty.className = entry.difficulty === "easy" ? "easy" : entry.difficulty === "detailed" ? "detailed" : "medium";
+    }
     if (detailDescription) {
       detailDescription.textContent =
         `Diese Malvorlage „${entry.title}“ ist für den A4-Druck vorbereitet und kann direkt als PNG oder PDF geöffnet werden.`;

@@ -26,7 +26,7 @@
       </a>
 
       <nav class="desktop-nav" aria-label="Hauptnavigation">
-        <a class="is-active" href="#hero">Startseite</a>
+        <a class="is-active" href="#hero" aria-current="page">Startseite</a>
         <a href="#kategorien">Kategorien</a>
         <a href="#neu">Über uns</a>
       </nav>
@@ -48,24 +48,23 @@
     </nav>
   </header>
 
-  <main id="main">
-    <section id="hero" class="hero">
+  <main id="main" tabindex="-1">
+    <section id="hero" class="hero" aria-labelledby="hero-title">
       <div class="container hero-grid">
         <div class="hero-copy">
-          <h1 class="desktop-hero-title">
+          <h1 id="hero-title"><span class="desktop-hero-title">
             Schöne Malvorlagen<br>
             <span class="title-blue">für kleine</span>
             <span class="title-rainbow" aria-label="Entdecker">
               <span>E</span><span>n</span><span>t</span><span>d</span><span>e</span><span>c</span><span>k</span><span>e</span><span>r</span>
             </span>
-          </h1>
-          <h1 class="mobile-hero-title">
+          </span><span class="mobile-hero-title">
             Malvorlagen<br>
             <span class="title-blue">für</span>
             <span class="title-rainbow" aria-label="Kinder">
               <span>K</span><span>i</span><span>n</span><span>d</span><span>e</span><span>r</span>
             </span>
-          </h1>
+          </span></h1>
           <p class="hero-text">
             Entdecke eine große Auswahl an liebevoll gestalteten Malvorlagen zum Ausdrucken –
             für mehr Kreativität, Spielspaß und kleine Abenteuer im Alltag.
@@ -73,7 +72,7 @@
         </div>
 
         <div class="hero-art">
-          <img src="assets/hero-illustration.png" alt="Fröhlicher Rettungshund mit Rucksack in einer Berglandschaft neben einem Wegweiser">
+          <img src="assets/hero-illustration.png" width="1408" height="736" alt="Fröhlicher Rettungshund mit Rucksack in einer Berglandschaft neben einem Wegweiser">
         </div>
 
         <form class="search" role="search" data-search-form>
@@ -85,7 +84,7 @@
       </div>
     </section>
 
-    <section id="kategorien" class="categories">
+    <section id="kategorien" class="categories" aria-label="Kategorien">
       <div class="container">
         <div class="category-grid" data-category-grid>
           <button class="category-card category-rescue" type="button" data-filter="rettungshunde">
@@ -116,11 +115,11 @@
       </div>
     </section>
 
-    <section id="neu" class="new-pages">
+    <section id="neu" class="new-pages" aria-labelledby="gallery-title">
       <div class="container">
         <div class="section-heading">
-          <h2>Neue Malvorlagen</h2>
-          <a class="outline-link" href="#neu">Alle Malvorlagen ansehen <span aria-hidden="true">→</span></a>
+          <h2 id="gallery-title">Neue Malvorlagen</h2>
+          <a class="outline-link" href="#neu" data-reset-filters><span class="desktop-label">Alle Malvorlagen ansehen</span><span class="mobile-label">Alle ansehen</span> <span aria-hidden="true">→</span></a>
         </div>
 
         <div class="gallery" data-gallery>
