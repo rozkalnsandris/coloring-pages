@@ -100,7 +100,8 @@ The category is selected from the canonical registry in `metadata/categories.jso
 - `fahrzeuge` — Fahrzeuge;
 - `alphabet` — Alphabet;
 - `lernen` — Lernen;
-- `jahreszeiten` — Jahreszeiten.
+- `figuren` — Figuren & Helden;
+- `jahreszeiten` — Jahreszeiten & Feste.
 
 When exactly one category clearly fits the approved page, choose it automatically and include it in the frozen manifest metadata. If more than one category is plausible, or none of the current categories fits, STOP before Drive upload and ask the owner to choose an existing category or create a new category through a reviewed source change. Never use a silent default category.
 
