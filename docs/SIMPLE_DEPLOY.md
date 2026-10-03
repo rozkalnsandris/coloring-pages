@@ -1,56 +1,40 @@
 # Coloring Pages SIMPLE-DEPLOY
 
-This repository is a SIMPLE-DEPLOY v1 consumer.
+This repository is a SIMPLE-DEPLOY v1 consumer for the static application image.
 
-Canonical consumer contract:
+## Application image
 
 - manifest: `.simple-deploy.json`
 - image: `ghcr.io/rozkalnsandris/coloring-pages`
 - target alias: `coloring-pages-public-rpi5`
 - architecture: `linux/arm64`
 - runtime class: `rpi5-compose`
-- persistence: none
 - pull profile: `public-anonymous-pull`
+
+The image contains only the application shell: HTML/CSS/JS/assets and nginx configuration. Production coloring-page binaries and the live catalogue are not baked into the image.
+
+## Required content bind
+
+The runtime requires one read-only host bind:
+
+```text
+/srv/coloring-pages-content/public
+→ /var/lib/coloring-pages/public
+→ read-only
+```
+
+Only `public/` is exposed to the container. `inbox/`, `originals/` and `state/` remain outside the container.
+
+The bind is a runtime prerequisite, not authority to create or modify the host path. Any RPi5 filesystem/runtime mutation remains separately owner-gated.
 
 ## Publication
 
-`.github/workflows/simple-deploy.yml` runs on pushes to the default `main` branch only when a current site/build/consumer/deploy input changes, and delegates to the immutable reusable workflow:
+`.github/workflows/simple-deploy.yml` publishes application images only when application/deployment inputs change. Media importer/content changes do not need to mint a new application image.
+
+The reusable workflow remains pinned to:
 
 `rozkalnsandris/ops-workflows/.github/workflows/simple-deploy.yml@94187cc447fc80757db10ac25d49717d00dc8430`
 
-The caller passes exactly `${{ github.sha }}` as `source_sha`. The reusable workflow validates that the caller event is the default branch, checks out that exact source SHA, builds the declared Dockerfile for `linux/arm64`, publishes the exact source tag, records an immutable registry digest, and advances the mutable `:production` pointer to that digest.
-
-The reusable workflow requires only:
-
-- `contents: read`
-- `packages: write`
-
-No repository secret forwarding is declared by the consumer caller.
-
-The caller intentionally skips documentation/test-only changes so a docs merge does not mint a new immutable image identity. Publication remains enabled for the workflow itself, the consumer manifest, Docker/build inputs, application HTML/CSS/JS/assets, canonical metadata/originals, build tooling, and deployment source under `deploy/**`.
-
-## Immutable deployment evidence
-
-RPi5_main must consume the immutable publication result, not the mutable `:production` tag.
-
-The downstream source/runtime handoff requires:
-
-- exact merged Coloring Pages source SHA;
-- image repository;
-- `sha256:...` image digest;
-- immutable `image@sha256:...` reference;
-- target alias;
-- consumer manifest SHA-256;
-- shared SIMPLE-DEPLOY workflow SHA;
-- compose project/file/service identity;
-- health/readiness contract;
-- persistence declaration;
-- registry pull profile.
-
-The reusable workflow emits these facts through its public-safe SIMPLE-DEPLOY intent/output contract.
-
 ## Authority boundary
 
-Publishing an image does not install or start it on RPi5 and does not authorize Cloudflare, DNS, tunnel, network, secrets, credentials, repository-settings or host-runtime mutations.
-
-RPi5 target registration and LIVE cutover remain separate `RPi5_main` work items with their own authority and exact-SHA/digest gates.
+Image publication, merge, RPi5 deployment, creation of the content store, importing artwork, Docker restart/redeploy and Cloudflare/DNS/tunnel work are separate operations. No repository source change grants LIVE authority.
