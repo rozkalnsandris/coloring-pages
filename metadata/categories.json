@@ -2,10 +2,6 @@
   "schema": "rozkalns.coloring-pages.categories.v1",
   "categories": [
     {
-      "id": "rettungshunde",
-      "label": "Rettungshunde"
-    },
-    {
       "id": "tiere",
       "label": "Tiere"
     },
