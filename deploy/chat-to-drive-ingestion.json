@@ -24,7 +24,8 @@
     "source_merge_authorizes_production_import": false,
     "source_merge_authorizes_drive_archive_or_delete": false,
     "source_merge_authorizes_credentials_or_settings_mutation": false,
-    "live_content_import_requires_fresh_owner_authorization": true
+    "live_content_import_requires_fresh_owner_authorization": true,
+    "category_binding_required_before_first_mutation": true
   },
   "canonical_domains": {
     "application_source": "github",
@@ -49,7 +50,8 @@
     ],
     "manifest_is_readiness_signal": true,
     "exact_source_bytes_required": true,
-    "preupload_sha256_required": true
+    "preupload_sha256_required": true,
+    "category_binding_required_before_upload": true
   },
   "manifest": {
     "schema": "rozkalns.coloring-pages.drive-staging-manifest.v1",
@@ -83,7 +85,16 @@
     "allowed_language": [
       "de"
     ],
-    "unknown_fields": "reject"
+    "unknown_fields": "reject",
+    "category_registry": "metadata/categories.json",
+    "allowed_category": [
+      "rettungshunde",
+      "tiere",
+      "fahrzeuge",
+      "alphabet",
+      "lernen",
+      "jahreszeiten"
+    ]
   },
   "integrity_canary": {
     "required_before_activation": true,
@@ -102,7 +113,8 @@
       "manifest-schema",
       "id",
       "size-bytes",
-      "sha256"
+      "sha256",
+      "category"
     ],
     "inbox_target": "/srv/coloring-pages-content/inbox/<id>.png",
     "inbox_publish": "atomic-rename-after-integrity-pass",
@@ -144,6 +156,7 @@
   "fail_closed": {
     "conditions": [
       "manifest-invalid",
+      "category-not-allowed",
       "drive-folder-binding-ambiguous",
       "source-hash-mismatch",
       "source-size-mismatch",
