@@ -5,6 +5,11 @@ services:
     image: ghcr.io/rozkalnsandris/coloring-pages:production
     ports:
       - "${COLORING_PAGES_ORIGIN_PORT:-9190}:8080"
+    volumes:
+      - type: bind
+        source: "${COLORING_PAGES_CONTENT_PUBLIC:-/srv/coloring-pages-content/public}"
+        target: /var/lib/coloring-pages/public
+        read_only: true
     read_only: true
     tmpfs:
       - /tmp
