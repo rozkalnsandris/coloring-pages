@@ -9,7 +9,6 @@ const resultCount = document.querySelector("[data-result-count]");
 const emptyState = document.querySelector("[data-empty-state]");
 
 const CATEGORY_LABELS = {
-  rettungshunde: "Rettungshunde",
   tiere: "Tiere",
   fahrzeuge: "Fahrzeuge",
   alphabet: "Alphabet",
