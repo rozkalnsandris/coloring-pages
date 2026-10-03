@@ -105,7 +105,8 @@ Do not add a framework, CMS, database or backend API without a documented need.
 - `metadata/` documents the runtime catalogue schema; production records live in the RPi5 content store.
 - `tools/coloring-pages-import` is the canonical one-page importer.
 - RPi5 content root: `/srv/coloring-pages-content/`.
-- Only `/srv/coloring-pages-content/public` may be mounted into the web container, read-only.
+- SIMPLE-DEPLOY consumer persistence identity: `coloring_pages_content`.
+- The consumer mounts `coloring_pages_content` read-only at `/var/lib/coloring-pages/public`; only trusted `RPi5_main` source may bind that identity to the exact host path `/srv/coloring-pages-content/public`.
 - `inbox/`, `originals/` and `state/` must remain outside the public container surface.
 - New content publication must not require an application rebuild or redeploy.
 
