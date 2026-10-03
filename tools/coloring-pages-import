@@ -286,6 +286,7 @@ def import_page(
 
         catalog_tmp = public_root / f".catalog.{page_id}.{os.getpid()}.tmp"
         shutil.copyfile(stage_catalog, catalog_tmp)
+        os.chmod(catalog_tmp, 0o644)
         os.replace(catalog_tmp, catalog_path)
 
     return entry
