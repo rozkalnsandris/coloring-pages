@@ -25,7 +25,7 @@
   },
   "persistence": {
     "volumes": [
-      "/srv/coloring-pages-content/public:/var/lib/coloring-pages/public:ro"
+      "coloring_pages_content"
     ]
   },
   "registry": {
