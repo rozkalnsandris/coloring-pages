@@ -9,19 +9,20 @@ Normal happy path:
 ```text
 MAKE lapsa
 → ChatGPT generates one coloring-page PNG draft
-UPSCALE-PRINT
-→ deterministic CPU/Pillow white cleanup + A4 print-master preparation
-VALIDATE-PRINT
-→ read-only PASS with exact print-master SHA-256 + byte size
 PUBLISH
-→ owner approves the exact validated print master
+→ owner approves the exact latest draft
+→ deterministic CPU/Pillow white cleanup + A4 print-master preparation
+→ read-only validation with exact print-master SHA-256 + byte size
 → determine one valid category
 → freeze page ID + validated print-master SHA-256 + byte size + category
+→ prebuild + validate manifest
 → Drive staging
 → trusted RPi5 verify/import
-→ public verification
+→ required public verification
+→ PASS and stop
 ```
 
+`UPSCALE-PRINT` and `VALIDATE-PRINT` remain available as optional manual inspection/debug commands, but they are no longer required owner steps in the normal publication path.
 The commands below are a project conversation convention. They do not replace GitHub policy, the media standard, or the Chat-to-Drive ingestion contract.
 
 ## Commands
@@ -81,13 +82,13 @@ EDIT resnākas kontūras
 EDIT noņem mākoni labajā augšējā stūrī
 ```
 
-The edited result becomes the latest draft candidate. Request the edited output on the same exact `1024×1536` PNG portrait canvas; do not use automatic output sizing. `EDIT` is not publication approval and invalidates any earlier print-master validation.
+The edited result becomes the latest draft candidate. Request the edited output on the same exact `1024×1536` PNG portrait canvas; do not use automatic output sizing. `EDIT` is not publication approval and invalidates any earlier manually prepared/validated print master.
 
-`REMAKE` likewise invalidates any earlier print-master validation for the affected page/set.
+`REMAKE` likewise invalidates any earlier manually prepared/validated print master for the affected page/set. A later `PUBLISH` always prepares and validates fresh print master(s) from the exact latest draft/set.
 
-### `UPSCALE-PRINT`
+### `UPSCALE-PRINT` (optional manual inspection)
 
-Transform the exact latest generated draft/page set without asking the image model to generate or redraw anything.
+This command is optional. Transform the exact latest generated draft/page set without asking the image model to generate or redraw anything. Normal publication invokes the same preparation automatically inside `PUBLISH`.
 
 Use `tools/coloring-pages-print-master prepare <draft.png> <print-master.png>` or an exact equivalent execution of that reviewed helper. The helper:
 
@@ -106,9 +107,9 @@ This is deterministic interpolation/print preparation, not AI detail recovery. I
 
 For an ordered multi-page activity, every page must receive its own print master and the page order must remain unchanged.
 
-### `VALIDATE-PRINT`
+### `VALIDATE-PRINT` (optional manual inspection)
 
-Read-only validate the latest print master(s) with `tools/coloring-pages-print-master validate <print-master.png>`.
+This command is optional. Read-only validate the latest manually prepared print master(s) with `tools/coloring-pages-print-master validate <print-master.png>`. Normal publication invokes this validation automatically inside `PUBLISH`.
 
 PASS requires:
 
@@ -124,16 +125,22 @@ The validator prints exact byte size and SHA-256. Any failure blocks `PUBLISH`. 
 
 ### `PUBLISH`
 
-`PUBLISH` is explicit owner approval of the exact latest **validated print-master** page or exact ordered validated print-master set in the current conversation. The lower-resolution generation draft is not the published byte identity.
+`PUBLISH` is the single normal publication command. It is explicit owner approval of the exact latest generated draft page or exact ordered draft set in the current conversation. The lower-resolution generation draft is never the published byte identity: `PUBLISH` first derives and validates fresh A4 print master(s) deterministically.
 
-Before the first content mutation, the operator must freeze:
+The `PUBLISH` chain is sequential and fail-closed:
 
-- one stable activity/page ID;
-- the ordered page count;
-- SHA-256 of every exact approved PNG;
-- exact byte size of every approved PNG;
-- exactly one valid category;
-- required catalogue metadata.
+1. prepare every exact latest draft with `tools/coloring-pages-print-master prepare` (or an exact reviewed equivalent);
+2. validate every prepared master with `tools/coloring-pages-print-master validate`;
+3. if any preparation or validation fails, STOP before the first Drive/content mutation;
+4. choose exactly one valid category;
+5. freeze one stable activity/page ID, the ordered page count, SHA-256 and exact byte size of every validated print master, category and required catalogue metadata;
+6. fully materialize and locally validate the complete v1/v2 manifest;
+7. stage the exact prepared PNG(s), then the prebuilt manifest, to the approved Drive pending folder;
+8. run the trusted RPi5 verify/import path;
+9. run only the contract-required post-import proof;
+10. when all required proof passes, immediately report `PASS` and stop.
+
+Do not run discretionary post-success diagnostics, repeated health checks, extra catalogue scans, Drive archive/delete, cleanup or unrelated runtime verification after the required proof is already complete.
 
 The category is selected from the canonical registry in `metadata/categories.json`. Current category IDs are:
 
@@ -150,7 +157,7 @@ After those values are frozen, the complete JSON manifest must be materialized a
 
 Only after the frozen identity, metadata, and prebuilt manifest all pass preflight does the approval bind to the reviewed content-ingest operation.
 
-`PUBLISH` requires a current successful `VALIDATE-PRINT` for every page in the approved set. The importer contract remains authoritative for ingestion, but the Chat authoring layer now binds the validated A4 print-master bytes rather than the lower-resolution generation draft.
+`PUBLISH` itself must produce a current successful validation for every page before the first content mutation. A prior manual `UPSCALE-PRINT` or `VALIDATE-PRINT` is not required and is not publication authority. The importer contract remains authoritative for ingestion, while the Chat authoring layer binds only the freshly validated A4 print-master bytes rather than the lower-resolution generation draft.
 
 The authorized path is only:
 
@@ -181,20 +188,20 @@ If there is ambiguity about which page/page set is approved, if any approved pag
 The intended human interaction is deliberately terse:
 
 ```text
-User: MAKE lapsa
-Assistant: [generated draft]
-
-User: UPSCALE-PRINT
-Assistant: [derived A4 print master; no new artwork]
-
-User: VALIDATE-PRINT
-Assistant: [PASS/FAIL + exact print-master identity]
-
-User: PUBLISH
-Assistant: [determine category, freeze exact validated identity + category, execute bounded ingest, report PASS or STOP]
+User: `PUBLISH`
+ChatGPT:
+→ derive fresh exact A4 print master(s) without generating new artwork
+→ validate and freeze exact SHA-256 + byte size
+→ determine one allowed category
+→ prebuild/validate manifest
+→ Drive staging
+→ RPi5 pull + SHA verification
+→ immutable import
+→ required public verification
+→ report PASS or STOP
 ```
 
-If the image needs work:
+If the image needs work before publication:
 
 ```text
 User: REMAKE
@@ -206,14 +213,15 @@ or:
 User: EDIT vienkāršāks fons
 ```
 
-Because the image-generation surface may return the generated draft without an additional text message, the stable next command for an accepted draft is `UPSCALE-PRINT`; `PUBLISH` is valid only after the derived print master passes `VALIDATE-PRINT`.
+Because the image-generation surface may return the generated draft without an additional text message, the stable next command for an accepted draft is simply `PUBLISH`. Preparation and validation remain mandatory gates, but they run inside that one command.
 
-The publication commands to remember are:
+The normal publication commands to remember are:
 
 ```text
-MAKE / REMAKE / EDIT → UPSCALE-PRINT → VALIDATE-PRINT → PUBLISH
+MAKE / REMAKE / EDIT → PUBLISH
 ```
 
+Optional troubleshooting/inspection remains available as `UPSCALE-PRINT` and `VALIDATE-PRINT`.
 ## Relationship to existing contracts
 
 This command layer is intentionally thin:
