@@ -26,6 +26,8 @@ MIN_SOURCE_WIDTH = 800
 MIN_SOURCE_HEIGHT = 1100
 THUMB_MAX_WIDTH = 400
 PREVIEW_MAX_WIDTH = 1000
+PRINT_CLEAR_LUMA = 240
+PRINT_SOLID_LUMA = 180
 ALLOWED_AGES = {"3-6", "4-8"}
 ALLOWED_DIFFICULTIES = {"easy", "normal", "detailed"}
 ALLOWED_LANGUAGES = {"de"}
@@ -178,14 +180,32 @@ def a4_pdf_resolution(canvas: Image.Image) -> float:
     return canvas.width / (A4_WIDTH_MM / MM_PER_INCH)
 
 
-def build_derivatives(image: Image.Image, source_path: Path, target: Path) -> None:
+def print_alpha(luma: int) -> int:
+    if luma >= PRINT_CLEAR_LUMA:
+        return 0
+    if luma <= PRINT_SOLID_LUMA:
+        return 255
+    return round(
+        ((PRINT_CLEAR_LUMA - luma) / (PRINT_CLEAR_LUMA - PRINT_SOLID_LUMA)) * 255
+    )
+
+
+def build_print_image(image: Image.Image) -> Image.Image:
+    """Create black line art with near-white page pixels made transparent."""
+    alpha = image.point(print_alpha)
+    result = Image.new("RGBA", image.size, color=(0, 0, 0, 0))
+    result.putalpha(alpha)
+    return result
+
+
+def build_derivatives(image: Image.Image, target: Path) -> None:
     target.mkdir(parents=True, exist_ok=False)
-    shutil.copyfile(source_path, target / "source.png")
 
     thumb = resized_copy(image, THUMB_MAX_WIDTH)
     preview = resized_copy(image, PREVIEW_MAX_WIDTH)
     thumb.save(target / "thumb.webp", format="WEBP", lossless=True, quality=100, method=6)
     preview.save(target / "preview.webp", format="WEBP", lossless=True, quality=100, method=6)
+    build_print_image(image).save(target / "print.png", format="PNG", optimize=True)
 
     canvas = build_a4_pdf_canvas(image)
     canvas.convert("RGB").save(
@@ -231,7 +251,7 @@ def build_catalog_entry(metadata: dict[str, str]) -> dict[str, str]:
         "language": metadata["language"],
         "thumb": f"{root}/thumb.webp",
         "preview": f"{root}/preview.webp",
-        "print": f"{root}/source.png",
+        "print": f"{root}/print.png",
         "pdf": f"{root}/print.pdf",
     }
 
@@ -301,7 +321,7 @@ def import_page(
 
         stage_original.mkdir(parents=True)
         shutil.copyfile(source_path, stage_original / "source.png")
-        build_derivatives(image, source_path, stage_media)
+        build_derivatives(image, stage_media)
         stage_catalog.write_text(new_catalog, encoding="utf-8")
 
         os.replace(stage_original, final_original)

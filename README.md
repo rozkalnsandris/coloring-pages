@@ -48,7 +48,7 @@ The application keeps the simple V1 journey:
 
 See [Coloring Pages Media Standard v1](docs/MEDIA_STANDARD_V1.md).
 
-The source artwork is preserved as the generated PNG. V1 does not require vector tracing, a mandatory 2480×3508 upscale or a 300 PPI conversion. The `A4 drucken` action uses the catalogue `print` PNG directly: a minimal hidden `print.html` loads the PNG into a canvas, removes near-white background pixels while preserving dark linework, and calls `window.print()`. CSS `@page` fixes the print sheet to A4 portrait (`210 × 297 mm`), so PDF.js is not part of the print path. The importer still creates `print.pdf` as a separate download derivative. The importer runtime is embedded in the immutable Coloring Pages image, so the RPi5 host does not need Python/Pillow installed.
+The approved source artwork is preserved byte-for-byte only as the private `originals/<id>/source.png` master. V1 does not require vector tracing, a mandatory 2480×3508 upscale or a 300 PPI conversion. The importer publishes a cleaned transparent `print.png` derivative for `A4 drucken`; the hidden `print.html` uses that PNG with CSS `@page` fixed to A4 portrait (`210 × 297 mm`) and calls `window.print()`. PDF.js is not part of the print path. The importer still creates `print.pdf` as a separate download derivative.
 
 ## Runtime content layout
 

@@ -62,9 +62,9 @@ Canonical LIVE content layout:
 │   ├── catalog.json
 │   └── media/
 │       └── <page-id>/
-│           ├── source.png
 │           ├── thumb.webp
 │           ├── preview.webp
+│           ├── print.png
 │           └── print.pdf
 └── state/
 ```
@@ -119,8 +119,8 @@ The importer:
 3. rejects duplicate IDs;
 4. preserves `originals/<page-id>/source.png`;
 5. creates lossless `thumb.webp` and `preview.webp`;
-6. copies the exact source PNG into the public media directory;
-7. creates an A4 portrait `print.pdf` from the original source pixels, adding only white A4-ratio padding when needed and never upscaling the artwork;
+6. creates a public `print.png` line-art derivative with near-white page pixels transparent, without publishing the exact source PNG;
+7. creates an A4 portrait `print.pdf` download derivative from the original source pixels, adding only white A4-ratio padding when needed and never upscaling the artwork;
 8. stages a new catalogue;
 9. atomically replaces `catalog.json` only after all derivatives are ready.
 
@@ -141,7 +141,7 @@ Example:
   "language": "de",
   "thumb": "/media/fire-pup-001/thumb.webp",
   "preview": "/media/fire-pup-001/preview.webp",
-  "print": "/media/fire-pup-001/source.png",
+  "print": "/media/fire-pup-001/print.png",
   "pdf": "/media/fire-pup-001/print.pdf"
 }
 ```

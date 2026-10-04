@@ -42,14 +42,15 @@ The normal generated source is an exact `1024×1536` PNG. The PNG remains the pr
 One accepted source creates:
 
 ```text
-source.png
-├── thumb.webp      max width 400 px, lossless
-├── preview.webp    max width 1000 px, lossless
-├── source.png      exact public copy
-└── print.pdf       A4 portrait derivative
+originals/<id>/source.png    private canonical master
+public/media/<id>/
+├── thumb.webp               max width 400 px, lossless
+├── preview.webp             max width 1000 px, lossless
+├── print.png                cleaned transparent line-art derivative
+└── print.pdf                A4 portrait download derivative
 ```
 
-The PDF keeps the source pixels at their original resolution. When the source ratio differs from A4, the importer adds only the minimum white padding needed for an A4-ratio canvas; it does not resize or upscale the artwork. The PDF remains a downloadable derivative only; browser printing uses the catalogue `print` PNG and the A4 CSS page geometry.
+The exact approved source PNG is not copied into the public media directory. The public `print.png` keeps the source dimensions, converts the validated grayscale artwork to black line art, and makes near-white page pixels transparent. The browser uses that PNG with the A4 CSS page geometry. The PDF keeps the source pixels at their original resolution and remains a separate downloadable derivative.
 
 ## Stable IDs
 
@@ -68,7 +69,7 @@ For `fire-pup-001`:
 ```text
 /media/fire-pup-001/thumb.webp
 /media/fire-pup-001/preview.webp
-/media/fire-pup-001/source.png
+/media/fire-pup-001/print.png
 /media/fire-pup-001/print.pdf
 ```
 

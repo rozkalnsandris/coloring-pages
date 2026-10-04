@@ -59,10 +59,17 @@ class ImportPageTests(unittest.TestCase):
         original = self.content / "originals/fire-pup-001/source.png"
         media = self.content / "public/media/fire-pup-001"
         self.assertEqual(original.read_bytes(), original_bytes)
-        self.assertEqual((media / "source.png").read_bytes(), original_bytes)
+        self.assertFalse((media / "source.png").exists())
         self.assertTrue((media / "thumb.webp").is_file())
         self.assertTrue((media / "preview.webp").is_file())
+        self.assertTrue((media / "print.png").is_file())
         self.assertTrue((media / "print.pdf").read_bytes().startswith(b"%PDF"))
+
+        with Image.open(media / "print.png") as print_image:
+            self.assertEqual(print_image.mode, "RGBA")
+            self.assertEqual(print_image.size, (1055, 1491))
+            self.assertEqual(print_image.getpixel((0, 0))[3], 0)
+            self.assertEqual(print_image.getpixel((150, 300))[3], 255)
 
         catalog = json.loads(
             (self.content / "public/catalog.json").read_text(encoding="utf-8")
@@ -70,7 +77,7 @@ class ImportPageTests(unittest.TestCase):
         self.assertEqual(catalog, [entry])
         self.assertEqual(entry["thumb"], "/media/fire-pup-001/thumb.webp")
         self.assertEqual(entry["preview"], "/media/fire-pup-001/preview.webp")
-        self.assertEqual(entry["print"], "/media/fire-pup-001/source.png")
+        self.assertEqual(entry["print"], "/media/fire-pup-001/print.png")
         self.assertEqual(entry["pdf"], "/media/fire-pup-001/print.pdf")
         self.assertEqual(
             (self.content / "public/catalog.json").stat().st_mode & 0o777,
@@ -115,15 +122,29 @@ class ImportPageTests(unittest.TestCase):
             (self.content / "originals/fire-pup-001/source.png").read_bytes(),
             original_bytes,
         )
-        self.assertEqual(
-            (self.content / "public/media/fire-pup-001/source.png").read_bytes(),
-            original_bytes,
+        self.assertFalse(
+            (self.content / "public/media/fire-pup-001/source.png").exists()
+        )
+        self.assertTrue(
+            (self.content / "public/media/fire-pup-001/print.png").is_file()
         )
         self.assertTrue(
             (self.content / "public/media/fire-pup-001/print.pdf")
             .read_bytes()
             .startswith(b"%PDF")
         )
+
+    def test_print_image_removes_near_white_background(self):
+        image = Image.new("L", (3, 1), color=255)
+        image.putpixel((1, 0), 230)
+        image.putpixel((2, 0), 100)
+
+        result = importer.build_print_image(image)
+
+        self.assertEqual(result.getpixel((0, 0)), (0, 0, 0, 0))
+        self.assertGreater(result.getpixel((1, 0))[3], 0)
+        self.assertLess(result.getpixel((1, 0))[3], 255)
+        self.assertEqual(result.getpixel((2, 0)), (0, 0, 0, 255))
 
     def test_a4_pdf_canvas_pads_two_by_three_without_resampling(self):
         image = Image.new("L", (1024, 1536), color=255)
