@@ -1,0 +1,27 @@
+{
+  "schema": "rozkalns.coloring-pages.id-policy.v1",
+  "new_publication": {
+    "format": "cp-NNNNNN",
+    "prefix": "cp",
+    "digits": 6,
+    "pattern": "^cp-[0-9]{6}$",
+    "sequence_start": 1,
+    "allocation": "next-after-highest-existing-sequence",
+    "reuse_gaps": false,
+    "semantic_components": false,
+    "example": "cp-000001"
+  },
+  "allocation_source": {
+    "canonical_state": "live-catalog",
+    "catalog_path": "/srv/coloring-pages-content/public/catalog.json",
+    "ignore_nonmatching_legacy_ids": true,
+    "candidate_must_be_absent_before_first_mutation": true,
+    "exhaustion_behavior": "stop"
+  },
+  "legacy_ids": {
+    "accepted": true,
+    "immutable": true,
+    "rename_existing": false,
+    "count_toward_sequence": false
+  }
+}
