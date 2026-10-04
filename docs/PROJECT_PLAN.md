@@ -146,7 +146,7 @@ Example:
 }
 ```
 
-The existing frontend keeps fetching `catalog.json`. New content therefore does not require an HTML/JS edit, GitHub PR, image rebuild or application redeploy. The detail-page `A4 drucken` action uses `pdf` as the print source through the hidden HTML/PDF.js print document; the legacy `print` PNG field remains in the current catalogue contract but is not used by the print action.
+The existing frontend keeps fetching `catalog.json`. New content therefore does not require an HTML/JS edit, GitHub PR, image rebuild or application redeploy. The detail-page `A4 drucken` action uses the catalogue `print` PNG through the hidden HTML print document. That document cleans near-white background pixels in a canvas, uses CSS A4 portrait page geometry and calls `window.print()` directly. The `pdf` field remains available for the separate PDF download action.
 
 ## Runtime mount
 
