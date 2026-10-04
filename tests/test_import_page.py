@@ -125,6 +125,28 @@ class ImportPageTests(unittest.TestCase):
             .startswith(b"%PDF")
         )
 
+    def test_a4_pdf_canvas_pads_two_by_three_without_resampling(self):
+        image = Image.new("L", (1024, 1536), color=255)
+        image.putpixel((100, 200), 0)
+
+        canvas = importer.build_a4_pdf_canvas(image)
+
+        self.assertEqual(canvas.size, (1086, 1536))
+        x_offset = (canvas.width - image.width) // 2
+        self.assertEqual(canvas.getpixel((x_offset + 100, 200)), 0)
+        self.assertEqual(canvas.getpixel((0, 0)), 255)
+        self.assertAlmostEqual(
+            importer.a4_pdf_resolution(canvas),
+            131.35,
+            places=2,
+        )
+
+    def test_importer_has_no_fixed_2480_by_3508_upscale(self):
+        source = MODULE_PATH.read_text(encoding="utf-8")
+        self.assertNotIn("2480", source)
+        self.assertNotIn("3508", source)
+        self.assertNotIn("PRINT_DPI", source)
+
     def test_invalid_aspect_rejected(self):
         Image.new("L", (1200, 1200), 255).save(self.source, format="PNG")
         with self.assertRaisesRegex(importer.ImportError, "portrait orientation"):

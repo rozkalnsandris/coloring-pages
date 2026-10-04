@@ -16,15 +16,16 @@ from typing import Any
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 ID_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
-A4_RATIO = 210 / 297
+A4_WIDTH_MM = 210
+A4_HEIGHT_MM = 297
+MM_PER_INCH = 25.4
+A4_RATIO = A4_WIDTH_MM / A4_HEIGHT_MM
 MIN_SOURCE_RATIO = 2 / 3
 MAX_SOURCE_RATIO = A4_RATIO + 0.04
 MIN_SOURCE_WIDTH = 800
 MIN_SOURCE_HEIGHT = 1100
 THUMB_MAX_WIDTH = 400
 PREVIEW_MAX_WIDTH = 1000
-A4_PRINT_SIZE = (2480, 3508)
-PRINT_DPI = 300
 ALLOWED_AGES = {"3-6", "4-8"}
 ALLOWED_DIFFICULTIES = {"easy", "normal", "detailed"}
 ALLOWED_LANGUAGES = {"de"}
@@ -156,6 +157,27 @@ def resized_copy(image: Image.Image, max_width: int) -> Image.Image:
     return copy
 
 
+def build_a4_pdf_canvas(image: Image.Image) -> Image.Image:
+    """Pad the source to an A4 ratio without resampling source pixels."""
+    if image.width / image.height < A4_RATIO:
+        canvas_width = max(image.width, round(image.height * A4_RATIO))
+        canvas_height = image.height
+    else:
+        canvas_width = image.width
+        canvas_height = max(image.height, round(image.width / A4_RATIO))
+
+    canvas = Image.new("L", (canvas_width, canvas_height), color=255)
+    x = (canvas_width - image.width) // 2
+    y = (canvas_height - image.height) // 2
+    canvas.paste(image, (x, y))
+    return canvas
+
+
+def a4_pdf_resolution(canvas: Image.Image) -> float:
+    """Map the padded raster to A4 physical width without changing its pixels."""
+    return canvas.width / (A4_WIDTH_MM / MM_PER_INCH)
+
+
 def build_derivatives(image: Image.Image, source_path: Path, target: Path) -> None:
     target.mkdir(parents=True, exist_ok=False)
     shutil.copyfile(source_path, target / "source.png")
@@ -165,12 +187,12 @@ def build_derivatives(image: Image.Image, source_path: Path, target: Path) -> No
     thumb.save(target / "thumb.webp", format="WEBP", lossless=True, quality=100, method=6)
     preview.save(target / "preview.webp", format="WEBP", lossless=True, quality=100, method=6)
 
-    fitted = ImageOps.contain(image, A4_PRINT_SIZE, method=Image.Resampling.LANCZOS)
-    canvas = Image.new("L", A4_PRINT_SIZE, color=255)
-    x = (A4_PRINT_SIZE[0] - fitted.width) // 2
-    y = (A4_PRINT_SIZE[1] - fitted.height) // 2
-    canvas.paste(fitted, (x, y))
-    canvas.convert("RGB").save(target / "print.pdf", format="PDF", resolution=PRINT_DPI)
+    canvas = build_a4_pdf_canvas(image)
+    canvas.convert("RGB").save(
+        target / "print.pdf",
+        format="PDF",
+        resolution=a4_pdf_resolution(canvas),
+    )
 
 
 def load_catalog(path: Path) -> list[dict[str, Any]]:

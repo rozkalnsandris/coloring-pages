@@ -23,18 +23,19 @@ Required:
 
 The importer validates file type, portrait geometry, A4-like ratio, minimum geometry and light page corners. The accepted width/height ratio starts at `2/3` (so `1024×1536` is explicitly valid); the upper bound remains the prior A4-side tolerance of `210/297 + 0.04`. This keeps common generated `2:3` pages inside the contract without widening the gate on the opposite side. It accepts production inputs only as direct children of the pre-created content-store `inbox/`. Visual/editorial properties such as clean outlines and lack of unwanted shading remain content-review requirements.
 
-## No mandatory upscale
+## Original-resolution print
 
-The source PNG is preserved byte-for-byte.
+The source PNG is preserved byte-for-byte and is the canonical print artwork.
 
 V1 does **not** require:
 
 - vector tracing
 - AI upscale
 - a 2480×3508 source raster
-- manual conversion before import
+- a 300 PPI conversion
+- manual enlargement before import
 
-A4/300 PPI remains a useful high-quality generation target when a generator can natively provide it, but it is not a gate for V1 content import.
+The normal generated source is an exact `1024×1536` PNG. The browser A4 print view uses that exact public `source.png` and CSS fits it to A4 without cropping or changing its aspect ratio.
 
 ## Derivatives
 
@@ -48,7 +49,7 @@ source.png
 └── print.pdf       A4 portrait derivative
 ```
 
-The PDF fits the source into an A4 portrait canvas without changing aspect ratio. This is a print derivative; it does not replace or redefine the preserved source master.
+The PDF keeps the source pixels at their original resolution. When the source ratio differs from A4, the importer adds only the minimum white padding needed for an A4-ratio canvas; it does not resize or upscale the artwork. The PDF is a convenience download and does not replace or redefine the preserved source master.
 
 ## Stable IDs
 

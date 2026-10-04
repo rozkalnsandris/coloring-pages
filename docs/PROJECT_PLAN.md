@@ -92,7 +92,7 @@ V1 source requirements:
 - no JPEG
 - no watermark
 - no mandatory vectorization
-- no mandatory 2480×3508 source upscale
+- no mandatory 2480×3508 source upscale or 300 PPI conversion
 
 The generated PNG is preserved byte-for-byte as `source.png`.
 
@@ -120,7 +120,7 @@ The importer:
 4. preserves `originals/<page-id>/source.png`;
 5. creates lossless `thumb.webp` and `preview.webp`;
 6. copies the exact source PNG into the public media directory;
-7. creates an A4 portrait `print.pdf` without stretching;
+7. creates an A4 portrait `print.pdf` from the original source pixels, adding only white A4-ratio padding when needed and never upscaling the artwork;
 8. stages a new catalogue;
 9. atomically replaces `catalog.json` only after all derivatives are ready.
 
