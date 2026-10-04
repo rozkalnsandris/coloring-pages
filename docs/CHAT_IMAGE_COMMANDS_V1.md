@@ -133,7 +133,7 @@ The `PUBLISH` chain is sequential and fail-closed:
 2. validate every prepared master with `tools/coloring-pages-print-master validate`;
 3. if any preparation or validation fails, STOP before the first Drive/content mutation;
 4. choose exactly one valid category;
-5. read fresh LIVE catalogue state and allocate the next opaque new-publication ID from `metadata/id-policy.json` (`cp-NNNNNN`; one greater than the highest existing matching sequence, or `cp-000001` when none exists);
+5. read fresh LIVE catalogue state and allocate one random seven-digit new-publication ID from `metadata/id-policy.json`; the candidate must be absent from the LIVE catalogue and distinct from any other candidate already allocated in the same local publish batch before any mutation;
 6. freeze that activity/page ID, the ordered page count, SHA-256 and exact byte size of every validated print master, category and required catalogue metadata;
 7. fully materialize and locally validate the complete v1/v2 manifest;
 8. stage the exact prepared PNG(s), then the prebuilt manifest, to the approved Drive pending folder;
@@ -157,12 +157,12 @@ The category is selected from the canonical registry in `metadata/categories.jso
 New Chat publications use an opaque technical ID that deliberately carries no type/topic/category semantics:
 
 ```text
-cp-NNNNNN
+NNNNNNN
 ```
 
-The canonical machine-readable policy is `metadata/id-policy.json`. During `PUBLISH`, read fresh LIVE `catalog.json`, consider only IDs matching `^cp-[0-9]{6}$`, and choose one greater than the highest existing sequence. If none exist, use `cp-000001`. Never reuse gaps. Existing descriptive/legacy IDs remain immutable and are ignored when calculating the new sequence.
+The canonical machine-readable policy is `metadata/id-policy.json`. During `PUBLISH`, generate exactly seven decimal digits independently for each activity, for example `0427183`. There is no shared sequence, no "next number", and no highest-ID scan. Read fresh LIVE `catalog.json` and require the candidate to be absent before any Drive/content mutation. When several independent publication candidates are being prepared in the same local batch, their IDs must also be distinct from each other.
 
-The candidate must be absent immediately before the first Drive/content mutation. If the sequence is exhausted or a collision/drift is observed, STOP before mutation rather than inventing a suffix or alternate scheme. Human-facing meaning stays in `title`, `category` and other metadata, not in the ID.
+A collision found before the first mutation is handled simply by generating another random seven-digit candidate and checking again. Existing descriptive, sequential or otherwise legacy IDs remain immutable and do not participate in allocation. Human-facing meaning stays in `title`, `category` and other metadata, not in the ID. Any collision or identity drift discovered after mutation begins remains a fail-closed STOP.
 
 When exactly one category clearly fits the approved page, choose it automatically and include it in the frozen manifest metadata. If more than one category is plausible, or none of the current categories fits, STOP before Drive upload and ask the owner to choose an existing category or create a new category through a reviewed source change. Never use a silent default category.
 
