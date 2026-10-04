@@ -65,16 +65,52 @@ class SimpleDeployPublishTests(unittest.TestCase):
             "deploy/**",
             "deploy/chat-to-drive-ingestion.json",
             "deploy/docker-compose.simple.yml",
+            "deploy/existing-derivative-regeneration-v1.json",
             "requirements-build.txt",
             "metadata/**",
             "originals/**",
             "tools/**",
+            "tools/coloring-pages-regenerate-derivatives",
             "README.md",
             "AGENTS.md",
             "docs/**",
             "tests/**",
         ):
             self.assertNotIn(f'      - "{non_image_input}"', workflow)
+
+    def test_regenerator_release_stays_inside_approved_dockerfile_gate(self):
+        workflow = (ROOT / ".github/workflows/simple-deploy.yml").read_text(
+            encoding="utf-8"
+        )
+        dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+
+        self.assertNotIn(
+            '      - "tools/coloring-pages-regenerate-derivatives"',
+            workflow,
+        )
+        self.assertNotIn(
+            '      - "deploy/existing-derivative-regeneration-v1.json"',
+            workflow,
+        )
+        self.assertIn(
+            "COPY tools/coloring-pages-regenerate-derivatives "
+            "/usr/local/bin/coloring-pages-regenerate-derivatives",
+            dockerfile,
+        )
+        self.assertIn(
+            "COPY deploy/existing-derivative-regeneration-v1.json "
+            "/usr/local/share/coloring-pages/existing-derivative-regeneration-v1.json",
+            dockerfile,
+        )
+        self.assertIn(
+            "test -x /usr/local/bin/coloring-pages-regenerate-derivatives",
+            dockerfile,
+        )
+        self.assertIn(
+            "test -f /usr/local/share/coloring-pages/"
+            "existing-derivative-regeneration-v1.json",
+            dockerfile,
+        )
 
     def test_manifest_binds_expected_image_and_target(self):
         manifest = json.loads(
