@@ -137,7 +137,14 @@ a { color: inherit; }
   font-size: 20px; line-height: 1.5; font-weight: 500;
 }
 .hero-art { grid-area: art; width: 100%; justify-self: end; align-self: center; }
-.hero-art img { width: 100%; height: auto; max-height: 390px; object-fit: contain; object-position: right center; mix-blend-mode: multiply; }
+.hero-art img {
+  width: 100%; height: auto; max-height: 390px;
+  object-fit: contain; object-position: right center; mix-blend-mode: multiply;
+  /* Fade the illustration's baked-in background into the hero without dimming the dog. */
+  mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent),
+    linear-gradient(to bottom, transparent, #000 12%, #000 86%, transparent);
+  mask-composite: intersect;
+}
 .search {
   grid-area: search; align-self: start; display: flex; align-items: center;
   width: min(100%, 610px); margin-top: 20px; padding: 5px 5px 5px 20px;
