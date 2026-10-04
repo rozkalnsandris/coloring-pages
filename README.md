@@ -48,7 +48,7 @@ The application keeps the simple V1 journey:
 
 See [Coloring Pages Media Standard v1](docs/MEDIA_STANDARD_V1.md).
 
-The approved source artwork is preserved byte-for-byte only as the private `originals/<id>/source.png` master. V1 does not require vector tracing, a mandatory 2480×3508 upscale or a 300 PPI conversion. The importer publishes a cleaned transparent `print.png` derivative for `A4 drucken`; the hidden `print.html` uses that PNG with CSS `@page` fixed to A4 portrait (`210 × 297 mm`) and calls `window.print()`. PDF.js is not part of the print path. The importer still creates `print.pdf` as a separate download derivative.
+The approved source artwork is preserved byte-for-byte only as the private `originals/<id>/source.png` master. V1 does not require vector tracing, a mandatory 2480×3508 upscale or a 300 PPI conversion. The importer publishes one cleaned transparent `print.png` derivative as the canonical printable/downloadable file. The hidden `print.html` uses that PNG with CSS `@page` fixed to A4 portrait (`210 × 297 mm`) and calls `window.print()`. The detail page downloads the same `print.png` directly.
 
 ## Runtime content layout
 

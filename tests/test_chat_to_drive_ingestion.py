@@ -156,12 +156,10 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
             "catalog-metadata-matches-manifest",
             "thumb-webp-exists",
             "preview-webp-exists",
-            "print-pdf-exists",
             "public-catalog-http-200",
             "public-thumb-http-200",
             "public-preview-http-200",
             "public-source-http-200",
-            "public-pdf-http-200",
         ):
             self.assertIn(proof, required)
         self.assertEqual(

@@ -63,7 +63,10 @@ class ImportPageTests(unittest.TestCase):
         self.assertTrue((media / "thumb.webp").is_file())
         self.assertTrue((media / "preview.webp").is_file())
         self.assertTrue((media / "print.png").is_file())
-        self.assertTrue((media / "print.pdf").read_bytes().startswith(b"%PDF"))
+        self.assertEqual(
+            {path.name for path in media.iterdir()},
+            {"thumb.webp", "preview.webp", "print.png"},
+        )
 
         with Image.open(media / "print.png") as print_image:
             self.assertEqual(print_image.mode, "RGBA")
@@ -78,7 +81,6 @@ class ImportPageTests(unittest.TestCase):
         self.assertEqual(entry["thumb"], "/media/fire-pup-001/thumb.webp")
         self.assertEqual(entry["preview"], "/media/fire-pup-001/preview.webp")
         self.assertEqual(entry["print"], "/media/fire-pup-001/print.png")
-        self.assertEqual(entry["pdf"], "/media/fire-pup-001/print.pdf")
         self.assertEqual(
             (self.content / "public/catalog.json").stat().st_mode & 0o777,
             0o644,
@@ -128,11 +130,6 @@ class ImportPageTests(unittest.TestCase):
         self.assertTrue(
             (self.content / "public/media/fire-pup-001/print.png").is_file()
         )
-        self.assertTrue(
-            (self.content / "public/media/fire-pup-001/print.pdf")
-            .read_bytes()
-            .startswith(b"%PDF")
-        )
 
     def test_print_image_removes_near_white_background(self):
         image = Image.new("L", (3, 1), color=255)
@@ -145,22 +142,6 @@ class ImportPageTests(unittest.TestCase):
         self.assertGreater(result.getpixel((1, 0))[3], 0)
         self.assertLess(result.getpixel((1, 0))[3], 255)
         self.assertEqual(result.getpixel((2, 0)), (0, 0, 0, 255))
-
-    def test_a4_pdf_canvas_pads_two_by_three_without_resampling(self):
-        image = Image.new("L", (1024, 1536), color=255)
-        image.putpixel((100, 200), 0)
-
-        canvas = importer.build_a4_pdf_canvas(image)
-
-        self.assertEqual(canvas.size, (1086, 1536))
-        x_offset = (canvas.width - image.width) // 2
-        self.assertEqual(canvas.getpixel((x_offset + 100, 200)), 0)
-        self.assertEqual(canvas.getpixel((0, 0)), 255)
-        self.assertAlmostEqual(
-            importer.a4_pdf_resolution(canvas),
-            131.35,
-            places=2,
-        )
 
     def test_importer_has_no_fixed_2480_by_3508_upscale(self):
         source = MODULE_PATH.read_text(encoding="utf-8")

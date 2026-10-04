@@ -23,8 +23,7 @@ Example:
   "language": "de",
   "thumb": "/media/fire-pup-001/thumb.webp",
   "preview": "/media/fire-pup-001/preview.webp",
-  "print": "/media/fire-pup-001/source.png",
-  "pdf": "/media/fire-pup-001/print.pdf"
+  "print": "/media/fire-pup-001/print.png"
 }
 ```
 
