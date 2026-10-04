@@ -1,0 +1,222 @@
+#!/usr/bin/env python3
+"""Prepare and validate deterministic A4 print-master PNGs for Chat artwork."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import sys
+from pathlib import Path
+
+from PIL import Image, ImageChops, ImageFilter, UnidentifiedImageError
+
+TARGET_SIZE = (2480, 3508)
+TARGET_DPI = (300.0, 300.0)
+MIN_SOURCE_WIDTH = 800
+MIN_SOURCE_HEIGHT = 1100
+MIN_SOURCE_RATIO = 2 / 3
+MAX_SOURCE_RATIO = 210 / 297 + 0.04
+PRE_WHITE_MIN = 245
+PRE_WHITE_SPREAD = 12
+POST_WHITE_MIN = 248
+POST_WHITE_SPREAD = 10
+SHARPEN_RADIUS = 0.45
+SHARPEN_PERCENT = 35
+SHARPEN_THRESHOLD = 3
+
+
+class PrintMasterError(ValueError):
+    """Raised when a draft or print master fails the authoring contract."""
+
+
+def sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def normalize_neutral_white(
+    image: Image.Image, *, minimum: int, max_spread: int
+) -> Image.Image:
+    rgb = image.convert("RGB")
+    red, green, blue = rgb.split()
+    low = ImageChops.darker(ImageChops.darker(red, green), blue)
+    high = ImageChops.lighter(ImageChops.lighter(red, green), blue)
+    spread = ImageChops.subtract(high, low)
+    bright_mask = low.point(lambda value: 255 if value >= minimum else 0)
+    neutral_mask = spread.point(lambda value: 255 if value <= max_spread else 0)
+    mask = ImageChops.multiply(bright_mask, neutral_mask)
+    result = rgb.copy()
+    result.paste((255, 255, 255), mask=mask)
+    return result
+
+
+def load_draft(path: Path) -> Image.Image:
+    if not path.is_file():
+        raise PrintMasterError(f"draft does not exist: {path}")
+    try:
+        with Image.open(path) as source:
+            source.load()
+            if source.format != "PNG":
+                raise PrintMasterError("draft must be PNG")
+            width, height = source.size
+            if width < MIN_SOURCE_WIDTH or height < MIN_SOURCE_HEIGHT:
+                raise PrintMasterError(
+                    f"draft is too small: {width}x{height}; minimum is "
+                    f"{MIN_SOURCE_WIDTH}x{MIN_SOURCE_HEIGHT}"
+                )
+            if width >= height:
+                raise PrintMasterError("draft must be portrait")
+            ratio = width / height
+            if not MIN_SOURCE_RATIO <= ratio <= MAX_SOURCE_RATIO:
+                raise PrintMasterError("draft must be approximately A4/2:3 portrait")
+            rgba = source.convert("RGBA")
+    except UnidentifiedImageError as exc:
+        raise PrintMasterError("draft is not a readable image") from exc
+
+    white = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+    white.alpha_composite(rgba)
+    return white.convert("RGB")
+
+
+def fit_a4(image: Image.Image) -> Image.Image:
+    target_width, target_height = TARGET_SIZE
+    scale = min(target_width / image.width, target_height / image.height)
+    resized_size = (
+        max(1, round(image.width * scale)),
+        max(1, round(image.height * scale)),
+    )
+    resized = image.resize(resized_size, Image.Resampling.LANCZOS)
+    resized = resized.filter(
+        ImageFilter.UnsharpMask(
+            radius=SHARPEN_RADIUS,
+            percent=SHARPEN_PERCENT,
+            threshold=SHARPEN_THRESHOLD,
+        )
+    )
+    canvas = Image.new("RGB", TARGET_SIZE, (255, 255, 255))
+    offset = (
+        (target_width - resized.width) // 2,
+        (target_height - resized.height) // 2,
+    )
+    canvas.paste(resized, offset)
+    return canvas
+
+
+def border_is_exact_white(image: Image.Image) -> bool:
+    if image.mode != "RGB":
+        return False
+    width, height = image.size
+    top = image.crop((0, 0, width, 1)).getdata()
+    bottom = image.crop((0, height - 1, width, height)).getdata()
+    left = image.crop((0, 0, 1, height)).getdata()
+    right = image.crop((width - 1, 0, width, height)).getdata()
+    return all(pixel == (255, 255, 255) for edge in (top, bottom, left, right) for pixel in edge)
+
+
+def read_dpi(image: Image.Image) -> tuple[float, float] | None:
+    dpi = image.info.get("dpi")
+    if not isinstance(dpi, tuple) or len(dpi) != 2:
+        return None
+    try:
+        return float(dpi[0]), float(dpi[1])
+    except (TypeError, ValueError):
+        return None
+
+
+def validate_print_master(path: Path) -> dict[str, object]:
+    if not path.is_file():
+        raise PrintMasterError(f"print master does not exist: {path}")
+    try:
+        with Image.open(path) as image:
+            image.load()
+            if image.format != "PNG":
+                raise PrintMasterError("print master must be PNG")
+            if image.size != TARGET_SIZE:
+                raise PrintMasterError(
+                    f"print master must be {TARGET_SIZE[0]}x{TARGET_SIZE[1]}"
+                )
+            if image.mode != "RGB":
+                raise PrintMasterError("print master must be RGB with no alpha")
+            if not border_is_exact_white(image):
+                raise PrintMasterError("print master outer border must be exact #FFFFFF")
+            dpi = read_dpi(image)
+            if dpi is None or any(abs(value - 300.0) > 1.0 for value in dpi):
+                raise PrintMasterError("print master must carry approximately 300x300 DPI")
+    except UnidentifiedImageError as exc:
+        raise PrintMasterError("print master is not a readable image") from exc
+
+    return {
+        "width": TARGET_SIZE[0],
+        "height": TARGET_SIZE[1],
+        "dpi_x": dpi[0],
+        "dpi_y": dpi[1],
+        "size_bytes": path.stat().st_size,
+        "sha256": sha256(path),
+    }
+
+
+def prepare(source_path: Path, output_path: Path) -> dict[str, object]:
+    source = source_path.resolve()
+    output = output_path.resolve()
+    if source == output:
+        raise PrintMasterError("output must not overwrite the generation draft")
+    if output.exists():
+        raise PrintMasterError(f"output already exists: {output}")
+
+    draft = load_draft(source)
+    cleaned = normalize_neutral_white(
+        draft, minimum=PRE_WHITE_MIN, max_spread=PRE_WHITE_SPREAD
+    )
+    canvas = fit_a4(cleaned)
+    canvas = normalize_neutral_white(
+        canvas, minimum=POST_WHITE_MIN, max_spread=POST_WHITE_SPREAD
+    )
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    canvas.save(output, format="PNG", optimize=True, dpi=TARGET_DPI)
+    return validate_print_master(output)
+
+
+def print_result(prefix: str, path: Path, result: dict[str, object]) -> None:
+    print(f"{prefix}=PASS")
+    print(f"FILE={path}")
+    print(f"WIDTH={result['width']}")
+    print(f"HEIGHT={result['height']}")
+    print(f"DPI_X={result['dpi_x']:.3f}")
+    print(f"DPI_Y={result['dpi_y']:.3f}")
+    print(f"SIZE_BYTES={result['size_bytes']}")
+    print(f"SHA256={result['sha256']}")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Prepare or validate deterministic Coloring Pages print masters."
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    prepare_parser = subparsers.add_parser(
+        "prepare", help="white-clean and resize one PNG draft into the A4 print master"
+    )
+    prepare_parser.add_argument("source", type=Path)
+    prepare_parser.add_argument("output", type=Path)
+
+    validate_parser = subparsers.add_parser(
+        "validate", help="read-only validation of one prepared print master"
+    )
+    validate_parser.add_argument("file", type=Path)
+
+    args = parser.parse_args()
+    try:
+        if args.command == "prepare":
+            result = prepare(args.source, args.output)
+            print_result("UPSCALE_PRINT", args.output, result)
+        else:
+            result = validate_print_master(args.file)
+            print_result("VALIDATE_PRINT", args.file, result)
+    except (OSError, PrintMasterError) as exc:
+        print(f"PRINT_MASTER=FAIL: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

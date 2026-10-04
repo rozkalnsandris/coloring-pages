@@ -8,11 +8,15 @@ Normal happy path:
 
 ```text
 MAKE lapsa
-→ ChatGPT generates one coloring-page PNG candidate
-→ owner visually approves the exact latest generated image
+→ ChatGPT generates one coloring-page PNG draft
+UPSCALE-PRINT
+→ deterministic CPU/Pillow white cleanup + A4 print-master preparation
+VALIDATE-PRINT
+→ read-only PASS with exact print-master SHA-256 + byte size
 PUBLISH
+→ owner approves the exact validated print master
 → determine one valid category
-→ freeze page ID + SHA-256 + byte size + category
+→ freeze page ID + validated print-master SHA-256 + byte size + category
 → Drive staging
 → trusted RPi5 verify/import
 → public verification
@@ -77,13 +81,50 @@ EDIT resnākas kontūras
 EDIT noņem mākoni labajā augšējā stūrī
 ```
 
-The edited result becomes the latest candidate. Request the edited output on the same exact `1024×1536` PNG portrait canvas; do not use automatic output sizing. `EDIT` is not publication approval.
+The edited result becomes the latest draft candidate. Request the edited output on the same exact `1024×1536` PNG portrait canvas; do not use automatic output sizing. `EDIT` is not publication approval and invalidates any earlier print-master validation.
+
+`REMAKE` likewise invalidates any earlier print-master validation for the affected page/set.
+
+### `UPSCALE-PRINT`
+
+Transform the exact latest generated draft/page set without asking the image model to generate or redraw anything.
+
+Use `tools/coloring-pages-print-master prepare <draft.png> <print-master.png>` or an exact equivalent execution of that reviewed helper. The helper:
+
+- accepts PNG only;
+- composites transparency onto white;
+- normalizes near-neutral bright AI whites to exact `#FFFFFF`;
+- preserves source aspect ratio;
+- centers the resized artwork on an exact `2480×3508` white A4 canvas;
+- uses Pillow `Resampling.LANCZOS`;
+- applies the reviewed conservative `UnsharpMask(radius=0.45, percent=35, threshold=3)`;
+- performs a final near-white normalization after resampling;
+- writes PNG with 300×300 DPI metadata;
+- never overwrites the source draft.
+
+This is deterministic interpolation/print preparation, not AI detail recovery. It grants no content publication authority.
+
+For an ordered multi-page activity, every page must receive its own print master and the page order must remain unchanged.
+
+### `VALIDATE-PRINT`
+
+Read-only validate the latest print master(s) with `tools/coloring-pages-print-master validate <print-master.png>`.
+
+PASS requires:
+
+- PNG;
+- exact `2480×3508` geometry;
+- RGB/no alpha;
+- approximately 300×300 DPI metadata;
+- exact `#FFFFFF` across the complete outer page border.
+
+The validator prints exact byte size and SHA-256. Any failure blocks `PUBLISH`. A later `EDIT` or `REMAKE` invalidates the PASS and requires a new `UPSCALE-PRINT → VALIDATE-PRINT` cycle.
 
 `OK` is intentionally not a publication command. It is treated only as a normal conversational acknowledgement so it cannot accidentally authorize content ingestion.
 
 ### `PUBLISH`
 
-`PUBLISH` is explicit owner approval of the exact latest generated page or exact ordered page set in the current conversation.
+`PUBLISH` is explicit owner approval of the exact latest **validated print-master** page or exact ordered validated print-master set in the current conversation. The lower-resolution generation draft is not the published byte identity.
 
 Before the first content mutation, the operator must freeze:
 
@@ -109,7 +150,7 @@ After those values are frozen, the complete JSON manifest must be materialized a
 
 Only after the frozen identity, metadata, and prebuilt manifest all pass preflight does the approval bind to the reviewed content-ingest operation.
 
-This generation-size rule does not add a new `PUBLISH`-only geometry preflight. The existing media/importer contract remains authoritative for ingestion; the workflow change is to request the correct `1024×1536` canvas at `MAKE` / `REMAKE` / `EDIT` time.
+`PUBLISH` requires a current successful `VALIDATE-PRINT` for every page in the approved set. The importer contract remains authoritative for ingestion, but the Chat authoring layer now binds the validated A4 print-master bytes rather than the lower-resolution generation draft.
 
 The authorized path is only:
 
@@ -141,10 +182,16 @@ The intended human interaction is deliberately terse:
 
 ```text
 User: MAKE lapsa
-Assistant: [generated image]
+Assistant: [generated draft]
+
+User: UPSCALE-PRINT
+Assistant: [derived A4 print master; no new artwork]
+
+User: VALIDATE-PRINT
+Assistant: [PASS/FAIL + exact print-master identity]
 
 User: PUBLISH
-Assistant: [determine category, freeze exact identity + category, execute bounded ingest, report PASS or STOP]
+Assistant: [determine category, freeze exact validated identity + category, execute bounded ingest, report PASS or STOP]
 ```
 
 If the image needs work:
@@ -159,12 +206,12 @@ or:
 User: EDIT vienkāršāks fons
 ```
 
-Because the image-generation surface may return the generated image without an additional text message, the owner should treat `PUBLISH` as the stable next command whenever the displayed result is accepted.
+Because the image-generation surface may return the generated draft without an additional text message, the stable next command for an accepted draft is `UPSCALE-PRINT`; `PUBLISH` is valid only after the derived print master passes `VALIDATE-PRINT`.
 
-The four commands to remember are:
+The publication commands to remember are:
 
 ```text
-MAKE / REMAKE / EDIT / PUBLISH
+MAKE / REMAKE / EDIT → UPSCALE-PRINT → VALIDATE-PRINT → PUBLISH
 ```
 
 ## Relationship to existing contracts

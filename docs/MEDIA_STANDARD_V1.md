@@ -23,19 +23,44 @@ Required:
 
 The importer validates file type, portrait geometry, A4-like ratio, minimum geometry and light page corners. The accepted width/height ratio starts at `2/3` (so `1024×1536` is explicitly valid); the upper bound remains the prior A4-side tolerance of `210/297 + 0.04`. This keeps common generated `2:3` pages inside the contract without widening the gate on the opposite side. It accepts production inputs only as direct children of the pre-created content-store `inbox/`. Visual/editorial properties such as clean outlines and lack of unwanted shading remain content-review requirements.
 
+## Chat publication print master
+
+For new Chat-generated publication, the generation PNG is a draft. Before `PUBLISH`, run the explicit authoring steps:
+
+```text
+MAKE / REMAKE / EDIT
+→ UPSCALE-PRINT
+→ VALIDATE-PRINT
+→ PUBLISH
+```
+
+`UPSCALE-PRINT` uses the repository helper `tools/coloring-pages-print-master prepare`. It is deliberately CPU-only and depends only on the pinned Pillow build dependency already used by CI. It does not generate new artwork or use an AI/GPU upscaler.
+
+The prepared publication master must be:
+
+- PNG;
+- exact `2480×3508` A4 raster;
+- RGB with no alpha;
+- approximately 300×300 DPI metadata;
+- exact `#FFFFFF` around the complete outer page border;
+- aspect-ratio-preserving artwork centered on the A4 canvas;
+- near-neutral white AI noise normalized to exact white;
+- resized with Pillow `Resampling.LANCZOS`;
+- sharpened only with the reviewed conservative `UnsharpMask` values in the helper.
+
+`VALIDATE-PRINT` is read-only and fails closed if any required property is missing. It reports the exact SHA-256 and byte size that a later `PUBLISH` must bind. `REMAKE` or `EDIT` invalidates earlier print-master validation.
+
+This is resampling, not native-detail recovery. It improves the consistency of A4 raster delivery and background white while avoiding per-image API/GPU dependencies.
+
+The importer remains backward-compatible with the broader geometry above and does not perform this authoring upscale itself.
+
 ## Original-resolution print
 
 The source PNG is preserved byte-for-byte and is the canonical print artwork.
 
-V1 does **not** require:
+The importer itself does **not** require vector tracing, AI/GPU upscale or host-side enlargement. For the new Chat publication path, however, the owner-approved source is the already prepared and validated `2480×3508` PNG print master. The lower-resolution `1024×1536` generation draft is an authoring input, not the production source master.
 
-- vector tracing
-- AI upscale
-- a 2480×3508 source raster
-- a 300 PPI conversion
-- manual enlargement before import
-
-The normal generated source is an exact `1024×1536` PNG. The PNG remains the preserved source master and the catalogue `print` PNG is the canonical browser print/download source. A minimal hidden HTML print document loads that PNG into a canvas, preserves its original pixel colors, centers it on A4 portrait geometry, uses CSS `@page { size: A4 portrait; margin: 0; }`, and calls `window.print()`. The detail page downloads the same `print.png` directly.
+The validated print-master PNG remains the preserved source master and the catalogue `print` PNG is the canonical browser print/download source. A minimal hidden HTML print document loads that PNG into a canvas, preserves its original pixel colors, centers it on A4 portrait geometry, uses CSS `@page { size: A4 portrait; margin: 0; }`, and calls `window.print()`. The detail page downloads the same `print.png` directly.
 
 ## Derivatives
 
@@ -77,7 +102,7 @@ The importer executes from the immutable Coloring Pages container image under th
 
 ## Quality principle
 
-V1 optimizes for a clean coloring experience and a one-command content workflow. If real printer tests later show that a higher native source resolution is required, that change belongs in this single importer/media contract rather than in per-image manual procedures.
+V1 optimizes for a clean coloring experience and a deterministic publication workflow. The tested CPU/Pillow print-master step standardizes Chat-generated pages before publication without changing the importer/runtime trust boundary. If printer tests later show that interpolation is insufficient and a higher native generation resolution is required, that change belongs in this media/authoring contract rather than in per-image ad-hoc procedures.
 
 ## Existing derivative correction
 
