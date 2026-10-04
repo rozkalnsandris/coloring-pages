@@ -10,7 +10,7 @@ The existing single-page production path remains unchanged and continues to use:
 - manifest schema `rozkalns.coloring-pages.drive-staging-manifest.v1`;
 - one staged `<id>.png` plus `<id>.json`.
 
-The trusted host implementation is activated at `rozkalnsandris/RPi5_main@dc6b784bba471731ff060ece207e06d67cda16d3`. The installed `/usr/local/bin/coloring-pages-drive-ingest` blob is `5d6821ad42c8c9d887a03606279e6c70745a993f` (`root:root:755`) and pins importer image `ghcr.io/rozkalnsandris/coloring-pages@sha256:09822c1ceed359e0365c0e647763c6f1d8b31fb4f4ab564d7959c383709034b2`. Activation does not grant standing publication authority: every activity still requires fresh owner `PUBLISH` approval with exact per-page identity before the first Drive/content mutation.
+The trusted host implementation is activated at `rozkalnsandris/RPi5_main@dc6b784bba471731ff060ece207e06d67cda16d3`. The installed `/usr/local/bin/coloring-pages-drive-ingest` blob is `5d6821ad42c8c9d887a03606279e6c70745a993f` (`root:root:755`) and pins importer image `ghcr.io/rozkalnsandris/coloring-pages@sha256:09822c1ceed359e0365c0e647763c6f1d8b31fb4f4ab564d7959c383709034b2`. Activation does not grant standing publication authority: every activity still requires fresh owner `PUBLISH` approval of the exact latest ordered draft set. `PUBLISH` must prepare and validate every A4 print master first, then freeze exact per-page identity before the first Drive/content mutation.
 
 ## Simple model
 
@@ -23,7 +23,7 @@ One activity stays one catalogue item:
 <id>.json
 ```
 
-The manifest is uploaded last and is the readiness signal. Before the first Drive mutation, every page already exists locally and the complete manifest is validated.
+The manifest is uploaded last and is the readiness signal. Before the first Drive mutation, `PUBLISH` has prepared and validated every page locally, frozen every per-page SHA-256/byte size, and validated the complete manifest.
 
 The manifest carries the ordered page identities:
 
@@ -78,6 +78,8 @@ The importer already accepts multiple ordered source arguments. No PDF generator
 Before the first mutation, any mismatch is a normal fail-closed rejection.
 
 After the first authorized mutation, any error is STOP. There is no automatic retry, rollback, cleanup, overwrite or alternate path.
+
+After the importer and every contract-required post-import verification item PASS, publication is complete: immediately report `PASS` and stop. Do not continue with discretionary diagnostics, repeated verification, Drive archive/delete, cleanup or unrelated runtime work.
 
 ## Activation record
 
