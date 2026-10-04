@@ -77,6 +77,8 @@ class RuntimeContractTests(unittest.TestCase):
         svg = favicon.read_text(encoding="utf-8")
         self.assertIn('viewBox="0 0 64 64"', svg)
         self.assertIn("#ff776d", svg)
+        self.assertNotIn("<rect", svg)
+        self.assertNotIn("#f5f9ff", svg)
 
         favicon_link = '<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">'
         for path in ("index.html", "detail.html", "print.html"):
