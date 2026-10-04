@@ -50,11 +50,14 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn("root /var/lib/coloring-pages/public", nginx)
         self.assertIn('Cache-Control "no-cache"', nginx)
         self.assertIn('Cache-Control "public, max-age=31536000, immutable"', nginx)
+        css_js_block = nginx.split("location ~* \\.(?:css|js)$ {", 1)[1].split("}", 1)[0]
+        self.assertIn('Cache-Control "no-cache"', css_js_block)
+        self.assertNotIn("immutable", css_js_block)
 
     def test_html_uses_content_versioned_css_and_js(self):
         versions = {}
         for path in ("css/app.css", "js/app.js", "js/detail.js", "js/print.js"):
-            versions[path] = hashlib.sha256((ROOT / path).read_bytes()).hexdigest()[:12]
+            versions[path] = hashlib.sha256((ROOT / path).read_bytes()).hexdigest()[:16]
 
         index = (ROOT / "index.html").read_text(encoding="utf-8")
         detail = (ROOT / "detail.html").read_text(encoding="utf-8")
