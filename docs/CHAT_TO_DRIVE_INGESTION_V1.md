@@ -5,8 +5,10 @@
 Make the normal content workflow close to:
 
 ```text
-generate PNG in ChatGPT
-→ owner approves the page
+generate PNG draft in ChatGPT
+→ UPSCALE-PRINT to the exact A4 print master
+→ VALIDATE-PRINT the exact print master
+→ owner PUBLISH approval of that validated page
 → bind one valid category from metadata/categories.json
 → upload the exact PNG blob plus a small SHA-256 manifest to Google Drive
 → trusted RPi5 operator pulls and verifies it
@@ -28,7 +30,7 @@ Canonical ownership remains unchanged:
 - Google Drive is a temporary transport/staging surface.
 - `rozkalnsandris/RPi5_main` owns host-side rclone binding, credentials, trusted execution and runtime coordination.
 
-This content-contract source does not itself authorize a content import. The owner's explicit `PUBLISH` command for one exact latest image becomes the ingest authority only after its page ID, SHA-256, byte size and one valid category are frozen. A plain `OK` is not publication authority. Category selection must happen before the first Drive mutation. That authority is limited to Drive staging, the reviewed RPi5 verify/import path and public verification; archive/delete, overwrite and unrelated runtime actions remain outside it.
+This content-contract source does not itself authorize a content import. The owner's explicit `PUBLISH` command for one exact latest validated print master becomes the ingest authority only after its page ID, SHA-256, byte size and one valid category are frozen. A plain `OK` is not publication authority. Category selection must happen before the first Drive mutation. That authority is limited to Drive staging, the reviewed RPi5 verify/import path and public verification; archive/delete, overwrite and unrelated runtime actions remain outside it.
 
 ## Why raw Drive blob files are acceptable
 
@@ -121,7 +123,7 @@ The first owner-authorized production import completed successfully on 2026-10-0
 - exactly one matching catalogue entry;
 - public thumbnail, preview and color-preserving print PNG derivative available.
 
-This is historical activation evidence, not reusable authorization. Every future production import requires a fresh explicit approval of the exact image, then binding of the page ID, SHA-256, byte size and one allowed category before staging/import begins. Drive archive/delete remains a separate owner-gated mutation.
+This is historical activation evidence, not reusable authorization. Every future single-page production import requires fresh `PUBLISH` approval of the exact validated print master, then binding of the page ID, SHA-256, byte size and one allowed category before staging/import begins. Drive archive/delete remains a separate owner-gated mutation.
 
 ## RPi5 pull and publish sequence
 
@@ -170,8 +172,12 @@ A Drive archive failure or an intentionally deferred archive must not rewrite or
 With the transport canary and trusted host operator activated, the normal human workflow is:
 
 ```text
+User: `UPSCALE-PRINT`
+ChatGPT: derive the exact A4 print master without generating new artwork
+User: `VALIDATE-PRINT`
+ChatGPT: PASS/FAIL and report exact SHA-256 + byte size
 User: `PUBLISH`
-ChatGPT: determine one allowed category and freeze exact approved image + manifest
+ChatGPT: determine one allowed category and freeze the exact validated print master + manifest
 → Drive staging
 → RPi5 pull + SHA verification
 → immutable import
@@ -179,17 +185,17 @@ ChatGPT: determine one allowed category and freeze exact approved image + manife
 ChatGPT: report PASS or STOP
 ```
 
-The owner approval is the content authority for that exact image once the operator freezes its page ID, SHA-256 and byte size and binds the reviewed staging/import operation. No second generic `AUTHORIZE LIVE` command is required for that exact ingest.
+The owner approval is the content authority for that exact validated print master once the operator freezes its page ID, SHA-256 and byte size and binds the reviewed staging/import operation. No second generic `AUTHORIZE LIVE` command is required for that exact ingest.
 
 
 ## Multi-page source contract
 
 The production-activated v1 path in this document remains intentionally single-page.
 
-A separate source-only extension for 2–12 ordered PNG pages is defined by:
+A separate production-activated extension for 2–12 ordered PNG pages is defined by:
 
 - `deploy/chat-to-drive-ingestion-v2.json`;
 - `docs/CHAT_TO_DRIVE_INGESTION_V2.md`;
 - manifest schema `rozkalns.coloring-pages.drive-staging-manifest.v2`.
 
-That v2 contract is not a LIVE publication path yet. It requires a separately reviewed and activated trusted `RPi5_main` operator before multi-page Drive staging/import may be used. Keeping v1 unchanged avoids breaking ordinary single-page `PUBLISH`.
+That v2 contract is production-activated through the reviewed trusted `RPi5_main` operator recorded in `docs/CHAT_TO_DRIVE_INGESTION_V2.md`. Each multi-page activity still requires a fresh exact `PUBLISH` approval after every ordered page has passed `VALIDATE-PRINT` and its SHA-256/byte size is frozen. Single-page v1 remains active and backward compatible.
