@@ -59,7 +59,7 @@ class ImportPageTests(unittest.TestCase):
         original = self.content / "originals/fire-pup-001/source.png"
         media = self.content / "public/media/fire-pup-001"
         self.assertEqual(original.read_bytes(), original_bytes)
-        self.assertEqual((media / "source.png").read_bytes(), original_bytes)
+        self.assertFalse((media / "source.png").exists())
         self.assertTrue((media / "thumb.webp").is_file())
         self.assertTrue((media / "preview.webp").is_file())
         self.assertTrue((media / "print.pdf").read_bytes().startswith(b"%PDF"))
@@ -70,7 +70,7 @@ class ImportPageTests(unittest.TestCase):
         self.assertEqual(catalog, [entry])
         self.assertEqual(entry["thumb"], "/media/fire-pup-001/thumb.webp")
         self.assertEqual(entry["preview"], "/media/fire-pup-001/preview.webp")
-        self.assertEqual(entry["print"], "/media/fire-pup-001/source.png")
+        self.assertNotIn("print", entry)
         self.assertEqual(entry["pdf"], "/media/fire-pup-001/print.pdf")
         self.assertEqual(
             (self.content / "public/catalog.json").stat().st_mode & 0o777,
@@ -115,9 +115,8 @@ class ImportPageTests(unittest.TestCase):
             (self.content / "originals/fire-pup-001/source.png").read_bytes(),
             original_bytes,
         )
-        self.assertEqual(
-            (self.content / "public/media/fire-pup-001/source.png").read_bytes(),
-            original_bytes,
+        self.assertFalse(
+            (self.content / "public/media/fire-pup-001/source.png").exists()
         )
         self.assertTrue(
             (self.content / "public/media/fire-pup-001/print.pdf")
