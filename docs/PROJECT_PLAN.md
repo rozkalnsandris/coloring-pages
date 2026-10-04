@@ -83,8 +83,8 @@ V1 source requirements:
 
 - PNG
 - portrait / approximately A4 aspect ratio
-- black-and-white line art on a white background
-- thick, clean, high-contrast outlines
+- preserve intentional source colors; ordinary coloring pages may be black-and-white while learning worksheets may use color
+- thick, clean, high-contrast outlines where line art is used
 - large coloring areas
 - minimal tiny details
 - primary age target 3–6
@@ -118,7 +118,7 @@ The importer:
 3. rejects duplicate IDs;
 4. preserves `originals/<page-id>/source.png`;
 5. creates lossless `thumb.webp` and `preview.webp`;
-6. creates a public `print.png` line-art derivative with near-white page pixels transparent, without publishing the exact source PNG;
+6. creates a public `print.png` derivative that preserves source colors and source dimensions, without publishing the exact source PNG bytes;
 7. stages a new catalogue;
 8. atomically replaces `catalog.json` only after all derivatives are ready.
 
@@ -143,7 +143,7 @@ Example:
 }
 ```
 
-The existing frontend keeps fetching `catalog.json`. New content therefore does not require an HTML/JS edit, GitHub PR, image rebuild or application redeploy. The detail-page `A4 drucken` action uses the catalogue `print` PNG through the hidden HTML print document. That document cleans near-white background pixels in a canvas, uses CSS A4 portrait page geometry and calls `window.print()` directly. The same catalogue `print` PNG is the direct download target on the detail page.
+The existing frontend keeps fetching `catalog.json`. New content therefore does not require an HTML/JS edit, GitHub PR, image rebuild or application redeploy. The detail-page `A4 drucken` action uses the catalogue `print` PNG through the hidden HTML print document. That document centers the PNG on an A4 portrait canvas without recoloring it and calls `window.print()` directly. The same catalogue `print` PNG is the direct download target on the detail page.
 
 ## Runtime mount
 

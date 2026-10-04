@@ -132,14 +132,14 @@ Default V1 source artwork standard:
 - Chat image generation uses an exact `1024×1536` portrait (2:3) full-page canvas for `MAKE`, `REMAKE` and `EDIT`
 - subject orientation is independent of page orientation; wide subjects are composed horizontally inside the portrait canvas
 - importer/media acceptance remains approximately A4/2:3 portrait as defined in `docs/MEDIA_STANDARD_V1.md`
-- black and white on white background
-- thick, clean, high-contrast outlines
+- preserve the approved source colors; ordinary coloring pages may be black-and-white, while learning worksheets may intentionally use color
+- thick, clean, high-contrast outlines where line art is used
 - large coloring areas
 - few small details
 - primary age group 3–6 years
 - preserve the generated PNG as the source master
 - no mandatory vectorization or mandatory 2480 × 3508 source upscale
-- generate lossless WebP browse derivatives and a cleaned transparent `print.png`; PNG is the only printable/downloadable media standard
+- generate lossless WebP browse derivatives and a color-preserving `print.png`; PNG is the only printable/downloadable media standard
 - detailed contract: `docs/MEDIA_STANDARD_V1.md`
 
 ## Public-content rule
