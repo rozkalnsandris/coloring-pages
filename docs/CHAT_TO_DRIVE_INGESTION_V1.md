@@ -180,3 +180,16 @@ ChatGPT: report PASS or STOP
 ```
 
 The owner approval is the content authority for that exact image once the operator freezes its page ID, SHA-256 and byte size and binds the reviewed staging/import operation. No second generic `AUTHORIZE LIVE` command is required for that exact ingest.
+
+
+## Multi-page source contract
+
+The production-activated v1 path in this document remains intentionally single-page.
+
+A separate source-only extension for 2–12 ordered PNG pages is defined by:
+
+- `deploy/chat-to-drive-ingestion-v2.json`;
+- `docs/CHAT_TO_DRIVE_INGESTION_V2.md`;
+- manifest schema `rozkalns.coloring-pages.drive-staging-manifest.v2`.
+
+That v2 contract is not a LIVE publication path yet. It requires a separately reviewed and activated trusted `RPi5_main` operator before multi-page Drive staging/import may be used. Keeping v1 unchanged avoids breaking ordinary single-page `PUBLISH`.
