@@ -35,7 +35,7 @@ V1 does **not** require:
 - a 300 PPI conversion
 - manual enlargement before import
 
-The normal generated source is an exact `1024×1536` PNG. The PNG remains the preserved source master, but the browser print action does not print it directly. `print.pdf` is the browser print source. A minimal hidden HTML print document loads the single-page PDF with pinned PDF.js, renders it with print intent, and calls `window.print()`; no PDF viewer UI is shown in the normal `A4 drucken` flow.
+The normal generated source is an exact `1024×1536` PNG. The PNG remains the preserved source master and the catalogue `print` PNG is the browser print source. A minimal hidden HTML print document loads that PNG into a canvas, removes near-white background pixels while preserving dark linework, uses CSS `@page { size: A4 portrait; margin: 0; }`, and calls `window.print()`; no PDF viewer or PDF.js is used in the normal `A4 drucken` flow.
 
 ## Derivatives
 
@@ -49,7 +49,7 @@ source.png
 └── print.pdf       A4 portrait derivative
 ```
 
-The PDF keeps the source pixels at their original resolution. When the source ratio differs from A4, the importer adds only the minimum white padding needed for an A4-ratio canvas; it does not resize or upscale the artwork. The PDF is both the downloadable print file and the browser print input; it does not replace or redefine the preserved PNG source master.
+The PDF keeps the source pixels at their original resolution. When the source ratio differs from A4, the importer adds only the minimum white padding needed for an A4-ratio canvas; it does not resize or upscale the artwork. The PDF remains a downloadable derivative only; browser printing uses the catalogue `print` PNG and the A4 CSS page geometry.
 
 ## Stable IDs
 
