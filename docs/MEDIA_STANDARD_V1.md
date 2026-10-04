@@ -35,7 +35,7 @@ V1 does **not** require:
 - a 300 PPI conversion
 - manual enlargement before import
 
-The normal generated source is an exact `1024×1536` PNG. The PNG remains the preserved source master, but the browser print action does not print it directly. `print.pdf` is the browser print source. A minimal hidden HTML print document loads the single-page PDF with pinned PDF.js, renders it with print intent, and calls `window.print()`; no PDF viewer UI is shown in the normal `A4 drucken` flow.
+The normal generated source is an exact `1024×1536` PNG. The PNG remains the preserved source master and the catalogue `print` PNG is the browser print source. A minimal hidden HTML print document loads that PNG into a canvas, removes near-white background pixels while preserving dark linework, uses CSS `@page { size: A4 portrait; margin: 0; }`, and calls `window.print()`; no PDF viewer or PDF.js is used in the normal `A4 drucken` flow.
 
 ## Derivatives
 
@@ -46,12 +46,11 @@ originals/<id>/source.png    private canonical master
 public/media/<id>/
 ├── thumb.webp               max width 400 px, lossless
 ├── preview.webp             max width 1000 px, lossless
-└── print.pdf                A4 portrait derivative
+├── print.png                cleaned transparent line-art derivative
+└── print.pdf                A4 portrait download derivative
 ```
 
-The source PNG is not copied into the public media directory.
-
-The PDF keeps the source pixels at their original resolution. When the source ratio differs from A4, the importer adds only the minimum white padding needed for an A4-ratio canvas; it does not resize or upscale the artwork. The PDF is both the downloadable print file and the browser print input; it does not replace or redefine the preserved PNG source master.
+The exact approved source PNG is not copied into the public media directory. The public `print.png` keeps the source dimensions, converts the validated grayscale artwork to black line art, and makes near-white page pixels transparent. The browser uses that PNG with the A4 CSS page geometry. The PDF keeps the source pixels at their original resolution and remains a separate downloadable derivative.
 
 ## Stable IDs
 
@@ -70,6 +69,7 @@ For `fire-pup-001`:
 ```text
 /media/fire-pup-001/thumb.webp
 /media/fire-pup-001/preview.webp
+/media/fire-pup-001/print.png
 /media/fire-pup-001/print.pdf
 ```
 
