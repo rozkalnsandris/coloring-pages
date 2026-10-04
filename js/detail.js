@@ -9,6 +9,7 @@ const detailPreview = document.querySelector("[data-detail-preview]");
 const detailPlaceholder = document.querySelector("[data-detail-placeholder]");
 const printLink = document.querySelector("[data-action-print]");
 const pdfLink = document.querySelector("[data-action-pdf]");
+let activePrintFrame = null;
 
 const DETAIL_CATEGORY_LABELS = {
   rettungshunde: "Rettungshunde",
@@ -39,6 +40,53 @@ function setAction(link, href) {
     link.classList.add("is-disabled");
   }
 }
+
+
+function printPdf(href) {
+  activePrintFrame?.remove();
+
+  const frame = document.createElement("iframe");
+  frame.title = "PDF drucken";
+  frame.setAttribute("aria-hidden", "true");
+  frame.style.position = "fixed";
+  frame.style.width = "1px";
+  frame.style.height = "1px";
+  frame.style.right = "0";
+  frame.style.bottom = "0";
+  frame.style.border = "0";
+  frame.style.opacity = "0";
+  frame.style.pointerEvents = "none";
+
+  frame.addEventListener("load", () => {
+    const printWindow = frame.contentWindow;
+    if (!printWindow) {
+      window.location.assign(href);
+      return;
+    }
+
+    try {
+      printWindow.focus();
+      printWindow.print();
+    } catch {
+      window.location.assign(href);
+    } finally {
+      setTimeout(() => {
+        frame.remove();
+        if (activePrintFrame === frame) activePrintFrame = null;
+      }, 0);
+    }
+  }, { once: true });
+
+  frame.src = href;
+  activePrintFrame = frame;
+  document.body.append(frame);
+}
+
+printLink?.addEventListener("click", (event) => {
+  if (!printLink.href || printLink.getAttribute("aria-disabled") === "true") return;
+  event.preventDefault();
+  printPdf(printLink.href);
+});
 
 async function loadDetail() {
   const id = new URLSearchParams(window.location.search).get("id");
@@ -75,7 +123,7 @@ async function loadDetail() {
     }
     if (detailDescription) {
       detailDescription.textContent =
-        `Diese Malvorlage „${entry.title}“ ist für den A4-Druck vorbereitet und kann direkt als PDF geöffnet oder heruntergeladen werden.`;
+        `Diese Malvorlage „${entry.title}“ ist für den A4-Druck vorbereitet und kann direkt gedruckt oder als PDF heruntergeladen werden.`;
     }
 
     const breadcrumbCurrent = document.querySelector("[data-breadcrumb-current]");
