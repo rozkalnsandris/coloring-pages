@@ -77,7 +77,7 @@ Example:
 ```json
 {
   "schema": "rozkalns.coloring-pages.drive-staging-manifest.v1",
-  "id": "aviator-pup-001",
+  "id": "cp-000001",
   "sha256": "<64 lowercase hex characters>",
   "size_bytes": 1162127,
   "title": "Aviator Pup",
@@ -92,6 +92,8 @@ Example:
 ```
 
 Unknown manifest fields fail closed. Metadata values must stay inside the importer-supported age, difficulty, language and category sets.
+
+For new Chat publications, the ID is allocated by the authoring layer from `metadata/id-policy.json` and uses opaque `cp-NNNNNN` form. The ingestion schema remains backward-compatible with historical descriptive IDs; existing published IDs are never renamed.
 
 The canonical category registry is `metadata/categories.json`. The current allowed category IDs are `tiere`, `fahrzeuge`, `alphabet`, `lernen`, `figuren` and `jahreszeiten`. The normal workflow must choose one of these before Drive staging; no default or arbitrary free-text category is accepted. Adding a future category is a reviewed source change that updates the registry and the corresponding public UI category surface.
 
