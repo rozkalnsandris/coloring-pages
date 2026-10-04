@@ -62,7 +62,6 @@ Canonical LIVE content layout:
 │   ├── catalog.json
 │   └── media/
 │       └── <page-id>/
-│           ├── source.png
 │           ├── thumb.webp
 │           ├── preview.webp
 │           └── print.pdf
@@ -119,10 +118,9 @@ The importer:
 3. rejects duplicate IDs;
 4. preserves `originals/<page-id>/source.png`;
 5. creates lossless `thumb.webp` and `preview.webp`;
-6. copies the exact source PNG into the public media directory;
-7. creates an A4 portrait `print.pdf` from the original source pixels, adding only white A4-ratio padding when needed and never upscaling the artwork;
-8. stages a new catalogue;
-9. atomically replaces `catalog.json` only after all derivatives are ready.
+6. creates an A4 portrait `print.pdf` from the original source pixels, adding only white A4-ratio padding when needed and never upscaling the artwork;
+7. stages a new catalogue;
+8. atomically replaces `catalog.json` only after all derivatives are ready.
 
 Validation/generation failure must not modify the currently published catalogue.
 
@@ -141,12 +139,11 @@ Example:
   "language": "de",
   "thumb": "/media/fire-pup-001/thumb.webp",
   "preview": "/media/fire-pup-001/preview.webp",
-  "print": "/media/fire-pup-001/source.png",
   "pdf": "/media/fire-pup-001/print.pdf"
 }
 ```
 
-The existing frontend keeps fetching `catalog.json`. New content therefore does not require an HTML/JS edit, GitHub PR, image rebuild or application redeploy. The detail-page `A4 drucken` action uses `pdf` as the print source through the hidden HTML/PDF.js print document; the legacy `print` PNG field remains in the current catalogue contract but is not used by the print action.
+The existing frontend keeps fetching `catalog.json`. New content therefore does not require an HTML/JS edit, GitHub PR, image rebuild or application redeploy. The detail-page `A4 drucken` action uses `pdf` as the print source through the hidden HTML/PDF.js print document. Existing legacy catalogue entries may still contain the old `print` PNG field; new imports do not create it.
 
 ## Runtime mount
 
