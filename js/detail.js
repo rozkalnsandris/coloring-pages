@@ -9,7 +9,7 @@ const detailPreview = document.querySelector("[data-detail-preview]");
 const detailPlaceholder = document.querySelector("[data-detail-placeholder]");
 const printLink = document.querySelector("[data-action-print]");
 const pdfLink = document.querySelector("[data-action-pdf]");
-let activePrintFrame = null;
+let activePrintSession = null;
 
 const DETAIL_CATEGORY_LABELS = {
   rettungshunde: "Rettungshunde",
@@ -41,12 +41,15 @@ function setAction(link, href) {
   }
 }
 
+function startHtmlPrint(href) {
+  activePrintSession?.cleanup();
 
-function printPdf(href) {
-  activePrintFrame?.remove();
+  const printUrl = new URL(href, window.location.href);
+  printUrl.searchParams.set("embedded", "1");
 
   const frame = document.createElement("iframe");
-  frame.title = "PDF drucken";
+  frame.title = "Druckansicht";
+  frame.tabIndex = -1;
   frame.setAttribute("aria-hidden", "true");
   frame.style.position = "fixed";
   frame.style.width = "1px";
@@ -57,35 +60,61 @@ function printPdf(href) {
   frame.style.opacity = "0";
   frame.style.pointerEvents = "none";
 
-  frame.addEventListener("load", () => {
-    const printWindow = frame.contentWindow;
-    if (!printWindow) {
-      window.location.assign(href);
+  let printWindow = null;
+  let cleaned = false;
+
+  function cleanup() {
+    if (cleaned) return;
+    cleaned = true;
+    window.removeEventListener("message", handleMessage);
+    printWindow?.removeEventListener("afterprint", cleanup);
+    frame.remove();
+    if (activePrintSession?.frame === frame) activePrintSession = null;
+  }
+
+  function openFallback() {
+    cleanup();
+    window.location.assign(href);
+  }
+
+  function handleMessage(event) {
+    if (event.origin !== window.location.origin || event.source !== frame.contentWindow) return;
+    if (!event.data || typeof event.data !== "object") return;
+
+    if (event.data.type === "coloring-pages-print-error") {
+      openFallback();
       return;
     }
+
+    if (event.data.type !== "coloring-pages-print-ready") return;
+
+    printWindow = frame.contentWindow;
+    if (!printWindow) {
+      openFallback();
+      return;
+    }
+
+    window.removeEventListener("message", handleMessage);
+    printWindow.addEventListener("afterprint", cleanup, { once: true });
 
     try {
       printWindow.focus();
       printWindow.print();
     } catch {
-      window.location.assign(href);
-    } finally {
-      setTimeout(() => {
-        frame.remove();
-        if (activePrintFrame === frame) activePrintFrame = null;
-      }, 0);
+      openFallback();
     }
-  }, { once: true });
+  }
 
-  frame.src = href;
-  activePrintFrame = frame;
+  window.addEventListener("message", handleMessage);
+  frame.src = printUrl.toString();
+  activePrintSession = { frame, cleanup };
   document.body.append(frame);
 }
 
 printLink?.addEventListener("click", (event) => {
   if (!printLink.href || printLink.getAttribute("aria-disabled") === "true") return;
   event.preventDefault();
-  printPdf(printLink.href);
+  startHtmlPrint(printLink.href);
 });
 
 async function loadDetail() {
@@ -139,7 +168,7 @@ async function loadDetail() {
       if (detailPlaceholder) detailPlaceholder.hidden = true;
     }
 
-    setAction(printLink, entry.pdf);
+    setAction(printLink, `print.html?id=${encodeURIComponent(entry.id)}`);
     setAction(pdfLink, entry.pdf);
   } catch {
     // The static fallback remains usable when catalog.json is absent or invalid.
