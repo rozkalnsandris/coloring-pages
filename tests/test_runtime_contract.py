@@ -80,7 +80,11 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertNotIn("<rect", svg)
         self.assertNotIn("#f5f9ff", svg)
 
-        favicon_link = '<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">'
+        favicon_version = hashlib.sha256(favicon.read_bytes()).hexdigest()[:16]
+        favicon_link = (
+            '<link rel="icon" type="image/svg+xml" '
+            f'href="assets/favicon.svg?v={favicon_version}">'
+        )
         for path in ("index.html", "detail.html", "print.html"):
             html = (ROOT / path).read_text(encoding="utf-8")
             self.assertIn(favicon_link, html)
