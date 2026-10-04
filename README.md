@@ -43,7 +43,7 @@ PUBLISH           # approve exact validated print master, bind category, ingest
 
 See [Chat image commands v1](docs/CHAT_IMAGE_COMMANDS_V1.md). `PUBLISH` does not weaken the exact activity/page SHA-256/byte-size binding or any existing owner/runtime boundary. `OK` is not a publication command. Before Drive staging, one category must be bound from the canonical registry in `metadata/categories.json`; an unknown category is rejected rather than silently published outside the visible filters.
 
-Multi-page activities use the production-activated [Chat-to-Drive ingestion v2](docs/CHAT_TO_DRIVE_INGESTION_V2.md) path. The existing single-page v1 path remains unchanged. v2 activation is bound to trusted `RPi5_main@dc6b784bba471731ff060ece207e06d67cda16d3` and the exact installed operator identity recorded in the contract; each activity still requires fresh exact owner `PUBLISH` approval.
+Multi-page activities use the reviewed [Chat-to-Drive ingestion v2](docs/CHAT_TO_DRIVE_INGESTION_V2.md) path. The shared v1/v2 host publish operator is currently in a repin transition: reviewed target source is `RPi5_main@7e3e6b6d6574c1dc5199618dbb974b1fae83eaf5`, but the new operator must still be installed and verified on the RPi5 before any new `PUBLISH` may mutate Drive/content. Each activity still requires fresh exact owner `PUBLISH` approval after that activation.
 
 Application release is a separate lane. An owner-authorized merge that changes an approved application-image input (Dockerfile, importer, nginx, HTML, CSS, JavaScript or assets) publishes an immutable GHCR image and may proceed through the existing bounded RPi5 SIMPLE-DEPLOY reconciler to LIVE automatically. Content-contract/docs/tests changes do not mint or redeploy an application image.
 
