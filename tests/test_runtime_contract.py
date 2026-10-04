@@ -168,19 +168,15 @@ class RuntimeContractTests(unittest.TestCase):
 
         self.assertNotIn('`rettungshunde`', ingest_docs)
 
-    def test_detail_print_action_opens_dialog_without_navigation(self):
+    def test_detail_print_action_uses_generated_pdf_directly(self):
         detail_js = (ROOT / "js/detail.js").read_text(encoding="utf-8")
-        print_js = (ROOT / "js/print.js").read_text(encoding="utf-8")
+        detail_html = (ROOT / "detail.html").read_text(encoding="utf-8")
 
-        self.assertIn('document.createElement("iframe")', detail_js)
-        self.assertIn('searchParams.set("embedded", "1")', detail_js)
-        self.assertIn('event.source !== frame.contentWindow', detail_js)
-        self.assertIn('printWindow.print()', detail_js)
-        self.assertIn('"coloring-pages-print-ready"', detail_js)
-        self.assertIn('"coloring-pages-print-error"', detail_js)
-        self.assertIn("window.parent.postMessage", print_js)
-        self.assertIn('"coloring-pages-print-ready"', print_js)
-        self.assertIn('"coloring-pages-print-error"', print_js)
+        self.assertIn("setAction(printLink, entry.pdf)", detail_js)
+        self.assertIn("setAction(pdfLink, entry.pdf)", detail_js)
+        self.assertNotIn('document.createElement("iframe")', detail_js)
+        self.assertNotIn("window.print()", detail_js)
+        self.assertIn("data-action-pdf download", detail_html)
 
     def test_frontend_fetches_runtime_catalog(self):
         for path in ("js/app.js", "js/detail.js", "js/print.js"):
