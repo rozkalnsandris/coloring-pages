@@ -68,6 +68,18 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn(f'href="css/app.css?v={versions["css/app.css"]}"', print_html)
         self.assertIn(f'src="js/print.js?v={versions["js/print.js"]}"', print_html)
 
+    def test_html_declares_branded_svg_favicon(self):
+        favicon = ROOT / "assets/favicon.svg"
+        self.assertTrue(favicon.is_file())
+        svg = favicon.read_text(encoding="utf-8")
+        self.assertIn('viewBox="0 0 64 64"', svg)
+        self.assertIn("#ff776d", svg)
+
+        favicon_link = '<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">'
+        for path in ("index.html", "detail.html", "print.html"):
+            html = (ROOT / path).read_text(encoding="utf-8")
+            self.assertIn(favicon_link, html)
+
     def test_dockerfile_embeds_importer_runtime_without_media(self):
         dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
         self.assertIn("nginxinc/nginx-unprivileged:1.29.1-alpine", dockerfile)
