@@ -102,6 +102,7 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
             self.assertIn(required, manifest["required_fields"])
         self.assertIsNotNone(re.fullmatch(manifest["sha256_pattern"], "a" * 64))
         self.assertIsNotNone(re.fullmatch(manifest["id_pattern"], "aviator-pup-001"))
+        self.assertIsNotNone(re.fullmatch(manifest["id_pattern"], "0427183"))
         self.assertEqual(manifest["source_kind"], "chatgpt-generated-png")
         self.assertEqual(manifest["approval_class"], "explicit-owner-chat-approval")
         self.assertEqual(
