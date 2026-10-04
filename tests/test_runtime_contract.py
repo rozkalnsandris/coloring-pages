@@ -53,20 +53,17 @@ class RuntimeContractTests(unittest.TestCase):
 
     def test_html_uses_content_versioned_css_and_js(self):
         versions = {}
-        for path in ("css/app.css", "js/app.js", "js/detail.js", "js/print.js"):
+        for path in ("css/app.css", "js/app.js", "js/detail.js"):
             versions[path] = hashlib.sha256((ROOT / path).read_bytes()).hexdigest()[:12]
 
         index = (ROOT / "index.html").read_text(encoding="utf-8")
         detail = (ROOT / "detail.html").read_text(encoding="utf-8")
-        print_html = (ROOT / "print.html").read_text(encoding="utf-8")
 
         self.assertIn(f'href="css/app.css?v={versions["css/app.css"]}"', index)
         self.assertIn(f'src="js/app.js?v={versions["js/app.js"]}"', index)
         self.assertIn(f'href="css/app.css?v={versions["css/app.css"]}"', detail)
         self.assertIn(f'src="js/app.js?v={versions["js/app.js"]}"', detail)
         self.assertIn(f'src="js/detail.js?v={versions["js/detail.js"]}"', detail)
-        self.assertIn(f'href="css/app.css?v={versions["css/app.css"]}"', print_html)
-        self.assertIn(f'src="js/print.js?v={versions["js/print.js"]}"', print_html)
 
     def test_html_declares_branded_svg_favicon(self):
         favicon = ROOT / "assets/favicon.svg"
@@ -76,7 +73,7 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn("#ff776d", svg)
 
         favicon_link = '<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">'
-        for path in ("index.html", "detail.html", "print.html"):
+        for path in ("index.html", "detail.html"):
             html = (ROOT / path).read_text(encoding="utf-8")
             self.assertIn(favicon_link, html)
 
@@ -168,22 +165,18 @@ class RuntimeContractTests(unittest.TestCase):
 
         self.assertNotIn('`rettungshunde`', ingest_docs)
 
-    def test_detail_print_action_opens_dialog_without_navigation(self):
+    def test_detail_print_action_uses_generated_pdf_directly(self):
         detail_js = (ROOT / "js/detail.js").read_text(encoding="utf-8")
-        print_js = (ROOT / "js/print.js").read_text(encoding="utf-8")
+        detail_html = (ROOT / "detail.html").read_text(encoding="utf-8")
 
-        self.assertIn('document.createElement("iframe")', detail_js)
-        self.assertIn('searchParams.set("embedded", "1")', detail_js)
-        self.assertIn('event.source !== frame.contentWindow', detail_js)
-        self.assertIn('printWindow.print()', detail_js)
-        self.assertIn('"coloring-pages-print-ready"', detail_js)
-        self.assertIn('"coloring-pages-print-error"', detail_js)
-        self.assertIn("window.parent.postMessage", print_js)
-        self.assertIn('"coloring-pages-print-ready"', print_js)
-        self.assertIn('"coloring-pages-print-error"', print_js)
+        self.assertIn("setAction(printLink, entry.pdf)", detail_js)
+        self.assertIn("setAction(pdfLink, entry.pdf)", detail_js)
+        self.assertNotIn('document.createElement("iframe")', detail_js)
+        self.assertNotIn("window.print()", detail_js)
+        self.assertIn("data-action-pdf download", detail_html)
 
     def test_frontend_fetches_runtime_catalog(self):
-        for path in ("js/app.js", "js/detail.js", "js/print.js"):
+        for path in ("js/app.js", "js/detail.js"):
             source = (ROOT / path).read_text(encoding="utf-8")
             self.assertIn('fetch("catalog.json"', source)
 
