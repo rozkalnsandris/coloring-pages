@@ -1,0 +1,71 @@
+{
+  "schema": "rozkalns.coloring-pages.legacy-png-migration.v1",
+  "issue": 65,
+  "expected_catalog_count": 13,
+  "affected_ids": [
+    "bauarbeiter-hund-001",
+    "dino-001",
+    "farben-zuordnen-001",
+    "figuren-001",
+    "halloween-001",
+    "halloween-fledermaus-001",
+    "halloween-geist-001",
+    "halloween-hexe-001",
+    "halloween-kuerbis-001",
+    "halloween-kuerbis-geist-002",
+    "herbst-kaetzchen-001",
+    "lapsa-001",
+    "lapsa-003"
+  ],
+  "runtime": {
+    "entrypoint": "/usr/local/bin/coloring-pages-migrate-png-only",
+    "image_identity": "immutable-digest-required-at-live",
+    "network": "none",
+    "read_only_root": true,
+    "tmpfs": [
+      "/tmp"
+    ],
+    "cap_drop": [
+      "ALL"
+    ],
+    "no_new_privileges": true,
+    "run_as_host_operator": true,
+    "content_root": "/srv/coloring-pages-content",
+    "content_mount": "read-write-only-for-apply",
+    "shared_publish_lock": "/srv/coloring-pages-content/state/drive-ingest/.lock"
+  },
+  "legacy_contract": {
+    "catalog_print": "/media/<id>/source.png",
+    "catalog_pdf": "/media/<id>/print.pdf",
+    "required_public_files": [
+      "thumb.webp",
+      "preview.webp",
+      "source.png",
+      "print.pdf"
+    ],
+    "target_print_png_must_be_absent_before_apply": true,
+    "public_source_must_match_private_source_sha256": true
+  },
+  "target_contract": {
+    "catalog_print": "/media/<id>/print.png",
+    "catalog_pdf_field": "absent",
+    "required_public_files": [
+      "thumb.webp",
+      "preview.webp",
+      "print.png"
+    ],
+    "legacy_public_source": "absent",
+    "legacy_public_pdf": "absent",
+    "private_original": "byte-identical"
+  },
+  "mutation_order": [
+    "preflight-all-13-without-writes",
+    "stage-all-print-png-and-new-catalog-under-state",
+    "atomic-replace-each-public-print-png",
+    "atomic-replace-public-catalog",
+    "verify-png-only-target-before-cleanup",
+    "delete-legacy-public-source-png-and-print-pdf",
+    "verify-final-target-and-private-original-hashes"
+  ],
+  "rollback": "none-after-first-mutation-fail-closed"
+}

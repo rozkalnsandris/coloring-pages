@@ -1,0 +1,353 @@
+#!/usr/bin/env python3
+"""Migrate the exact legacy Coloring Pages catalogue to the PNG-only media contract."""
+
+from __future__ import annotations
+
+import argparse
+import fcntl
+import hashlib
+import io
+import json
+import os
+import re
+import shutil
+import sys
+import tempfile
+from contextlib import contextmanager
+from pathlib import Path
+from typing import Any
+
+from PIL import Image, ImageOps, UnidentifiedImageError
+
+ID_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+CONTRACT_SCHEMA = "rozkalns.coloring-pages.legacy-png-migration.v1"
+CONTAINER_CONTRACT = Path("/usr/local/share/coloring-pages/legacy-png-migration-v1.json")
+PRINT_CLEAR_LUMA = 240
+PRINT_SOLID_LUMA = 180
+MIN_SOURCE_RATIO = 2 / 3
+MAX_SOURCE_RATIO = 210 / 297 + 0.04
+MIN_SOURCE_WIDTH = 800
+MIN_SOURCE_HEIGHT = 1100
+LOCK_RELATIVE = Path("state/drive-ingest/.lock")
+
+
+class MigrationError(ValueError):
+    """Raised when the legacy migration cannot proceed safely."""
+
+
+@contextmanager
+def acquire_content_lock(content_root: Path):
+    lock_path = content_root.resolve() / LOCK_RELATIVE
+    if not lock_path.is_file():
+        raise MigrationError(f"content publish lock is missing: {lock_path}")
+    handle = lock_path.open("r+b", buffering=0)
+    try:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise MigrationError("content publish lock is busy") from exc
+        yield
+    finally:
+        handle.close()
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def print_alpha(luma: int) -> int:
+    if luma >= PRINT_CLEAR_LUMA:
+        return 0
+    if luma <= PRINT_SOLID_LUMA:
+        return 255
+    return round(
+        ((PRINT_CLEAR_LUMA - luma) / (PRINT_CLEAR_LUMA - PRINT_SOLID_LUMA)) * 255
+    )
+
+
+def open_validated_source(path: Path) -> Image.Image:
+    if not path.is_file():
+        raise MigrationError(f"private source is missing: {path}")
+    try:
+        with Image.open(path) as source:
+            source.load()
+            if source.format != "PNG":
+                raise MigrationError(f"private source is not PNG: {path}")
+            image = ImageOps.exif_transpose(source).convert("L")
+    except UnidentifiedImageError as exc:
+        raise MigrationError(f"private source is not decodable: {path}") from exc
+    except OSError as exc:
+        raise MigrationError(f"failed to decode private source {path}: {exc}") from exc
+
+    if image.width >= image.height:
+        raise MigrationError(f"private source is not portrait: {path}")
+    if image.width < MIN_SOURCE_WIDTH or image.height < MIN_SOURCE_HEIGHT:
+        raise MigrationError(f"private source is too small: {path}")
+    ratio = image.width / image.height
+    if not MIN_SOURCE_RATIO <= ratio <= MAX_SOURCE_RATIO:
+        raise MigrationError(f"private source ratio is outside the accepted range: {path}")
+    return image
+
+
+def build_print_image(image: Image.Image) -> Image.Image:
+    alpha = image.point(print_alpha)
+    result = Image.new("RGBA", image.size, color=(0, 0, 0, 0))
+    result.putalpha(alpha)
+    return result
+
+
+def default_contract_path() -> Path:
+    if CONTAINER_CONTRACT.is_file():
+        return CONTAINER_CONTRACT
+    return Path(__file__).resolve().parents[1] / "deploy/legacy-png-migration-v1.json"
+
+
+def load_contract(path: Path) -> dict[str, Any]:
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise MigrationError(f"migration contract is unavailable or invalid: {path}") from exc
+    if not isinstance(raw, dict) or raw.get("schema") != CONTRACT_SCHEMA:
+        raise MigrationError("migration contract schema is invalid")
+    ids = raw.get("affected_ids")
+    count = raw.get("expected_catalog_count")
+    if not isinstance(ids, list) or not ids or count != len(ids):
+        raise MigrationError("migration contract affected IDs/count are invalid")
+    if len(ids) != len(set(ids)):
+        raise MigrationError("migration contract contains duplicate IDs")
+    for page_id in ids:
+        if not isinstance(page_id, str) or not ID_PATTERN.fullmatch(page_id):
+            raise MigrationError(f"migration contract contains invalid ID: {page_id!r}")
+    return raw
+
+
+def load_catalog(path: Path) -> list[dict[str, Any]]:
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise MigrationError(f"published catalogue is unavailable or invalid: {path}") from exc
+    if not isinstance(raw, list):
+        raise MigrationError("published catalogue must be a JSON array")
+    return raw
+
+
+def serialize_catalog(entries: list[dict[str, Any]]) -> str:
+    return json.dumps(sorted(entries, key=lambda item: item["id"]), ensure_ascii=False, indent=2) + "
+"
+
+
+def validate_legacy_state(
+    content_root: Path, contract: dict[str, Any]
+) -> tuple[list[dict[str, Any]], dict[str, str]]:
+    content_root = content_root.resolve()
+    originals_root = content_root / "originals"
+    public_root = content_root / "public"
+    media_root = public_root / "media"
+    state_root = content_root / "state"
+    catalog_path = public_root / "catalog.json"
+
+    for required in (content_root, originals_root, public_root, media_root, state_root):
+        if not required.is_dir():
+            raise MigrationError(f"required content directory is missing: {required}")
+    if not catalog_path.is_file():
+        raise MigrationError("published catalogue is missing")
+
+    catalog = load_catalog(catalog_path)
+    ids = contract["affected_ids"]
+    if len(catalog) != contract["expected_catalog_count"]:
+        raise MigrationError("published catalogue count does not match migration contract")
+    catalog_by_id: dict[str, dict[str, Any]] = {}
+    for entry in catalog:
+        if not isinstance(entry, dict) or not isinstance(entry.get("id"), str):
+            raise MigrationError("published catalogue contains an invalid entry")
+        page_id = entry["id"]
+        if page_id in catalog_by_id:
+            raise MigrationError(f"published catalogue contains duplicate ID: {page_id}")
+        catalog_by_id[page_id] = entry
+    if set(catalog_by_id) != set(ids):
+        raise MigrationError("published catalogue IDs do not match migration contract")
+
+    original_hashes: dict[str, str] = {}
+    for page_id in ids:
+        entry = catalog_by_id[page_id]
+        root = f"/media/{page_id}"
+        expected_paths = {
+            "thumb": f"{root}/thumb.webp",
+            "preview": f"{root}/preview.webp",
+            "print": f"{root}/source.png",
+            "pdf": f"{root}/print.pdf",
+        }
+        for key, expected in expected_paths.items():
+            if entry.get(key) != expected:
+                raise MigrationError(f"legacy catalogue field mismatch for {page_id}: {key}")
+
+        media = media_root / page_id
+        private_source = originals_root / page_id / "source.png"
+        public_source = media / "source.png"
+        legacy_pdf = media / "print.pdf"
+        print_png = media / "print.png"
+        thumb = media / "thumb.webp"
+        preview = media / "preview.webp"
+        if not media.is_dir():
+            raise MigrationError(f"legacy media directory is missing: {page_id}")
+        for required_file in (private_source, public_source, legacy_pdf, thumb, preview):
+            if not required_file.is_file():
+                raise MigrationError(f"required legacy file is missing: {required_file}")
+        if print_png.exists():
+            raise MigrationError(f"target print.png already exists: {page_id}")
+
+        private_hash = sha256_file(private_source)
+        if sha256_file(public_source) != private_hash:
+            raise MigrationError(f"public/private source hash mismatch: {page_id}")
+        image = open_validated_source(private_source)
+        candidate = build_print_image(image)
+        with io.BytesIO() as encoded:
+            candidate.save(encoded, format="PNG", optimize=True)
+            if encoded.tell() <= 0:
+                raise MigrationError(f"print PNG validation failed: {page_id}")
+        original_hashes[page_id] = private_hash
+
+    return catalog, original_hashes
+
+
+def target_catalog(catalog: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    migrated: list[dict[str, Any]] = []
+    for entry in catalog:
+        page_id = entry["id"]
+        updated = dict(entry)
+        updated.pop("pdf", None)
+        updated["print"] = f"/media/{page_id}/print.png"
+        migrated.append(updated)
+    return migrated
+
+
+def verify_target_state(
+    content_root: Path,
+    contract: dict[str, Any],
+    original_hashes: dict[str, str],
+    *,
+    legacy_files_must_be_absent: bool,
+) -> None:
+    originals_root = content_root / "originals"
+    public_root = content_root / "public"
+    media_root = public_root / "media"
+    catalog = load_catalog(public_root / "catalog.json")
+    by_id = {entry.get("id"): entry for entry in catalog if isinstance(entry, dict)}
+    if set(by_id) != set(contract["affected_ids"]):
+        raise MigrationError("target catalogue IDs do not match migration contract")
+
+    for page_id in contract["affected_ids"]:
+        entry = by_id[page_id]
+        if "pdf" in entry:
+            raise MigrationError(f"legacy pdf field remains in catalogue: {page_id}")
+        if entry.get("print") != f"/media/{page_id}/print.png":
+            raise MigrationError(f"target print field mismatch: {page_id}")
+        media = media_root / page_id
+        for required in (media / "thumb.webp", media / "preview.webp", media / "print.png"):
+            if not required.is_file():
+                raise MigrationError(f"target public file is missing: {required}")
+        private_source = originals_root / page_id / "source.png"
+        if sha256_file(private_source) != original_hashes[page_id]:
+            raise MigrationError(f"private canonical source changed: {page_id}")
+        if legacy_files_must_be_absent:
+            for legacy in (media / "source.png", media / "print.pdf"):
+                if legacy.exists():
+                    raise MigrationError(f"legacy public file remains: {legacy}")
+
+
+def apply_migration(
+    content_root: Path, contract: dict[str, Any], catalog: list[dict[str, Any]], original_hashes: dict[str, str]
+) -> None:
+    content_root = content_root.resolve()
+    originals_root = content_root / "originals"
+    public_root = content_root / "public"
+    media_root = public_root / "media"
+    state_root = content_root / "state"
+    catalog_path = public_root / "catalog.json"
+
+    new_catalog = serialize_catalog(target_catalog(catalog))
+
+    with tempfile.TemporaryDirectory(prefix="legacy-png-migration-", dir=state_root) as temp_name:
+        stage = Path(temp_name)
+        staged_prints = stage / "print"
+        staged_prints.mkdir()
+        for page_id in contract["affected_ids"]:
+            image = open_validated_source(originals_root / page_id / "source.png")
+            target = staged_prints / f"{page_id}.png"
+            build_print_image(image).save(target, format="PNG", optimize=True)
+            os.chmod(target, 0o644)
+            with Image.open(target) as check:
+                check.load()
+                if check.format != "PNG" or check.mode != "RGBA":
+                    raise MigrationError(f"staged print PNG is invalid: {page_id}")
+
+        staged_catalog = stage / "catalog.json"
+        staged_catalog.write_text(new_catalog, encoding="utf-8")
+        load_catalog(staged_catalog)
+
+        # First public mutation: add target print files while the legacy catalogue still works.
+        for page_id in contract["affected_ids"]:
+            os.replace(staged_prints / f"{page_id}.png", media_root / page_id / "print.png")
+
+        # Second mutation: atomically switch the catalogue to the PNG-only paths.
+        catalog_tmp = public_root / f".catalog.legacy-png-migration.{os.getpid()}.tmp"
+        shutil.copyfile(staged_catalog, catalog_tmp)
+        os.chmod(catalog_tmp, 0o644)
+        os.replace(catalog_tmp, catalog_path)
+
+    verify_target_state(
+        content_root,
+        contract,
+        original_hashes,
+        legacy_files_must_be_absent=False,
+    )
+
+    # Destructive cleanup happens only after the new print files and catalogue are valid.
+    for page_id in contract["affected_ids"]:
+        media = media_root / page_id
+        (media / "source.png").unlink()
+        (media / "print.pdf").unlink()
+
+    verify_target_state(
+        content_root,
+        contract,
+        original_hashes,
+        legacy_files_must_be_absent=True,
+    )
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--check", action="store_true", help="validate exact legacy state without writes")
+    mode.add_argument("--apply", action="store_true", help="perform the reviewed one-time migration")
+    parser.add_argument("--content-root", type=Path, default=Path("/srv/coloring-pages-content"))
+    parser.add_argument("--contract", type=Path, default=default_contract_path())
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+    try:
+        contract = load_contract(args.contract)
+        if args.check:
+            validate_legacy_state(args.content_root, contract)
+            print(f"MIGRATION_CHECK=PASS COUNT={len(contract['affected_ids'])}")
+            return 0
+        with acquire_content_lock(args.content_root):
+            catalog, original_hashes = validate_legacy_state(args.content_root, contract)
+            apply_migration(args.content_root, contract, catalog, original_hashes)
+    except MigrationError as exc:
+        print(f"MIGRATION_ERROR: {exc}", file=sys.stderr)
+        return 1
+
+    print(f"MIGRATION_APPLY=PASS COUNT={len(contract['affected_ids'])}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
