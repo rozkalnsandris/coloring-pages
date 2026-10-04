@@ -275,8 +275,8 @@ def build_catalog_entry(
 
 
 def serialize_catalog(entries: list[dict[str, Any]]) -> str:
-    ordered = sorted(entries, key=lambda item: item["id"])
-    return json.dumps(ordered, ensure_ascii=False, indent=2) + "\n"
+    """Preserve canonical newest-first catalogue order exactly as supplied."""
+    return json.dumps(entries, ensure_ascii=False, indent=2) + "\n"
 
 
 def import_activity(
@@ -322,7 +322,7 @@ def import_activity(
         raise ImportError(f"page id already exists on disk: {page_id}")
 
     entry = build_catalog_entry(metadata, len(images))
-    new_catalog = serialize_catalog(existing + [entry])
+    new_catalog = serialize_catalog([entry, *existing])
 
     with tempfile.TemporaryDirectory(prefix=f"{page_id}-", dir=state_root) as temp_name:
         stage = Path(temp_name)
