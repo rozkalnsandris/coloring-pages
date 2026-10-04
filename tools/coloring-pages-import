@@ -18,7 +18,6 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 ID_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 A4_WIDTH_MM = 210
 A4_HEIGHT_MM = 297
-MM_PER_INCH = 25.4
 A4_RATIO = A4_WIDTH_MM / A4_HEIGHT_MM
 MIN_SOURCE_RATIO = 2 / 3
 MAX_SOURCE_RATIO = A4_RATIO + 0.04
@@ -159,27 +158,6 @@ def resized_copy(image: Image.Image, max_width: int) -> Image.Image:
     return copy
 
 
-def build_a4_pdf_canvas(image: Image.Image) -> Image.Image:
-    """Pad the source to an A4 ratio without resampling source pixels."""
-    if image.width / image.height < A4_RATIO:
-        canvas_width = max(image.width, round(image.height * A4_RATIO))
-        canvas_height = image.height
-    else:
-        canvas_width = image.width
-        canvas_height = max(image.height, round(image.width / A4_RATIO))
-
-    canvas = Image.new("L", (canvas_width, canvas_height), color=255)
-    x = (canvas_width - image.width) // 2
-    y = (canvas_height - image.height) // 2
-    canvas.paste(image, (x, y))
-    return canvas
-
-
-def a4_pdf_resolution(canvas: Image.Image) -> float:
-    """Map the padded raster to A4 physical width without changing its pixels."""
-    return canvas.width / (A4_WIDTH_MM / MM_PER_INCH)
-
-
 def print_alpha(luma: int) -> int:
     if luma >= PRINT_CLEAR_LUMA:
         return 0
@@ -207,12 +185,6 @@ def build_derivatives(image: Image.Image, target: Path) -> None:
     preview.save(target / "preview.webp", format="WEBP", lossless=True, quality=100, method=6)
     build_print_image(image).save(target / "print.png", format="PNG", optimize=True)
 
-    canvas = build_a4_pdf_canvas(image)
-    canvas.convert("RGB").save(
-        target / "print.pdf",
-        format="PDF",
-        resolution=a4_pdf_resolution(canvas),
-    )
 
 
 def load_catalog(path: Path) -> list[dict[str, Any]]:
@@ -252,7 +224,6 @@ def build_catalog_entry(metadata: dict[str, str]) -> dict[str, str]:
         "thumb": f"{root}/thumb.webp",
         "preview": f"{root}/preview.webp",
         "print": f"{root}/print.png",
-        "pdf": f"{root}/print.pdf",
     }
 
 

@@ -139,7 +139,7 @@ Default V1 source artwork standard:
 - primary age group 3–6 years
 - preserve the generated PNG as the source master
 - no mandatory vectorization or mandatory 2480 × 3508 source upscale
-- generate lossless WebP browse derivatives, a cleaned transparent `print.png`, and an A4 portrait PDF during import
+- generate lossless WebP browse derivatives and a cleaned transparent `print.png`; PNG is the only printable/downloadable media standard
 - detailed contract: `docs/MEDIA_STANDARD_V1.md`
 
 ## Public-content rule

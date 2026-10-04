@@ -64,8 +64,7 @@ Canonical LIVE content layout:
 │       └── <page-id>/
 │           ├── thumb.webp
 │           ├── preview.webp
-│           ├── print.png
-│           └── print.pdf
+│           └── print.png
 └── state/
 ```
 
@@ -120,9 +119,8 @@ The importer:
 4. preserves `originals/<page-id>/source.png`;
 5. creates lossless `thumb.webp` and `preview.webp`;
 6. creates a public `print.png` line-art derivative with near-white page pixels transparent, without publishing the exact source PNG;
-7. creates an A4 portrait `print.pdf` download derivative from the original source pixels, adding only white A4-ratio padding when needed and never upscaling the artwork;
-8. stages a new catalogue;
-9. atomically replaces `catalog.json` only after all derivatives are ready.
+7. stages a new catalogue;
+8. atomically replaces `catalog.json` only after all derivatives are ready.
 
 Validation/generation failure must not modify the currently published catalogue.
 
@@ -141,12 +139,11 @@ Example:
   "language": "de",
   "thumb": "/media/fire-pup-001/thumb.webp",
   "preview": "/media/fire-pup-001/preview.webp",
-  "print": "/media/fire-pup-001/print.png",
-  "pdf": "/media/fire-pup-001/print.pdf"
+  "print": "/media/fire-pup-001/print.png"
 }
 ```
 
-The existing frontend keeps fetching `catalog.json`. New content therefore does not require an HTML/JS edit, GitHub PR, image rebuild or application redeploy. The detail-page `A4 drucken` action uses the catalogue `print` PNG through the hidden HTML print document. That document cleans near-white background pixels in a canvas, uses CSS A4 portrait page geometry and calls `window.print()` directly. The `pdf` field remains available for the separate PDF download action.
+The existing frontend keeps fetching `catalog.json`. New content therefore does not require an HTML/JS edit, GitHub PR, image rebuild or application redeploy. The detail-page `A4 drucken` action uses the catalogue `print` PNG through the hidden HTML print document. That document cleans near-white background pixels in a canvas, uses CSS A4 portrait page geometry and calls `window.print()` directly. The same catalogue `print` PNG is the direct download target on the detail page.
 
 ## Runtime mount
 

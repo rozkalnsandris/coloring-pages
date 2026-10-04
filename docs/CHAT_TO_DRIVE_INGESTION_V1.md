@@ -119,7 +119,7 @@ The first owner-authorized production import completed successfully on 2026-10-0
 - success receipt present;
 - original source bytes matching the approved size and SHA-256;
 - exactly one matching catalogue entry;
-- public thumbnail, preview, cleaned print PNG and PDF derivatives available.
+- public thumbnail, preview and cleaned print PNG derivative available.
 
 This is historical activation evidence, not reusable authorization. Every future production import requires a fresh explicit approval of the exact image, then binding of the page ID, SHA-256, byte size and one allowed category before staging/import begins. Drive archive/delete remains a separate owner-gated mutation.
 
@@ -154,8 +154,8 @@ A successful content publication proves at minimum:
 - `originals/<id>/source.png` SHA-256 equals the manifest;
 - no exact source PNG is published under `public/media/<id>/source.png`;
 - exactly one catalogue entry exists for the ID and metadata matches;
-- `thumb.webp`, `preview.webp`, cleaned `print.png` and `print.pdf` exist;
-- public catalogue, thumbnail, preview, print PNG and PDF URLs return HTTP 200.
+- `thumb.webp`, `preview.webp` and cleaned `print.png` exist;
+- public catalogue, thumbnail, preview and print PNG URLs return HTTP 200.
 
 No application rebuild, redeploy or restart is required merely to publish one new page.
 

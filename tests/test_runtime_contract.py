@@ -179,8 +179,6 @@ class RuntimeContractTests(unittest.TestCase):
             'setAction(printLink, `print.html?id=${encodeURIComponent(entry.id)}`)',
             detail_js,
         )
-        self.assertIn("setAction(pdfLink, entry.pdf)", detail_js)
-        self.assertNotIn("setAction(printLink, entry.pdf)", detail_js)
         self.assertIn('document.createElement("iframe")', detail_js)
         self.assertIn('printUrl.searchParams.set("embedded", "1")', detail_js)
         self.assertIn(
@@ -190,8 +188,6 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn("printWindow.print()", detail_js)
         self.assertIn("window.location.assign(href)", detail_js)
         self.assertIn("entry.print", print_js)
-        self.assertNotIn("entry.pdf", print_js)
-        self.assertNotIn("pdfjs-dist", print_js)
         self.assertIn("PRINT_CLEAR_LUMA = 240", print_js)
         self.assertIn("PRINT_SOLID_LUMA = 180", print_js)
         self.assertIn("A4_PAGE_WIDTH_MM = 210", print_js)
@@ -218,7 +214,9 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn("data-print-canvas", print_html)
         self.assertNotIn("<embed", print_html)
         self.assertNotIn("<object", print_html)
-        self.assertIn("data-action-pdf download", detail_html)
+        self.assertIn("setAction(pngLink, entry.print)", detail_js)
+        self.assertIn("data-action-png download", detail_html)
+        self.assertIn("PNG herunterladen", detail_html)
 
     def test_frontend_fetches_runtime_catalog(self):
         for path in ("js/app.js", "js/detail.js", "js/print.js"):

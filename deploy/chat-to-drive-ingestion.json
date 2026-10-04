@@ -149,12 +149,10 @@
       "catalog-metadata-matches-manifest",
       "thumb-webp-exists",
       "preview-webp-exists",
-      "print-pdf-exists",
       "public-catalog-http-200",
       "public-thumb-http-200",
       "public-preview-http-200",
-      "public-source-http-200",
-      "public-pdf-http-200"
+      "public-source-http-200"
     ],
     "web_origin": "https://coloring.rozkalns.net",
     "application_restart_required": false
