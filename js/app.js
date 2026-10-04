@@ -6,6 +6,7 @@ const headerSearch = document.querySelector("[data-header-search]");
 const gallery = document.querySelector("[data-gallery]");
 const categoryButtons = [...document.querySelectorAll("[data-filter]")];
 const resultCount = document.querySelector("[data-result-count]");
+const totalCount = document.querySelector("[data-total-count]");
 const emptyState = document.querySelector("[data-empty-state]");
 
 const CATEGORY_LABELS = {
@@ -52,6 +53,25 @@ function normalize(value) {
 
 function currentCards() {
   return [...document.querySelectorAll(".coloring-card")];
+}
+
+function updateCatalogCounts() {
+  const cards = currentCards();
+  const counts = new Map();
+
+  cards.forEach((card) => {
+    const category = normalize(card.dataset.category ?? "");
+    if (!category) return;
+    counts.set(category, (counts.get(category) || 0) + 1);
+  });
+
+  categoryButtons.forEach((button) => {
+    const category = normalize(button.dataset.filter ?? "");
+    const value = button.querySelector("[data-category-count]");
+    if (value) value.textContent = String(counts.get(category) || 0);
+  });
+
+  if (totalCount) totalCount.textContent = String(cards.length);
 }
 
 function updateCount(visible) {
@@ -161,6 +181,7 @@ async function hydrateCatalog() {
     if (!fragment.childNodes.length) return;
 
     gallery.replaceChildren(fragment);
+    updateCatalogCounts();
     applyFilters();
   } catch {
     // Static fallback cards intentionally remain visible when catalog.json is unavailable.
@@ -243,6 +264,7 @@ document.querySelector("[data-reset-filters]")?.addEventListener("click", () => 
 });
 
 if (gallery) {
+  updateCatalogCounts();
   applyFilters();
   hydrateCatalog();
 }
