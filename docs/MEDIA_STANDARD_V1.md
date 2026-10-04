@@ -78,22 +78,36 @@ The exact approved source PNG bytes are not copied into the public media directo
 
 ## Stable IDs
 
-IDs must match:
+The importer remains backward-compatible with historical IDs matching:
 
 ```text
 ^[a-z0-9]+(?:-[a-z0-9]+)*$
 ```
 
-Once published, an ID is immutable in V1. Duplicate IDs fail closed. Replacing existing artwork is outside this workflow and requires a separate reviewed contract.
+New Chat publications use the opaque sequential policy in `metadata/id-policy.json`:
+
+```text
+cp-NNNNNN
+```
+
+Examples: `cp-000001`, `cp-000002`, `cp-000123`.
+
+For each new publication, `PUBLISH` reads fresh LIVE catalogue state, considers only IDs matching `^cp-[0-9]{6}$`, and allocates one greater than the highest existing sequence number. If no matching ID exists, the first ID is `cp-000001`. Gaps are not reused. Type, topic, title and category are metadata and do not affect the ID.
+
+The candidate ID must still be absent immediately before the first Drive/content mutation. Sequence exhaustion or an unexpected collision is a STOP rather than an alternate naming scheme.
+
+Existing legacy IDs stay accepted and immutable. They are never renamed and do not participate in the `cp-` sequence.
+
+Once published, every ID is immutable in V1. Duplicate IDs fail closed. Replacing existing artwork is outside this workflow and requires a separate reviewed contract.
 
 ## Public paths
 
-For `fire-pup-001`:
+For `cp-000123`:
 
 ```text
-/media/fire-pup-001/thumb.webp
-/media/fire-pup-001/preview.webp
-/media/fire-pup-001/print.png
+/media/cp-000123/thumb.webp
+/media/cp-000123/preview.webp
+/media/cp-000123/print.png
 ```
 
 ## Runtime
