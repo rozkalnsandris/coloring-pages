@@ -206,7 +206,7 @@ or:
 User: EDIT vienkāršāks fons
 ```
 
-Because the image-generation surface may return the generated image without an additional text message, the owner should treat `PUBLISH` as the stable next command whenever the displayed result is accepted.
+Because the image-generation surface may return the generated draft without an additional text message, the stable next command for an accepted draft is `UPSCALE-PRINT`; `PUBLISH` is valid only after the derived print master passes `VALIDATE-PRINT`.
 
 The publication commands to remember are:
 
