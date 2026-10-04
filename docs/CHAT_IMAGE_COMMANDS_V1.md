@@ -2,7 +2,7 @@
 
 ## Goal
 
-Make the normal owner workflow for creating and publishing one coloring page as short as possible while preserving the existing media and content-ingest trust boundaries.
+Make the normal owner workflow for creating and publishing one coloring activity as short as possible while preserving the existing media and content-ingest trust boundaries.
 
 Normal happy path:
 
@@ -83,13 +83,14 @@ The edited result becomes the latest candidate. Request the edited output on the
 
 ### `PUBLISH`
 
-`PUBLISH` is explicit owner approval of the exact latest generated image in the current conversation.
+`PUBLISH` is explicit owner approval of the exact latest generated page or exact ordered page set in the current conversation.
 
 Before the first content mutation, the operator must freeze:
 
-- one stable page ID;
-- SHA-256 of the exact approved PNG bytes;
-- exact byte size;
+- one stable activity/page ID;
+- the ordered page count;
+- SHA-256 of every exact approved PNG;
+- exact byte size of every approved PNG;
 - exactly one valid category;
 - required catalogue metadata.
 
@@ -104,7 +105,7 @@ The category is selected from the canonical registry in `metadata/categories.jso
 
 When exactly one category clearly fits the approved page, choose it automatically and include it in the frozen manifest metadata. If more than one category is plausible, or none of the current categories fits, STOP before Drive upload and ask the owner to choose an existing category or create a new category through a reviewed source change. Never use a silent default category.
 
-After those values are frozen, the complete JSON manifest must be materialized and validated locally before any Drive write. Do not upload the PNG first and then attempt to construct the manifest. The Drive write order remains PNG first, manifest last; only manifest **preparation** moves before the first mutation.
+After those values are frozen, the complete JSON manifest must be materialized and validated locally before any Drive write. Do not upload any PNG first and then attempt to construct the manifest. Single-page v1 stages its PNG then manifest. Multi-page v2 stages all 2–12 ordered PNG pages in ascending index order and the single manifest last; only manifest **preparation** moves before the first mutation.
 
 Only after the frozen identity, metadata, and prebuilt manifest all pass preflight does the approval bind to the reviewed content-ingest operation.
 
@@ -113,12 +114,14 @@ This generation-size rule does not add a new `PUBLISH`-only geometry preflight. 
 The authorized path is only:
 
 ```text
-exact approved PNG
-→ exact PNG + manifest in approved Drive pending/
-→ trusted RPi5 verification
-→ coloring-pages importer
+exact approved page or ordered page set
+→ exact PNG page(s) + prebuilt manifest in approved Drive pending/
+→ trusted RPi5 verification of every page
+→ one coloring-pages importer invocation for the activity
 → public catalogue/media verification
 ```
+
+For multi-page v2, page filenames are `<id>-1.png`, `<id>-2.png`, … and every manifest page entry binds its exact index, filename, SHA-256 and byte size. The trusted host operator at `RPi5_main@dc6b784bba471731ff060ece207e06d67cda16d3` supports this v2 path through the same installed `/usr/local/bin/coloring-pages-drive-ingest` command.
 
 `PUBLISH` does **not** authorize:
 
@@ -130,7 +133,7 @@ exact approved PNG
 - secrets, credentials, permissions or repository settings;
 - cleanup, rollback or an alternate mutation path.
 
-If there is ambiguity about which image is the latest approved candidate, if the image bytes cannot be bound exactly, if category selection is ambiguous, if the intended page ID already exists, or if state drifts after mutation begins, STOP rather than guessing or retrying.
+If there is ambiguity about which page/page set is approved, if any approved page bytes cannot be bound exactly, if category selection is ambiguous, if the intended activity ID already exists, or if state drifts after mutation begins, STOP rather than guessing or retrying.
 
 ## Conversation behavior
 
@@ -169,7 +172,8 @@ MAKE / REMAKE / EDIT / PUBLISH
 This command layer is intentionally thin:
 
 - `docs/MEDIA_STANDARD_V1.md` defines acceptable source media and import geometry;
-- `docs/CHAT_TO_DRIVE_INGESTION_V1.md` defines exact-image staging, integrity and publication;
+- `docs/CHAT_TO_DRIVE_INGESTION_V1.md` defines single-page staging, integrity and publication;
+- `docs/CHAT_TO_DRIVE_INGESTION_V2.md` defines production-activated ordered multi-page staging, integrity and publication;
 - `AGENTS.md` defines repository authority and STOP/owner gates.
 
 Where this convenience command layer conflicts with any stricter canonical contract, the stricter contract wins.

@@ -16,13 +16,13 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
             (ROOT / "deploy/chat-to-drive-ingestion-v2.json").read_text(encoding="utf-8")
         )
 
-    def test_v1_stays_active_and_v2_stays_host_inactive(self):
+    def test_v1_and_v2_are_production_activated(self):
         self.assertEqual(self.v1["status"], "production-activated")
         self.assertEqual(
             self.v2["schema"],
             "rozkalns.coloring-pages.chat-to-drive-ingestion.v2",
         )
-        self.assertEqual(self.v2["status"], "source-ready-host-not-activated")
+        self.assertEqual(self.v2["status"], "production-activated")
         compatibility = self.v2["compatibility"]
         self.assertEqual(
             compatibility["active_single_page_contract"],
@@ -30,10 +30,27 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
         )
         self.assertTrue(compatibility["v1_remains_production_activated"])
         self.assertTrue(compatibility["v2_does_not_change_v1_publish_semantics"])
+        host = self.v2["host_ingestion"]
+        self.assertEqual(host["activation_state"], "production-activated")
         self.assertEqual(
-            self.v2["host_ingestion"]["activation_state"],
-            "not-implemented",
+            host["operator_repository_revision"],
+            "dc6b784bba471731ff060ece207e06d67cda16d3",
         )
+        self.assertEqual(
+            host["installed_blob_sha"],
+            "5d6821ad42c8c9d887a03606279e6c70745a993f",
+        )
+        self.assertEqual(host["installed_path"], "/usr/local/bin/coloring-pages-drive-ingest")
+        self.assertEqual(host["installed_identity"], "root:root:755")
+        self.assertEqual(host["importer_image_digest"], "sha256:09822c1ceed359e0365c0e647763c6f1d8b31fb4f4ab564d7959c383709034b2")
+        self.assertTrue(self.v2["authority"]["host_operator_activation_satisfied"])
+        evidence = host["activation_evidence"]
+        self.assertEqual(evidence["non_production_v2_canary"], "pass")
+        self.assertTrue(evidence["ordered_page_identity_verified"])
+        self.assertTrue(evidence["hash_mismatch_rejected"])
+        self.assertFalse(evidence["rclone_executed"])
+        self.assertFalse(evidence["docker_executed"])
+        self.assertFalse(evidence["production_content_mutated"])
 
     def test_v2_source_merge_grants_no_live_authority(self):
         authority = self.v2["authority"]

@@ -2,7 +2,7 @@
 
 ## Status
 
-This is a **source-ready, host-not-activated** extension for activities with 2–12 ordered PNG pages.
+This is a **production-activated** extension for activities with 2–12 ordered PNG pages.
 
 The existing single-page production path remains unchanged and continues to use:
 
@@ -10,7 +10,7 @@ The existing single-page production path remains unchanged and continues to use:
 - manifest schema `rozkalns.coloring-pages.drive-staging-manifest.v1`;
 - one staged `<id>.png` plus `<id>.json`.
 
-This v2 contract does not authorize Google Drive writes, RPi5 execution or production import. The trusted host implementation belongs to `rozkalnsandris/RPi5_main` and must be reviewed/activated separately.
+The trusted host implementation is activated at `rozkalnsandris/RPi5_main@dc6b784bba471731ff060ece207e06d67cda16d3`. The installed `/usr/local/bin/coloring-pages-drive-ingest` blob is `5d6821ad42c8c9d887a03606279e6c70745a993f` (`root:root:755`) and pins importer image `ghcr.io/rozkalnsandris/coloring-pages@sha256:09822c1ceed359e0365c0e647763c6f1d8b31fb4f4ab564d7959c383709034b2`. Activation does not grant standing publication authority: every activity still requires fresh owner `PUBLISH` approval with exact per-page identity before the first Drive/content mutation.
 
 ## Simple model
 
@@ -58,9 +58,9 @@ The manifest carries the ordered page identities:
 
 Page indexes start at 1 and must be contiguous. Filename order is print order.
 
-## Intended trusted host flow
+## Trusted host flow
 
-The future `RPi5_main` operator should stay small:
+The activated `RPi5_main` operator stays small:
 
 1. read one v2 manifest from the exact bound Drive pending folder;
 2. validate the complete manifest and page count;
@@ -79,6 +79,14 @@ Before the first mutation, any mismatch is a normal fail-closed rejection.
 
 After the first authorized mutation, any error is STOP. There is no automatic retry, rollback, cleanup, overwrite or alternate path.
 
-## Activation gate
+## Activation record
 
-v2 may become a production content path only after a separate reviewed `RPi5_main` change implements the operator and proves exact-page verification with a non-production canary. Until then, normal single-page `PUBLISH` remains the only active Chat-to-Drive publication path.
+Production activation was completed on 2026-10-04 after:
+
+- reviewed `RPi5_main` implementation merged at `dc6b784bba471731ff060ece207e06d67cda16d3`;
+- exact installed operator identity matched source blob `5d6821ad42c8c9d887a03606279e6c70745a993f`;
+- installed metadata matched `root:root:755`;
+- an installed-operator non-production v2 canary passed for two ordered page identities and rejected a deliberately mismatched page SHA-256;
+- the canary executed no `rclone`, Docker/import or production-content mutation.
+
+Single-page v1 remains active and backward compatible. Multi-page v2 publication is now allowed only through the exact same owner-gated `PUBLISH` trust boundary described above.

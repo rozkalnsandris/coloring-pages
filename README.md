@@ -14,14 +14,15 @@ Application source and media content are deliberately separated:
 Daily content flow:
 
 ```text
-generate PNG in ChatGPT
-→ owner approves exact image
+generate PNG page(s) in ChatGPT
+→ owner approves the exact page or ordered page set
 → determine one valid category from metadata/categories.json
+→ freeze every approved page SHA-256 + byte size
 → fully materialize + validate the manifest before any Drive write
-→ stage exact PNG first, then the prebuilt manifest in Google Drive
-→ trusted RPi5 publish operator pulls and verifies it
-→ atomically publish verified PNG into /srv/coloring-pages-content/inbox/
-→ directly run the immutable importer image
+→ stage exact PNG page(s), then the prebuilt manifest last in Google Drive
+→ trusted RPi5 publish operator pulls and verifies every page
+→ publish the verified activity into /srv/coloring-pages-content/inbox/
+→ directly run the immutable importer image once
 → verify catalogue, derivatives and public URLs
 ```
 
@@ -36,9 +37,9 @@ EDIT <change>    # edit the latest candidate
 PUBLISH           # approve image, bind category, then run the bounded ingest path
 ```
 
-See [Chat image commands v1](docs/CHAT_IMAGE_COMMANDS_V1.md). `PUBLISH` does not weaken the exact-image ID/SHA-256/byte-size binding or any existing owner/runtime boundary. `OK` is not a publication command. Before Drive staging, one category must be bound from the canonical registry in `metadata/categories.json`; an unknown category is rejected rather than silently published outside the visible filters.
+See [Chat image commands v1](docs/CHAT_IMAGE_COMMANDS_V1.md). `PUBLISH` does not weaken the exact activity/page SHA-256/byte-size binding or any existing owner/runtime boundary. `OK` is not a publication command. Before Drive staging, one category must be bound from the canonical registry in `metadata/categories.json`; an unknown category is rejected rather than silently published outside the visible filters.
 
-Multi-page activities have a separate source contract in [Chat-to-Drive ingestion v2](docs/CHAT_TO_DRIVE_INGESTION_V2.md). It keeps the existing single-page production path unchanged and is not a LIVE publication path until the trusted `RPi5_main` bundle operator is separately reviewed and activated.
+Multi-page activities use the production-activated [Chat-to-Drive ingestion v2](docs/CHAT_TO_DRIVE_INGESTION_V2.md) path. The existing single-page v1 path remains unchanged. v2 activation is bound to trusted `RPi5_main@dc6b784bba471731ff060ece207e06d67cda16d3` and the exact installed operator identity recorded in the contract; each activity still requires fresh exact owner `PUBLISH` approval.
 
 Application release is a separate lane. An owner-authorized merge that changes an approved application-image input (Dockerfile, importer, nginx, HTML, CSS, JavaScript or assets) publishes an immutable GHCR image and may proceed through the existing bounded RPi5 SIMPLE-DEPLOY reconciler to LIVE automatically. Content-contract/docs/tests changes do not mint or redeploy an application image.
 
@@ -81,4 +82,4 @@ Only `public/` is exposed to the nginx container, read-only. The consumer contra
 
 ## Authorization boundary
 
-Authority is intentionally narrow. An owner-authorized eligible application merge grants only the reviewed auto-LIVE flow for `coloring-pages-public-rpi5`. Explicit approval of one exact image (after page ID, SHA-256 and byte size are frozen) grants only its Drive staging + verified RPi5 ingest/import + public verification. Cloudflare/network, secrets/permissions, Drive archive/delete, overwrite, manual/alternate deploy and unrelated host mutations remain separately owner-gated.
+Authority is intentionally narrow. An owner-authorized eligible application merge grants only the reviewed auto-LIVE flow for `coloring-pages-public-rpi5`. Explicit approval of one exact page or ordered page set (after activity ID and every page SHA-256/byte size are frozen) grants only its Drive staging + verified RPi5 ingest/import + public verification. Cloudflare/network, secrets/permissions, Drive archive/delete, overwrite, manual/alternate deploy and unrelated host mutations remain separately owner-gated.
