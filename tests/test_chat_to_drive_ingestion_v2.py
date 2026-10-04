@@ -87,6 +87,7 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
         )
         self.assertEqual(pages["unknown_fields"], "reject")
         self.assertIsNotNone(re.fullmatch(pages["sha256_pattern"], "a" * 64))
+        self.assertIsNotNone(re.fullmatch(manifest["id_pattern"], "8152047"))
 
     def test_manifest_is_last_and_all_page_identities_are_frozen_first(self):
         staging = self.v2["drive_staging"]
