@@ -94,12 +94,30 @@ class RuntimeContractTests(unittest.TestCase):
             dockerfile,
         )
         self.assertIn("chmod 0555 /usr/local/bin/coloring-pages-import", dockerfile)
+        self.assertIn(
+            "test -x /usr/local/bin/coloring-pages-regenerate-derivatives",
+            dockerfile,
+        )
+        self.assertIn(
+            "rozkalns.coloring-pages.existing-derivative-regeneration.v1",
+            dockerfile,
+        )
+        self.assertIn('assert d["issue"] == 74', dockerfile)
         self.assertIn("USER 101", dockerfile)
         self.assertIn("COPY index.html detail.html print.html /usr/share/nginx/html/", dockerfile)
         self.assertNotIn("build_catalog.py", dockerfile)
         self.assertNotIn("build_media.py", dockerfile)
         self.assertNotIn("COPY originals", dockerfile)
         self.assertNotIn("COPY metadata /usr/share/nginx/html", dockerfile)
+
+    def test_simple_deploy_release_gate_stays_narrow(self):
+        workflow = (
+            ROOT / ".github/workflows/simple-deploy.yml"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn('- "Dockerfile"', workflow)
+        self.assertNotIn('tools/coloring-pages-regenerate-derivatives', workflow)
+        self.assertNotIn('deploy/existing-derivative-regeneration-v1.json', workflow)
 
     def test_importer_runtime_contract_is_isolated_and_digest_bound(self):
         contract = json.loads(

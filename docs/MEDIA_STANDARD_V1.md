@@ -87,6 +87,8 @@ Normal new imports keep their existing stable filenames because those bytes are 
 
 Issue #74 applies this rule to the already-regenerated `farben-zuordnen-001` bytes. The preserved private source and all non-media catalogue metadata remain unchanged, the old stable media files remain byte-identical, and only `thumb`, `preview`, and `print` URLs may switch to the new full-SHA-256 filenames. After the first persistent write, any error is a STOP with no automatic retry, rollback, cleanup, or alternate path.
 
+The correction helper and its exact contract are embedded in the application image, but changes to those helper/contract paths do not independently trigger SIMPLE-DEPLOY. Releasing a reviewed helper revision therefore uses an existing approved application-image input such as a meaningful `Dockerfile` change; the SIMPLE-DEPLOY path allowlist is not broadened for one-off correction tooling.
+
 ## Multi-page activities
 
 A catalogue item may contain one or more ordered A4-like PNG pages.
