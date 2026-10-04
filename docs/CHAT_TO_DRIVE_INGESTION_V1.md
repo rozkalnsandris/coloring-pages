@@ -152,10 +152,9 @@ No automatic retry, rollback, cleanup or alternate mutation path is allowed afte
 A successful content publication proves at minimum:
 
 - `originals/<id>/source.png` SHA-256 equals the manifest;
-- `public/media/<id>/source.png` SHA-256 equals the manifest;
 - exactly one catalogue entry exists for the ID and metadata matches;
 - `thumb.webp`, `preview.webp` and `print.pdf` exist;
-- public catalogue, thumbnail, preview, source PNG and PDF URLs return HTTP 200.
+- public catalogue, thumbnail, preview and PDF URLs return HTTP 200.
 
 No application rebuild, redeploy or restart is required merely to publish one new page.
 
