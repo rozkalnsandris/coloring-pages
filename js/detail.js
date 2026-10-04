@@ -206,21 +206,24 @@ async function loadDetail() {
 
   try {
     const response = await fetch("catalog.json", { cache: "no-store" });
-    if (!response.ok) return;
+    if (!response.ok) throw new Error("catalog unavailable");
 
     const catalog = await response.json();
-    if (!Array.isArray(catalog)) return;
+    if (!Array.isArray(catalog)) throw new Error("invalid catalog");
 
     const entry = catalog.find((item) => item && item.id === id);
-    if (!entry) return;
+    if (!entry) throw new Error("entry unavailable");
 
     const pages = entryPages(entry);
+    if (!pages.length) throw new Error("pages unavailable");
     const categoryLabel = DETAIL_CATEGORY_LABELS[entry.category] || entry.category;
     const difficultyLabel = DETAIL_DIFFICULTY_LABELS[entry.difficulty] || entry.difficulty;
 
     document.title = `${entry.title} | Coloring Pages`;
     detailRoot?.setAttribute("data-loaded-id", entry.id);
     if (detailTitle) detailTitle.textContent = entry.title;
+    const detailBadges = document.querySelector(".detail-badges");
+    if (detailBadges) detailBadges.hidden = false;
     if (detailCategory) detailCategory.textContent = `🐾 ${categoryLabel}`;
     if (detailCharacter) {
       detailCharacter.textContent = entry.character ? `🐶 ${entry.character}` : "";
@@ -261,7 +264,11 @@ async function loadDetail() {
         : "A4 drucken";
     }
   } catch {
-    // The static fallback remains usable when catalog.json is absent or invalid.
+    const message = "Diese Malvorlage ist gerade nicht verfügbar. Bitte versuche es später erneut oder wähle ein anderes Motiv aus der Übersicht.";
+    if (detailTitle) detailTitle.textContent = "Malvorlage nicht verfügbar";
+    if (detailDescription) detailDescription.textContent = message;
+    const status = document.querySelector("[data-detail-status]");
+    if (status) status.textContent = message;
   }
 }
 

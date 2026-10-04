@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=ce7f81cca5b8">
+  <link rel="stylesheet" href="css/app.css?v=11f51d705407">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -23,7 +23,7 @@
       <nav class="desktop-nav" aria-label="Hauptnavigation">
         <a href="index.html">Startseite</a>
         <a href="index.html#kategorien">Kategorien</a>
-        <a href="index.html#neu">Über uns</a>
+        <a href="index.html#ueber-uns">Über uns</a>
       </nav>
       <a class="header-search" href="index.html#hero" aria-label="Zur Suche"><span aria-hidden="true"></span></a>
       <button class="menu-button" type="button" aria-expanded="false" aria-controls="mobile-nav">
@@ -31,7 +31,7 @@
       </button>
     </div>
     <nav id="mobile-nav" class="mobile-nav container" aria-label="Mobile Navigation" hidden>
-      <a href="index.html">Startseite</a><a href="index.html#kategorien">Kategorien</a><a href="index.html#neu">Über uns</a>
+      <a href="index.html">Startseite</a><a href="index.html#kategorien">Kategorien</a><a href="index.html#ueber-uns">Über uns</a>
     </nav>
   </header>
 
@@ -39,8 +39,8 @@
     <div class="container">
       <nav class="breadcrumbs" aria-label="Brotkrümelnavigation">
         <a href="index.html" aria-label="Startseite"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></svg></a><span aria-hidden="true">›</span>
-        <a href="index.html#kategorien" data-breadcrumb-category>Rettungshunde</a><span aria-hidden="true">›</span>
-        <span aria-current="page" data-breadcrumb-current>Ben hilft einem Kind</span>
+        <a href="index.html#kategorien" data-breadcrumb-category>Kategorien</a><span aria-hidden="true">›</span>
+        <span aria-current="page" data-breadcrumb-current>Malvorlage</span>
       </nav>
 
       <section class="detail-grid" aria-labelledby="detail-title">
@@ -48,8 +48,9 @@
           <div class="detail-preview" aria-label="Malvorlagen-Vorschau">
             <div class="detail-art-placeholder" data-detail-placeholder>
               <span aria-hidden="true">🐕‍🦺</span>
-              <strong>Ben hilft einem Kind</strong>
-              <small>Diese Malvorlage ist bald verfügbar. Sobald sie bereitsteht, kannst du sie hier ansehen, herunterladen und drucken.</small>
+              <strong>Malvorlagen-Vorschau</strong>
+              <small data-detail-status role="status">Wähle eine Malvorlage aus der Übersicht aus oder warte, bis die Vorschau geladen ist.</small>
+              <a class="outline-link" href="index.html#neu">Zur Übersicht</a>
             </div>
             <img class="detail-preview-image" data-detail-preview alt="" hidden>
           </div>
@@ -57,8 +58,8 @@
         </div>
 
         <div class="detail-copy">
-          <h1 id="detail-title" data-detail-title>Ben hilft einem Kind</h1>
-          <div class="detail-badges">
+          <h1 id="detail-title" data-detail-title>Malvorlage</h1>
+          <div class="detail-badges" hidden>
             <span class="age" data-detail-age>3–6 Jahre</span>
             <span class="easy" data-detail-difficulty>Einfach</span>
             <span class="pages-badge" data-detail-pages hidden>2 Seiten</span>
@@ -66,8 +67,7 @@
             <span class="character" data-detail-character>🐶 Ben</span>
           </div>
           <p data-detail-description>
-            Rettungshund Ben ist immer zur Stelle! In dieser Malvorlage hilft er einem Kind und zeigt,
-            wie wichtig Freundschaft, Mut und gegenseitige Hilfe sind. Perfekt zum Ausdrucken und kreativ Gestalten.
+            Wähle eine Malvorlage aus der Übersicht, um sie anzusehen, herunterzuladen und zu drucken.
           </p>
 
           <div class="detail-actions">
@@ -85,7 +85,7 @@
     </div>
   </main>
 
-  <script src="js/app.js?v=17ceab9fcfdc" defer></script>
-  <script src="js/detail.js?v=0b11d9ff5f73" defer></script>
+  <script src="js/app.js?v=39e706ede25e" defer></script>
+  <script src="js/detail.js?v=974d0c63dc64" defer></script>
 </body>
 </html>

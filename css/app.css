@@ -103,6 +103,7 @@ a { color: inherit; }
 .menu-lines::after { top: 8px; }
 .mobile-nav { display: none; gap: 4px; padding-bottom: 14px; }
 .mobile-nav a { min-height: 44px; padding: 11px 12px; border-radius: 10px; text-decoration: none; font-weight: 700; }
+.mobile-nav a.is-active { color: var(--blue-deep); background: #eaf3ff; text-decoration: underline; text-underline-offset: 6px; }
 .desktop-nav a:hover, .breadcrumbs a:hover { color: var(--blue-deep); }
 .mobile-nav a:hover, .header-search:hover, .menu-button:hover { background: #eaf3ff; }
 .menu-button[aria-expanded="true"] .menu-lines { background: transparent; }
@@ -199,6 +200,17 @@ a { color: inherit; }
 .category-abc b:nth-child(1) { color: var(--coral); }
 .category-abc b:nth-child(2) { color: #438ff3; transform: translateY(-8px); }
 .category-abc b:nth-child(3) { color: #25b866; }
+
+.about { padding: 48px 0; }
+.about-intro { max-width: 760px; }
+.about h2 { margin: 0 0 16px; font-family: var(--font-display); font-size: 34px; line-height: 1.1; }
+.about p { color: var(--muted); line-height: 1.65; }
+.about-intro p { font-size: 18px; }
+.about-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin: 28px 0; padding: 0; list-style: none; }
+.about-steps li { padding: 24px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--section); }
+.about-step-number { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: #e4f3ff; color: var(--blue-deep); font-weight: 800; }
+.about-steps h3 { margin: 16px 0 8px; font-size: 19px; }
+.about-steps p { margin: 0; }
 
 .new-pages { padding: 25px 0 44px; background: var(--section); }
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
@@ -346,6 +358,9 @@ a { color: inherit; }
   .category-arrow { grid-column: 2; grid-row: 1; width: 30px; height: 30px; }
   .category-abc { font-size: 34px; }
   .new-pages { padding-top: 28px; }
+  .about { padding: 32px 0; }
+  .about-steps { grid-template-columns: 1fr; gap: 12px; }
+  .about-intro p { font-size: 16px; }
   .section-heading { flex-wrap: wrap; gap: 12px; }
   .section-heading h2 { font-size: clamp(25px, 6.5vw, 32px); }
   .desktop-label { display: none; }
