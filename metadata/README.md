@@ -17,7 +17,7 @@ Example:
   "id": "fire-pup-001",
   "title": "Fire Pup 001",
   "character": "",
-  "category": "rettungshunde",
+  "category": "tiere",
   "age": "3-6",
   "difficulty": "easy",
   "language": "de",
@@ -35,11 +35,11 @@ The repository-owned `tools/coloring-pages-import` creates and validates these r
 
 The current V1 category IDs are:
 
-- `rettungshunde`
 - `tiere`
 - `fahrzeuge`
 - `alphabet`
 - `lernen`
+- `figuren`
 - `jahreszeiten`
 
 A production record must use exactly one registered category. The importer rejects unknown category IDs, and category selection must be bound before Drive staging. Future categories are added through a reviewed source change that keeps the registry and public category UI aligned.
