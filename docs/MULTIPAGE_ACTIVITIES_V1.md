@@ -101,4 +101,4 @@ The print view waits until every declared page image is loaded successfully befo
 
 ## Publication boundary
 
-This source change makes the catalogue, importer and browser UI multi-page-aware. The existing Chat-to-Drive v1 transport remains a one-PNG transport contract until a separately reviewed trusted RPi5 operator change adds bundle staging and exact per-page hash/size verification. Do not infer multi-page LIVE ingest authority from this source support alone.
+The catalogue, importer and browser UI are multi-page-aware. `deploy/chat-to-drive-ingestion-v2.json` now defines the source-side bundle contract: ordered `<id>-<index>.png` files, exact per-page SHA-256/size binding and manifest-last readiness. The existing Chat-to-Drive v1 path remains the only production-activated publication path until a separately reviewed trusted `RPi5_main` operator implements and activates v2. Do not infer multi-page LIVE ingest authority from this source contract alone.
