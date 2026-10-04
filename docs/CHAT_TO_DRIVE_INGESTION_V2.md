@@ -30,17 +30,17 @@ The manifest carries the ordered page identities:
 ```json
 {
   "schema": "rozkalns.coloring-pages.drive-staging-manifest.v2",
-  "id": "cp-000002",
+  "id": "8152047",
   "pages": [
     {
       "index": 1,
-      "file": "cp-000002-1.png",
+      "file": "8152047-1.png",
       "sha256": "<64 lowercase hex>",
       "size_bytes": 123456
     },
     {
       "index": 2,
-      "file": "cp-000002-2.png",
+      "file": "8152047-2.png",
       "sha256": "<64 lowercase hex>",
       "size_bytes": 123789
     }
@@ -58,7 +58,7 @@ The manifest carries the ordered page identities:
 
 Page indexes start at 1 and must be contiguous. Filename order is print order.
 
-For new Chat publications, the activity ID is allocated by the authoring layer from `metadata/id-policy.json` using opaque `cp-NNNNNN` form. The v2 ingestion schema continues to accept historical descriptive IDs for backward compatibility; published IDs are immutable.
+For new Chat publications, the authoring layer follows `metadata/id-policy.json` and allocates an opaque random seven-digit decimal ID independently for each activity. The candidate must be absent from fresh LIVE catalogue state before the first mutation and distinct from any other candidate in the same local publish batch. The v2 ingestion schema continues to accept historical descriptive and sequential IDs for backward compatibility; published IDs are immutable.
 
 ## Trusted host flow
 
