@@ -4,11 +4,15 @@ const detailCategory = document.querySelector("[data-detail-category]");
 const detailCharacter = document.querySelector("[data-detail-character]");
 const detailAge = document.querySelector("[data-detail-age]");
 const detailDifficulty = document.querySelector("[data-detail-difficulty]");
+const detailPagesBadge = document.querySelector("[data-detail-pages]");
 const detailDescription = document.querySelector("[data-detail-description]");
 const detailPreview = document.querySelector("[data-detail-preview]");
 const detailPlaceholder = document.querySelector("[data-detail-placeholder]");
+const pageSwitcher = document.querySelector("[data-detail-page-switcher]");
 const printLink = document.querySelector("[data-action-print]");
+const printLabel = document.querySelector("[data-action-print-label]");
 const pngLink = document.querySelector("[data-action-png]");
+const pngLabel = document.querySelector("[data-action-png-label]");
 let activePrintSession = null;
 
 const DETAIL_CATEGORY_LABELS = {
@@ -39,6 +43,85 @@ function setAction(link, href) {
     link.setAttribute("aria-disabled", "true");
     link.classList.add("is-disabled");
   }
+}
+
+function entryPages(entry) {
+  if (Array.isArray(entry.pages) && entry.pages.length > 0) {
+    const pages = entry.pages.map((page) => ({
+      preview: typeof page?.preview === "string" ? page.preview : "",
+      print: typeof page?.print === "string" ? page.print : "",
+    }));
+    return pages.some((page) => !page.preview && !page.print) ? [] : pages;
+  }
+
+  if (entry.preview || entry.print) {
+    return [{
+      preview: typeof entry.preview === "string" ? entry.preview : "",
+      print: typeof entry.print === "string" ? entry.print : "",
+    }];
+  }
+  return [];
+}
+
+function selectPage(entry, pages, pageIndex) {
+  const page = pages[pageIndex];
+  if (!page) return;
+
+  const previewUrl = page.preview || page.print;
+  if (detailPreview && previewUrl) {
+    detailPreview.src = previewUrl;
+    detailPreview.alt = pages.length > 1
+      ? `Vorschau: ${entry.title}, Seite ${pageIndex + 1}`
+      : `Vorschau: ${entry.title}`;
+    detailPreview.hidden = false;
+    if (detailPlaceholder) detailPlaceholder.hidden = true;
+  }
+
+  setAction(pngLink, page.print);
+  if (pngLabel) {
+    pngLabel.textContent = pages.length > 1
+      ? `PNG Seite ${pageIndex + 1} herunterladen`
+      : "PNG herunterladen";
+  }
+
+  pageSwitcher?.querySelectorAll("[data-page-index]").forEach((button) => {
+    const selected = Number(button.dataset.pageIndex) === pageIndex;
+    button.classList.toggle("is-active", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+}
+
+function renderPageSwitcher(entry, pages) {
+  if (!pageSwitcher) return;
+  pageSwitcher.replaceChildren();
+
+  if (pages.length <= 1) {
+    pageSwitcher.hidden = true;
+    return;
+  }
+
+  pages.forEach((page, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "detail-page-thumb";
+    button.dataset.pageIndex = String(index);
+    button.setAttribute("aria-pressed", String(index === 0));
+    button.setAttribute("aria-label", `Seite ${index + 1} anzeigen`);
+
+    const image = document.createElement("img");
+    image.src = page.preview || page.print;
+    image.alt = "";
+    image.loading = "lazy";
+
+    const label = document.createElement("span");
+    label.textContent = `Seite ${index + 1}`;
+
+    button.append(image, label);
+    button.addEventListener("click", () => selectPage(entry, pages, index));
+    pageSwitcher.append(button);
+  });
+
+  pageSwitcher.hidden = false;
 }
 
 function startHtmlPrint(href) {
@@ -131,6 +214,7 @@ async function loadDetail() {
     const entry = catalog.find((item) => item && item.id === id);
     if (!entry) return;
 
+    const pages = entryPages(entry);
     const categoryLabel = DETAIL_CATEGORY_LABELS[entry.category] || entry.category;
     const difficultyLabel = DETAIL_DIFFICULTY_LABELS[entry.difficulty] || entry.difficulty;
 
@@ -150,9 +234,14 @@ async function loadDetail() {
       detailDifficulty.textContent = difficultyLabel;
       detailDifficulty.className = entry.difficulty === "easy" ? "easy" : entry.difficulty === "detailed" ? "detailed" : "medium";
     }
+    if (detailPagesBadge) {
+      detailPagesBadge.textContent = `${pages.length} Seiten`;
+      detailPagesBadge.hidden = pages.length <= 1;
+    }
     if (detailDescription) {
-      detailDescription.textContent =
-        `Diese Malvorlage „${entry.title}“ ist für den A4-Druck vorbereitet und kann direkt gedruckt oder als PNG heruntergeladen werden.`;
+      detailDescription.textContent = pages.length > 1
+        ? `Diese Aktivität „${entry.title}“ besteht aus ${pages.length} A4-Seiten. Mit A4 drucken werden alle Seiten in einem Druckvorgang geöffnet; PNG kannst du seitenweise herunterladen.`
+        : `Diese Malvorlage „${entry.title}“ ist für den A4-Druck vorbereitet und kann direkt gedruckt oder als PNG heruntergeladen werden.`;
     }
 
     const breadcrumbCurrent = document.querySelector("[data-breadcrumb-current]");
@@ -161,15 +250,16 @@ async function loadDetail() {
     const breadcrumbCategory = document.querySelector("[data-breadcrumb-category]");
     if (breadcrumbCategory) breadcrumbCategory.textContent = categoryLabel;
 
-    if (detailPreview && entry.preview) {
-      detailPreview.src = entry.preview;
-      detailPreview.alt = `Vorschau: ${entry.title}`;
-      detailPreview.hidden = false;
-      if (detailPlaceholder) detailPlaceholder.hidden = true;
-    }
+    renderPageSwitcher(entry, pages);
+    if (pages.length) selectPage(entry, pages, 0);
 
-    setAction(printLink, `print.html?id=${encodeURIComponent(entry.id)}`);
-    setAction(pngLink, entry.print);
+    const allPrintable = pages.length > 0 && pages.every((page) => page.print);
+    setAction(printLink, allPrintable ? `print.html?id=${encodeURIComponent(entry.id)}` : "");
+    if (printLabel) {
+      printLabel.textContent = pages.length > 1
+        ? `A4 drucken (${pages.length} Seiten)`
+        : "A4 drucken";
+    }
   } catch {
     // The static fallback remains usable when catalog.json is absent or invalid.
   }

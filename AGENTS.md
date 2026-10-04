@@ -115,7 +115,7 @@ Do not add a framework, CMS, database or backend API without a documented need.
 
 - Production artwork does not live under repository `originals/`.
 - `metadata/` documents the runtime catalogue schema; production records live in the RPi5 content store.
-- `tools/coloring-pages-import` is the canonical one-page importer.
+- `tools/coloring-pages-import` is the canonical activity importer; it preserves legacy one-page paths and can publish an ordered multi-page activity set.
 - The importer runtime is embedded in the immutable Coloring Pages image; host Python/Pillow installation is not part of V1.
 - Production importer execution must follow `deploy/importer-runtime.json`: exact image digest, no network, read-only root, dropped capabilities, no-new-privileges, host operator UID/GID, and only the content root mounted read-write.
 - RPi5 content root: `/srv/coloring-pages-content/`.

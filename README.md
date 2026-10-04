@@ -44,6 +44,8 @@ The application keeps the simple V1 journey:
 
 **find → preview → print**
 
+Multi-page activities use the same journey: one gallery item may contain an ordered `pages[]` set, the detail view switches between page previews, and one A4 print action prints the complete set. Existing one-page catalogue entries and media paths remain backward compatible.
+
 ## Media standard
 
 See [Coloring Pages Media Standard v1](docs/MEDIA_STANDARD_V1.md).

@@ -49,3 +49,35 @@ A production record must use exactly one registered category. The importer rejec
 The live `public/catalog.json` must remain readable by the unprivileged nginx container. Every atomic catalogue replacement performed by repository-owned tooling must publish the replacement with mode `0644` before the final `os.replace()`.
 
 A temporary file mode such as `0600` must never become the final published catalogue, because nginx runs as a different unprivileged UID and would return HTTP 403 for `/catalog.json`.
+
+
+## Multi-page activity record
+
+Existing one-page records remain valid. A multi-page activity adds an ordered `pages` array while keeping top-level `preview` and `print` as page-1 compatibility fields:
+
+```json
+{
+  "id": "kuerbis-gesicht-001",
+  "title": "Kürbis-Gesicht",
+  "character": "",
+  "category": "lernen",
+  "age": "3-6",
+  "difficulty": "easy",
+  "language": "de",
+  "thumb": "/media/kuerbis-gesicht-001/thumb.webp",
+  "preview": "/media/kuerbis-gesicht-001/preview-1.webp",
+  "print": "/media/kuerbis-gesicht-001/print-1.png",
+  "pages": [
+    {
+      "preview": "/media/kuerbis-gesicht-001/preview-1.webp",
+      "print": "/media/kuerbis-gesicht-001/print-1.png"
+    },
+    {
+      "preview": "/media/kuerbis-gesicht-001/preview-2.webp",
+      "print": "/media/kuerbis-gesicht-001/print-2.png"
+    }
+  ]
+}
+```
+
+The order of `pages` is the print order. The detail UI lets the user switch previews and download the selected PNG; `A4 drucken` prints every page in one browser print session.

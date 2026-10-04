@@ -1,4 +1,4 @@
-const printCanvas = document.querySelector("[data-print-canvas]");
+const printPages = document.querySelector("[data-print-pages]");
 const printPlaceholder = document.querySelector("[data-print-placeholder]");
 const printButton = document.querySelector("[data-print-button]");
 const printStatus = document.querySelector("[data-print-status]");
@@ -11,6 +11,16 @@ const A4_PAGE_HEIGHT_MM = 297;
 function notifyParent(type, id) {
   if (!embeddedPrint || window.parent === window) return;
   window.parent.postMessage({ type, id }, window.location.origin);
+}
+
+function entryPrintPages(entry) {
+  if (Array.isArray(entry.pages) && entry.pages.length > 0) {
+    const urls = entry.pages.map((page) =>
+      typeof page?.print === "string" ? page.print : "",
+    );
+    return urls.some((url) => !url) ? [] : urls;
+  }
+  return typeof entry.print === "string" && entry.print ? [entry.print] : [];
 }
 
 function a4CanvasSize(width, height) {
@@ -33,25 +43,21 @@ function loadImage(url) {
   });
 }
 
-async function renderPrintImage(imageUrl) {
-  if (!printCanvas) throw new Error("print canvas unavailable");
-
-  const image = await loadImage(imageUrl);
-  if (!image.naturalWidth || !image.naturalHeight) {
-    throw new Error("print image has no dimensions");
-  }
+function renderImageToCanvas(image) {
+  const canvas = document.createElement("canvas");
+  canvas.setAttribute("aria-hidden", "true");
 
   const canvasSize = a4CanvasSize(image.naturalWidth, image.naturalHeight);
-  printCanvas.width = canvasSize.width;
-  printCanvas.height = canvasSize.height;
+  canvas.width = canvasSize.width;
+  canvas.height = canvasSize.height;
 
-  const context = printCanvas.getContext("2d", { alpha: true });
+  const context = canvas.getContext("2d", { alpha: true });
   if (!context) throw new Error("print canvas context unavailable");
 
-  const offsetX = Math.floor((printCanvas.width - image.naturalWidth) / 2);
-  const offsetY = Math.floor((printCanvas.height - image.naturalHeight) / 2);
+  const offsetX = Math.floor((canvas.width - image.naturalWidth) / 2);
+  const offsetY = Math.floor((canvas.height - image.naturalHeight) / 2);
 
-  context.clearRect(0, 0, printCanvas.width, printCanvas.height);
+  context.clearRect(0, 0, canvas.width, canvas.height);
   context.drawImage(
     image,
     offsetX,
@@ -59,8 +65,25 @@ async function renderPrintImage(imageUrl) {
     image.naturalWidth,
     image.naturalHeight,
   );
+  return canvas;
+}
 
-  printCanvas.hidden = false;
+async function renderPrintImages(imageUrls) {
+  if (!printPages) throw new Error("print pages container unavailable");
+  const images = await Promise.all(imageUrls.map((url) => loadImage(url)));
+
+  const sheets = images.map((image, index) => {
+    if (!image.naturalWidth || !image.naturalHeight) {
+      throw new Error("print image has no dimensions");
+    }
+    const sheet = document.createElement("section");
+    sheet.className = "print-sheet";
+    sheet.setAttribute("aria-label", `A4-Druckseite ${index + 1} von ${images.length}`);
+    sheet.append(renderImageToCanvas(image));
+    return sheet;
+  });
+
+  printPages.replaceChildren(...sheets);
 }
 
 async function loadPrintPage() {
@@ -81,14 +104,18 @@ async function loadPrintPage() {
     const entry = Array.isArray(catalog)
       ? catalog.find((item) => item && item.id === id)
       : null;
+    const imageUrls = entry ? entryPrintPages(entry) : [];
 
-    if (!entry || !entry.print) throw new Error("entry unavailable");
+    if (!entry || imageUrls.length === 0) throw new Error("entry unavailable");
 
     document.title = `${entry.title} drucken | Coloring Pages`;
-    await renderPrintImage(entry.print);
+    await renderPrintImages(imageUrls);
 
-    if (printPlaceholder) printPlaceholder.hidden = true;
-    if (printStatus) printStatus.textContent = entry.title;
+    if (printStatus) {
+      printStatus.textContent = imageUrls.length > 1
+        ? `${entry.title} · ${imageUrls.length} Seiten`
+        : entry.title;
+    }
     if (printButton) printButton.disabled = false;
     notifyParent("coloring-pages-print-ready", id);
   } catch {

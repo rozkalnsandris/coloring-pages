@@ -176,7 +176,7 @@ class RuntimeContractTests(unittest.TestCase):
         detail_html = (ROOT / "detail.html").read_text(encoding="utf-8")
 
         self.assertIn(
-            'setAction(printLink, `print.html?id=${encodeURIComponent(entry.id)}`)',
+            'setAction(printLink, allPrintable ? `print.html?id=${encodeURIComponent(entry.id)}` : "");',
             detail_js,
         )
         self.assertIn('document.createElement("iframe")', detail_js)
@@ -187,7 +187,8 @@ class RuntimeContractTests(unittest.TestCase):
         )
         self.assertIn("printWindow.print()", detail_js)
         self.assertIn("window.location.assign(href)", detail_js)
-        self.assertIn("entry.print", print_js)
+        self.assertIn("function entryPrintPages(entry)", print_js)
+        self.assertIn("entry.pages", print_js)
         self.assertNotIn("PRINT_CLEAR_LUMA", print_js)
         self.assertNotIn("PRINT_SOLID_LUMA", print_js)
         self.assertIn("A4_PAGE_WIDTH_MM = 210", print_js)
@@ -202,7 +203,8 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertNotIn("getImageData", print_js)
         self.assertNotIn("putImageData", print_js)
         self.assertIn("context.drawImage(", print_js)
-        self.assertIn('document.querySelector("[data-print-canvas]")', print_js)
+        self.assertIn('document.querySelector("[data-print-pages]")', print_js)
+        self.assertIn('document.createElement("canvas")', print_js)
         self.assertIn(
             'notifyParent("coloring-pages-print-ready", id)',
             print_js,
@@ -212,12 +214,19 @@ class RuntimeContractTests(unittest.TestCase):
             print_js,
         )
         self.assertIn('class="print-sheet"', print_html)
-        self.assertIn("data-print-canvas", print_html)
+        self.assertIn("data-print-pages", print_html)
+        self.assertNotIn("data-print-canvas", print_html)
         self.assertNotIn("<embed", print_html)
         self.assertNotIn("<object", print_html)
-        self.assertIn("setAction(pngLink, entry.print)", detail_js)
+        self.assertIn("setAction(pngLink, page.print)", detail_js)
+        self.assertIn("data-detail-page-switcher", detail_html)
+        self.assertIn("data-detail-pages", detail_html)
         self.assertIn("data-action-png download", detail_html)
         self.assertIn("PNG herunterladen", detail_html)
+
+        css = (ROOT / "css/app.css").read_text(encoding="utf-8")
+        self.assertIn("break-after: page", css)
+        self.assertIn("size: A4 portrait", css)
 
     def test_frontend_fetches_runtime_catalog(self):
         for path in ("js/app.js", "js/detail.js", "js/print.js"):

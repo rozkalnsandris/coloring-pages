@@ -84,3 +84,34 @@ V1 optimizes for a clean coloring experience and a one-command content workflow.
 Already-published derivatives are never silently rewritten by a normal import. If a historical derivative was produced under an older media transform, correction requires a separately reviewed exact-baseline regeneration contract.
 
 Issue #71 binds one correction only for `farben-zuordnen-001`: the preserved private source size/SHA-256, exact current derivative hashes, exact catalogue entry, shared Drive-ingest lock, and only the three derivative paths are frozen before any write. The tool regenerates `thumb.webp`, `preview.webp`, and `print.png` with the current color-preserving importer functions. It must not modify `originals/farben-zuordnen-001/source.png` or `public/catalog.json`. All derivative bytes are generated and validated before the first persistent write; after the first persistent write, any error is a STOP with no automatic retry, rollback, cleanup, or alternate path.
+
+## Multi-page activities
+
+A catalogue item may contain one or more ordered A4-like PNG pages.
+
+Single-page imports keep the existing paths unchanged:
+
+```text
+originals/<id>/source.png
+public/media/<id>/thumb.webp
+public/media/<id>/preview.webp
+public/media/<id>/print.png
+```
+
+For an activity with multiple pages, the importer preserves page order and writes:
+
+```text
+originals/<id>/source-1.png
+originals/<id>/source-2.png
+...
+public/media/<id>/thumb.webp
+public/media/<id>/preview-1.webp
+public/media/<id>/preview-2.webp
+public/media/<id>/print-1.png
+public/media/<id>/print-2.png
+...
+```
+
+The thumbnail always comes from page 1. The catalogue keeps top-level `preview` and `print` pointing to page 1 for backward compatibility and adds an ordered `pages` array for multi-page-aware clients. The importer accepts at most 12 pages per activity and validates every page before publication.
+
+The browser print document creates one A4 print sheet per `pages[]` item. CSS Paged Media fixes each sheet to A4 portrait and CSS Fragmentation uses `break-after: page` between sheets, so one `window.print()` action opens the normal browser/system print flow for the complete activity without introducing a PDF viewer.
