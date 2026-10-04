@@ -56,15 +56,18 @@ Canonical LIVE content layout:
 /srv/coloring-pages-content/
 ├── inbox/
 ├── originals/
-│   └── <page-id>/
-│       └── source.png
+│   └── <activity-id>/
+│       ├── source.png              # single-page
+│       └── source-1.png ...        # multi-page
 ├── public/
 │   ├── catalog.json
 │   └── media/
-│       └── <page-id>/
+│       └── <activity-id>/
 │           ├── thumb.webp
-│           ├── preview.webp
-│           └── print.png
+│           ├── preview.webp        # single-page
+│           ├── print.png           # single-page
+│           ├── preview-1.webp ...  # multi-page
+│           └── print-1.png ...     # multi-page
 └── state/
 ```
 
@@ -91,9 +94,11 @@ V1 source requirements:
 - no JPEG
 - no watermark
 - no mandatory vectorization
-- no mandatory 2480×3508 source upscale or 300 PPI conversion
+- new Chat-generated publication uses `UPSCALE-PRINT → VALIDATE-PRINT` before `PUBLISH`
+- the validated Chat print master is exact `2480×3508` PNG with approximately 300×300 DPI metadata and an exact-white outer border
+- the importer remains backward compatible with its broader accepted A4/2:3 source geometry and does not perform the upscale itself
 
-The generated PNG is preserved byte-for-byte as `source.png`.
+The exact validated print-master PNG bytes are preserved as the canonical source: `source.png` for single-page activities or ordered `source-1.png`, `source-2.png`, … for multi-page activities.
 
 ## Daily content import
 
@@ -103,7 +108,7 @@ The production path is activated and uses one reviewed RPi5 publish operator.
 
 The operator verifies the exact staged manifest, byte size and SHA-256, atomically publishes the PNG into `inbox/`, then directly runs the immutable Coloring Pages importer image under the isolation contract in `deploy/importer-runtime.json`.
 
-The first end-to-end production import passed on 2026-10-03. That is historical activation evidence only. For each future page, the owner's explicit `PUBLISH` command for the exact latest image is the content-ingest authorization once page ID, SHA-256 and byte size are frozen; that authority is limited to staging, verified ingest/import and public verification.
+The first end-to-end production import passed on 2026-10-03. That is historical activation evidence only. For each future activity, the owner's explicit `PUBLISH` command for the exact latest validated print-master page or ordered page set is the content-ingest authorization once the activity ID and every page SHA-256 + byte size are frozen; that authority is limited to staging, verified ingest/import and public verification.
 
 Host Python/Pillow installation is not required. Installing/replacing the publish operator and executing production imports remain outside source-only authority.
 
@@ -116,11 +121,12 @@ The importer:
 1. validates PNG and safe A4-like portrait geometry;
 2. derives/validates a stable lowercase-hyphen page ID;
 3. rejects duplicate IDs;
-4. preserves `originals/<page-id>/source.png`;
-5. creates lossless `thumb.webp` and `preview.webp`;
-6. creates a public `print.png` derivative that preserves source colors and source dimensions, without publishing the exact source PNG bytes;
-7. stages a new catalogue;
-8. atomically replaces `catalog.json` only after all derivatives are ready.
+4. preserves the approved source page(s) under `originals/<activity-id>/`;
+5. creates one `thumb.webp` plus ordered lossless preview derivative(s);
+6. creates ordered public print PNG derivative(s) that preserve source colors and source dimensions, without publishing the exact private source PNG bytes;
+7. keeps top-level `preview`/`print` compatible with page 1 and adds ordered `pages[]` for multi-page activities;
+8. stages a new catalogue;
+9. atomically replaces `catalog.json` only after all derivatives are ready.
 
 Validation/generation failure must not modify the currently published catalogue.
 
@@ -143,7 +149,7 @@ Example:
 }
 ```
 
-The existing frontend keeps fetching `catalog.json`. New content therefore does not require an HTML/JS edit, GitHub PR, image rebuild or application redeploy. The detail-page `A4 drucken` action uses the catalogue `print` PNG through the hidden HTML print document. That document centers the PNG on an A4 portrait canvas without recoloring it and calls `window.print()` directly. The same catalogue `print` PNG is the direct download target on the detail page.
+The existing frontend keeps fetching `catalog.json`. New content therefore does not require an HTML/JS edit, GitHub PR, image rebuild or application redeploy. Single-page entries keep their legacy top-level `preview`/`print` fields. Multi-page entries add ordered `pages[]` while keeping the top-level fields pointed at page 1 for backward compatibility. The detail-page `A4 drucken` action sends all ordered print PNG pages through the hidden HTML print document and one normal browser/system print flow; direct download targets the selected page's print PNG.
 
 ## Runtime mount
 
@@ -205,6 +211,6 @@ Do not add yet:
 The repository owns source contracts and importer code. Two bounded production paths are authorized by the project policy:
 
 - owner-authorized eligible application merge → immutable image → existing RPi5 SIMPLE-DEPLOY auto-LIVE flow for `coloring-pages-public-rpi5`;
-- owner `PUBLISH` of exact latest image → Drive staging → verified RPi5 ingest/import → public verification after ID/SHA/size binding.
+- owner `PUBLISH` of the exact latest validated print-master page or ordered page set → Drive staging → verified RPi5 ingest/import → public verification after activity ID and every page SHA/size are bound.
 
 Everything outside those paths—Cloudflare/DNS/tunnel, secrets/credentials, permissions, host packages, manual/alternate deploys, Drive archive/delete, production overwrite, cleanup or rollback—requires separate explicit owner authorization.
