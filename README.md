@@ -15,9 +15,11 @@ Daily content flow:
 
 ```text
 generate PNG page(s) in ChatGPT
-→ owner approves the exact page or ordered page set
+→ UPSCALE-PRINT exact draft page(s) into A4 print-master PNGs
+→ VALIDATE-PRINT every print master
+→ owner PUBLISH approval of the exact validated page or ordered page set
 → determine one valid category from metadata/categories.json
-→ freeze every approved page SHA-256 + byte size
+→ freeze every approved print-master SHA-256 + byte size
 → fully materialize + validate the manifest before any Drive write
 → stage exact PNG page(s), then the prebuilt manifest last in Google Drive
 → trusted RPi5 publish operator pulls and verifies every page
@@ -31,10 +33,12 @@ This path is production-activated. The first owner-authorized end-to-end import 
 For normal ChatGPT use, the convenience command layer is:
 
 ```text
-MAKE <subject>   # generate one candidate
-REMAKE           # same subject, new composition
-EDIT <change>    # edit the latest candidate
-PUBLISH           # approve image, bind category, then run the bounded ingest path
+MAKE <subject>   # generate one draft candidate
+REMAKE           # same subject, new composition; invalidates prior validation
+EDIT <change>    # edit latest draft; invalidates prior validation
+UPSCALE-PRINT     # CPU/Pillow white-clean + A4 print-master preparation
+VALIDATE-PRINT    # read-only exact print-master validation
+PUBLISH           # approve exact validated print master, bind category, ingest
 ```
 
 See [Chat image commands v1](docs/CHAT_IMAGE_COMMANDS_V1.md). `PUBLISH` does not weaken the exact activity/page SHA-256/byte-size binding or any existing owner/runtime boundary. `OK` is not a publication command. Before Drive staging, one category must be bound from the canonical registry in `metadata/categories.json`; an unknown category is rejected rather than silently published outside the visible filters.
@@ -53,7 +57,7 @@ Multi-page activities use the same journey: one gallery item may contain an orde
 
 See [Coloring Pages Media Standard v1](docs/MEDIA_STANDARD_V1.md).
 
-The approved source artwork is preserved byte-for-byte only as the private `originals/<id>/source.png` master. Published media URLs are immutable; if an existing derivative must be corrected, the corrected bytes receive new full-SHA-256 content-addressed filenames and the no-cache catalogue switches to those URLs instead of requiring a CDN purge. V1 does not require vector tracing, a mandatory 2480×3508 upscale or a 300 PPI conversion. The importer publishes one color-preserving `print.png` derivative at the original source dimensions as the canonical printable/downloadable file. The hidden `print.html` uses that PNG with CSS `@page` fixed to A4 portrait (`210 × 297 mm`) and calls `window.print()` without recoloring the pixels. The detail page downloads the same `print.png` directly.
+The approved publication source artwork is preserved byte-for-byte only as the private `originals/<id>/source.png` master. For new Chat-generated publication, that source is the exact `2480×3508` validated print master produced before `PUBLISH`; the lower-resolution generation draft is not the production master. The CPU-only preparation step uses Pillow/LANCZOS, conservative unsharp masking and exact-white normalization, with 300 DPI metadata. This resampling does not recreate missing native detail. The importer itself still performs no upscale and remains backward-compatible with its broader accepted source geometry. Published media URLs are immutable; if an existing derivative must be corrected, the corrected bytes receive new full-SHA-256 content-addressed filenames and the no-cache catalogue switches to those URLs instead of requiring a CDN purge. The importer publishes one color-preserving `print.png` derivative at the approved source dimensions as the canonical printable/downloadable file. The hidden `print.html` uses that PNG with CSS `@page` fixed to A4 portrait (`210 × 297 mm`) and calls `window.print()` without recoloring the pixels. The detail page downloads the same `print.png` directly.
 
 ## Runtime content layout
 
