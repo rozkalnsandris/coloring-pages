@@ -16,13 +16,13 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
             (ROOT / "deploy/chat-to-drive-ingestion-v2.json").read_text(encoding="utf-8")
         )
 
-    def test_v1_and_v2_are_production_activated(self):
+    def test_v1_active_and_v2_repin_pending_live_install(self):
         self.assertEqual(self.v1["status"], "production-activated")
         self.assertEqual(
             self.v2["schema"],
             "rozkalns.coloring-pages.chat-to-drive-ingestion.v2",
         )
-        self.assertEqual(self.v2["status"], "production-activated")
+        self.assertEqual(self.v2["status"], "production-repin-pending-live-install")
         compatibility = self.v2["compatibility"]
         self.assertEqual(
             compatibility["active_single_page_contract"],
@@ -31,7 +31,7 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
         self.assertTrue(compatibility["v1_remains_production_activated"])
         self.assertTrue(compatibility["v2_does_not_change_v1_publish_semantics"])
         host = self.v2["host_ingestion"]
-        self.assertEqual(host["activation_state"], "production-activated")
+        self.assertEqual(host["activation_state"], "repin-merged-live-install-pending")
         self.assertEqual(
             host["operator_repository_revision"],
             "dc6b784bba471731ff060ece207e06d67cda16d3",
@@ -43,7 +43,21 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
         self.assertEqual(host["installed_path"], "/usr/local/bin/coloring-pages-drive-ingest")
         self.assertEqual(host["installed_identity"], "root:root:755")
         self.assertEqual(host["importer_image_digest"], "sha256:09822c1ceed359e0365c0e647763c6f1d8b31fb4f4ab564d7959c383709034b2")
-        self.assertTrue(self.v2["authority"]["host_operator_activation_satisfied"])
+        self.assertEqual(
+            host["target_operator_repository_revision"],
+            "7e3e6b6d6574c1dc5199618dbb974b1fae83eaf5",
+        )
+        self.assertEqual(
+            host["target_blob_sha"],
+            "399df72159479c405166d011f140a967bdb749a5",
+        )
+        self.assertEqual(
+            host["target_importer_image_digest"],
+            "sha256:53801684e0ce5a30d195d3436220a71b350112fc6e6fdc6fe107779d13c857ba",
+        )
+        self.assertEqual(host["repin_reason"], "newest-first-catalog-importer")
+        self.assertTrue(host["repin_live_install_required"])
+        self.assertFalse(self.v2["authority"]["host_operator_activation_satisfied"])
         evidence = host["activation_evidence"]
         self.assertEqual(evidence["non_production_v2_canary"], "pass")
         self.assertTrue(evidence["ordered_page_identity_verified"])
