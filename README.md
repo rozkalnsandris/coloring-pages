@@ -48,7 +48,7 @@ The application keeps the simple V1 journey:
 
 See [Coloring Pages Media Standard v1](docs/MEDIA_STANDARD_V1.md).
 
-The source artwork is preserved as the generated PNG. V1 does not require vector tracing or a mandatory 2480×3508 upscale. The importer creates lightweight WebP browsing derivatives and an A4 portrait PDF. The importer runtime is embedded in the immutable Coloring Pages image, so the RPi5 host does not need Python/Pillow installed.
+The source artwork is preserved as the generated PNG. V1 does not require vector tracing, a mandatory 2480×3508 upscale or a 300 PPI conversion. A4 printing uses the original public PNG; the optional A4 PDF keeps the original artwork pixels and adds only white A4-ratio padding when needed. The importer runtime is embedded in the immutable Coloring Pages image, so the RPi5 host does not need Python/Pillow installed.
 
 ## Runtime content layout
 
