@@ -136,8 +136,7 @@ def load_catalog(path: Path) -> list[dict[str, Any]]:
 
 
 def serialize_catalog(entries: list[dict[str, Any]]) -> str:
-    return json.dumps(sorted(entries, key=lambda item: item["id"]), ensure_ascii=False, indent=2) + "
-"
+    return json.dumps(sorted(entries, key=lambda item: item["id"]), ensure_ascii=False, indent=2) + "\n"
 
 
 def validate_legacy_state(
