@@ -7,6 +7,8 @@ const embeddedPrint = printParams.get("embedded") === "1";
 
 const PRINT_CLEAR_LUMA = 240;
 const PRINT_SOLID_LUMA = 180;
+const A4_PAGE_WIDTH_MM = 210;
+const A4_PAGE_HEIGHT_MM = 297;
 
 function notifyParent(type, id) {
   if (!embeddedPrint || window.parent === window) return;
@@ -45,6 +47,16 @@ function cleanLineArt(context, width, height) {
   context.putImageData(imageData, 0, 0);
 }
 
+function a4CanvasSize(width, height) {
+  const a4Ratio = A4_PAGE_WIDTH_MM / A4_PAGE_HEIGHT_MM;
+  const sourceRatio = width / height;
+
+  if (sourceRatio > a4Ratio) {
+    return { width, height: Math.ceil(width / a4Ratio) };
+  }
+  return { width: Math.ceil(height * a4Ratio), height };
+}
+
 function loadImage(url) {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -63,8 +75,9 @@ async function renderPrintImage(imageUrl) {
     throw new Error("print image has no dimensions");
   }
 
-  printCanvas.width = image.naturalWidth;
-  printCanvas.height = image.naturalHeight;
+  const canvasSize = a4CanvasSize(image.naturalWidth, image.naturalHeight);
+  printCanvas.width = canvasSize.width;
+  printCanvas.height = canvasSize.height;
 
   const context = printCanvas.getContext("2d", {
     alpha: true,
@@ -72,8 +85,17 @@ async function renderPrintImage(imageUrl) {
   });
   if (!context) throw new Error("print canvas context unavailable");
 
+  const offsetX = Math.floor((printCanvas.width - image.naturalWidth) / 2);
+  const offsetY = Math.floor((printCanvas.height - image.naturalHeight) / 2);
+
   context.clearRect(0, 0, printCanvas.width, printCanvas.height);
-  context.drawImage(image, 0, 0);
+  context.drawImage(
+    image,
+    offsetX,
+    offsetY,
+    image.naturalWidth,
+    image.naturalHeight,
+  );
   cleanLineArt(context, printCanvas.width, printCanvas.height);
 
   printCanvas.hidden = false;
