@@ -1,0 +1,191 @@
+{
+  "schema": "rozkalns.coloring-pages.chat-to-drive-ingestion.v2",
+  "schema_version": 2,
+  "status": "source-ready-host-not-activated",
+  "repository": "rozkalnsandris/coloring-pages",
+  "purpose": "Define a backward-compatible transport contract for one owner-approved multi-page activity without changing the active single-page production path.",
+  "compatibility": {
+    "active_single_page_contract": "deploy/chat-to-drive-ingestion.json",
+    "active_single_page_manifest_schema": "rozkalns.coloring-pages.drive-staging-manifest.v1",
+    "v1_remains_production_activated": true,
+    "v2_does_not_change_v1_publish_semantics": true
+  },
+  "authority": {
+    "source_merge_authorizes_drive_upload": false,
+    "source_merge_authorizes_drive_download": false,
+    "source_merge_authorizes_host_execution": false,
+    "source_merge_authorizes_production_import": false,
+    "source_merge_authorizes_drive_archive_or_delete": false,
+    "source_merge_authorizes_credentials_or_settings_mutation": false,
+    "live_content_import_requires_fresh_owner_authorization": true,
+    "host_operator_activation_required_before_v2_publish": true,
+    "publication_command_reserved": "PUBLISH",
+    "ok_is_publication_authority": false
+  },
+  "canonical_domains": {
+    "application_source": "github",
+    "production_media_originals": "/srv/coloring-pages-content/originals",
+    "production_catalog": "/srv/coloring-pages-content/public/catalog.json",
+    "drive_role": "transport-only"
+  },
+  "activity": {
+    "min_pages": 2,
+    "max_pages": 12,
+    "ordered": true,
+    "one_catalog_id": true,
+    "importer_entrypoint": "/usr/local/bin/coloring-pages-import",
+    "importer_requires_explicit_id_for_multiple_pages": true
+  },
+  "drive_staging": {
+    "provider": "google-drive",
+    "object_class": "blob-file",
+    "google_workspace_conversion_forbidden": true,
+    "exact_folder_id_binding_required_at_live": true,
+    "folder_name_is_not_authority": true,
+    "advisory_root_name": "Coloring_pages",
+    "pending_subdirectory": "pending",
+    "page_name": "<id>-<index>.png",
+    "manifest_name": "<id>.json",
+    "upload_order": "all-pages-in-ascending-index-then-manifest",
+    "manifest_is_readiness_signal": true,
+    "all_page_bytes_and_manifest_must_exist_before_first_mutation": true,
+    "all_page_sha256_and_size_must_be_frozen_before_first_mutation": true,
+    "category_binding_required_before_first_mutation": true,
+    "manifest_validation_required_before_first_mutation": true
+  },
+  "manifest": {
+    "schema": "rozkalns.coloring-pages.drive-staging-manifest.v2",
+    "required_fields": [
+      "schema",
+      "id",
+      "pages",
+      "title",
+      "character",
+      "category",
+      "age",
+      "difficulty",
+      "language",
+      "source_kind",
+      "approval_class"
+    ],
+    "unknown_fields": "reject",
+    "id_pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+    "source_kind": "chatgpt-generated-png-set",
+    "approval_class": "explicit-owner-chat-approval",
+    "pages": {
+      "min_items": 2,
+      "max_items": 12,
+      "order": "ascending-contiguous-index-starting-at-1",
+      "unknown_fields": "reject",
+      "required_fields": [
+        "index",
+        "file",
+        "sha256",
+        "size_bytes"
+      ],
+      "index_minimum": 1,
+      "file_pattern": "^<id>-[1-9][0-9]*\\.png$",
+      "sha256_pattern": "^[0-9a-f]{64}$",
+      "size_bytes_minimum": 1
+    },
+    "allowed_age": [
+      "3-6",
+      "4-8"
+    ],
+    "allowed_difficulty": [
+      "easy",
+      "normal",
+      "detailed"
+    ],
+    "allowed_language": [
+      "de"
+    ],
+    "category_registry": "metadata/categories.json",
+    "allowed_category": [
+      "tiere",
+      "fahrzeuge",
+      "alphabet",
+      "lernen",
+      "figuren",
+      "jahreszeiten"
+    ]
+  },
+  "host_ingestion": {
+    "runtime_owner": "rozkalnsandris/RPi5_main",
+    "activation_state": "not-implemented",
+    "transport_client": "rclone",
+    "credential_values_must_not_be_read_or_emitted": true,
+    "fresh_pending_fast_list_allowed": false,
+    "partial_download_path": "/srv/coloring-pages-content/state/drive-ingest/<id>-<index>.png.partial",
+    "verify_all_pages_before_first_inbox_publish": [
+      "manifest-schema",
+      "id",
+      "page-count",
+      "contiguous-page-indexes",
+      "file-name",
+      "size-bytes",
+      "sha256",
+      "category"
+    ],
+    "inbox_target": "/srv/coloring-pages-content/inbox/<id>-<index>.png",
+    "importer_invocation_order": "ascending-page-index",
+    "importer_requires_id_argument": true,
+    "importer_contract_ref": "deploy/importer-runtime.json",
+    "immutable_importer_image_digest_required_at_live": true,
+    "application_redeploy_required": false
+  },
+  "idempotency": {
+    "receipt_path": "/srv/coloring-pages-content/state/drive-ingest/<id>.receipt.json",
+    "matching_success_receipt_and_exact_pages": "already-processed",
+    "existing_id_without_matching_success_receipt": "stop",
+    "automatic_overwrite": false,
+    "automatic_retry_after_mutation_error": false
+  },
+  "post_import_verification": {
+    "required": [
+      "all-original-source-pages-size-and-sha256-match",
+      "catalog-has-exactly-one-id",
+      "catalog-metadata-matches-manifest",
+      "catalog-pages-count-matches-manifest",
+      "thumb-webp-exists",
+      "all-preview-webp-exist",
+      "all-print-png-exist",
+      "catalog-page-order-matches-manifest",
+      "public-catalog-http-200",
+      "public-thumb-http-200",
+      "all-public-preview-http-200",
+      "all-public-print-png-http-200"
+    ],
+    "web_origin": "https://coloring.rozkalns.net",
+    "application_restart_required": false
+  },
+  "fail_closed": {
+    "conditions": [
+      "manifest-invalid",
+      "page-count-out-of-range",
+      "page-index-gap-or-duplicate",
+      "page-file-name-mismatch",
+      "category-not-allowed",
+      "drive-folder-binding-ambiguous",
+      "source-hash-mismatch",
+      "source-size-mismatch",
+      "page-id-conflict",
+      "importer-error",
+      "catalog-mismatch",
+      "public-verification-failure",
+      "authorization-ambiguity"
+    ],
+    "after_first_mutation": "stop-without-retry-rollback-cleanup-or-alternate-mutation"
+  },
+  "forbidden": [
+    "production-media-in-github",
+    "google-workspace-image-conversion",
+    "drive-as-production-source-of-truth",
+    "folder-name-only-runtime-selection",
+    "credential-output",
+    "host-python-or-pillow-install",
+    "application-redeploy-per-import",
+    "automatic-overwrite-of-existing-page-id",
+    "partial-activity-import-after-page-verification-failure"
+  ]
+}
