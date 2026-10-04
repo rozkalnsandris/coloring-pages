@@ -179,8 +179,12 @@ a { color: inherit; }
   grid-column: 1 / -1; align-self: center; justify-self: center; font-size: 55px; line-height: 1;
   filter: saturate(.9);
 }
-.category-name { min-width: 0; padding-right: 34px; font-size: 16px; font-weight: 800; hyphens: auto; }
+.category-name {
+  grid-column: 1 / -1; grid-row: 2; min-width: 0; padding-right: 34px;
+  font-size: 16px; font-weight: 800; hyphens: auto;
+}
 .category-arrow {
+  grid-column: 2; grid-row: 1; align-self: center; justify-self: end;
   display: grid; place-items: center; width: 31px; height: 31px; border-radius: 50%;
   font-size: 25px; line-height: 1; font-weight: 800;
 }
