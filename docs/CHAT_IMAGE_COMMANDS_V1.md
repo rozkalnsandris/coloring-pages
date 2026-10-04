@@ -41,15 +41,15 @@ Default generation contract:
 - `1024×1536` describes the whole page/canvas, not the subject dimensions;
 - when the image-generation surface exposes output-size/aspect-ratio controls, set the output size directly to `1024×1536` rather than relying only on prompt wording;
 - wide subjects such as cars, trains, buses or aircraft may be composed horizontally inside the portrait page; keep the complete subject visible, centered naturally, with comfortable white space and no cropping;
-- white background;
-- black/high-contrast line art;
-- thick, clean contours;
+- white/light page background;
+- preserve intentional color when the requested worksheet uses color; ordinary coloring pages default to black/high-contrast line art;
+- thick, clean contours where line art is used;
 - large coloring regions;
 - few small details;
 - primary age target 3–6;
 - no watermark;
 - no unnecessary text;
-- no grayscale shading or filled dark background unless the subject genuinely requires a small solid detail;
+- for ordinary coloring pages, avoid unnecessary grayscale shading or filled dark backgrounds; learning worksheets may use intentional color when the task requires it;
 - keep important artwork inside comfortable page margins;
 - prefer one clear focal subject and a simple supporting scene.
 

@@ -12,9 +12,9 @@ Required:
 - portrait orientation
 - A4-like portrait ratio: native A4 (`210:297`) and standard generator `2:3` portrait output are accepted
 - minimum safe source geometry: 800 px wide and 1100 px high
-- white background
-- black/high-contrast line art
-- thick, clean contours
+- white/light page background
+- preserve intentional source colors; ordinary coloring pages may use black/high-contrast line art, while learning worksheets may use color
+- thick, clean contours where line art is used
 - large coloring regions
 - minimal tiny decorative details
 - no watermark
@@ -35,7 +35,7 @@ V1 does **not** require:
 - a 300 PPI conversion
 - manual enlargement before import
 
-The normal generated source is an exact `1024×1536` PNG. The PNG remains the preserved source master and the catalogue `print` PNG is the canonical browser print/download source. A minimal hidden HTML print document loads that PNG into a canvas, removes near-white background pixels while preserving dark linework, uses CSS `@page { size: A4 portrait; margin: 0; }`, and calls `window.print()`. The detail page downloads the same `print.png` directly.
+The normal generated source is an exact `1024×1536` PNG. The PNG remains the preserved source master and the catalogue `print` PNG is the canonical browser print/download source. A minimal hidden HTML print document loads that PNG into a canvas, preserves its original pixel colors, centers it on A4 portrait geometry, uses CSS `@page { size: A4 portrait; margin: 0; }`, and calls `window.print()`. The detail page downloads the same `print.png` directly.
 
 ## Derivatives
 
@@ -46,10 +46,10 @@ originals/<id>/source.png    private canonical master
 public/media/<id>/
 ├── thumb.webp               max width 400 px, lossless
 ├── preview.webp             max width 1000 px, lossless
-└── print.png                cleaned transparent line-art derivative
+└── print.png                color-preserving original-size derivative
 ```
 
-The exact approved source PNG is not copied into the public media directory. The public `print.png` keeps the source dimensions, converts the validated grayscale artwork to black line art, and makes near-white page pixels transparent. The browser uses that same PNG for A4 printing and direct download.
+The exact approved source PNG bytes are not copied into the public media directory. The public `print.png` keeps the source dimensions and visual colors without grayscale or black-line conversion. The browser uses that same PNG for A4 printing and direct download without recoloring it.
 
 ## Stable IDs
 

@@ -188,8 +188,8 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn("printWindow.print()", detail_js)
         self.assertIn("window.location.assign(href)", detail_js)
         self.assertIn("entry.print", print_js)
-        self.assertIn("PRINT_CLEAR_LUMA = 240", print_js)
-        self.assertIn("PRINT_SOLID_LUMA = 180", print_js)
+        self.assertNotIn("PRINT_CLEAR_LUMA", print_js)
+        self.assertNotIn("PRINT_SOLID_LUMA", print_js)
         self.assertIn("A4_PAGE_WIDTH_MM = 210", print_js)
         self.assertIn("A4_PAGE_HEIGHT_MM = 297", print_js)
         self.assertIn("function a4CanvasSize(width, height)", print_js)
@@ -199,8 +199,9 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn("const offsetY = Math.floor", print_js)
         self.assertNotIn("printCanvas.width = image.naturalWidth;", print_js)
         self.assertNotIn("printCanvas.height = image.naturalHeight;", print_js)
-        self.assertIn("getImageData", print_js)
-        self.assertIn("putImageData", print_js)
+        self.assertNotIn("getImageData", print_js)
+        self.assertNotIn("putImageData", print_js)
+        self.assertIn("context.drawImage(", print_js)
         self.assertIn('document.querySelector("[data-print-canvas]")', print_js)
         self.assertIn(
             'notifyParent("coloring-pages-print-ready", id)',

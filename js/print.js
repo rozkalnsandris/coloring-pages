@@ -5,46 +5,12 @@ const printStatus = document.querySelector("[data-print-status]");
 const printParams = new URLSearchParams(window.location.search);
 const embeddedPrint = printParams.get("embedded") === "1";
 
-const PRINT_CLEAR_LUMA = 240;
-const PRINT_SOLID_LUMA = 180;
 const A4_PAGE_WIDTH_MM = 210;
 const A4_PAGE_HEIGHT_MM = 297;
 
 function notifyParent(type, id) {
   if (!embeddedPrint || window.parent === window) return;
   window.parent.postMessage({ type, id }, window.location.origin);
-}
-
-function lineAlpha(luma) {
-  if (luma >= PRINT_CLEAR_LUMA) return 0;
-  if (luma <= PRINT_SOLID_LUMA) return 255;
-  return Math.round(
-    ((PRINT_CLEAR_LUMA - luma) / (PRINT_CLEAR_LUMA - PRINT_SOLID_LUMA)) * 255,
-  );
-}
-
-function cleanLineArt(context, width, height) {
-  const imageData = context.getImageData(0, 0, width, height);
-  const { data } = imageData;
-
-  for (let index = 0; index < data.length; index += 4) {
-    const sourceAlpha = data[index + 3];
-    if (sourceAlpha === 0) continue;
-
-    const luma =
-      0.2126 * data[index] +
-      0.7152 * data[index + 1] +
-      0.0722 * data[index + 2];
-
-    const alpha = Math.round((sourceAlpha * lineAlpha(luma)) / 255);
-    data[index] = 0;
-    data[index + 1] = 0;
-    data[index + 2] = 0;
-    data[index + 3] = alpha;
-  }
-
-  context.clearRect(0, 0, width, height);
-  context.putImageData(imageData, 0, 0);
 }
 
 function a4CanvasSize(width, height) {
@@ -79,10 +45,7 @@ async function renderPrintImage(imageUrl) {
   printCanvas.width = canvasSize.width;
   printCanvas.height = canvasSize.height;
 
-  const context = printCanvas.getContext("2d", {
-    alpha: true,
-    willReadFrequently: true,
-  });
+  const context = printCanvas.getContext("2d", { alpha: true });
   if (!context) throw new Error("print canvas context unavailable");
 
   const offsetX = Math.floor((printCanvas.width - image.naturalWidth) / 2);
@@ -96,7 +59,6 @@ async function renderPrintImage(imageUrl) {
     image.naturalWidth,
     image.naturalHeight,
   );
-  cleanLineArt(context, printCanvas.width, printCanvas.height);
 
   printCanvas.hidden = false;
 }
