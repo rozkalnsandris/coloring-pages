@@ -1,0 +1,65 @@
+{
+  "schema": "rozkalns.coloring-pages.existing-derivative-regeneration.v1",
+  "issue": 71,
+  "page": {
+    "id": "farben-zuordnen-001",
+    "source_relative_path": "originals/farben-zuordnen-001/source.png",
+    "source_size_bytes": 1044537,
+    "source_sha256": "8d8659b73112e879230322b3a356bfa15df3d627b59ab21861c6b8d8b4a5bf24",
+    "source_must_contain_color": true,
+    "catalog_entry": {
+      "id": "farben-zuordnen-001",
+      "title": "Farben zuordnen",
+      "character": "",
+      "category": "lernen",
+      "age": "3-6",
+      "difficulty": "easy",
+      "language": "de",
+      "thumb": "/media/farben-zuordnen-001/thumb.webp",
+      "preview": "/media/farben-zuordnen-001/preview.webp",
+      "print": "/media/farben-zuordnen-001/print.png"
+    },
+    "current_derivatives": {
+      "thumb.webp": {
+        "size_bytes": 53404,
+        "sha256": "2be1947a50a94f8cb245efc15bab794680e86738e2919d17a10142293be74c9a"
+      },
+      "preview.webp": {
+        "size_bytes": 273004,
+        "sha256": "c8e48b175b595f640b1c96d6816dc6a656c2e29eae3f1ecca5c3701f96f6e737"
+      },
+      "print.png": {
+        "size_bytes": 69723,
+        "sha256": "21880b59610244ee34ccaab1988e7335d70ab3f4441da01edde55598f0d1d7a2"
+      }
+    }
+  },
+  "runtime": {
+    "content_root": "/srv/coloring-pages-content",
+    "shared_lock": "state/drive-ingest/.lock",
+    "regenerator_entrypoint": "/usr/local/bin/coloring-pages-regenerate-derivatives"
+  },
+  "mutation": {
+    "allowed_targets": [
+      "public/media/farben-zuordnen-001/thumb.webp",
+      "public/media/farben-zuordnen-001/preview.webp",
+      "public/media/farben-zuordnen-001/print.png"
+    ],
+    "forbidden_targets": [
+      "originals/farben-zuordnen-001/source.png",
+      "public/catalog.json"
+    ],
+    "replace_order": [
+      "thumb.webp",
+      "preview.webp",
+      "print.png"
+    ]
+  },
+  "failure": {
+    "retry": false,
+    "rollback": false,
+    "cleanup": false,
+    "alternate_mutation_path": false,
+    "after_first_persistent_write": "STOP"
+  }
+}
