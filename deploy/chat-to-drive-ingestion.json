@@ -143,16 +143,18 @@
   },
   "post_import_verification": {
     "required": [
-      "original-source-sha256-matches-manifest",
-      "public-source-sha256-matches-manifest",
+      "original-source-size-and-sha256-match",
+      "public-source-absent",
       "catalog-has-exactly-one-id",
       "catalog-metadata-matches-manifest",
       "thumb-webp-exists",
       "preview-webp-exists",
+      "print-png-exists",
+      "catalog-print-field-points-to-print-png",
       "public-catalog-http-200",
       "public-thumb-http-200",
       "public-preview-http-200",
-      "public-source-http-200"
+      "public-print-png-http-200"
     ],
     "web_origin": "https://coloring.rozkalns.net",
     "application_restart_required": false

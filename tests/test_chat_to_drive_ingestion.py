@@ -147,21 +147,25 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertIn("category", host["verify_before_inbox_publish"])
         self.assertFalse(host["application_redeploy_required"])
 
-    def test_post_import_proof_preserves_source_and_checks_publication(self):
+    def test_post_import_proof_keeps_source_private_and_checks_print_png(self):
         required = set(self.contract["post_import_verification"]["required"])
         for proof in (
-            "original-source-sha256-matches-manifest",
-            "public-source-sha256-matches-manifest",
+            "original-source-size-and-sha256-match",
+            "public-source-absent",
             "catalog-has-exactly-one-id",
             "catalog-metadata-matches-manifest",
             "thumb-webp-exists",
             "preview-webp-exists",
+            "print-png-exists",
+            "catalog-print-field-points-to-print-png",
             "public-catalog-http-200",
             "public-thumb-http-200",
             "public-preview-http-200",
-            "public-source-http-200",
+            "public-print-png-http-200",
         ):
             self.assertIn(proof, required)
+        self.assertNotIn("public-source-sha256-matches-manifest", required)
+        self.assertNotIn("public-source-http-200", required)
         self.assertEqual(
             self.contract["post_import_verification"]["web_origin"],
             "https://coloring.rozkalns.net",

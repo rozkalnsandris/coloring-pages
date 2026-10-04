@@ -133,7 +133,7 @@ Example:
   "id": "fire-pup-001",
   "title": "Fire Pup 001",
   "character": "",
-  "category": "rettungshunde",
+  "category": "tiere",
   "age": "3-6",
   "difficulty": "easy",
   "language": "de",
