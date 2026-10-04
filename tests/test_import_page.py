@@ -86,6 +86,22 @@ class ImportPageTests(unittest.TestCase):
             0o644,
         )
 
+    def test_new_import_is_first_and_existing_order_is_preserved(self):
+        existing = [{"id": "z-old"}, {"id": "a-older"}]
+        catalog_path = self.content / "public/catalog.json"
+        catalog_path.write_text(
+            json.dumps(existing) + "\n",
+            encoding="utf-8",
+        )
+
+        entry = importer.import_page(self.source, self.content, self.metadata())
+
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            [item["id"] for item in catalog],
+            [entry["id"], "z-old", "a-older"],
+        )
+
     def test_unknown_category_rejected_before_publication(self):
         with self.assertRaisesRegex(importer.ImportError, "category must be one of"):
             importer.import_page(
