@@ -1,7 +1,7 @@
 {
   "schema": "rozkalns.coloring-pages.chat-to-drive-ingestion.v2",
   "schema_version": 2,
-  "status": "source-ready-host-not-activated",
+  "status": "production-activated",
   "repository": "rozkalnsandris/coloring-pages",
   "purpose": "Define a backward-compatible transport contract for one owner-approved multi-page activity without changing the active single-page production path.",
   "compatibility": {
@@ -20,7 +20,8 @@
     "live_content_import_requires_fresh_owner_authorization": true,
     "host_operator_activation_required_before_v2_publish": true,
     "publication_command_reserved": "PUBLISH",
-    "ok_is_publication_authority": false
+    "ok_is_publication_authority": false,
+    "host_operator_activation_satisfied": true
   },
   "canonical_domains": {
     "application_source": "github",
@@ -112,7 +113,7 @@
   },
   "host_ingestion": {
     "runtime_owner": "rozkalnsandris/RPi5_main",
-    "activation_state": "not-implemented",
+    "activation_state": "production-activated",
     "transport_client": "rclone",
     "credential_values_must_not_be_read_or_emitted": true,
     "fresh_pending_fast_list_allowed": false,
@@ -132,7 +133,23 @@
     "importer_requires_id_argument": true,
     "importer_contract_ref": "deploy/importer-runtime.json",
     "immutable_importer_image_digest_required_at_live": true,
-    "application_redeploy_required": false
+    "application_redeploy_required": false,
+    "operator_repository_revision": "dc6b784bba471731ff060ece207e06d67cda16d3",
+    "installed_path": "/usr/local/bin/coloring-pages-drive-ingest",
+    "installed_blob_sha": "5d6821ad42c8c9d887a03606279e6c70745a993f",
+    "installed_identity": "root:root:755",
+    "importer_image_digest": "sha256:09822c1ceed359e0365c0e647763c6f1d8b31fb4f4ab564d7959c383709034b2",
+    "activation_evidence": {
+      "activated_at": "2026-10-04",
+      "exact_installed_identity_verified": true,
+      "non_production_v2_canary": "pass",
+      "canary_pages": 2,
+      "ordered_page_identity_verified": true,
+      "hash_mismatch_rejected": true,
+      "rclone_executed": false,
+      "docker_executed": false,
+      "production_content_mutated": false
+    }
   },
   "idempotency": {
     "receipt_path": "/srv/coloring-pages-content/state/drive-ingest/<id>.receipt.json",
