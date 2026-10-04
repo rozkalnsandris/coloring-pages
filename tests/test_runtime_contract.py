@@ -53,17 +53,20 @@ class RuntimeContractTests(unittest.TestCase):
 
     def test_html_uses_content_versioned_css_and_js(self):
         versions = {}
-        for path in ("css/app.css", "js/app.js", "js/detail.js"):
+        for path in ("css/app.css", "js/app.js", "js/detail.js", "js/print.js"):
             versions[path] = hashlib.sha256((ROOT / path).read_bytes()).hexdigest()[:12]
 
         index = (ROOT / "index.html").read_text(encoding="utf-8")
         detail = (ROOT / "detail.html").read_text(encoding="utf-8")
+        print_html = (ROOT / "print.html").read_text(encoding="utf-8")
 
         self.assertIn(f'href="css/app.css?v={versions["css/app.css"]}"', index)
         self.assertIn(f'src="js/app.js?v={versions["js/app.js"]}"', index)
         self.assertIn(f'href="css/app.css?v={versions["css/app.css"]}"', detail)
         self.assertIn(f'src="js/app.js?v={versions["js/app.js"]}"', detail)
         self.assertIn(f'src="js/detail.js?v={versions["js/detail.js"]}"', detail)
+        self.assertIn(f'href="css/app.css?v={versions["css/app.css"]}"', print_html)
+        self.assertIn(f'src="js/print.js?v={versions["js/print.js"]}"', print_html)
 
     def test_html_declares_branded_svg_favicon(self):
         favicon = ROOT / "assets/favicon.svg"
@@ -73,7 +76,7 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn("#ff776d", svg)
 
         favicon_link = '<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">'
-        for path in ("index.html", "detail.html"):
+        for path in ("index.html", "detail.html", "print.html"):
             html = (ROOT / path).read_text(encoding="utf-8")
             self.assertIn(favicon_link, html)
 
@@ -92,6 +95,7 @@ class RuntimeContractTests(unittest.TestCase):
         )
         self.assertIn("chmod 0555 /usr/local/bin/coloring-pages-import", dockerfile)
         self.assertIn("USER 101", dockerfile)
+        self.assertIn("COPY index.html detail.html print.html /usr/share/nginx/html/", dockerfile)
         self.assertNotIn("build_catalog.py", dockerfile)
         self.assertNotIn("build_media.py", dockerfile)
         self.assertNotIn("COPY originals", dockerfile)
@@ -165,20 +169,41 @@ class RuntimeContractTests(unittest.TestCase):
 
         self.assertNotIn('`rettungshunde`', ingest_docs)
 
-    def test_detail_print_action_opens_generated_pdf_print_dialog(self):
+    def test_detail_print_action_uses_embedded_html_print_view(self):
         detail_js = (ROOT / "js/detail.js").read_text(encoding="utf-8")
+        print_js = (ROOT / "js/print.js").read_text(encoding="utf-8")
+        print_html = (ROOT / "print.html").read_text(encoding="utf-8")
         detail_html = (ROOT / "detail.html").read_text(encoding="utf-8")
 
-        self.assertIn("setAction(printLink, entry.pdf)", detail_js)
+        self.assertIn(
+            'setAction(printLink, `print.html?id=${encodeURIComponent(entry.id)}`)',
+            detail_js,
+        )
         self.assertIn("setAction(pdfLink, entry.pdf)", detail_js)
+        self.assertNotIn("setAction(printLink, entry.pdf)", detail_js)
         self.assertIn('document.createElement("iframe")', detail_js)
-        self.assertIn("frame.src = href", detail_js)
+        self.assertIn('printUrl.searchParams.set("embedded", "1")', detail_js)
+        self.assertIn(
+            'printWindow.addEventListener("afterprint", cleanup, { once: true })',
+            detail_js,
+        )
         self.assertIn("printWindow.print()", detail_js)
         self.assertIn("window.location.assign(href)", detail_js)
+        self.assertIn("printImage.src = entry.print", print_js)
+        self.assertIn("await printImage.decode()", print_js)
+        self.assertIn(
+            'notifyParent("coloring-pages-print-ready", id)',
+            print_js,
+        )
+        self.assertIn(
+            'printButton?.addEventListener("click", () => window.print())',
+            print_js,
+        )
+        self.assertIn('class="print-sheet"', print_html)
         self.assertIn("data-action-pdf download", detail_html)
 
     def test_frontend_fetches_runtime_catalog(self):
-        for path in ("js/app.js", "js/detail.js"):
+        for path in ("js/app.js", "js/detail.js", "js/print.js"):
             source = (ROOT / path).read_text(encoding="utf-8")
             self.assertIn('fetch("catalog.json"', source)
 
