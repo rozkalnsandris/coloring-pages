@@ -50,7 +50,7 @@ Multi-page activities use the same journey: one gallery item may contain an orde
 
 See [Coloring Pages Media Standard v1](docs/MEDIA_STANDARD_V1.md).
 
-The approved source artwork is preserved byte-for-byte only as the private `originals/<id>/source.png` master. V1 does not require vector tracing, a mandatory 2480×3508 upscale or a 300 PPI conversion. The importer publishes one color-preserving `print.png` derivative at the original source dimensions as the canonical printable/downloadable file. The hidden `print.html` uses that PNG with CSS `@page` fixed to A4 portrait (`210 × 297 mm`) and calls `window.print()` without recoloring the pixels. The detail page downloads the same `print.png` directly.
+The approved source artwork is preserved byte-for-byte only as the private `originals/<id>/source.png` master. Published media URLs are immutable; if an existing derivative must be corrected, the corrected bytes receive new full-SHA-256 content-addressed filenames and the no-cache catalogue switches to those URLs instead of requiring a CDN purge. V1 does not require vector tracing, a mandatory 2480×3508 upscale or a 300 PPI conversion. The importer publishes one color-preserving `print.png` derivative at the original source dimensions as the canonical printable/downloadable file. The hidden `print.html` uses that PNG with CSS `@page` fixed to A4 portrait (`210 × 297 mm`) and calls `window.print()` without recoloring the pixels. The detail page downloads the same `print.png` directly.
 
 ## Runtime content layout
 

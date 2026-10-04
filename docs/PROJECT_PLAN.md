@@ -174,6 +174,7 @@ The container gets no access to `inbox/`, `originals/` or `state/`.
 
 - `catalog.json`: `no-cache`
 - published media: long-lived immutable cache
+- existing-media corrections never overwrite an immutable media identity; corrected bytes use full-SHA-256 content-addressed filenames and an atomic no-cache catalogue URL switch
 
 V1 rejects duplicate IDs; replacement semantics require a separate reviewed workflow.
 

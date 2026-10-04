@@ -1,33 +1,28 @@
 #!/usr/bin/env python3
-"""Regenerate public derivatives for the exact frozen farben-zuordnen-001 baseline."""
+"""Publish corrected existing derivatives under cache-safe immutable identities."""
 
 from __future__ import annotations
 
 import argparse
 import fcntl
 import hashlib
-import importlib.machinery
-import importlib.util
-import io
 import json
 import os
 import sys
 from pathlib import Path
 from typing import Any
 
-from PIL import Image
-
 CONTENT_ROOT = Path("/srv/coloring-pages-content")
 CONTRACT_SCHEMA = "rozkalns.coloring-pages.existing-derivative-regeneration.v1"
 CONTAINER_CONTRACT = Path(
     "/usr/local/share/coloring-pages/existing-derivative-regeneration-v1.json"
 )
-CONTAINER_IMPORTER = Path("/usr/local/bin/coloring-pages-import")
 FILES = ("thumb.webp", "preview.webp", "print.png")
+MEDIA_FIELDS = ("thumb", "preview", "print")
 
 
 class RegenerationError(RuntimeError):
-    """Fail-closed derivative regeneration error."""
+    """Fail-closed existing-media correction error."""
 
 
 def fail(message: str) -> None:
@@ -49,24 +44,9 @@ def sha256_file(path: Path) -> str:
 def contract_path() -> Path:
     if CONTAINER_CONTRACT.is_file():
         return CONTAINER_CONTRACT
-    return Path(__file__).resolve().parents[1] / "deploy/existing-derivative-regeneration-v1.json"
-
-
-def importer_path() -> Path:
-    if CONTAINER_IMPORTER.is_file():
-        return CONTAINER_IMPORTER
-    return Path(__file__).resolve().parents[1] / "tools/coloring-pages-import"
-
-
-def load_importer():
-    path = importer_path()
-    loader = importlib.machinery.SourceFileLoader("coloring_pages_import_regen", str(path))
-    spec = importlib.util.spec_from_loader(loader.name, loader)
-    if spec is None or spec.loader is None:
-        fail("importer module cannot be loaded")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return Path(__file__).resolve().parents[1] / (
+        "deploy/existing-derivative-regeneration-v1.json"
+    )
 
 
 def load_contract() -> dict[str, Any]:
@@ -79,153 +59,156 @@ def load_contract() -> dict[str, Any]:
     return raw
 
 
-def image_has_color(image: Image.Image) -> bool:
-    for red, green, blue, alpha in image.convert("RGBA").getdata():
-        if alpha and (red != green or green != blue):
-            return True
-    return False
-
-
-def catalog_entry(content_root: Path, page_id: str) -> dict[str, Any]:
+def read_catalog(path: Path) -> list[dict[str, Any]]:
     try:
-        raw = json.loads(
-            (content_root / "public/catalog.json").read_text(encoding="utf-8")
-        )
+        raw = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise RegenerationError("catalog is unavailable or invalid") from exc
     if not isinstance(raw, list):
         fail("catalog must be a JSON array")
-    matches = [
-        item for item in raw
-        if isinstance(item, dict) and item.get("id") == page_id
-    ]
+    if not all(isinstance(item, dict) for item in raw):
+        fail("catalog contains an invalid entry")
+    return raw
+
+
+def catalog_index(catalog: list[dict[str, Any]], page_id: str) -> int:
+    matches = [index for index, item in enumerate(catalog) if item.get("id") == page_id]
     if len(matches) != 1:
         fail("catalog page identity is missing or ambiguous")
     return matches[0]
 
 
+def content_addressed_filename(name: str, sha256: str) -> str:
+    path = Path(name)
+    return f"{path.stem}-{sha256}{path.suffix}"
+
+
 def validate_contract_shape(contract: dict[str, Any]) -> None:
     page = contract.get("page")
-    mutation = contract.get("mutation")
     runtime = contract.get("runtime")
-    if contract.get("issue") != 71 or not isinstance(page, dict):
+    cache = contract.get("cache_identity")
+    mutation = contract.get("mutation")
+    if contract.get("issue") != 74 or not isinstance(page, dict):
         fail("contract issue/page mismatch")
     if page.get("id") != "farben-zuordnen-001":
         fail("contract page id mismatch")
-    if not isinstance(page.get("source_size_bytes"), int) or page["source_size_bytes"] <= 0:
-        fail("contract source size is invalid")
-    source_sha = page.get("source_sha256")
-    if not isinstance(source_sha, str) or len(source_sha) != 64:
-        fail("contract source sha256 is invalid")
-    if set(page.get("current_derivatives", {})) != set(FILES):
-        fail("contract derivative baseline mismatch")
-    if not isinstance(page.get("catalog_entry"), dict):
-        fail("contract catalog entry is invalid")
     if runtime != {
         "content_root": "/srv/coloring-pages-content",
         "shared_lock": "state/drive-ingest/.lock",
         "regenerator_entrypoint": "/usr/local/bin/coloring-pages-regenerate-derivatives",
     }:
         fail("contract runtime identity mismatch")
-    expected_targets = [
-        f"public/media/{page['id']}/{name}" for name in FILES
+    if cache != {
+        "strategy": "full-sha256-content-addressed-filename",
+        "stable_immutable_urls_must_not_be_overwritten": True,
+        "catalog_is_switch_point": True,
+    }:
+        fail("cache identity contract mismatch")
+
+    corrected = page.get("corrected_derivatives")
+    if not isinstance(corrected, dict) or set(corrected) != set(FILES):
+        fail("corrected derivative baseline mismatch")
+    for name in FILES:
+        item = corrected[name]
+        sha = item.get("sha256")
+        size = item.get("size_bytes")
+        filename = item.get("versioned_filename")
+        if (
+            not isinstance(sha, str)
+            or len(sha) != 64
+            or not isinstance(size, int)
+            or size <= 0
+            or filename != content_addressed_filename(name, sha)
+        ):
+            fail(f"corrected derivative identity is invalid: {name}")
+
+    before = page.get("catalog_entry_before")
+    after = page.get("catalog_entry_after")
+    if not isinstance(before, dict) or not isinstance(after, dict):
+        fail("catalog entry contract is invalid")
+    for key, value in before.items():
+        if key not in MEDIA_FIELDS and after.get(key) != value:
+            fail("catalog non-media metadata differs in contract")
+    for field, name in zip(MEDIA_FIELDS, FILES):
+        expected = f"/media/{page['id']}/{corrected[name]['versioned_filename']}"
+        if after.get(field) != expected:
+            fail(f"catalog content-addressed URL mismatch: {field}")
+
+    expected_new_targets = [
+        f"public/media/{page['id']}/{corrected[name]['versioned_filename']}"
+        for name in FILES
     ]
-    if mutation.get("allowed_targets") != expected_targets:
-        fail("contract mutation targets mismatch")
-    if mutation.get("replace_order") != list(FILES):
-        fail("contract replacement order mismatch")
-    if mutation.get("forbidden_targets") != [
-        f"originals/{page['id']}/source.png",
-        "public/catalog.json",
+    if mutation.get("allowed_new_targets") != expected_new_targets:
+        fail("allowed content-addressed targets mismatch")
+    if mutation.get("stable_media_must_remain_unchanged") != [
+        f"public/media/{page['id']}/{name}" for name in FILES
     ]:
-        fail("contract forbidden targets mismatch")
+        fail("stable-media preservation contract mismatch")
+    if mutation.get("catalog_target") != "public/catalog.json":
+        fail("catalog target mismatch")
+    if mutation.get("catalog_mutation_scope") != list(MEDIA_FIELDS):
+        fail("catalog mutation scope mismatch")
+    if mutation.get("forbidden_targets") != [
+        f"originals/{page['id']}/source.png"
+    ]:
+        fail("forbidden target contract mismatch")
 
 
-def preflight(content_root: Path, contract: dict[str, Any], importer) -> dict[str, Any]:
+def preflight(content_root: Path, contract: dict[str, Any]) -> dict[str, Any]:
     validate_contract_shape(contract)
     page = contract["page"]
     page_id = page["id"]
     source = content_root / page["source_relative_path"]
     media = content_root / "public/media" / page_id
-    lock = content_root / contract["runtime"]["shared_lock"]
     catalog_path = content_root / "public/catalog.json"
+    lock_path = content_root / contract["runtime"]["shared_lock"]
 
-    if not content_root.is_dir() or not media.is_dir() or not lock.is_file():
+    if not content_root.is_dir() or not media.is_dir() or not lock_path.is_file():
         fail("required content layout is missing")
-    if set(path.name for path in media.iterdir()) != set(FILES):
-        fail("public media directory contains unexpected files")
     if not source.is_file():
         fail("private source is missing")
     if source.stat().st_size != page["source_size_bytes"]:
         fail("private source size drifted")
     if sha256_file(source) != page["source_sha256"]:
         fail("private source sha256 drifted")
-    if catalog_entry(content_root, page_id) != page["catalog_entry"]:
-        fail("catalog metadata drifted")
 
+    catalog = read_catalog(catalog_path)
+    index = catalog_index(catalog, page_id)
+    if catalog[index] != page["catalog_entry_before"]:
+        fail("catalog baseline drifted")
+
+    stable_bytes: dict[str, bytes] = {}
     for name in FILES:
-        path = media / name
-        baseline = page["current_derivatives"][name]
-        if not path.is_file():
-            fail(f"current derivative is missing: {name}")
-        if path.stat().st_size != baseline["size_bytes"]:
-            fail(f"current derivative size drifted: {name}")
-        if sha256_file(path) != baseline["sha256"]:
-            fail(f"current derivative sha256 drifted: {name}")
-        if os.path.lexists(media / f".{name}.issue71.tmp"):
-            fail(f"previous regeneration temp exists: {name}")
+        stable = media / name
+        baseline = page["corrected_derivatives"][name]
+        if not stable.is_file():
+            fail(f"corrected stable derivative is missing: {name}")
+        if stable.stat().st_size != baseline["size_bytes"]:
+            fail(f"corrected derivative size drifted: {name}")
+        if sha256_file(stable) != baseline["sha256"]:
+            fail(f"corrected derivative sha256 drifted: {name}")
+        stable_bytes[name] = stable.read_bytes()
 
-    image = importer.open_validated_source(source)
-    if page.get("source_must_contain_color") and not image_has_color(image):
-        fail("private source unexpectedly contains no color")
+        versioned = media / baseline["versioned_filename"]
+        if os.path.lexists(versioned):
+            fail(f"content-addressed target already exists: {versioned.name}")
+
+    catalog_temp = catalog_path.parent / f".catalog.{page_id}.issue74.tmp"
+    if os.path.lexists(catalog_temp):
+        fail("catalog switch temp already exists")
+
+    expected_catalog = [dict(item) for item in catalog]
+    expected_catalog[index] = dict(page["catalog_entry_after"])
 
     return {
         "source": source,
         "media": media,
-        "image": image,
-        "catalog_bytes": catalog_path.read_bytes(),
+        "catalog_path": catalog_path,
+        "catalog": catalog,
+        "expected_catalog": expected_catalog,
+        "stable_bytes": stable_bytes,
+        "catalog_temp": catalog_temp,
     }
-
-
-def generate_derivatives(importer, image: Image.Image) -> dict[str, bytes]:
-    generated: dict[str, bytes] = {}
-
-    thumb = importer.resized_copy(image, importer.THUMB_MAX_WIDTH)
-    output = io.BytesIO()
-    thumb.save(output, format="WEBP", lossless=True, quality=100, method=6)
-    generated["thumb.webp"] = output.getvalue()
-
-    preview = importer.resized_copy(image, importer.PREVIEW_MAX_WIDTH)
-    output = io.BytesIO()
-    preview.save(output, format="WEBP", lossless=True, quality=100, method=6)
-    generated["preview.webp"] = output.getvalue()
-
-    output = io.BytesIO()
-    importer.build_print_image(image).save(output, format="PNG", optimize=True)
-    generated["print.png"] = output.getvalue()
-
-    source_rgba = image.convert("RGBA")
-    for name, body in generated.items():
-        if not body:
-            fail(f"generated derivative is empty: {name}")
-        try:
-            with Image.open(io.BytesIO(body)) as candidate:
-                candidate.load()
-                if image_has_color(source_rgba) and not image_has_color(candidate):
-                    fail(f"generated derivative lost source color: {name}")
-                if name == "print.png":
-                    candidate_rgba = candidate.convert("RGBA")
-                    if (
-                        candidate_rgba.size != source_rgba.size
-                        or candidate_rgba.tobytes() != source_rgba.tobytes()
-                    ):
-                        fail("generated print PNG does not preserve source pixels")
-        except OSError as exc:
-            raise RegenerationError(
-                f"generated derivative is undecodable: {name}"
-            ) from exc
-
-    return generated
 
 
 def fsync_directory(path: Path) -> None:
@@ -244,41 +227,52 @@ def write_exclusive(path: Path, body: bytes) -> None:
         fd = os.open(path, flags, 0o644)
     except OSError as exc:
         raise RegenerationError(
-            f"cannot create regeneration temp: {path.name}"
+            f"cannot create content-addressed media: {path.name}"
         ) from exc
     with os.fdopen(fd, "wb", buffering=0) as handle:
         handle.write(body)
         os.fsync(handle.fileno())
 
 
+def serialize_catalog(catalog: list[dict[str, Any]]) -> bytes:
+    return (json.dumps(catalog, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+
+
 def verify_final(
     content_root: Path,
     contract: dict[str, Any],
-    generated: dict[str, bytes],
-    catalog_before: bytes,
+    state: dict[str, Any],
 ) -> None:
     page = contract["page"]
     source = content_root / page["source_relative_path"]
-    media = content_root / "public/media" / page["id"]
-    catalog_path = content_root / "public/catalog.json"
+    media = state["media"]
 
     if (
         source.stat().st_size != page["source_size_bytes"]
         or sha256_file(source) != page["source_sha256"]
     ):
-        fail("private source changed during regeneration")
-    if catalog_path.read_bytes() != catalog_before:
-        fail("catalog changed during regeneration")
-    if catalog_entry(content_root, page["id"]) != page["catalog_entry"]:
-        fail("catalog metadata changed during regeneration")
+        fail("private source changed during cache-safe publication")
 
     for name in FILES:
-        path = media / name
-        new_sha = sha256_file(path)
-        if new_sha != sha256_bytes(generated[name]):
-            fail(f"published derivative does not match staged output: {name}")
-        if new_sha == page["current_derivatives"][name]["sha256"]:
-            fail(f"published derivative did not change from legacy baseline: {name}")
+        baseline = page["corrected_derivatives"][name]
+        stable = media / name
+        versioned = media / baseline["versioned_filename"]
+        body = state["stable_bytes"][name]
+        expected_sha = baseline["sha256"]
+
+        if stable.read_bytes() != body or sha256_file(stable) != expected_sha:
+            fail(f"stable immutable media changed: {name}")
+        if (
+            not versioned.is_file()
+            or versioned.stat().st_size != len(body)
+            or sha256_file(versioned) != expected_sha
+            or versioned.read_bytes() != body
+        ):
+            fail(f"content-addressed media verification failed: {name}")
+
+    final_catalog = read_catalog(state["catalog_path"])
+    if final_catalog != state["expected_catalog"]:
+        fail("catalog switch verification failed")
 
 
 def execute(
@@ -287,7 +281,6 @@ def execute(
     *,
     apply: bool,
 ) -> dict[str, str]:
-    importer = load_importer()
     validate_contract_shape(contract)
     lock_path = content_root / contract["runtime"]["shared_lock"]
     if not lock_path.is_file():
@@ -299,33 +292,29 @@ def execute(
         except BlockingIOError as exc:
             raise RegenerationError("another content operation is active") from exc
 
-        state = preflight(content_root, contract, importer)
-        generated = generate_derivatives(importer, state["image"])
-        result = {name: sha256_bytes(body) for name, body in generated.items()}
+        state = preflight(content_root, contract)
+        page = contract["page"]
+        result = {
+            name: page["corrected_derivatives"][name]["versioned_filename"]
+            for name in FILES
+        }
 
         if not apply:
             return result
 
-        media: Path = state["media"]
-        temp_paths = {
-            name: media / f".{name}.issue71.tmp" for name in FILES
-        }
-
-        # Fail closed. No retry, rollback, or cleanup after the first temp write.
+        # Fail closed: after the first persistent write, no retry, rollback,
+        # cleanup, or alternate mutation path is attempted automatically.
         for name in FILES:
-            write_exclusive(temp_paths[name], generated[name])
-        fsync_directory(media)
+            target = state["media"] / result[name]
+            write_exclusive(target, state["stable_bytes"][name])
+        fsync_directory(state["media"])
 
-        for name in FILES:
-            os.replace(temp_paths[name], media / name)
-            fsync_directory(media)
+        catalog_body = serialize_catalog(state["expected_catalog"])
+        write_exclusive(state["catalog_temp"], catalog_body)
+        os.replace(state["catalog_temp"], state["catalog_path"])
+        fsync_directory(state["catalog_path"].parent)
 
-        verify_final(
-            content_root,
-            contract,
-            generated,
-            state["catalog_bytes"],
-        )
+        verify_final(content_root, contract, state)
         return result
 
 
@@ -344,18 +333,18 @@ def main(argv: list[str] | None = None) -> int:
         result = execute(CONTENT_ROOT, contract, apply=args.apply)
         outcome = "APPLY" if args.apply else "CHECK"
         print(
-            f"DERIVATIVE_REGEN_{outcome}=PASS ID=farben-zuordnen-001"
+            f"CACHE_SAFE_DERIVATIVE_{outcome}=PASS ID=farben-zuordnen-001"
         )
         for name in FILES:
             label = name.upper().replace(".", "_")
-            print(f"{label}_SHA256={result[name]}")
+            print(f"{label}_FILE={result[name]}")
         return 0
     except RegenerationError as exc:
-        print(f"DERIVATIVE_REGEN=FAIL error={exc}", file=sys.stderr)
+        print(f"CACHE_SAFE_DERIVATIVE=FAIL error={exc}", file=sys.stderr)
         return 1
     except Exception:
         print(
-            "DERIVATIVE_REGEN=FAIL error=unexpected-regeneration-error",
+            "CACHE_SAFE_DERIVATIVE=FAIL error=unexpected-publication-error",
             file=sys.stderr,
         )
         return 1
