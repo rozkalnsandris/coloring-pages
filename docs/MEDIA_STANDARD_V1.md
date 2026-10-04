@@ -25,14 +25,14 @@ The importer validates file type, portrait geometry, A4-like ratio, minimum geom
 
 ## Chat publication print master
 
-For new Chat-generated publication, the generation PNG is a draft. Before `PUBLISH`, run the explicit authoring steps:
+For new Chat-generated publication, the generation PNG is a draft. The normal owner flow is one publication command:
 
 ```text
 MAKE / REMAKE / EDIT
-→ UPSCALE-PRINT
-→ VALIDATE-PRINT
 → PUBLISH
 ```
+
+`PUBLISH` internally runs the mandatory print-master preparation and read-only validation before any Drive/content mutation. `UPSCALE-PRINT` and `VALIDATE-PRINT` remain optional manual inspection/debug commands only.
 
 `UPSCALE-PRINT` uses the repository helper `tools/coloring-pages-print-master prepare`. It is deliberately CPU-only and depends only on the pinned Pillow build dependency already used by CI. It does not generate new artwork or use an AI/GPU upscaler.
 
@@ -48,7 +48,7 @@ The prepared publication master must be:
 - resized with Pillow `Resampling.LANCZOS`;
 - sharpened only with the reviewed conservative `UnsharpMask` values in the helper.
 
-`VALIDATE-PRINT` is read-only and fails closed if any required property is missing. It reports the exact SHA-256 and byte size that a later `PUBLISH` must bind. `REMAKE` or `EDIT` invalidates earlier print-master validation.
+The validator is read-only and fails closed if any required property is missing. During normal publication, `PUBLISH` runs it automatically after preparing the fresh print master and binds the reported exact SHA-256 and byte size before the first content mutation. `REMAKE` or `EDIT` invalidates any earlier manually prepared/validated master; the next `PUBLISH` prepares and validates again automatically.
 
 This is resampling, not native-detail recovery. It improves the consistency of A4 raster delivery and background white while avoiding per-image API/GPU dependencies.
 
@@ -58,7 +58,7 @@ The importer remains backward-compatible with the broader geometry above and doe
 
 The source PNG is preserved byte-for-byte and is the canonical print artwork.
 
-The importer itself does **not** require vector tracing, AI/GPU upscale or host-side enlargement. For the new Chat publication path, however, the owner-approved source is the already prepared and validated `2480×3508` PNG print master. The lower-resolution `1024×1536` generation draft is an authoring input, not the production source master.
+The importer itself does **not** require vector tracing, AI/GPU upscale or host-side enlargement. For the Chat publication path, `PUBLISH` derives and validates the owner-approved `2480×3508` PNG print master before any content mutation. The lower-resolution `1024×1536` generation draft is an authoring input, not the production source master.
 
 The validated print-master PNG remains the preserved source master and the catalogue `print` PNG is the canonical browser print/download source. A minimal hidden HTML print document loads that PNG into a canvas, preserves its original pixel colors, centers it on A4 portrait geometry, uses CSS `@page { size: A4 portrait; margin: 0; }`, and calls `window.print()`. The detail page downloads the same `print.png` directly.
 

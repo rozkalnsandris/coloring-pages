@@ -6,9 +6,9 @@ Make the normal content workflow close to:
 
 ```text
 generate PNG draft in ChatGPT
-→ UPSCALE-PRINT to the exact A4 print master
-→ VALIDATE-PRINT the exact print master
-→ owner PUBLISH approval of that validated page
+→ owner PUBLISH approval of that exact latest draft
+→ PUBLISH prepares the exact A4 print master
+→ PUBLISH validates it read-only and freezes SHA-256 + byte size
 → bind one valid category from metadata/categories.json
 → upload the exact PNG blob plus a small SHA-256 manifest to Google Drive
 → trusted RPi5 operator pulls and verifies it
@@ -30,7 +30,7 @@ Canonical ownership remains unchanged:
 - Google Drive is a temporary transport/staging surface.
 - `rozkalnsandris/RPi5_main` owns host-side rclone binding, credentials, trusted execution and runtime coordination.
 
-This content-contract source does not itself authorize a content import. The owner's explicit `PUBLISH` command for one exact latest validated print master becomes the ingest authority only after its page ID, SHA-256, byte size and one valid category are frozen. A plain `OK` is not publication authority. Category selection must happen before the first Drive mutation. That authority is limited to Drive staging, the reviewed RPi5 verify/import path and public verification; archive/delete, overwrite and unrelated runtime actions remain outside it.
+This content-contract source does not itself authorize a content import. The owner's explicit `PUBLISH` command for one exact latest generated draft authorizes one bounded chain that first prepares and validates a fresh A4 print master; ingest authority binds only after that prepared master's page ID, SHA-256, byte size and one valid category are frozen. Any preparation/validation failure stops before the first Drive mutation. A plain `OK` is not publication authority. Category selection must happen before the first Drive mutation. That authority is limited to Drive staging, the reviewed RPi5 verify/import path and required public verification; archive/delete, overwrite and unrelated runtime actions remain outside it.
 
 ## Why raw Drive blob files are acceptable
 
@@ -123,7 +123,7 @@ The first owner-authorized production import completed successfully on 2026-10-0
 - exactly one matching catalogue entry;
 - public thumbnail, preview and color-preserving print PNG derivative available.
 
-This is historical activation evidence, not reusable authorization. Every future single-page production import requires fresh `PUBLISH` approval of the exact validated print master, then binding of the page ID, SHA-256, byte size and one allowed category before staging/import begins. Drive archive/delete remains a separate owner-gated mutation.
+This is historical activation evidence, not reusable authorization. Every future single-page production import requires fresh `PUBLISH` approval of the exact latest draft; `PUBLISH` then prepares and validates a fresh print master and binds its page ID, SHA-256, byte size and one allowed category before staging/import begins. Drive archive/delete remains a separate owner-gated mutation.
 
 ## RPi5 pull and publish sequence
 
@@ -161,6 +161,8 @@ A successful content publication proves at minimum:
 
 No application rebuild, redeploy or restart is required merely to publish one new page.
 
+Once every required post-import proof item above passes, publication is complete: report `PASS` immediately and stop. Do not continue with discretionary diagnostics, repeated verification, Drive archive/delete, cleanup or unrelated runtime checks. Those are outside the approved publication chain unless separately authorized.
+
 ## Drive post-success handling
 
 Moving the PNG+manifest pair from `pending/` to `processed/` is optional queue hygiene and is a separate Drive mutation requiring fresh authority. A successfully imported pair may therefore remain in `pending/`; the matching success receipt and SHA-256 make a repeat import idempotent.
@@ -172,21 +174,22 @@ A Drive archive failure or an intentionally deferred archive must not rewrite or
 With the transport canary and trusted host operator activated, the normal human workflow is:
 
 ```text
-User: `UPSCALE-PRINT`
-ChatGPT: derive the exact A4 print master without generating new artwork
-User: `VALIDATE-PRINT`
-ChatGPT: PASS/FAIL and report exact SHA-256 + byte size
 User: `PUBLISH`
-ChatGPT: determine one allowed category and freeze the exact validated print master + manifest
+ChatGPT:
+→ derive the exact A4 print master without generating new artwork
+→ validate it and freeze exact SHA-256 + byte size
+→ determine one allowed category
+→ prebuild/validate manifest
 → Drive staging
 → RPi5 pull + SHA verification
 → immutable import
-→ public verification
-ChatGPT: report PASS or STOP
+→ required public verification
+→ report PASS or STOP
 ```
 
-The owner approval is the content authority for that exact validated print master once the operator freezes its page ID, SHA-256 and byte size and binds the reviewed staging/import operation. No second generic `AUTHORIZE LIVE` command is required for that exact ingest.
+Manual `UPSCALE-PRINT` and `VALIDATE-PRINT` remain optional inspection/debug commands, not required owner steps.
 
+The owner approval is the content authority for that exact latest draft. The operator internally derives the exact print-master bytes and freezes their ID/SHA/size/category before the first mutation. No second generic `AUTHORIZE LIVE` command is required for that exact ingest.
 
 ## Multi-page source contract
 
