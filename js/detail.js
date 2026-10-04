@@ -9,7 +9,6 @@ const detailPreview = document.querySelector("[data-detail-preview]");
 const detailPlaceholder = document.querySelector("[data-detail-placeholder]");
 const printLink = document.querySelector("[data-action-print]");
 const pdfLink = document.querySelector("[data-action-pdf]");
-let activePrintSession = null;
 
 const DETAIL_CATEGORY_LABELS = {
   rettungshunde: "Rettungshunde",
@@ -40,69 +39,6 @@ function setAction(link, href) {
     link.classList.add("is-disabled");
   }
 }
-
-function startDirectPrint(href) {
-  activePrintSession?.cleanup();
-
-  const printUrl = new URL(href, window.location.href);
-  printUrl.searchParams.set("embedded", "1");
-
-  const frame = document.createElement("iframe");
-  frame.title = "Druckansicht";
-  frame.tabIndex = -1;
-  frame.setAttribute("aria-hidden", "true");
-  frame.style.position = "fixed";
-  frame.style.width = "1px";
-  frame.style.height = "1px";
-  frame.style.right = "0";
-  frame.style.bottom = "0";
-  frame.style.border = "0";
-  frame.style.opacity = "0";
-  frame.style.pointerEvents = "none";
-
-  function cleanup() {
-    window.removeEventListener("message", handleMessage);
-    frame.remove();
-    if (activePrintSession?.frame === frame) activePrintSession = null;
-  }
-
-  function handleMessage(event) {
-    if (event.origin !== window.location.origin || event.source !== frame.contentWindow) return;
-    if (!event.data || typeof event.data !== "object") return;
-
-    if (event.data.type === "coloring-pages-print-error") {
-      cleanup();
-      return;
-    }
-
-    if (event.data.type !== "coloring-pages-print-ready") return;
-
-    window.removeEventListener("message", handleMessage);
-    const printWindow = frame.contentWindow;
-    if (!printWindow) {
-      cleanup();
-      return;
-    }
-
-    printWindow.focus();
-    try {
-      printWindow.print();
-    } finally {
-      cleanup();
-    }
-  }
-
-  window.addEventListener("message", handleMessage);
-  frame.src = printUrl.toString();
-  activePrintSession = { frame, cleanup };
-  document.body.append(frame);
-}
-
-printLink?.addEventListener("click", (event) => {
-  if (!printLink.href || printLink.getAttribute("aria-disabled") === "true") return;
-  event.preventDefault();
-  startDirectPrint(printLink.href);
-});
 
 async function loadDetail() {
   const id = new URLSearchParams(window.location.search).get("id");
@@ -139,7 +75,7 @@ async function loadDetail() {
     }
     if (detailDescription) {
       detailDescription.textContent =
-        `Diese Malvorlage „${entry.title}“ ist für den A4-Druck vorbereitet und kann direkt gedruckt oder als PDF geöffnet werden.`;
+        `Diese Malvorlage „${entry.title}“ ist für den A4-Druck vorbereitet und kann direkt als PDF geöffnet oder heruntergeladen werden.`;
     }
 
     const breadcrumbCurrent = document.querySelector("[data-breadcrumb-current]");
@@ -155,7 +91,7 @@ async function loadDetail() {
       if (detailPlaceholder) detailPlaceholder.hidden = true;
     }
 
-    setAction(printLink, `print.html?id=${encodeURIComponent(entry.id)}`);
+    setAction(printLink, entry.pdf);
     setAction(pdfLink, entry.pdf);
   } catch {
     // The static fallback remains usable when catalog.json is absent or invalid.
