@@ -176,7 +176,7 @@ class RuntimeContractTests(unittest.TestCase):
         detail_html = (ROOT / "detail.html").read_text(encoding="utf-8")
 
         self.assertIn(
-            'setAction(printLink, `print.html?id=${encodeURIComponent(entry.id)}`)',
+            'setAction(printLink, allPrintable ? `print.html?id=${encodeURIComponent(entry.id)}` : "");',
             detail_js,
         )
         self.assertIn('document.createElement("iframe")', detail_js)

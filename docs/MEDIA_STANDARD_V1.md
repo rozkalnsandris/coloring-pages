@@ -79,6 +79,11 @@ The importer executes from the immutable Coloring Pages container image under th
 
 V1 optimizes for a clean coloring experience and a one-command content workflow. If real printer tests later show that a higher native source resolution is required, that change belongs in this single importer/media contract rather than in per-image manual procedures.
 
+## Existing derivative correction
+
+Already-published derivatives are never silently rewritten by a normal import. If a historical derivative was produced under an older media transform, correction requires a separately reviewed exact-baseline regeneration contract.
+
+Issue #71 binds one correction only for `farben-zuordnen-001`: the preserved private source size/SHA-256, exact current derivative hashes, exact catalogue entry, shared Drive-ingest lock, and only the three derivative paths are frozen before any write. The tool regenerates `thumb.webp`, `preview.webp`, and `print.png` with the current color-preserving importer functions. It must not modify `originals/farben-zuordnen-001/source.png` or `public/catalog.json`. All derivative bytes are generated and validated before the first persistent write; after the first persistent write, any error is a STOP with no automatic retry, rollback, cleanup, or alternate path.
 
 ## Multi-page activities
 
