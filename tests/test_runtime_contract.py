@@ -189,8 +189,12 @@ class RuntimeContractTests(unittest.TestCase):
         )
         self.assertIn("printWindow.print()", detail_js)
         self.assertIn("window.location.assign(href)", detail_js)
-        self.assertIn("printImage.src = entry.print", print_js)
-        self.assertIn("await printImage.decode()", print_js)
+        self.assertIn("entry.pdf", print_js)
+        self.assertNotIn("entry.print", print_js)
+        self.assertIn("pdfjs-dist@6.3.289/build/pdf.min.mjs", print_js)
+        self.assertIn("pdfjs-dist@6.3.289/build/pdf.worker.min.mjs", print_js)
+        self.assertIn('intent: "print"', print_js)
+        self.assertIn('document.querySelector("[data-print-canvas]")', print_js)
         self.assertIn(
             'notifyParent("coloring-pages-print-ready", id)',
             print_js,
@@ -200,6 +204,10 @@ class RuntimeContractTests(unittest.TestCase):
             print_js,
         )
         self.assertIn('class="print-sheet"', print_html)
+        self.assertIn("data-print-canvas", print_html)
+        self.assertNotIn("data-print-image", print_html)
+        self.assertNotIn("<embed", print_html)
+        self.assertNotIn("<object", print_html)
         self.assertIn("data-action-pdf download", detail_html)
 
     def test_frontend_fetches_runtime_catalog(self):
