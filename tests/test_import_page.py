@@ -214,6 +214,70 @@ class ImportPageTests(unittest.TestCase):
             "Water Rescue Pup 001",
         )
 
+    def test_multi_page_activity_preserves_order_and_generates_page_media(self):
+        second = self.content / "inbox/fire-pup-001-2.png"
+        self.write_source(path=second)
+        first_bytes = self.source.read_bytes()
+        second_bytes = second.read_bytes()
+
+        entry = importer.import_activity(
+            [self.source, second],
+            self.content,
+            self.metadata(),
+        )
+
+        originals = self.content / "originals/fire-pup-001"
+        media = self.content / "public/media/fire-pup-001"
+        self.assertEqual((originals / "source-1.png").read_bytes(), first_bytes)
+        self.assertEqual((originals / "source-2.png").read_bytes(), second_bytes)
+        self.assertEqual(
+            {path.name for path in originals.iterdir()},
+            {"source-1.png", "source-2.png"},
+        )
+        self.assertEqual(
+            {path.name for path in media.iterdir()},
+            {
+                "thumb.webp",
+                "preview-1.webp",
+                "preview-2.webp",
+                "print-1.png",
+                "print-2.png",
+            },
+        )
+        self.assertEqual(
+            entry["pages"],
+            [
+                {
+                    "preview": "/media/fire-pup-001/preview-1.webp",
+                    "print": "/media/fire-pup-001/print-1.png",
+                },
+                {
+                    "preview": "/media/fire-pup-001/preview-2.webp",
+                    "print": "/media/fire-pup-001/print-2.png",
+                },
+            ],
+        )
+        self.assertEqual(entry["preview"], entry["pages"][0]["preview"])
+        self.assertEqual(entry["print"], entry["pages"][0]["print"])
+
+    def test_multi_page_duplicate_source_is_rejected(self):
+        with self.assertRaisesRegex(importer.ImportError, "listed more than once"):
+            importer.import_activity(
+                [self.source, self.source],
+                self.content,
+                self.metadata(),
+            )
+
+    def test_multi_page_source_outside_inbox_is_rejected(self):
+        outside = self.root / "outside-2.png"
+        self.write_source(path=outside)
+        with self.assertRaisesRegex(importer.ImportError, "inside the content inbox"):
+            importer.import_activity(
+                [self.source, outside],
+                self.content,
+                self.metadata(),
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

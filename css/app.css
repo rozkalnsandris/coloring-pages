@@ -245,6 +245,7 @@ a { color: inherit; }
 .age-older { background: #f2e7ff; color: #7640b4; }
 .easy { background: #e4f8e9; color: #1a753b; }
 .medium { background: #fff0df; color: #a95608; }
+.pages-badge { background: #eee8ff; color: #7546c8; }
 .empty-state {
   margin: 18px 0 0; padding: 18px; border: 1px dashed #bfd1e7; border-radius: 14px;
   text-align: center; color: var(--muted);
@@ -275,6 +276,7 @@ a { color: inherit; }
 .detail-badges span { padding: 8px 16px; font-size: 17px; }
 .detail-badges .rescue { background: #fff0f1; color: #bc2838; }
 .detail-badges .character { background: #fff2d6; color: #925205; }
+.detail-badges .pages-badge { background: #eee8ff; color: #7546c8; }
 .detail-copy > p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.65; font-weight: 600; }
 .detail-actions { display: grid; gap: 13px; margin-top: 27px; }
 .detail-note {
@@ -363,6 +365,7 @@ a { color: inherit; }
   .detail-copy h1 { font-size: 38px; }
   .detail-badges span { font-size: 14px; padding: 7px 12px; }
   .detail-copy > p { font-size: 16px; }
+  .detail-page-switcher { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 430px) {
@@ -410,6 +413,41 @@ a { color: inherit; }
   object-fit: contain;
   border-radius: 16px;
   background: #fff;
+}
+
+.detail-page-switcher {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.detail-page-thumb {
+  min-width: 0;
+  padding: 8px;
+  border: 2px solid #dce8f5;
+  border-radius: 16px;
+  background: #fff;
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 800;
+}
+.detail-page-thumb.is-active {
+  border-color: var(--blue);
+  color: var(--blue-deep);
+  box-shadow: 0 5px 16px rgb(46 143 240 / 14%);
+}
+.detail-page-thumb img {
+  width: 100%;
+  aspect-ratio: 210 / 297;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #fff;
+}
+.detail-page-thumb span {
+  display: block;
+  margin-top: 6px;
+  text-align: center;
+  font-size: 14px;
 }
 
 .detail-actions a {
@@ -486,6 +524,10 @@ a { color: inherit; }
   color: #65748b;
   cursor: default;
 }
+.print-pages {
+  display: grid;
+  gap: 18px;
+}
 .print-sheet {
   aspect-ratio: 210 / 297;
   display: grid;
@@ -532,6 +574,10 @@ a { color: inherit; }
     padding: 0;
   }
 
+  .print-pages {
+    display: block;
+  }
+
   .print-toolbar,
   .print-status,
   .print-placeholder {
@@ -543,6 +589,10 @@ a { color: inherit; }
     height: 297mm;
     box-shadow: none;
     overflow: hidden;
+  }
+
+  .print-sheet:not(:last-child) {
+    break-after: page;
   }
 
   .print-sheet canvas {

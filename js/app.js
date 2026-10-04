@@ -68,6 +68,12 @@ function createBadge(label, className) {
   return badge;
 }
 
+function entryPageCount(entry) {
+  return Array.isArray(entry.pages) && entry.pages.length > 0
+    ? entry.pages.length
+    : 1;
+}
+
 function createCatalogCard(entry) {
   const card = document.createElement("article");
   card.className = "coloring-card";
@@ -105,6 +111,11 @@ function createCatalogCard(entry) {
         ? "detailed"
         : "medium";
   badges.append(createBadge(difficultyLabel, difficultyClass));
+
+  const pageCount = entryPageCount(entry);
+  if (pageCount > 1) {
+    badges.append(createBadge(`${pageCount} Seiten`, "pages-badge"));
+  }
 
   card.append(previewLink, heading, badges);
   return card;

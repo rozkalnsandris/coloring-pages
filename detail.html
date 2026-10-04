@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=0f45167b0f28">
+  <link rel="stylesheet" href="css/app.css?v=ce7f81cca5b8">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -53,6 +53,7 @@
             </div>
             <img class="detail-preview-image" data-detail-preview alt="" hidden>
           </div>
+          <div class="detail-page-switcher" data-detail-page-switcher aria-label="Seiten dieser Aktivität" hidden></div>
         </div>
 
         <div class="detail-copy">
@@ -60,6 +61,7 @@
           <div class="detail-badges">
             <span class="age" data-detail-age>3–6 Jahre</span>
             <span class="easy" data-detail-difficulty>Einfach</span>
+            <span class="pages-badge" data-detail-pages hidden>2 Seiten</span>
             <span class="rescue" data-detail-category>🐾 Rettungshunde</span>
             <span class="character" data-detail-character>🐶 Ben</span>
           </div>
@@ -69,8 +71,8 @@
           </p>
 
           <div class="detail-actions">
-            <a class="action-primary is-disabled" data-action-print aria-disabled="true"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V3h10v5M7 17H4V9h16v8h-3M7 14h10v7H7zM17 11h1"/></svg><span>A4 drucken</span><b aria-hidden="true">→</b></a>
-            <a class="is-disabled" data-action-png download aria-disabled="true"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg><span>PNG herunterladen</span><b aria-hidden="true">→</b></a>
+            <a class="action-primary is-disabled" data-action-print aria-disabled="true"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V3h10v5M7 17H4V9h16v8h-3M7 14h10v7H7zM17 11h1"/></svg><span data-action-print-label>A4 drucken</span><b aria-hidden="true">→</b></a>
+            <a class="is-disabled" data-action-png download aria-disabled="true"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg><span data-action-png-label>PNG herunterladen</span><b aria-hidden="true">→</b></a>
           </div>
 
           <div class="detail-note">
@@ -83,7 +85,7 @@
     </div>
   </main>
 
-  <script src="js/app.js?v=0e5862c9ed2b" defer></script>
-  <script src="js/detail.js?v=8ed15dc0cda4" defer></script>
+  <script src="js/app.js?v=17ceab9fcfdc" defer></script>
+  <script src="js/detail.js?v=0b11d9ff5f73" defer></script>
 </body>
 </html>
