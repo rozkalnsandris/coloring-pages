@@ -44,6 +44,12 @@ The current V1 category IDs are:
 
 A production record must use exactly one registered category. The importer rejects unknown category IDs, and category selection must be bound before Drive staging. Future categories are added through a reviewed source change that keeps the registry and public category UI aligned.
 
+## Catalogue order
+
+The top-level `catalog.json` array is canonical **newest first** publication order. The importer prepends each newly published activity and preserves the relative order of all existing entries. The public gallery renders that array order directly.
+
+IDs are opaque identities only. They must never be used to infer or sort publication chronology.
+
 ## Published file mode
 
 The live `public/catalog.json` must remain readable by the unprivileged nginx container. Every atomic catalogue replacement performed by repository-owned tooling must publish the replacement with mode `0644` before the final `os.replace()`.
