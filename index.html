@@ -9,14 +9,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=ce7f81cca5b8">
+  <link rel="stylesheet" href="css/app.css?v=11f51d705407">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
 
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="#hero" aria-label="Coloring Pages Startseite">
+      <a class="brand" href="index.html" aria-label="Coloring Pages Startseite">
         <span class="brand-paw" aria-hidden="true">
           <i></i><i></i><i></i><i></i><i></i>
         </span>
@@ -27,9 +27,9 @@
       </a>
 
       <nav class="desktop-nav" aria-label="Hauptnavigation">
-        <a class="is-active" href="#hero" aria-current="page">Startseite</a>
+        <a href="#hero">Startseite</a>
         <a href="#kategorien">Kategorien</a>
-        <a href="#neu">Über uns</a>
+        <a href="#ueber-uns">Über uns</a>
       </nav>
 
       <button class="header-search" type="button" aria-label="Suche öffnen" data-header-search>
@@ -45,7 +45,7 @@
     <nav id="mobile-nav" class="mobile-nav container" aria-label="Mobile Navigation" hidden>
       <a href="#hero">Startseite</a>
       <a href="#kategorien">Kategorien</a>
-      <a href="#neu">Über uns</a>
+      <a href="#ueber-uns">Über uns</a>
     </nav>
   </header>
 
@@ -167,8 +167,31 @@
         <p class="empty-state" data-empty-state hidden>Keine passenden Malvorlagen gefunden.</p>
       </div>
     </section>
+    <section id="ueber-uns" class="about" aria-labelledby="about-title" tabindex="-1">
+      <div class="container">
+        <div class="about-intro">
+          <h2 id="about-title">Über uns</h2>
+          <p>Coloring Pages ist ein Ort für kleine kreative Pausen. Hier findest du kostenlose
+            Malvorlagen und einfache Lernaktivitäten für Kinder – für zu Hause, den Kindergarten
+            oder die Schule.</p>
+          <p>Unser Ziel: Lieblingsmotive leicht finden und mehr Zeit zum Malen, Entdecken und
+            gemeinsamen Gestalten haben. Ohne Anmeldung, direkt zum Ausdrucken.</p>
+          <p>Fragen oder Anregungen? Schreib uns an
+            <a href="mailto:andris@rozkalns.net">andris@rozkalns.net</a>.</p>
+        </div>
+        <ol class="about-steps" aria-label="So funktioniert Coloring Pages">
+          <li><span class="about-step-number" aria-hidden="true">1</span><h3>Lieblingsmotiv finden</h3>
+            <p>Stöbere durch die Kategorien oder suche nach einem Motiv.</p></li>
+          <li><span class="about-step-number" aria-hidden="true">2</span><h3>In Ruhe anschauen</h3>
+            <p>Öffne die Vorschau. Bei Aktivitäten mit mehreren Seiten kannst du jede Seite einzeln ansehen.</p></li>
+          <li><span class="about-step-number" aria-hidden="true">3</span><h3>Ausdrucken &amp; loslegen</h3>
+            <p>Mit „A4 drucken“ öffnest du den Druckdialog. Oder lade die gewünschte Seite als PNG herunter.</p></li>
+        </ol>
+        <a class="outline-link" href="#kategorien">Malvorlagen entdecken <span aria-hidden="true">→</span></a>
+      </div>
+    </section>
   </main>
 
-  <script src="js/app.js?v=17ceab9fcfdc" defer></script>
+  <script src="js/app.js?v=39e706ede25e" defer></script>
 </body>
 </html>

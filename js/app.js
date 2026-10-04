@@ -26,6 +26,26 @@ const DIFFICULTY_LABELS = {
 
 let activeCategory = "";
 
+// Keep both menus in sync on direct links, anchor navigation and browser Back/Forward.
+function updateNavigation(hash = window.location.hash) {
+  if (!gallery) return;
+  const section = hash === "#ueber-uns" ? "#ueber-uns"
+    : ["#kategorien", "#neu"].includes(hash) ? "#kategorien" : "#hero";
+  document.querySelectorAll(".desktop-nav a, .mobile-nav a").forEach((link) => {
+    const active = link.getAttribute("href") === section;
+    link.classList.toggle("is-active", active);
+    if (active) link.setAttribute("aria-current", "location");
+    else link.removeAttribute("aria-current");
+  });
+}
+
+window.addEventListener("hashchange", () => updateNavigation());
+window.addEventListener("pageshow", () => updateNavigation());
+document.querySelectorAll(".desktop-nav a, .mobile-nav a").forEach((link) => {
+  link.addEventListener("click", () => updateNavigation(link.hash));
+});
+updateNavigation();
+
 function normalize(value) {
   return String(value || "").trim().toLocaleLowerCase("de");
 }
@@ -50,7 +70,8 @@ function applyFilters() {
   currentCards().forEach((card) => {
     const title = normalize(card.dataset.title ?? "");
     const category = normalize(card.dataset.category ?? "");
-    const matchesQuery = !query || title.includes(query) || category.includes(query);
+    const categoryLabel = normalize(CATEGORY_LABELS[category] || category);
+    const matchesQuery = !query || title.includes(query) || category.includes(query) || categoryLabel.includes(query);
     const matchesCategory = !activeCategory || category === activeCategory;
     const show = matchesQuery && matchesCategory;
 
@@ -160,8 +181,15 @@ if (menuButton && mobileNav) {
   });
 
   mobileNav.addEventListener("click", (event) => {
-    if (event.target instanceof HTMLAnchorElement) {
+    const link = event.target.closest("a");
+    if (link) {
       setMenuOpen(false);
+      // Do not leave keyboard focus inside the now-hidden menu.
+      if (link.hash && link.pathname === window.location.pathname) {
+        const target = document.getElementById(link.hash.slice(1));
+        target?.setAttribute("tabindex", "-1");
+        target?.focus({ preventScroll: true });
+      }
     }
   });
 
@@ -180,6 +208,7 @@ headerSearch?.addEventListener("click", () => {
 searchForm?.addEventListener("submit", (event) => {
   event.preventDefault();
   applyFilters();
+  updateNavigation("#neu");
   document.querySelector("#neu")?.scrollIntoView({ block: "start" });
 });
 
@@ -198,6 +227,7 @@ categoryButtons.forEach((button) => {
     });
 
     applyFilters();
+    updateNavigation("#neu");
     document.querySelector("#neu")?.scrollIntoView({ block: "start" });
   });
 });
