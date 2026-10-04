@@ -81,9 +81,11 @@ V1 optimizes for a clean coloring experience and a one-command content workflow.
 
 ## Existing derivative correction
 
-Already-published derivatives are never silently rewritten by a normal import. If a historical derivative was produced under an older media transform, correction requires a separately reviewed exact-baseline regeneration contract.
+Already-published media URLs are immutable and must never be overwritten as the normal correction mechanism. If a historical derivative needs correction, the corrected bytes are validated against a separately reviewed exact baseline, then published under a new content-addressed filename containing the full SHA-256. Only after all new media files exist does the workflow atomically switch that catalogue entry's media URL fields. `catalog.json` is `no-cache`, so clients discover the new immutable media URLs without a CDN purge.
 
-Issue #71 binds one correction only for `farben-zuordnen-001`: the preserved private source size/SHA-256, exact current derivative hashes, exact catalogue entry, shared Drive-ingest lock, and only the three derivative paths are frozen before any write. The tool regenerates `thumb.webp`, `preview.webp`, and `print.png` with the current color-preserving importer functions. It must not modify `originals/farben-zuordnen-001/source.png` or `public/catalog.json`. All derivative bytes are generated and validated before the first persistent write; after the first persistent write, any error is a STOP with no automatic retry, rollback, cleanup, or alternate path.
+Normal new imports keep their existing stable filenames because those bytes are never rewritten. The content-addressed naming rule applies when an already-published immutable media identity needs replacement.
+
+Issue #74 applies this rule to the already-regenerated `farben-zuordnen-001` bytes. The preserved private source and all non-media catalogue metadata remain unchanged, the old stable media files remain byte-identical, and only `thumb`, `preview`, and `print` URLs may switch to the new full-SHA-256 filenames. After the first persistent write, any error is a STOP with no automatic retry, rollback, cleanup, or alternate path.
 
 ## Multi-page activities
 

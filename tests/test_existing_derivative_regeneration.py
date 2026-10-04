@@ -39,13 +39,22 @@ class ExistingDerivativeRegenerationTests(unittest.TestCase):
         (self.content / "state/drive-ingest/.lock").write_bytes(b"")
 
         self.source = self.content / "originals/farben-zuordnen-001/source.png"
-        image = Image.new("RGB", (1024, 1536), "white")
+        source_image = Image.new("RGB", (1024, 1536), "white")
         for x in range(250, 400):
             for y in range(500, 650):
-                image.putpixel((x, y), (255, 32, 64))
-        image.save(self.source, format="PNG")
+                source_image.putpixel((x, y), (255, 32, 64))
+        source_image.save(self.source, format="PNG")
 
-        self.entry = {
+        self.media = self.content / "public/media/farben-zuordnen-001"
+        thumb = source_image.copy()
+        thumb.thumbnail((400, 566), Image.Resampling.LANCZOS)
+        thumb.save(self.media / "thumb.webp", format="WEBP", lossless=True, quality=100, method=6)
+        preview = source_image.copy()
+        preview.thumbnail((1000, 1414), Image.Resampling.LANCZOS)
+        preview.save(self.media / "preview.webp", format="WEBP", lossless=True, quality=100, method=6)
+        source_image.convert("RGBA").save(self.media / "print.png", format="PNG", optimize=True)
+
+        self.before_entry = {
             "id": "farben-zuordnen-001",
             "title": "Farben zuordnen",
             "character": "",
@@ -57,39 +66,48 @@ class ExistingDerivativeRegenerationTests(unittest.TestCase):
             "preview": "/media/farben-zuordnen-001/preview.webp",
             "print": "/media/farben-zuordnen-001/print.png",
         }
+        self.other_entry = {
+            "id": "other-001",
+            "title": "Other",
+            "thumb": "/media/other-001/thumb.webp",
+        }
         (self.content / "public/catalog.json").write_text(
-            json.dumps([self.entry], ensure_ascii=False) + "\n",
+            json.dumps([self.other_entry, self.before_entry], ensure_ascii=False, indent=2)
+            + "\n",
             encoding="utf-8",
         )
 
-        media = self.content / "public/media/farben-zuordnen-001"
-        Image.new("L", (400, 566), 255).save(
-            media / "thumb.webp", format="WEBP", lossless=True
+        corrected = {}
+        for name in regen.FILES:
+            digest = sha256(self.media / name)
+            corrected[name] = {
+                "size_bytes": (self.media / name).stat().st_size,
+                "sha256": digest,
+                "versioned_filename": regen.content_addressed_filename(name, digest),
+            }
+
+        self.after_entry = dict(self.before_entry)
+        self.after_entry["thumb"] = (
+            "/media/farben-zuordnen-001/" + corrected["thumb.webp"]["versioned_filename"]
         )
-        Image.new("L", (1000, 1414), 255).save(
-            media / "preview.webp", format="WEBP", lossless=True
+        self.after_entry["preview"] = (
+            "/media/farben-zuordnen-001/" + corrected["preview.webp"]["versioned_filename"]
         )
-        Image.new("RGBA", (1024, 1536), (255, 255, 255, 255)).save(
-            media / "print.png", format="PNG"
+        self.after_entry["print"] = (
+            "/media/farben-zuordnen-001/" + corrected["print.png"]["versioned_filename"]
         )
 
         self.contract = {
             "schema": regen.CONTRACT_SCHEMA,
-            "issue": 71,
+            "issue": 74,
             "page": {
                 "id": "farben-zuordnen-001",
                 "source_relative_path": "originals/farben-zuordnen-001/source.png",
                 "source_size_bytes": self.source.stat().st_size,
                 "source_sha256": sha256(self.source),
-                "source_must_contain_color": True,
-                "catalog_entry": self.entry,
-                "current_derivatives": {
-                    name: {
-                        "size_bytes": (media / name).stat().st_size,
-                        "sha256": sha256(media / name),
-                    }
-                    for name in regen.FILES
-                },
+                "catalog_entry_before": self.before_entry,
+                "catalog_entry_after": self.after_entry,
+                "corrected_derivatives": corrected,
             },
             "runtime": {
                 "content_root": "/srv/coloring-pages-content",
@@ -98,16 +116,31 @@ class ExistingDerivativeRegenerationTests(unittest.TestCase):
                     "/usr/local/bin/coloring-pages-regenerate-derivatives"
                 ),
             },
+            "cache_identity": {
+                "strategy": "full-sha256-content-addressed-filename",
+                "stable_immutable_urls_must_not_be_overwritten": True,
+                "catalog_is_switch_point": True,
+            },
             "mutation": {
-                "allowed_targets": [
+                "allowed_new_targets": [
+                    "public/media/farben-zuordnen-001/"
+                    + corrected[name]["versioned_filename"]
+                    for name in regen.FILES
+                ],
+                "stable_media_must_remain_unchanged": [
                     f"public/media/farben-zuordnen-001/{name}"
                     for name in regen.FILES
                 ],
+                "catalog_target": "public/catalog.json",
+                "catalog_mutation_scope": list(regen.MEDIA_FIELDS),
                 "forbidden_targets": [
                     "originals/farben-zuordnen-001/source.png",
-                    "public/catalog.json",
                 ],
-                "replace_order": list(regen.FILES),
+                "publish_order": [
+                    "write-content-addressed-media-exclusively",
+                    "fsync-media-directory",
+                    "atomically-switch-catalog-entry-media-fields",
+                ],
             },
             "failure": {
                 "retry": False,
@@ -122,99 +155,95 @@ class ExistingDerivativeRegenerationTests(unittest.TestCase):
         self.tempdir.cleanup()
 
     def test_check_has_no_persistent_mutation(self):
-        media = self.content / "public/media/farben-zuordnen-001"
-        before = {name: (media / name).read_bytes() for name in regen.FILES}
-        source_before = self.source.read_bytes()
+        stable_before = {
+            name: (self.media / name).read_bytes()
+            for name in regen.FILES
+        }
         catalog_before = (self.content / "public/catalog.json").read_bytes()
+        source_before = self.source.read_bytes()
 
         result = regen.execute(self.content, self.contract, apply=False)
 
-        self.assertEqual(set(result), set(regen.FILES))
         self.assertEqual(self.source.read_bytes(), source_before)
         self.assertEqual(
             (self.content / "public/catalog.json").read_bytes(),
             catalog_before,
         )
         for name in regen.FILES:
-            self.assertEqual((media / name).read_bytes(), before[name])
+            self.assertEqual((self.media / name).read_bytes(), stable_before[name])
+            self.assertFalse((self.media / result[name]).exists())
 
-    def test_apply_replaces_only_derivatives(self):
+    def test_apply_publishes_new_cache_identity_and_preserves_stable_files(self):
+        stable_before = {
+            name: (self.media / name).read_bytes()
+            for name in regen.FILES
+        }
         source_before = self.source.read_bytes()
-        catalog_before = (self.content / "public/catalog.json").read_bytes()
-        media = self.content / "public/media/farben-zuordnen-001"
-        old_hashes = {name: sha256(media / name) for name in regen.FILES}
 
         result = regen.execute(self.content, self.contract, apply=True)
 
         self.assertEqual(self.source.read_bytes(), source_before)
-        self.assertEqual(
-            (self.content / "public/catalog.json").read_bytes(),
-            catalog_before,
-        )
         for name in regen.FILES:
-            self.assertEqual(sha256(media / name), result[name])
-            self.assertNotEqual(result[name], old_hashes[name])
-            self.assertFalse((media / f".{name}.issue71.tmp").exists())
+            self.assertEqual((self.media / name).read_bytes(), stable_before[name])
+            versioned = self.media / result[name]
+            self.assertEqual(versioned.read_bytes(), stable_before[name])
+            self.assertEqual(
+                versioned.name,
+                regen.content_addressed_filename(name, sha256(self.media / name)),
+            )
 
-        with Image.open(media / "preview.webp") as preview:
-            self.assertTrue(regen.image_has_color(preview))
-        with Image.open(media / "print.png") as print_image:
-            self.assertTrue(regen.image_has_color(print_image))
-            with Image.open(self.source) as source_image:
-                self.assertEqual(
-                    print_image.convert("RGBA").tobytes(),
-                    source_image.convert("RGBA").tobytes(),
-                )
+        catalog = json.loads(
+            (self.content / "public/catalog.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(catalog[0], self.other_entry)
+        self.assertEqual(catalog[1], self.after_entry)
+        for key, value in self.before_entry.items():
+            if key not in regen.MEDIA_FIELDS:
+                self.assertEqual(catalog[1][key], value)
 
-    def test_baseline_drift_fails_before_temp_write(self):
-        media = self.content / "public/media/farben-zuordnen-001"
-        (media / "thumb.webp").write_bytes(b"drift")
+    def test_baseline_drift_fails_before_first_write(self):
+        (self.media / "thumb.webp").write_bytes(b"drift")
 
         with self.assertRaisesRegex(
             regen.RegenerationError,
-            "derivative size drifted",
+            "corrected derivative size drifted",
         ):
             regen.execute(self.content, self.contract, apply=True)
 
-        for name in regen.FILES:
-            self.assertFalse((media / f".{name}.issue71.tmp").exists())
+        for item in self.contract["page"]["corrected_derivatives"].values():
+            self.assertFalse((self.media / item["versioned_filename"]).exists())
 
-    def test_repository_contract_binds_live_baseline_and_image_wiring(self):
+    def test_repository_contract_uses_full_sha_content_addressed_urls(self):
         contract = json.loads(
             (ROOT / "deploy/existing-derivative-regeneration-v1.json").read_text(
                 encoding="utf-8"
             )
         )
-        self.assertEqual(contract["issue"], 71)
-        self.assertEqual(contract["page"]["id"], "farben-zuordnen-001")
-        self.assertEqual(contract["page"]["source_size_bytes"], 1044537)
+        self.assertEqual(contract["issue"], 74)
         self.assertEqual(
-            contract["page"]["source_sha256"],
-            "8d8659b73112e879230322b3a356bfa15df3d627b59ab21861c6b8d8b4a5bf24",
+            contract["cache_identity"]["strategy"],
+            "full-sha256-content-addressed-filename",
         )
-        self.assertEqual(
-            contract["mutation"]["replace_order"],
-            ["thumb.webp", "preview.webp", "print.png"],
+        self.assertTrue(
+            contract["cache_identity"]["stable_immutable_urls_must_not_be_overwritten"]
         )
         self.assertEqual(
-            set(contract["mutation"]["forbidden_targets"]),
-            {
-                "originals/farben-zuordnen-001/source.png",
-                "public/catalog.json",
-            },
+            contract["mutation"]["catalog_mutation_scope"],
+            ["thumb", "preview", "print"],
         )
-
-        dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
-        self.assertIn(
-            "COPY tools/coloring-pages-regenerate-derivatives "
-            "/usr/local/bin/coloring-pages-regenerate-derivatives",
-            dockerfile,
-        )
-        self.assertIn(
-            "COPY deploy/existing-derivative-regeneration-v1.json "
-            "/usr/local/share/coloring-pages/existing-derivative-regeneration-v1.json",
-            dockerfile,
-        )
+        for name, item in contract["page"]["corrected_derivatives"].items():
+            self.assertEqual(
+                item["versioned_filename"],
+                regen.content_addressed_filename(name, item["sha256"]),
+            )
+            expected_url = (
+                f"/media/farben-zuordnen-001/{item['versioned_filename']}"
+            )
+            field = name.split(".")[0]
+            self.assertEqual(
+                contract["page"]["catalog_entry_after"][field],
+                expected_url,
+            )
 
 
 if __name__ == "__main__":

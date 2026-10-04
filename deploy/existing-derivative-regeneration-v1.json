@@ -1,13 +1,12 @@
 {
   "schema": "rozkalns.coloring-pages.existing-derivative-regeneration.v1",
-  "issue": 71,
+  "issue": 74,
   "page": {
     "id": "farben-zuordnen-001",
     "source_relative_path": "originals/farben-zuordnen-001/source.png",
     "source_size_bytes": 1044537,
     "source_sha256": "8d8659b73112e879230322b3a356bfa15df3d627b59ab21861c6b8d8b4a5bf24",
-    "source_must_contain_color": true,
-    "catalog_entry": {
+    "catalog_entry_before": {
       "id": "farben-zuordnen-001",
       "title": "Farben zuordnen",
       "character": "",
@@ -19,18 +18,33 @@
       "preview": "/media/farben-zuordnen-001/preview.webp",
       "print": "/media/farben-zuordnen-001/print.png"
     },
-    "current_derivatives": {
+    "catalog_entry_after": {
+      "id": "farben-zuordnen-001",
+      "title": "Farben zuordnen",
+      "character": "",
+      "category": "lernen",
+      "age": "3-6",
+      "difficulty": "easy",
+      "language": "de",
+      "thumb": "/media/farben-zuordnen-001/thumb-74f7d5735704f438940a840b1a646af27a8989364b1e8186fbdc88f048e914c1.webp",
+      "preview": "/media/farben-zuordnen-001/preview-0cf1d9637d6ff115d9776f96a1f887adc51b3d804411aad6d1e9c717ba78e19d.webp",
+      "print": "/media/farben-zuordnen-001/print-bc7683cd4fd8089d605e6b2ab82b9ca39403d4d6a8cda4e9171c8256a2249fc2.png"
+    },
+    "corrected_derivatives": {
       "thumb.webp": {
-        "size_bytes": 53404,
-        "sha256": "2be1947a50a94f8cb245efc15bab794680e86738e2919d17a10142293be74c9a"
+        "size_bytes": 102500,
+        "sha256": "74f7d5735704f438940a840b1a646af27a8989364b1e8186fbdc88f048e914c1",
+        "versioned_filename": "thumb-74f7d5735704f438940a840b1a646af27a8989364b1e8186fbdc88f048e914c1.webp"
       },
       "preview.webp": {
-        "size_bytes": 273004,
-        "sha256": "c8e48b175b595f640b1c96d6816dc6a656c2e29eae3f1ecca5c3701f96f6e737"
+        "size_bytes": 502846,
+        "sha256": "0cf1d9637d6ff115d9776f96a1f887adc51b3d804411aad6d1e9c717ba78e19d",
+        "versioned_filename": "preview-0cf1d9637d6ff115d9776f96a1f887adc51b3d804411aad6d1e9c717ba78e19d.webp"
       },
       "print.png": {
-        "size_bytes": 69723,
-        "sha256": "21880b59610244ee34ccaab1988e7335d70ab3f4441da01edde55598f0d1d7a2"
+        "size_bytes": 782469,
+        "sha256": "bc7683cd4fd8089d605e6b2ab82b9ca39403d4d6a8cda4e9171c8256a2249fc2",
+        "versioned_filename": "print-bc7683cd4fd8089d605e6b2ab82b9ca39403d4d6a8cda4e9171c8256a2249fc2.png"
       }
     }
   },
@@ -39,20 +53,35 @@
     "shared_lock": "state/drive-ingest/.lock",
     "regenerator_entrypoint": "/usr/local/bin/coloring-pages-regenerate-derivatives"
   },
+  "cache_identity": {
+    "strategy": "full-sha256-content-addressed-filename",
+    "stable_immutable_urls_must_not_be_overwritten": true,
+    "catalog_is_switch_point": true
+  },
   "mutation": {
-    "allowed_targets": [
+    "allowed_new_targets": [
+      "public/media/farben-zuordnen-001/thumb-74f7d5735704f438940a840b1a646af27a8989364b1e8186fbdc88f048e914c1.webp",
+      "public/media/farben-zuordnen-001/preview-0cf1d9637d6ff115d9776f96a1f887adc51b3d804411aad6d1e9c717ba78e19d.webp",
+      "public/media/farben-zuordnen-001/print-bc7683cd4fd8089d605e6b2ab82b9ca39403d4d6a8cda4e9171c8256a2249fc2.png"
+    ],
+    "stable_media_must_remain_unchanged": [
       "public/media/farben-zuordnen-001/thumb.webp",
       "public/media/farben-zuordnen-001/preview.webp",
       "public/media/farben-zuordnen-001/print.png"
     ],
-    "forbidden_targets": [
-      "originals/farben-zuordnen-001/source.png",
-      "public/catalog.json"
+    "catalog_target": "public/catalog.json",
+    "catalog_mutation_scope": [
+      "thumb",
+      "preview",
+      "print"
     ],
-    "replace_order": [
-      "thumb.webp",
-      "preview.webp",
-      "print.png"
+    "forbidden_targets": [
+      "originals/farben-zuordnen-001/source.png"
+    ],
+    "publish_order": [
+      "write-content-addressed-media-exclusively",
+      "fsync-media-directory",
+      "atomically-switch-catalog-entry-media-fields"
     ]
   },
   "failure": {
