@@ -85,30 +85,30 @@ The importer remains backward-compatible with historical IDs matching:
 ^[a-z0-9]+(?:-[a-z0-9]+)*$
 ```
 
-New Chat publications use the opaque sequential policy in `metadata/id-policy.json`:
+New Chat publications use the opaque random seven-digit policy in `metadata/id-policy.json`:
 
 ```text
-cp-NNNNNN
+NNNNNNN
 ```
 
-Examples: `cp-000001`, `cp-000002`, `cp-000123`.
+Examples: `0427183`, `9676349`.
 
-For each new publication, `PUBLISH` reads fresh LIVE catalogue state, considers only IDs matching `^cp-[0-9]{6}$`, and allocates one greater than the highest existing sequence number. If no matching ID exists, the first ID is `cp-000001`. Gaps are not reused. Type, topic, title and category are metadata and do not affect the ID.
+Each activity ID is allocated independently as exactly seven decimal digits (`0000000`–`9999999`). Allocation is random with a fresh LIVE-catalog collision check; there is no shared sequence and no highest-ID scan. Type, topic, title and category never determine the ID.
 
-The candidate ID must still be absent immediately before the first Drive/content mutation. Sequence exhaustion or an unexpected collision is a STOP rather than an alternate naming scheme.
+Before the first content mutation, the candidate must be absent from the fresh LIVE catalogue and distinct from any other candidate in the same local publish batch. A pre-mutation collision is handled by generating another random candidate. Exhaustion is a STOP.
 
-Existing legacy IDs stay accepted and immutable. They are never renamed and do not participate in the `cp-` sequence.
+Existing legacy IDs stay accepted and immutable. They are never renamed and do not participate in new-ID allocation.
 
 Once published, every ID is immutable in V1. Duplicate IDs fail closed. Replacing existing artwork is outside this workflow and requires a separate reviewed contract.
 
 ## Public paths
 
-For `cp-000123`:
+For `0427183`:
 
 ```text
-/media/cp-000123/thumb.webp
-/media/cp-000123/preview.webp
-/media/cp-000123/print.png
+/media/0427183/thumb.webp
+/media/0427183/preview.webp
+/media/0427183/print.png
 ```
 
 ## Runtime
