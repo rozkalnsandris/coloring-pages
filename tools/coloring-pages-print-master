@@ -14,6 +14,8 @@ TARGET_SIZE = (2480, 3508)
 LANDSCAPE_TARGET_SIZE = (3508, 2480)
 TARGET_DPI = (300.0, 300.0)
 OUTER_WHITE_BORDER = 1
+PRINT_SAFE_MARGIN_MM = 15.0
+PRINT_SAFE_MARGIN_PX = round(PRINT_SAFE_MARGIN_MM / 25.4 * TARGET_DPI[0])
 MIN_SOURCE_SHORT_SIDE = 800
 MIN_SOURCE_LONG_SIDE = 1100
 MIN_SOURCE_RATIO = 2 / 3
@@ -85,12 +87,16 @@ def target_size_for(image: Image.Image) -> tuple[int, int]:
     return LANDSCAPE_TARGET_SIZE if image.width > image.height else TARGET_SIZE
 
 
-def fit_a4(image: Image.Image) -> Image.Image:
+def fit_a4(
+    image: Image.Image, *, artwork_margin_px: int = PRINT_SAFE_MARGIN_PX
+) -> Image.Image:
     target_width, target_height = target_size_for(image)
-    inner_width = target_width - (2 * OUTER_WHITE_BORDER)
-    inner_height = target_height - (2 * OUTER_WHITE_BORDER)
+    if artwork_margin_px < OUTER_WHITE_BORDER:
+        raise PrintMasterError("artwork margin must include the exact-white outer border")
+    inner_width = target_width - (2 * artwork_margin_px)
+    inner_height = target_height - (2 * artwork_margin_px)
     if inner_width <= 0 or inner_height <= 0:
-        raise PrintMasterError("outer white border leaves no printable interior")
+        raise PrintMasterError("artwork margin leaves no printable interior")
 
     scale = min(inner_width / image.width, inner_height / image.height)
     resized_size = (
@@ -125,6 +131,23 @@ def border_is_exact_white(image: Image.Image) -> bool:
     return all(pixel == (255, 255, 255) for edge in (top, bottom, left, right) for pixel in edge)
 
 
+def safe_margin_is_exact_white(image: Image.Image) -> bool:
+    if image.mode != "RGB":
+        return False
+    width, height = image.size
+    margin = PRINT_SAFE_MARGIN_PX
+    boxes = (
+        (0, 0, width, margin),
+        (0, height - margin, width, height),
+        (0, margin, margin, height - margin),
+        (width - margin, margin, width, height - margin),
+    )
+    return all(
+        all(channel == (255, 255) for channel in image.crop(box).getextrema())
+        for box in boxes
+    )
+
+
 def read_dpi(image: Image.Image) -> tuple[float, float] | None:
     dpi = image.info.get("dpi")
     if not isinstance(dpi, tuple) or len(dpi) != 2:
@@ -153,6 +176,11 @@ def validate_print_master(path: Path) -> dict[str, object]:
                 raise PrintMasterError("print master must be RGB with no alpha")
             if not border_is_exact_white(image):
                 raise PrintMasterError("print master outer border must be exact #FFFFFF")
+            if not safe_margin_is_exact_white(image):
+                raise PrintMasterError(
+                    f"print master {PRINT_SAFE_MARGIN_MM:g} mm artwork-safe margin "
+                    "must be exact #FFFFFF"
+                )
             dpi = read_dpi(image)
             if dpi is None or any(abs(value - 300.0) > 1.0 for value in dpi):
                 raise PrintMasterError("print master must carry approximately 300x300 DPI")
@@ -163,6 +191,8 @@ def validate_print_master(path: Path) -> dict[str, object]:
         "width": image.size[0],
         "height": image.size[1],
         "orientation": "landscape" if image.size[0] > image.size[1] else "portrait",
+        "safe_margin_mm": PRINT_SAFE_MARGIN_MM,
+        "safe_margin_px": PRINT_SAFE_MARGIN_PX,
         "dpi_x": dpi[0],
         "dpi_y": dpi[1],
         "size_bytes": path.stat().st_size,
@@ -198,6 +228,8 @@ def print_result(prefix: str, path: Path, result: dict[str, object]) -> None:
     print(f"WIDTH={result['width']}")
     print(f"HEIGHT={result['height']}")
     print(f"ORIENTATION={result['orientation']}")
+    print(f"SAFE_MARGIN_MM={result['safe_margin_mm']:.3f}")
+    print(f"SAFE_MARGIN_PX={result['safe_margin_px']}")
     print(f"DPI_X={result['dpi_x']:.3f}")
     print(f"DPI_Y={result['dpi_y']:.3f}")
     print(f"SIZE_BYTES={result['size_bytes']}")
