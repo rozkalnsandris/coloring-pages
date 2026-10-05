@@ -27,7 +27,18 @@ function printOrientation(width, height) {
   return width > height ? "landscape" : "portrait";
 }
 
+function isCanonicalA4Raster(width, height) {
+  return (
+    (width === 2480 && height === 3508) ||
+    (width === 3508 && height === 2480)
+  );
+}
+
 function a4CanvasSize(width, height) {
+  if (isCanonicalA4Raster(width, height)) {
+    return { width, height };
+  }
+
   const landscape = printOrientation(width, height) === "landscape";
   const pageWidth = landscape ? A4_PAGE_HEIGHT_MM : A4_PAGE_WIDTH_MM;
   const pageHeight = landscape ? A4_PAGE_WIDTH_MM : A4_PAGE_HEIGHT_MM;
