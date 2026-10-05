@@ -136,12 +136,12 @@ The `PUBLISH` chain is sequential and fail-closed:
 5. read fresh LIVE catalogue state and allocate one random seven-digit new-publication ID from `metadata/id-policy.json`; the candidate must be absent from the LIVE catalogue and distinct from any other candidate already allocated in the same local publish batch before any mutation;
 6. freeze that activity/page ID, the ordered page count, SHA-256 and exact byte size of every validated print master, category and required catalogue metadata;
 7. fully materialize and locally validate the complete v1/v2 manifest;
-8. stage the exact prepared PNG(s), then the prebuilt manifest, to the approved Drive pending folder;
-9. run the trusted RPi5 verify/import path;
-10. run only the contract-required post-import proof;
-11. when all required proof passes, immediately report `PASS` and stop.
+8. before the first Drive write, select one Drive upload surface that can accept every locally prepared PNG plus the already-built manifest, then stage the exact prepared PNG(s) followed by the manifest through that same surface;
+9. run the trusted RPi5 verify/import operator once; RPi5-side `rclone` is Drive-to-RPi5 pull-only and is not a Chat staging upload path;
+10. let that trusted operator perform the contract-required post-import catalogue, derivative and public-HTTP proof internally;
+11. when the operator returns `COLORING_PAGES_DRIVE_INGEST=PASS`, treat it as terminal publication success, immediately report `PASS`, and stop.
 
-Do not run discretionary post-success diagnostics, repeated health checks, extra catalogue scans, Drive archive/delete, cleanup or unrelated runtime verification after the required proof is already complete.
+Do not switch Drive upload surfaces after the first mutation. A staging/file-handoff/tool error after mutation begins is a fail-closed STOP, not permission to try host-side `rclone`, a second uploader, overwrite, retry, rollback or cleanup. Do not run discretionary post-success diagnostics, repeated health checks, external/public HTTP rechecks, extra catalogue scans, Drive archive/delete, cleanup or unrelated runtime verification after trusted operator PASS.
 
 The category is selected from the canonical registry in `metadata/categories.json`. Current category IDs are:
 
@@ -207,11 +207,9 @@ ChatGPT:
 → validate and freeze exact SHA-256 + byte size
 → determine one allowed category
 → prebuild/validate manifest
-→ Drive staging
-→ RPi5 pull + SHA verification
-→ immutable import
-→ required public verification
-→ report PASS or STOP
+→ one preselected Drive staging upload surface for PNG(s) + manifest
+→ trusted RPi5 pull + SHA verification + immutable import + required public verification
+→ operator PASS is terminal: report PASS and stop
 ```
 
 If the image needs work before publication:

@@ -61,6 +61,10 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertTrue(staging["google_workspace_conversion_forbidden"])
         self.assertTrue(staging["exact_folder_id_binding_required_at_live"])
         self.assertTrue(staging["folder_name_is_not_authority"])
+        self.assertTrue(staging["upload_surface_selection_required_before_first_mutation"])
+        self.assertTrue(staging["single_upload_surface_per_publication"])
+        self.assertEqual(staging["upload_surface_must_accept"], ["prepared-png", "prebuilt-manifest"])
+        self.assertTrue(staging["host_rclone_upload_forbidden"])
         self.assertEqual(staging["publish_order"], ["image", "manifest"])
         self.assertTrue(staging["manifest_is_readiness_signal"])
         self.assertTrue(staging["exact_source_bytes_required"])
@@ -132,6 +136,8 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         host = self.contract["host_ingestion"]
         self.assertEqual(host["runtime_owner"], "rozkalnsandris/RPi5_main")
         self.assertEqual(host["transport_client"], "rclone")
+        self.assertEqual(host["transport_direction"], "drive-to-rpi5-pull-only")
+        self.assertFalse(host["host_rclone_upload_allowed"])
         self.assertTrue(host["credential_values_must_not_be_read_or_emitted"])
         self.assertFalse(host["fresh_pending_fast_list_allowed"])
         self.assertEqual(
@@ -171,9 +177,12 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
             self.contract["post_import_verification"]["web_origin"],
             "https://coloring.rozkalns.net",
         )
-        self.assertFalse(
-            self.contract["post_import_verification"]["application_restart_required"]
-        )
+        proof = self.contract["post_import_verification"]
+        self.assertTrue(proof["performed_by_trusted_host_operator"])
+        self.assertEqual(proof["operator_success_signal"], "COLORING_PAGES_DRIVE_INGEST=PASS")
+        self.assertTrue(proof["operator_pass_is_terminal_publication_success"])
+        self.assertFalse(proof["external_repeat_after_operator_pass"])
+        self.assertFalse(proof["application_restart_required"])
 
     def test_fail_closed_and_no_automatic_overwrite(self):
         self.assertFalse(self.contract["idempotency"]["automatic_overwrite"])

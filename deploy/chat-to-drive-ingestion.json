@@ -63,7 +63,14 @@
       "validate-manifest-locally",
       "upload-image",
       "upload-manifest"
-    ]
+    ],
+    "upload_surface_selection_required_before_first_mutation": true,
+    "single_upload_surface_per_publication": true,
+    "upload_surface_must_accept": [
+      "prepared-png",
+      "prebuilt-manifest"
+    ],
+    "host_rclone_upload_forbidden": true
   },
   "manifest": {
     "schema": "rozkalns.coloring-pages.drive-staging-manifest.v1",
@@ -132,7 +139,9 @@
     "inbox_publish": "atomic-rename-after-integrity-pass",
     "importer_contract_ref": "deploy/importer-runtime.json",
     "immutable_importer_image_digest_required_at_live": true,
-    "application_redeploy_required": false
+    "application_redeploy_required": false,
+    "transport_direction": "drive-to-rpi5-pull-only",
+    "host_rclone_upload_allowed": false
   },
   "idempotency": {
     "receipt_path": "/srv/coloring-pages-content/state/drive-ingest/<id>.receipt.json",
@@ -157,7 +166,11 @@
       "public-print-png-http-200"
     ],
     "web_origin": "https://coloring.rozkalns.net",
-    "application_restart_required": false
+    "application_restart_required": false,
+    "performed_by_trusted_host_operator": true,
+    "operator_success_signal": "COLORING_PAGES_DRIVE_INGEST=PASS",
+    "operator_pass_is_terminal_publication_success": true,
+    "external_repeat_after_operator_pass": false
   },
   "drive_post_success": {
     "archive_pair_to_processed_allowed_only_with_fresh_authority": true,
