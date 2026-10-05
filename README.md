@@ -14,12 +14,13 @@ Application source and media content are deliberately separated:
 Daily content flow:
 
 ```text
-generate PNG page(s) in ChatGPT
-→ UPSCALE-PRINT exact draft page(s) into A4 print-master PNGs
-→ VALIDATE-PRINT every print master
-→ owner PUBLISH approval of the exact validated page or ordered page set
+generate or edit PNG draft page(s) in ChatGPT
+→ owner PUBLISH approval of the exact latest draft or ordered draft set
+→ PUBLISH prepares every A4 print-master deterministically
+→ PUBLISH validates every prepared print master before mutation
 → determine one valid category from metadata/categories.json
-→ freeze every approved print-master SHA-256 + byte size
+→ allocate and freeze one random seven-digit activity ID
+→ freeze every prepared print-master SHA-256 + byte size
 → fully materialize + validate the manifest before any Drive write
 → stage exact PNG page(s), then the prebuilt manifest last in Google Drive
 → trusted RPi5 publish operator pulls and verifies every page
@@ -34,12 +35,12 @@ For normal ChatGPT use, the convenience command layer is:
 
 ```text
 MAKE <subject>   # generate one draft candidate
-REMAKE           # same subject, new composition; invalidates prior validation
-EDIT <change>    # edit latest draft; invalidates prior validation
-UPSCALE-PRINT     # CPU/Pillow white-clean + A4 print-master preparation
-VALIDATE-PRINT    # read-only exact print-master validation
-PUBLISH           # approve exact validated print master, bind category, ingest
+REMAKE           # same subject, new composition
+EDIT <change>    # edit latest draft
+PUBLISH           # approve latest draft/set; prepare, validate, bind and ingest
 ```
+
+`UPSCALE-PRINT` and `VALIDATE-PRINT` remain optional manual inspection/debug commands. They are not required owner steps in the normal publication path because `PUBLISH` performs both gates internally before any Drive/content mutation.
 
 See [Chat image commands v1](docs/CHAT_IMAGE_COMMANDS_V1.md). `PUBLISH` does not weaken the exact activity/page SHA-256/byte-size binding or any existing owner/runtime boundary. `OK` is not a publication command. Before Drive staging, one category must be bound from the canonical registry in `metadata/categories.json`; an unknown category is rejected rather than silently published outside the visible filters.
 
