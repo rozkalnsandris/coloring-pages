@@ -147,6 +147,22 @@ class ImportPageTests(unittest.TestCase):
             (self.content / "public/media/fire-pup-001/print.png").is_file()
         )
 
+    def test_landscape_source_is_accepted_and_preserved(self):
+        self.write_source(size=(1536, 1024))
+        original_bytes = self.source.read_bytes()
+
+        importer.import_page(self.source, self.content, self.metadata())
+
+        self.assertEqual(
+            (self.content / "originals/fire-pup-001/source.png").read_bytes(),
+            original_bytes,
+        )
+        media = self.content / "public/media/fire-pup-001"
+        with Image.open(media / "print.png") as print_image:
+            self.assertEqual(print_image.size, (1536, 1024))
+        with Image.open(media / "preview.webp") as preview:
+            self.assertGreater(preview.width, preview.height)
+
     def test_print_image_preserves_source_colors_and_alpha(self):
         image = Image.new("RGBA", (3, 1), color=(255, 255, 255, 255))
         image.putpixel((1, 0), (255, 32, 64, 255))
@@ -177,7 +193,7 @@ class ImportPageTests(unittest.TestCase):
 
     def test_invalid_aspect_rejected(self):
         Image.new("L", (1200, 1200), 255).save(self.source, format="PNG")
-        with self.assertRaisesRegex(importer.ImportError, "portrait orientation"):
+        with self.assertRaisesRegex(importer.ImportError, "portrait or landscape orientation"):
             importer.import_page(self.source, self.content, self.metadata())
 
     def test_too_narrow_portrait_ratio_rejected(self):
