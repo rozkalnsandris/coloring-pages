@@ -119,7 +119,7 @@ PASS requires:
 - approximately 300×300 DPI metadata;
 - exact `#FFFFFF` across the complete outer page border.
 
-The validator prints exact byte size and SHA-256. Any failure blocks `PUBLISH`. A later `EDIT` or `REMAKE` invalidates the PASS and requires a new `UPSCALE-PRINT → VALIDATE-PRINT` cycle.
+The validator prints exact byte size and SHA-256. A manual validation failure is diagnostic only and grants no publication authority; normal `PUBLISH` still prepares and validates fresh print master(s) itself. A later `EDIT` or `REMAKE` invalidates any earlier manual PASS, but no manual `UPSCALE-PRINT → VALIDATE-PRINT` rerun is required before `PUBLISH`.
 
 `OK` is intentionally not a publication command. It is treated only as a normal conversational acknowledgement so it cannot accidentally authorize content ingestion.
 
