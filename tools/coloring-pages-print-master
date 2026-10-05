@@ -11,10 +11,11 @@ from pathlib import Path
 from PIL import Image, ImageChops, ImageFilter, UnidentifiedImageError
 
 TARGET_SIZE = (2480, 3508)
+LANDSCAPE_TARGET_SIZE = (3508, 2480)
 TARGET_DPI = (300.0, 300.0)
 OUTER_WHITE_BORDER = 1
-MIN_SOURCE_WIDTH = 800
-MIN_SOURCE_HEIGHT = 1100
+MIN_SOURCE_SHORT_SIDE = 800
+MIN_SOURCE_LONG_SIDE = 1100
 MIN_SOURCE_RATIO = 2 / 3
 MAX_SOURCE_RATIO = 210 / 297 + 0.04
 PRE_WHITE_MIN = 245
@@ -59,16 +60,18 @@ def load_draft(path: Path) -> Image.Image:
             if source.format != "PNG":
                 raise PrintMasterError("draft must be PNG")
             width, height = source.size
-            if width < MIN_SOURCE_WIDTH or height < MIN_SOURCE_HEIGHT:
+            if width == height:
+                raise PrintMasterError("draft must use portrait or landscape orientation")
+            short_side = min(width, height)
+            long_side = max(width, height)
+            if short_side < MIN_SOURCE_SHORT_SIDE or long_side < MIN_SOURCE_LONG_SIDE:
                 raise PrintMasterError(
-                    f"draft is too small: {width}x{height}; minimum is "
-                    f"{MIN_SOURCE_WIDTH}x{MIN_SOURCE_HEIGHT}"
+                    f"draft is too small: {width}x{height}; minimum short/long sides are "
+                    f"{MIN_SOURCE_SHORT_SIDE}x{MIN_SOURCE_LONG_SIDE}"
                 )
-            if width >= height:
-                raise PrintMasterError("draft must be portrait")
-            ratio = width / height
+            ratio = short_side / long_side
             if not MIN_SOURCE_RATIO <= ratio <= MAX_SOURCE_RATIO:
-                raise PrintMasterError("draft must be approximately A4/2:3 portrait")
+                raise PrintMasterError("draft must be approximately A4/2:3 ratio")
             rgba = source.convert("RGBA")
     except UnidentifiedImageError as exc:
         raise PrintMasterError("draft is not a readable image") from exc
@@ -78,8 +81,12 @@ def load_draft(path: Path) -> Image.Image:
     return white.convert("RGB")
 
 
+def target_size_for(image: Image.Image) -> tuple[int, int]:
+    return LANDSCAPE_TARGET_SIZE if image.width > image.height else TARGET_SIZE
+
+
 def fit_a4(image: Image.Image) -> Image.Image:
-    target_width, target_height = TARGET_SIZE
+    target_width, target_height = target_size_for(image)
     inner_width = target_width - (2 * OUTER_WHITE_BORDER)
     inner_height = target_height - (2 * OUTER_WHITE_BORDER)
     if inner_width <= 0 or inner_height <= 0:
@@ -98,7 +105,7 @@ def fit_a4(image: Image.Image) -> Image.Image:
             threshold=SHARPEN_THRESHOLD,
         )
     )
-    canvas = Image.new("RGB", TARGET_SIZE, (255, 255, 255))
+    canvas = Image.new("RGB", (target_width, target_height), (255, 255, 255))
     offset = (
         (target_width - resized.width) // 2,
         (target_height - resized.height) // 2,
@@ -136,9 +143,11 @@ def validate_print_master(path: Path) -> dict[str, object]:
             image.load()
             if image.format != "PNG":
                 raise PrintMasterError("print master must be PNG")
-            if image.size != TARGET_SIZE:
+            if image.size not in {TARGET_SIZE, LANDSCAPE_TARGET_SIZE}:
                 raise PrintMasterError(
-                    f"print master must be {TARGET_SIZE[0]}x{TARGET_SIZE[1]}"
+                    "print master must be A4 portrait "
+                    f"{TARGET_SIZE[0]}x{TARGET_SIZE[1]} or landscape "
+                    f"{LANDSCAPE_TARGET_SIZE[0]}x{LANDSCAPE_TARGET_SIZE[1]}"
                 )
             if image.mode != "RGB":
                 raise PrintMasterError("print master must be RGB with no alpha")
@@ -151,8 +160,9 @@ def validate_print_master(path: Path) -> dict[str, object]:
         raise PrintMasterError("print master is not a readable image") from exc
 
     return {
-        "width": TARGET_SIZE[0],
-        "height": TARGET_SIZE[1],
+        "width": image.size[0],
+        "height": image.size[1],
+        "orientation": "landscape" if image.size[0] > image.size[1] else "portrait",
         "dpi_x": dpi[0],
         "dpi_y": dpi[1],
         "size_bytes": path.stat().st_size,
@@ -187,6 +197,7 @@ def print_result(prefix: str, path: Path, result: dict[str, object]) -> None:
     print(f"FILE={path}")
     print(f"WIDTH={result['width']}")
     print(f"HEIGHT={result['height']}")
+    print(f"ORIENTATION={result['orientation']}")
     print(f"DPI_X={result['dpi_x']:.3f}")
     print(f"DPI_Y={result['dpi_y']:.3f}")
     print(f"SIZE_BYTES={result['size_bytes']}")

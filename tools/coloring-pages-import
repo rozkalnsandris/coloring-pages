@@ -21,8 +21,8 @@ A4_HEIGHT_MM = 297
 A4_RATIO = A4_WIDTH_MM / A4_HEIGHT_MM
 MIN_SOURCE_RATIO = 2 / 3
 MAX_SOURCE_RATIO = A4_RATIO + 0.04
-MIN_SOURCE_WIDTH = 800
-MIN_SOURCE_HEIGHT = 1100
+MIN_SOURCE_SHORT_SIDE = 800
+MIN_SOURCE_LONG_SIDE = 1100
 MAX_ACTIVITY_PAGES = 12
 THUMB_MAX_WIDTH = 400
 PREVIEW_MAX_WIDTH = 1000
@@ -147,16 +147,19 @@ def open_validated_source(path: Path) -> Image.Image:
     except OSError as exc:
         raise ImportError(f"failed to decode source: {exc}") from exc
 
-    if image.width >= image.height:
-        raise ImportError("source must use portrait orientation")
-    if image.width < MIN_SOURCE_WIDTH or image.height < MIN_SOURCE_HEIGHT:
+    if image.width == image.height:
+        raise ImportError("source must use portrait or landscape orientation")
+    short_side = min(image.width, image.height)
+    long_side = max(image.width, image.height)
+    if short_side < MIN_SOURCE_SHORT_SIDE or long_side < MIN_SOURCE_LONG_SIDE:
         raise ImportError(
-            f"source must be at least {MIN_SOURCE_WIDTH}x{MIN_SOURCE_HEIGHT} pixels"
+            "source short/long sides must be at least "
+            f"{MIN_SOURCE_SHORT_SIDE}x{MIN_SOURCE_LONG_SIDE} pixels"
         )
-    ratio = image.width / image.height
+    ratio = short_side / long_side
     if not MIN_SOURCE_RATIO <= ratio <= MAX_SOURCE_RATIO:
         raise ImportError(
-            f"source must be approximately A4/2:3 portrait ratio; got {image.width}x{image.height}"
+            f"source must be approximately A4/2:3 ratio; got {image.width}x{image.height}"
         )
 
     corners = (
@@ -173,10 +176,12 @@ def open_validated_source(path: Path) -> Image.Image:
 
 def resized_copy(image: Image.Image, max_width: int) -> Image.Image:
     copy = image.copy()
-    copy.thumbnail(
-        (max_width, round(max_width / A4_RATIO)),
-        Image.Resampling.LANCZOS,
+    max_height = (
+        round(max_width * A4_RATIO)
+        if image.width > image.height
+        else round(max_width / A4_RATIO)
     )
+    copy.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
     return copy
 
 

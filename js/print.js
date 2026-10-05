@@ -23,8 +23,15 @@ function entryPrintPages(entry) {
   return typeof entry.print === "string" && entry.print ? [entry.print] : [];
 }
 
+function printOrientation(width, height) {
+  return width > height ? "landscape" : "portrait";
+}
+
 function a4CanvasSize(width, height) {
-  const a4Ratio = A4_PAGE_WIDTH_MM / A4_PAGE_HEIGHT_MM;
+  const landscape = printOrientation(width, height) === "landscape";
+  const pageWidth = landscape ? A4_PAGE_HEIGHT_MM : A4_PAGE_WIDTH_MM;
+  const pageHeight = landscape ? A4_PAGE_WIDTH_MM : A4_PAGE_HEIGHT_MM;
+  const a4Ratio = pageWidth / pageHeight;
   const sourceRatio = width / height;
 
   if (sourceRatio > a4Ratio) {
@@ -77,8 +84,12 @@ async function renderPrintImages(imageUrls) {
       throw new Error("print image has no dimensions");
     }
     const sheet = document.createElement("section");
-    sheet.className = "print-sheet";
-    sheet.setAttribute("aria-label", `A4-Druckseite ${index + 1} von ${images.length}`);
+    const orientation = printOrientation(image.naturalWidth, image.naturalHeight);
+    sheet.className = `print-sheet is-${orientation}`;
+    sheet.setAttribute(
+      "aria-label",
+      `A4-Druckseite ${index + 1} von ${images.length}`,
+    );
     sheet.append(renderImageToCanvas(image));
     return sheet;
   });

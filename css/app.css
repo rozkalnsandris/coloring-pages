@@ -536,7 +536,7 @@ a { color: inherit; }
   background: #f2f5f9;
 }
 .print-shell {
-  width: min(calc(100% - 32px), 794px);
+  width: min(calc(100% - 32px), 1123px);
   margin: 0 auto;
   padding: 24px 0 48px;
 }
@@ -573,13 +573,14 @@ a { color: inherit; }
   gap: 18px;
 }
 .print-sheet {
-  aspect-ratio: 210 / 297;
   display: grid;
   place-items: center;
   overflow: hidden;
   background: #fff;
   box-shadow: 0 12px 40px rgb(20 48 82 / 14%);
 }
+.print-sheet.is-portrait { aspect-ratio: 210 / 297; }
+.print-sheet.is-landscape { aspect-ratio: 297 / 210; }
 .print-sheet canvas {
   width: 100%;
   height: 100%;
@@ -603,8 +604,13 @@ a { color: inherit; }
 }
 
 @media print {
-  @page {
+  @page a4-portrait {
     size: A4 portrait;
+    margin: 0;
+  }
+
+  @page a4-landscape {
+    size: A4 landscape;
     margin: 0;
   }
 
@@ -613,7 +619,7 @@ a { color: inherit; }
   }
 
   .print-shell {
-    width: 210mm;
+    width: auto;
     margin: 0;
     padding: 0;
   }
@@ -629,10 +635,20 @@ a { color: inherit; }
   }
 
   .print-sheet {
-    width: 210mm;
-    height: 297mm;
     box-shadow: none;
     overflow: hidden;
+  }
+
+  .print-sheet.is-portrait {
+    page: a4-portrait;
+    width: 210mm;
+    height: 297mm;
+  }
+
+  .print-sheet.is-landscape {
+    page: a4-landscape;
+    width: 297mm;
+    height: 210mm;
   }
 
   .print-sheet:not(:last-child) {
@@ -640,8 +656,8 @@ a { color: inherit; }
   }
 
   .print-sheet canvas {
-    width: 210mm;
-    height: 297mm;
+    width: 100%;
+    height: 100%;
     object-fit: contain;
   }
 }
