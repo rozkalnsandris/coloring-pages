@@ -12,6 +12,7 @@ from PIL import Image, ImageChops, ImageFilter, UnidentifiedImageError
 
 TARGET_SIZE = (2480, 3508)
 TARGET_DPI = (300.0, 300.0)
+OUTER_WHITE_BORDER = 1
 MIN_SOURCE_WIDTH = 800
 MIN_SOURCE_HEIGHT = 1100
 MIN_SOURCE_RATIO = 2 / 3
@@ -79,7 +80,12 @@ def load_draft(path: Path) -> Image.Image:
 
 def fit_a4(image: Image.Image) -> Image.Image:
     target_width, target_height = TARGET_SIZE
-    scale = min(target_width / image.width, target_height / image.height)
+    inner_width = target_width - (2 * OUTER_WHITE_BORDER)
+    inner_height = target_height - (2 * OUTER_WHITE_BORDER)
+    if inner_width <= 0 or inner_height <= 0:
+        raise PrintMasterError("outer white border leaves no printable interior")
+
+    scale = min(inner_width / image.width, inner_height / image.height)
     resized_size = (
         max(1, round(image.width * scale)),
         max(1, round(image.height * scale)),
