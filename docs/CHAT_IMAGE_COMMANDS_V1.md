@@ -42,10 +42,10 @@ MAKE ugunsdzēsēju mašīna pie stacijas
 Default generation contract:
 
 - original illustration suitable for public project use;
-- output as PNG on an exact `1024×1536` pixel portrait (2:3) canvas;
-- `1024×1536` describes the whole page/canvas, not the subject dimensions;
-- when the image-generation surface exposes output-size/aspect-ratio controls, set the output size directly to `1024×1536` rather than relying only on prompt wording;
-- wide subjects such as cars, trains, buses or aircraft may be composed horizontally inside the portrait page; keep the complete subject visible, centered naturally, with comfortable white space and no cropping;
+- output as PNG on either an exact `1024×1536` portrait (2:3) canvas or exact `1536×1024` landscape (3:2) canvas;
+- the selected canonical dimensions describe the whole page/canvas, not the subject dimensions;
+- when the image-generation surface exposes output-size/aspect-ratio controls, set the selected canonical size directly rather than relying only on prompt wording;
+- choose orientation from the composition: portrait for tall/vertical layouts and landscape for naturally wide layouts such as many cars, trains, buses or aircraft; keep the complete subject visible, centered naturally, with comfortable white space and no cropping;
 - white/light page background;
 - preserve intentional color when the requested worksheet uses color; ordinary coloring pages default to black/high-contrast line art;
 - thick, clean contours where line art is used;
@@ -64,9 +64,9 @@ If the requested subject would require directly copying a protected branded char
 
 ### `REMAKE`
 
-Generate a new composition for the same subject using the same project art standard and the same exact `1024×1536` PNG portrait canvas.
+Generate a new composition for the same subject using the same project art standard and preserve the current canonical portrait/landscape canvas unless the owner requests an orientation change.
 
-The subject itself does not need to be vertical. A wide vehicle or other horizontal subject should remain horizontally composed inside the portrait page rather than forcing the subject into a vertical pose.
+A wide vehicle or other horizontal composition should normally use the exact `1536×1024` landscape canvas; a vertical composition uses `1024×1536` portrait.
 
 `REMAKE` does not approve or publish either the old or new image.
 
@@ -82,7 +82,7 @@ EDIT resnākas kontūras
 EDIT noņem mākoni labajā augšējā stūrī
 ```
 
-The edited result becomes the latest draft candidate. Request the edited output on the same exact `1024×1536` PNG portrait canvas; do not use automatic output sizing. `EDIT` is not publication approval and invalidates any earlier manually prepared/validated print master.
+The edited result becomes the latest draft candidate. Preserve its current exact `1024×1536` portrait or `1536×1024` landscape canvas unless the owner requests an orientation change; do not use automatic output sizing. `EDIT` is not publication approval and invalidates any earlier manually prepared/validated print master.
 
 `REMAKE` likewise invalidates any earlier manually prepared/validated print master for the affected page/set. A later `PUBLISH` always prepares and validates fresh print master(s) from the exact latest draft/set.
 
@@ -96,7 +96,7 @@ Use `tools/coloring-pages-print-master prepare <draft.png> <print-master.png>` o
 - composites transparency onto white;
 - normalizes near-neutral bright AI whites to exact `#FFFFFF`;
 - preserves source aspect ratio;
-- centers the resized artwork on an exact `2480×3508` white A4 canvas;
+- centers the resized artwork on an exact `2480×3508` portrait or `3508×2480` landscape white A4 canvas, matching the draft orientation;
 - uses Pillow `Resampling.LANCZOS`;
 - applies the reviewed conservative `UnsharpMask(radius=0.45, percent=35, threshold=3)`;
 - performs a final near-white normalization after resampling;
@@ -114,7 +114,7 @@ This command is optional. Read-only validate the latest manually prepared print 
 PASS requires:
 
 - PNG;
-- exact `2480×3508` geometry;
+- exact `2480×3508` portrait or `3508×2480` landscape geometry;
 - RGB/no alpha;
 - approximately 300×300 DPI metadata;
 - exact `#FFFFFF` across the complete outer page border.
