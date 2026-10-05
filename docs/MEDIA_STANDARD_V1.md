@@ -128,6 +128,33 @@ Issue #74 applies this rule to the already-regenerated `farben-zuordnen-001` byt
 
 The correction helper and its exact contract are embedded in the application image, but changes to those helper/contract paths do not independently trigger SIMPLE-DEPLOY. Releasing a reviewed helper revision therefore uses an existing approved application-image input such as a meaningful `Dockerfile` change; the SIMPLE-DEPLOY path allowlist is not broadened for one-off correction tooling.
 
+## Historical legacy print-scale migration
+
+A bounded one-off migration may upgrade already-published historical **public print derivatives** that still use pre-A4 raster geometry without rewriting private source artwork or any existing immutable media.
+
+Canonical source contract:
+
+`deploy/legacy-print-scale-migration-v1.json`
+
+Migration helper:
+
+`tools/coloring-pages-migrate-legacy-print-scale`
+
+The migration is deliberately narrower than a normal re-import:
+
+- only the exact source page IDs, source filenames, source SHA-256 values and byte sizes frozen in the reviewed contract are eligible;
+- each source is processed through the same deterministic `coloring-pages-print-master` preparation logic used by current publication;
+- the generated print must validate as exact `2480×3508`, RGB/no alpha, approximately 300 DPI and exact-white outer border;
+- the private `originals/<id>/source*.png` bytes remain unchanged;
+- the existing public print PNG remains unchanged;
+- the new print is written once under a full-SHA-256 content-addressed `*-a4-<sha256>.png` filename;
+- thumbnails and previews remain unchanged;
+- catalog order and unrelated records are preserved;
+- only the target print URL changes (and for multi-page page 1, the compatible top-level `print` field changes with `pages[0].print`);
+- no delete or overwrite is allowed.
+
+The helper has two phases. `--plan` performs no production write: it regenerates every candidate in memory, validates the outputs, freezes the source/current-print/new-print identities and emits one canonical `PLAN_SHA256`. `--apply --expected-plan-sha256 <sha>` is allowed only after a fresh owner LIVE authorization bound to that exact plan. Apply runs under the shared content lock, re-computes the same plan, writes all new immutable print files exclusively and atomically switches the catalog only after every new file has been written. After the first persistent write, any error is a STOP with no automatic retry, rollback, cleanup or alternate mutation path.
+
 ## Multi-page activities
 
 A catalogue item may contain one or more ordered A4-like PNG pages.
