@@ -1,0 +1,175 @@
+{
+  "schema": "rozkalns.coloring-pages.legacy-print-scale-migration.v1",
+  "repository": "rozkalnsandris/coloring-pages",
+  "status": "source-defined-live-apply-owner-gated",
+  "purpose": "Migrate only historical public print derivatives that still use pre-A4 raster geometry to deterministic 2480x3508 A4 print masters without overwriting private originals or existing immutable media.",
+  "target_standard": {
+    "width": 2480,
+    "height": 3508,
+    "dpi": 300,
+    "mode": "RGB",
+    "outer_border": "#FFFFFF",
+    "preparation_tool": "/usr/local/bin/coloring-pages-print-master"
+  },
+  "runtime": {
+    "content_root": "/srv/coloring-pages-content",
+    "shared_lock": "state/drive-ingest/.lock",
+    "migration_entrypoint": "/usr/local/bin/coloring-pages-migrate-legacy-print-scale"
+  },
+  "targets": [
+    {
+      "id": "kuerbis-gesicht-001",
+      "page_index": 1,
+      "source_file": "source-1.png",
+      "source_sha256": "8ac35ec101a49173581bd967075d162446d6235e8cd3451a2e4c1b2ea4a98b15",
+      "source_size_bytes": 1083843,
+      "current_print": "/media/kuerbis-gesicht-001/print-1.png"
+    },
+    {
+      "id": "kuerbis-gesicht-001",
+      "page_index": 2,
+      "source_file": "source-2.png",
+      "source_sha256": "f5daa207686e4b97a751236df7ba1c4f36c27560f66dc6906f382c4c9b4a42ca",
+      "source_size_bytes": 1467574,
+      "current_print": "/media/kuerbis-gesicht-001/print-2.png"
+    },
+    {
+      "id": "block-figur-001",
+      "page_index": 1,
+      "source_file": "source.png",
+      "source_sha256": "b7c798491f784f7136853cfb9853c575d25727356e9ce1b855b2d6a70a7d4d3b",
+      "source_size_bytes": 813774,
+      "current_print": "/media/block-figur-001/print.png"
+    },
+    {
+      "id": "farben-zuordnen-001",
+      "page_index": 1,
+      "source_file": "source.png",
+      "source_sha256": "8d8659b73112e879230322b3a356bfa15df3d627b59ab21861c6b8d8b4a5bf24",
+      "source_size_bytes": 1044537,
+      "current_print": "/media/farben-zuordnen-001/print.png"
+    },
+    {
+      "id": "halloween-geist-001",
+      "page_index": 1,
+      "source_file": "source.png",
+      "source_sha256": "16a543691c49582ffd11a84732f1e544a25706e4db11c331ac2f0acd4841622f",
+      "source_size_bytes": 1080029,
+      "current_print": "/media/halloween-geist-001/print.png"
+    },
+    {
+      "id": "halloween-kuerbis-geist-002",
+      "page_index": 1,
+      "source_file": "source.png",
+      "source_sha256": "5fc09d2d7b874a70087008a68d1af596f8770bc4b8af9f8e149a4b9f14ddc77e",
+      "source_size_bytes": 1254887,
+      "current_print": "/media/halloween-kuerbis-geist-002/print.png"
+    },
+    {
+      "id": "halloween-hexe-001",
+      "page_index": 1,
+      "source_file": "source.png",
+      "source_sha256": "e77a5704103a60b929c8556c060cc44e9c1a5a8e40e6fa7737d20bf1a37405bf",
+      "source_size_bytes": 1336149,
+      "current_print": "/media/halloween-hexe-001/print.png"
+    },
+    {
+      "id": "herbst-kaetzchen-001",
+      "page_index": 1,
+      "source_file": "source.png",
+      "source_sha256": "0df346952bbc440e958ec8dd9d37d18b2ac7c955596f62f36ba7181d2156525f",
+      "source_size_bytes": 1393268,
+      "current_print": "/media/herbst-kaetzchen-001/print.png"
+    },
+    {
+      "id": "halloween-fledermaus-001",
+      "page_index": 1,
+      "source_file": "source.png",
+      "source_sha256": "572c536c58368fcd3e0489c9877307ca10ca27189132313dde0c2959c378aa29",
+      "source_size_bytes": 1066230,
+      "current_print": "/media/halloween-fledermaus-001/print.png"
+    },
+    {
+      "id": "halloween-001",
+      "page_index": 1,
+      "source_file": "source.png",
+      "source_sha256": "3027dd89a0e1c9ef5821988a3ddc42cd5382679a69549da36b64781fd0638fe7",
+      "source_size_bytes": 1690593,
+      "current_print": "/media/halloween-001/print.png"
+    },
+    {
+      "id": "halloween-kuerbis-001",
+      "page_index": 1,
+      "source_file": "source.png",
+      "source_sha256": "a1b861800317b9bf0826eca3a9e76fdc185ecf056776ca7af00d42340ccd5c5f",
+      "source_size_bytes": 1201928,
+      "current_print": "/media/halloween-kuerbis-001/print.png"
+    },
+    {
+      "id": "figuren-001",
+      "page_index": 1,
+      "source_file": "source.png",
+      "source_sha256": "f36c8c738ad609706964bbeb55734d72efdc3d109a1e9f04e096cffcfb54e19e",
+      "source_size_bytes": 1391955,
+      "current_print": "/media/figuren-001/print.png"
+    },
+    {
+      "id": "dino-001",
+      "page_index": 1,
+      "source_file": "source.png",
+      "source_sha256": "88306b43e067bc0df2de007f31f5eee8ddea650b5adcc835ab52ae478c8645b7",
+      "source_size_bytes": 1201129,
+      "current_print": "/media/dino-001/print.png"
+    },
+    {
+      "id": "lapsa-003",
+      "page_index": 1,
+      "source_file": "source.png",
+      "source_sha256": "8de0dda0930a25f1f987ca7381ac65e1351a5a3476d44be667d09e7c3654d3ad",
+      "source_size_bytes": 1178785,
+      "current_print": "/media/lapsa-003/print.png"
+    },
+    {
+      "id": "lapsa-001",
+      "page_index": 1,
+      "source_file": "source.png",
+      "source_sha256": "681e4967d07d1e691a68e6c63e2ab0fe0fee7dcdd9a813caf6f6ba28369b3e63",
+      "source_size_bytes": 1275323,
+      "current_print": "/media/lapsa-001/print.png"
+    },
+    {
+      "id": "bauarbeiter-hund-001",
+      "page_index": 1,
+      "source_file": "source.png",
+      "source_sha256": "d3162381a26ba47d847d28f6dc6349efa003f69807f4e902f8d116634130e8df",
+      "source_size_bytes": 1258789,
+      "current_print": "/media/bauarbeiter-hund-001/print.png"
+    }
+  ],
+  "mutation": {
+    "private_sources_immutable": true,
+    "existing_media_immutable": true,
+    "new_print_strategy": "full-sha256-content-addressed-filename",
+    "catalog_preserve_order": true,
+    "allowed_catalog_changes": [
+      "single-page:print",
+      "multi-page:pages[index-1].print",
+      "multi-page-page1:top-level-print"
+    ],
+    "thumb_and_preview_unchanged": true,
+    "delete_allowed": false,
+    "overwrite_allowed": false
+  },
+  "workflow": {
+    "plan": "generate all 16 A4 print outputs in temporary storage, validate them, bind exact output SHA-256/size/URL and target current-print baselines, emit one canonical plan SHA-256, no production write",
+    "apply": "under shared lock, recompute exact plan, require owner-bound plan SHA-256, write all new content-addressed print files exclusively, then atomically switch only target catalog print fields",
+    "unrelated_new_catalog_entries": "preserve"
+  },
+  "failure": {
+    "retry": false,
+    "rollback": false,
+    "cleanup": false,
+    "alternate_mutation_path": false,
+    "after_first_persistent_write": "STOP"
+  }
+}
