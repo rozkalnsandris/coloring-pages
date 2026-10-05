@@ -9,9 +9,9 @@ Keep new coloring-page publication simple and repeatable while preserving the ge
 Required:
 
 - PNG format
-- portrait orientation
-- A4-like portrait ratio: native A4 (`210:297`) and standard generator `2:3` portrait output are accepted
-- minimum safe source geometry: 800 px wide and 1100 px high
+- portrait or landscape orientation
+- A4-like ratio in either orientation: native A4 (`210:297` / `297:210`) and standard generator `2:3` / `3:2` outputs are accepted
+- minimum safe source geometry: short side at least 800 px and long side at least 1100 px
 - white/light page background
 - preserve intentional source colors; ordinary coloring pages may use black/high-contrast line art, while learning worksheets may use color
 - thick, clean contours where line art is used
@@ -21,7 +21,7 @@ Required:
 - no JPEG input
 - primary age target: 3–6
 
-The importer validates file type, portrait geometry, A4-like ratio, minimum geometry and light page corners. The accepted width/height ratio starts at `2/3` (so `1024×1536` is explicitly valid); the upper bound remains the prior A4-side tolerance of `210/297 + 0.04`. This keeps common generated `2:3` pages inside the contract without widening the gate on the opposite side. It accepts production inputs only as direct children of the pre-created content-store `inbox/`. Visual/editorial properties such as clean outlines and lack of unwanted shading remain content-review requirements.
+The importer validates file type, portrait/landscape geometry, A4-like ratio, minimum geometry and light page corners. Ratio validation is orientation-neutral: it compares the short side with the long side. The accepted short/long ratio starts at `2/3` (so both `1024×1536` and `1536×1024` are explicitly valid); the upper bound remains the A4-side tolerance of `210/297 + 0.04`. It accepts production inputs only as direct children of the pre-created content-store `inbox/`. Visual/editorial properties such as clean outlines and lack of unwanted shading remain content-review requirements.
 
 ## Chat publication print master
 
@@ -39,7 +39,7 @@ MAKE / REMAKE / EDIT
 The prepared publication master must be:
 
 - PNG;
-- exact `2480×3508` A4 raster;
+- exact `2480×3508` portrait or `3508×2480` landscape A4 raster, matching source orientation;
 - RGB with no alpha;
 - approximately 300×300 DPI metadata;
 - exact `#FFFFFF` around the complete outer page border;
@@ -59,9 +59,9 @@ The importer remains backward-compatible with the broader geometry above and doe
 
 The source PNG is preserved byte-for-byte and is the canonical print artwork.
 
-The importer itself does **not** require vector tracing, AI/GPU upscale or host-side enlargement. For the Chat publication path, `PUBLISH` derives and validates the owner-approved `2480×3508` PNG print master before any content mutation. The lower-resolution `1024×1536` generation draft is an authoring input, not the production source master.
+The importer itself does **not** require vector tracing, AI/GPU upscale or host-side enlargement. For the Chat publication path, `PUBLISH` derives and validates the owner-approved `2480×3508` portrait or `3508×2480` landscape PNG print master before any content mutation. The lower-resolution `1024×1536` / `1536×1024` generation draft is an authoring input, not the production source master.
 
-The validated print-master PNG remains the preserved source master and the catalogue `print` PNG is the canonical browser print/download source. A minimal hidden HTML print document loads that PNG into a canvas, preserves its original pixel colors, centers it on A4 portrait geometry, uses CSS `@page { size: A4 portrait; margin: 0; }`, and calls `window.print()`. The detail page downloads the same `print.png` directly.
+The validated print-master PNG remains the preserved source master and the catalogue `print` PNG is the canonical browser print/download source. A minimal hidden HTML print document loads that PNG into a canvas, preserves its original pixel colors, infers portrait/landscape from its dimensions, assigns the matching named CSS page, and prints it as A4 portrait or A4 landscape before calling `window.print()`. The detail page downloads the same `print.png` directly.
 
 ## Derivatives
 
@@ -187,4 +187,4 @@ public/media/<id>/print-2.png
 
 The thumbnail always comes from page 1. The catalogue keeps top-level `preview` and `print` pointing to page 1 for backward compatibility and adds an ordered `pages` array for multi-page-aware clients. The importer accepts at most 12 pages per activity and validates every page before publication.
 
-The browser print document creates one A4 print sheet per `pages[]` item. CSS Paged Media fixes each sheet to A4 portrait and CSS Fragmentation uses `break-after: page` between sheets, so one `window.print()` action opens the normal browser/system print flow for the complete activity without introducing a PDF viewer.
+The browser print document creates one A4 print sheet per `pages[]` item. Each sheet infers orientation from its print PNG and selects a named `@page` rule for A4 portrait or A4 landscape; CSS Fragmentation uses `break-after: page` between sheets. Mixed-orientation multi-page activities therefore remain printable through one normal browser/system `window.print()` flow without introducing a PDF viewer.
