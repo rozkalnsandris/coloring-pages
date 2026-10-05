@@ -62,6 +62,34 @@ class PrintMasterTests(unittest.TestCase):
         self.assertIn("HEIGHT=3508", validated.stdout)
         self.assertIn("SHA256=", validated.stdout)
 
+    def test_prepare_accepts_landscape_and_creates_landscape_a4_master(self):
+        source = self.root / "landscape.png"
+        output = self.root / "landscape-print.png"
+
+        image = Image.new("RGB", (1536, 1024), "white")
+        draw = ImageDraw.Draw(image)
+        draw.rounded_rectangle((240, 180, 1296, 844), radius=100, fill=(40, 120, 220))
+        image.save(source, format="PNG")
+
+        result = self.run_tool("prepare", source, output)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("UPSCALE_PRINT=PASS", result.stdout)
+        self.assertIn("WIDTH=3508", result.stdout)
+        self.assertIn("HEIGHT=2480", result.stdout)
+        self.assertIn("ORIENTATION=landscape", result.stdout)
+
+        with Image.open(output) as prepared:
+            prepared.load()
+            self.assertEqual(prepared.size, (3508, 2480))
+            self.assertEqual(prepared.mode, "RGB")
+            self.assertEqual(prepared.getpixel((0, 0)), (255, 255, 255))
+            self.assertEqual(prepared.getpixel((3507, 2479)), (255, 255, 255))
+
+        validated = self.run_tool("validate", output)
+        self.assertEqual(validated.returncode, 0, validated.stderr)
+        self.assertIn("VALIDATE_PRINT=PASS", validated.stdout)
+        self.assertIn("ORIENTATION=landscape", validated.stdout)
+
     def test_prepare_reserves_white_border_when_source_art_reaches_page_edge(self):
         source = self.root / "edge-art.png"
         output = self.root / "edge-art-print.png"
