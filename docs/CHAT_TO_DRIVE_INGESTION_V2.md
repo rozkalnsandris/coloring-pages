@@ -2,7 +2,7 @@
 
 ## Status
 
-This contract is in **production repin pending LIVE install** state for activities with 2–12 ordered PNG pages. The transport design remains activated, but new `PUBLISH` execution is paused until the reviewed host operator repin is installed and verified.
+This is a **production-activated** extension for activities with 2–12 ordered PNG pages. The reviewed host operator repin for canonical newest-first catalogue order was installed and verified on 2026-10-05.
 
 The existing single-page production path remains unchanged and continues to use:
 
@@ -10,7 +10,7 @@ The existing single-page production path remains unchanged and continues to use:
 - manifest schema `rozkalns.coloring-pages.drive-staging-manifest.v1`;
 - one staged `<id>.png` plus `<id>.json`.
 
-The currently verified installed host operator remains the earlier blob `5d6821ad42c8c9d887a03606279e6c70745a993f` (`root:root:755`) from `RPi5_main@dc6b784bba471731ff060ece207e06d67cda16d3`, which pins the older importer image `sha256:09822c1ceed359e0365c0e647763c6f1d8b31fb4f4ab564d7959c383709034b2`. Reviewed source for the required repin is merged at `RPi5_main@7e3e6b6d6574c1dc5199618dbb974b1fae83eaf5`; its target operator blob is `399df72159479c405166d011f140a967bdb749a5` and it pins importer image `sha256:53801684e0ce5a30d195d3436220a71b350112fc6e6fdc6fe107779d13c857ba`. Until that exact operator is installed and verified on the trusted host, `PUBLISH` must stop before any Drive/content mutation. After activation, every activity still requires fresh owner `PUBLISH` approval of the exact latest ordered draft set.
+The trusted host implementation now runs `RPi5_main@7e3e6b6d6574c1dc5199618dbb974b1fae83eaf5`. The verified installed `/usr/local/bin/coloring-pages-drive-ingest` blob is `399df72159479c405166d011f140a967bdb749a5` (`root:root:755`) and pins importer image `ghcr.io/rozkalnsandris/coloring-pages@sha256:53801684e0ce5a30d195d3436220a71b350112fc6e6fdc6fe107779d13c857ba`. This restores normal v1/v2 `PUBLISH` eligibility while preserving the existing rule that every activity requires fresh owner approval of the exact latest draft or ordered draft set.
 
 ## Simple model
 
@@ -83,9 +83,9 @@ After the first authorized mutation, any error is STOP. There is no automatic re
 
 After the importer and every contract-required post-import verification item PASS, publication is complete: immediately report `PASS` and stop. Do not continue with discretionary diagnostics, repeated verification, Drive archive/delete, cleanup or unrelated runtime work.
 
-## Repin transition
+## Repin activation
 
-The original v2 activation evidence below remains historical. A later catalogue-order fix changed the importer contract to canonical newest-first order, so the host publish operator now requires a separate owner-authorized LIVE install of the reviewed repin before publication resumes.
+The catalogue-order fix changed the importer contract to canonical newest-first order. The reviewed host repin was installed on 2026-10-05 with exact operator blob `399df72159479c405166d011f140a967bdb749a5`; the installer reported no state/lock creation, no rclone configuration change, no sudoers change, no rclone execution, no content import and no systemd change.
 
 ## Activation record
 
@@ -97,4 +97,4 @@ Production activation was completed on 2026-10-04 after:
 - an installed-operator non-production v2 canary passed for two ordered page identities and rejected a deliberately mismatched page SHA-256;
 - the canary executed no `rclone`, Docker/import or production-content mutation.
 
-Single-page v1 remains backward compatible at the schema level, but the shared installed publish operator is temporarily gated by the same repin requirement. No v1 or v2 `PUBLISH` should proceed until the target operator blob is installed and verified.
+Single-page v1 remains active and backward compatible. Multi-page v2 publication is active through the same owner-gated `PUBLISH` trust boundary, now using the repinned newest-first importer image.
