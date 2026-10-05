@@ -62,6 +62,51 @@ class PrintMasterTests(unittest.TestCase):
         self.assertIn("HEIGHT=3508", validated.stdout)
         self.assertIn("SHA256=", validated.stdout)
 
+    def test_prepare_reserves_white_border_when_source_art_reaches_page_edge(self):
+        source = self.root / "edge-art.png"
+        output = self.root / "edge-art-print.png"
+
+        image = Image.new("RGB", (1055, 1491), "white")
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((0, 100, 14, 1390), fill="black")
+        draw.rectangle((1040, 100, 1054, 1390), fill="black")
+        image.save(source, format="PNG")
+
+        result = self.run_tool("prepare", source, output)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+        with Image.open(output) as prepared:
+            prepared.load()
+            self.assertEqual(prepared.size, (2480, 3508))
+            self.assertEqual(prepared.mode, "RGB")
+            width, height = prepared.size
+            self.assertTrue(
+                all(prepared.getpixel((x, 0)) == (255, 255, 255) for x in range(width))
+            )
+            self.assertTrue(
+                all(
+                    prepared.getpixel((x, height - 1)) == (255, 255, 255)
+                    for x in range(width)
+                )
+            )
+            self.assertTrue(
+                all(prepared.getpixel((0, y)) == (255, 255, 255) for y in range(height))
+            )
+            self.assertTrue(
+                all(
+                    prepared.getpixel((width - 1, y)) == (255, 255, 255)
+                    for y in range(height)
+                )
+            )
+            self.assertNotEqual(
+                prepared.getpixel((1, height // 2)),
+                (255, 255, 255),
+            )
+
+        validated = self.run_tool("validate", output)
+        self.assertEqual(validated.returncode, 0, validated.stderr)
+        self.assertIn("VALIDATE_PRINT=PASS", validated.stdout)
+
     def test_validate_rejects_off_white_outer_border(self):
         path = self.root / "bad-border.png"
         Image.new("RGB", (2480, 3508), (254, 254, 254)).save(

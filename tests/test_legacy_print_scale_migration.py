@@ -1,4 +1,5 @@
 import hashlib
+import io
 import importlib.machinery
 import importlib.util
 import json
@@ -183,6 +184,50 @@ class LegacyPrintScaleMigrationTests(unittest.TestCase):
             self.assertFalse(
                 migration.public_path(self.content, item["new_print"]).exists()
             )
+
+    def test_plan_handles_edge_touching_legacy_art_with_exact_white_border(self):
+        source = self.content / "originals/single-001/source.png"
+        image = Image.new("RGB", (1055, 1491), "white")
+        for y in range(100, 1391):
+            for x in range(0, 15):
+                image.putpixel((x, y), (0, 0, 0))
+        image.save(source, format="PNG")
+
+        target = self.contract["targets"][0]
+        target["source_sha256"] = sha256(source)
+        target["source_size_bytes"] = source.stat().st_size
+
+        current_print = self.content / "public/media/single-001/print.png"
+        image.save(current_print, format="PNG")
+
+        plan, bodies, _ = migration.build_plan(self.content, self.contract)
+        item = next(
+            target
+            for target in plan["targets"]
+            if target["id"] == "single-001" and target["page_index"] == 1
+        )
+        body = bodies[("single-001", 1)]
+
+        with Image.open(io.BytesIO(body)) as prepared:
+            prepared.load()
+            self.assertEqual(prepared.size, (2480, 3508))
+            self.assertEqual(prepared.mode, "RGB")
+            width, height = prepared.size
+            self.assertTrue(
+                all(prepared.getpixel((x, 0)) == (255, 255, 255) for x in range(width))
+            )
+            self.assertTrue(
+                all(prepared.getpixel((0, y)) == (255, 255, 255) for y in range(height))
+            )
+            self.assertNotEqual(
+                prepared.getpixel((1, height // 2)),
+                (255, 255, 255),
+            )
+
+        self.assertEqual(item["width"], 2480)
+        self.assertEqual(item["height"], 3508)
+        self.assertAlmostEqual(item["dpi_x"], 300.0, delta=1.0)
+        self.assertAlmostEqual(item["dpi_y"], 300.0, delta=1.0)
 
     def test_apply_preserves_sources_old_media_order_and_unrelated_entry(self):
         plan, _, _ = migration.build_plan(self.content, self.contract)
