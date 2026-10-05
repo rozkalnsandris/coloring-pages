@@ -96,7 +96,7 @@ Use `tools/coloring-pages-print-master prepare <draft.png> <print-master.png>` o
 - composites transparency onto white;
 - normalizes near-neutral bright AI whites to exact `#FFFFFF`;
 - preserves source aspect ratio;
-- centers the resized artwork on an exact `2480×3508` portrait or `3508×2480` landscape white A4 canvas, matching the draft orientation;
+- reserves a 15 mm exact-white artwork-safe margin from every A4 edge (177 px at 300 DPI), then centers the resized artwork on an exact `2480×3508` portrait or `3508×2480` landscape white A4 canvas, matching the draft orientation;
 - uses Pillow `Resampling.LANCZOS`;
 - applies the reviewed conservative `UnsharpMask(radius=0.45, percent=35, threshold=3)`;
 - performs a final near-white normalization after resampling;
@@ -115,6 +115,7 @@ PASS requires:
 
 - PNG;
 - exact `2480×3508` portrait or `3508×2480` landscape geometry;
+- complete 15 mm exact-white artwork-safe bands on every page edge;
 - RGB/no alpha;
 - approximately 300×300 DPI metadata;
 - exact `#FFFFFF` across the complete outer page border.

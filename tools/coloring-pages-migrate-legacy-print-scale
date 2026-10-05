@@ -197,7 +197,10 @@ def generate_master_bytes(source: Path, print_master) -> tuple[bytes, dict[str, 
             minimum=print_master.PRE_WHITE_MIN,
             max_spread=print_master.PRE_WHITE_SPREAD,
         )
-        canvas = print_master.fit_a4(cleaned)
+        canvas = print_master.fit_a4(
+            cleaned,
+            artwork_margin_px=print_master.OUTER_WHITE_BORDER,
+        )
         canvas = print_master.normalize_neutral_white(
             canvas,
             minimum=print_master.POST_WHITE_MIN,

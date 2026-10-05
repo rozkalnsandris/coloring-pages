@@ -221,7 +221,11 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn("A4_PAGE_WIDTH_MM = 210", print_js)
         self.assertIn("A4_PAGE_HEIGHT_MM = 297", print_js)
         self.assertIn("function printOrientation(width, height)", print_js)
+        self.assertIn("function isCanonicalA4Raster(width, height)", print_js)
         self.assertIn("function a4CanvasSize(width, height)", print_js)
+        self.assertIn("width === 2480 && height === 3508", print_js)
+        self.assertIn("width === 3508 && height === 2480", print_js)
+        self.assertIn("if (isCanonicalA4Raster(width, height))", print_js)
         self.assertIn('return width > height ? "landscape" : "portrait"', print_js)
         self.assertIn('sheet.className = `print-sheet is-${orientation}`', print_js)
         self.assertIn("Math.ceil(width / a4Ratio)", print_js)
@@ -262,6 +266,15 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn("size: A4 landscape", css)
         self.assertIn("page: a4-portrait", css)
         self.assertIn("page: a4-landscape", css)
+
+    def test_legacy_print_scale_keeps_historical_one_pixel_fit(self):
+        migration = (
+            ROOT / "tools/coloring-pages-migrate-legacy-print-scale"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            "artwork_margin_px=print_master.OUTER_WHITE_BORDER",
+            migration,
+        )
 
     def test_frontend_fetches_runtime_catalog(self):
         for path in ("js/app.js", "js/detail.js", "js/print.js"):
