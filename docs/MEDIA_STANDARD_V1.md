@@ -43,6 +43,7 @@ The prepared publication master must be:
 - RGB with no alpha;
 - approximately 300×300 DPI metadata;
 - exact `#FFFFFF` around the complete outer page border;
+- a reserved 1 px exact-white safety ring: artwork is proportionally fitted inside the `2478×3506` interior before centering, so edge-touching source art cannot occupy or contaminate the outermost A4 pixels;
 - aspect-ratio-preserving artwork centered on the A4 canvas;
 - near-neutral white AI noise normalized to exact white;
 - resized with Pillow `Resampling.LANCZOS`;
@@ -139,6 +140,8 @@ Canonical source contract:
 Migration helper:
 
 `tools/coloring-pages-migrate-legacy-print-scale`
+
+The migration is deliberately narrower than a normal re-import. The shared print-master helper reserves the same 1 px exact-white safety ring before fitting historical artwork, rather than painting over artwork after resizing; validation still requires the complete outer ring to be exact `#FFFFFF`.
 
 The migration is deliberately narrower than a normal re-import:
 
