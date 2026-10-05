@@ -110,6 +110,10 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
             "all-pages-in-ascending-index-then-manifest",
         )
         self.assertTrue(staging["manifest_is_readiness_signal"])
+        self.assertTrue(staging["upload_surface_selection_required_before_first_mutation"])
+        self.assertTrue(staging["single_upload_surface_per_publication"])
+        self.assertEqual(staging["upload_surface_must_accept"], ["prepared-png-pages", "prebuilt-manifest"])
+        self.assertTrue(staging["host_rclone_upload_forbidden"])
         self.assertTrue(staging["all_page_bytes_and_manifest_must_exist_before_first_mutation"])
         self.assertTrue(staging["all_page_sha256_and_size_must_be_frozen_before_first_mutation"])
         self.assertTrue(staging["manifest_validation_required_before_first_mutation"])
@@ -117,12 +121,21 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
     def test_host_contract_verifies_every_page_before_inbox_publish(self):
         host = self.v2["host_ingestion"]
         self.assertEqual(host["runtime_owner"], "rozkalnsandris/RPi5_main")
+        self.assertEqual(host["transport_direction"], "drive-to-rpi5-pull-only")
+        self.assertFalse(host["host_rclone_upload_allowed"])
         self.assertIn("sha256", host["verify_all_pages_before_first_inbox_publish"])
         self.assertIn("size-bytes", host["verify_all_pages_before_first_inbox_publish"])
         self.assertIn("contiguous-page-indexes", host["verify_all_pages_before_first_inbox_publish"])
         self.assertEqual(host["importer_invocation_order"], "ascending-page-index")
         self.assertTrue(host["importer_requires_id_argument"])
         self.assertFalse(host["application_redeploy_required"])
+
+    def test_operator_pass_is_terminal_publication_proof(self):
+        proof = self.v2["post_import_verification"]
+        self.assertTrue(proof["performed_by_trusted_host_operator"])
+        self.assertEqual(proof["operator_success_signal"], "COLORING_PAGES_DRIVE_INGEST=PASS")
+        self.assertTrue(proof["operator_pass_is_terminal_publication_success"])
+        self.assertFalse(proof["external_repeat_after_operator_pass"])
 
     def test_v2_remains_fail_closed_without_overwrite_or_retry(self):
         self.assertFalse(self.v2["idempotency"]["automatic_overwrite"])
