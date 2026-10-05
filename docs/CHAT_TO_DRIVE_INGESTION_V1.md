@@ -203,4 +203,4 @@ A separate production-activated extension for 2–12 ordered PNG pages is define
 - `docs/CHAT_TO_DRIVE_INGESTION_V2.md`;
 - manifest schema `rozkalns.coloring-pages.drive-staging-manifest.v2`.
 
-That v2 contract is production-activated through the reviewed trusted `RPi5_main` operator recorded in `docs/CHAT_TO_DRIVE_INGESTION_V2.md`. Each multi-page activity still requires a fresh exact `PUBLISH` approval after every ordered page has passed `VALIDATE-PRINT` and its SHA-256/byte size is frozen. Single-page v1 remains active and backward compatible.
+That v2 contract is production-activated through the reviewed trusted `RPi5_main` operator recorded in `docs/CHAT_TO_DRIVE_INGESTION_V2.md`. Each multi-page activity still requires a fresh exact `PUBLISH` approval; `PUBLISH` then prepares and validates every ordered page internally before the first mutation and freezes each page's SHA-256/byte size. Manual `VALIDATE-PRINT` remains optional inspection/debug only. Single-page v1 remains active and backward compatible.
