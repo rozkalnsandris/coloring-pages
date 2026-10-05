@@ -94,7 +94,7 @@ V1 source requirements:
 - no JPEG
 - no watermark
 - no mandatory vectorization
-- new Chat-generated publication uses `UPSCALE-PRINT → VALIDATE-PRINT` before `PUBLISH`
+- new Chat-generated publication uses `PUBLISH` as the single normal command; it internally prepares and validates the A4 print master(s) before any Drive/content mutation, while `UPSCALE-PRINT` and `VALIDATE-PRINT` remain optional manual inspection/debug commands
 - the validated Chat print master is exact `2480×3508` PNG with approximately 300×300 DPI metadata and an exact-white outer border
 - the importer remains backward compatible with its broader accepted A4/2:3 source geometry and does not perform the upscale itself
 
@@ -108,7 +108,7 @@ The production path is activated and uses one reviewed RPi5 publish operator.
 
 The operator verifies the exact staged manifest, byte size and SHA-256, atomically publishes the PNG into `inbox/`, then directly runs the immutable Coloring Pages importer image under the isolation contract in `deploy/importer-runtime.json`.
 
-The first end-to-end production import passed on 2026-10-03. That is historical activation evidence only. For each future activity, the owner's explicit `PUBLISH` command for the exact latest validated print-master page or ordered page set is the content-ingest authorization once the activity ID and every page SHA-256 + byte size are frozen; that authority is limited to staging, verified ingest/import and public verification.
+The first end-to-end production import passed on 2026-10-03. That is historical activation evidence only. For each future activity, the owner's fresh explicit `PUBLISH` command for the exact latest draft page or ordered draft set authorizes one bounded content-publication chain. That chain prepares and validates every print master, then freezes the activity ID and every page SHA-256 + byte size before the first Drive/content mutation; its authority is limited to staging, verified ingest/import and public verification.
 
 Host Python/Pillow installation is not required. Installing/replacing the publish operator and executing production imports remain outside source-only authority.
 
@@ -211,6 +211,6 @@ Do not add yet:
 The repository owns source contracts and importer code. Two bounded production paths are authorized by the project policy:
 
 - owner-authorized eligible application merge → immutable image → existing RPi5 SIMPLE-DEPLOY auto-LIVE flow for `coloring-pages-public-rpi5`;
-- owner `PUBLISH` of the exact latest validated print-master page or ordered page set → Drive staging → verified RPi5 ingest/import → public verification after activity ID and every page SHA/size are bound.
+- owner `PUBLISH` of the exact latest draft page or ordered draft set → internal print-master preparation/validation → activity ID + every page SHA/size binding before the first Drive/content mutation → Drive staging → verified RPi5 ingest/import → public verification.
 
 Everything outside those paths—Cloudflare/DNS/tunnel, secrets/credentials, permissions, host packages, manual/alternate deploys, Drive archive/delete, production overwrite, cleanup or rollback—requires separate explicit owner authorization.
