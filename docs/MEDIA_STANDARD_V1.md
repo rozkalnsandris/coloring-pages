@@ -43,7 +43,7 @@ The prepared publication master must be:
 - RGB with no alpha;
 - approximately 300×300 DPI metadata;
 - exact `#FFFFFF` around the complete outer page border;
-- a reserved 1 px exact-white safety ring: artwork is proportionally fitted inside the `2478×3506` interior before centering, so edge-touching source art cannot occupy or contaminate the outermost A4 pixels;
+- a reserved 15 mm exact-white artwork-safe margin on every edge (`177 px` at 300 DPI): artwork is proportionally fitted inside that safe area before centering; the existing 1 px exact-white outer-border validation remains included inside this wider margin;
 - aspect-ratio-preserving artwork centered on the A4 canvas;
 - near-neutral white AI noise normalized to exact white;
 - resized with Pillow `Resampling.LANCZOS`;
@@ -61,7 +61,7 @@ The source PNG is preserved byte-for-byte and is the canonical print artwork.
 
 The importer itself does **not** require vector tracing, AI/GPU upscale or host-side enlargement. For the Chat publication path, `PUBLISH` derives and validates the owner-approved `2480×3508` portrait or `3508×2480` landscape PNG print master before any content mutation. The lower-resolution `1024×1536` / `1536×1024` generation draft is an authoring input, not the production source master.
 
-The validated print-master PNG remains the preserved source master and the catalogue `print` PNG is the canonical browser print/download source. A minimal hidden HTML print document loads that PNG into a canvas, preserves its original pixel colors, infers portrait/landscape from its dimensions, assigns the matching named CSS page, and prints it as A4 portrait or A4 landscape before calling `window.print()`. The detail page downloads the same `print.png` directly.
+The validated print-master PNG remains the preserved source master and the catalogue `print` PNG is the canonical browser print/download source. A minimal hidden HTML print document loads that PNG into a canvas, preserves canonical `2480×3508` / `3508×2480` raster dimensions exactly, uses the previous A4-padding calculation only for legacy/non-canonical rasters, preserves original pixel colors, infers portrait/landscape from dimensions, assigns the matching named CSS page, and prints it as A4 portrait or A4 landscape before calling `window.print()`. The detail page downloads the same `print.png` directly.
 
 ## Derivatives
 
@@ -141,7 +141,7 @@ Migration helper:
 
 `tools/coloring-pages-migrate-legacy-print-scale`
 
-The migration is deliberately narrower than a normal re-import. The shared print-master helper reserves the same 1 px exact-white safety ring before fitting historical artwork, rather than painting over artwork after resizing; validation still requires the complete outer ring to be exact `#FFFFFF`.
+The migration is deliberately narrower than a normal re-import. It explicitly calls the shared print-master helper with the historical 1 px fit mode, preserving the already-reviewed migration output semantics instead of adopting the new 15 mm publication margin; validation still requires the complete outer ring to be exact `#FFFFFF`.
 
 The migration is deliberately narrower than a normal re-import:
 
