@@ -14,7 +14,8 @@ RUN chmod 0555 /usr/local/bin/coloring-pages-import /usr/local/bin/coloring-page
     && test -x /usr/local/bin/coloring-pages-print-master \
     && test -x /usr/local/bin/coloring-pages-migrate-legacy-print-scale \
     && python3 -c 'import json; p="/usr/local/share/coloring-pages/existing-derivative-regeneration-v1.json"; d=json.load(open(p, encoding="utf-8")); assert d["schema"] == "rozkalns.coloring-pages.existing-derivative-regeneration.v1"; assert d["issue"] == 74' \
-    && python3 -c 'import json; p="/usr/local/share/coloring-pages/legacy-print-scale-migration-v1.json"; d=json.load(open(p, encoding="utf-8")); assert d["schema"] == "rozkalns.coloring-pages.legacy-print-scale-migration.v1"; assert len(d["targets"]) == 16'
+    && python3 -c 'import json; p="/usr/local/share/coloring-pages/legacy-print-scale-migration-v1.json"; d=json.load(open(p, encoding="utf-8")); assert d["schema"] == "rozkalns.coloring-pages.legacy-print-scale-migration.v1"; assert len(d["targets"]) == 16' \
+    && python3 -c 'import importlib.machinery, importlib.util; p="/usr/local/bin/coloring-pages-print-master"; l=importlib.machinery.SourceFileLoader("cp_print_master", p); s=importlib.util.spec_from_loader(l.name, l); m=importlib.util.module_from_spec(s); l.exec_module(m); assert m.TARGET_SIZE == (2480, 3508); assert m.OUTER_WHITE_BORDER == 1'
 USER 101
 
 COPY deploy/nginx.conf /etc/nginx/nginx.conf
