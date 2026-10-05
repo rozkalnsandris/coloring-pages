@@ -220,7 +220,10 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertNotIn("PRINT_SOLID_LUMA", print_js)
         self.assertIn("A4_PAGE_WIDTH_MM = 210", print_js)
         self.assertIn("A4_PAGE_HEIGHT_MM = 297", print_js)
+        self.assertIn("function printOrientation(width, height)", print_js)
         self.assertIn("function a4CanvasSize(width, height)", print_js)
+        self.assertIn('return width > height ? "landscape" : "portrait"', print_js)
+        self.assertIn('sheet.className = `print-sheet is-${orientation}`', print_js)
         self.assertIn("Math.ceil(width / a4Ratio)", print_js)
         self.assertIn("Math.ceil(height * a4Ratio)", print_js)
         self.assertIn("const offsetX = Math.floor", print_js)
@@ -253,7 +256,12 @@ class RuntimeContractTests(unittest.TestCase):
 
         css = (ROOT / "css/app.css").read_text(encoding="utf-8")
         self.assertIn("break-after: page", css)
+        self.assertIn("@page a4-portrait", css)
         self.assertIn("size: A4 portrait", css)
+        self.assertIn("@page a4-landscape", css)
+        self.assertIn("size: A4 landscape", css)
+        self.assertIn("page: a4-portrait", css)
+        self.assertIn("page: a4-landscape", css)
 
     def test_frontend_fetches_runtime_catalog(self):
         for path in ("js/app.js", "js/detail.js", "js/print.js"):
