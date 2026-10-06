@@ -69,10 +69,10 @@ class ImportPageTests(unittest.TestCase):
         )
 
         with Image.open(media / "print.png") as print_image:
-            self.assertEqual(print_image.mode, "RGBA")
+            self.assertEqual(print_image.mode, "RGB")
             self.assertEqual(print_image.size, (1055, 1491))
-            self.assertEqual(print_image.getpixel((0, 0)), (255, 255, 255, 255))
-            self.assertEqual(print_image.getpixel((150, 300)), (0, 0, 0, 255))
+            self.assertEqual(print_image.getpixel((0, 0)), (255, 255, 255))
+            self.assertEqual(print_image.getpixel((150, 300)), (0, 0, 0))
 
         catalog = json.loads(
             (self.content / "public/catalog.json").read_text(encoding="utf-8")
@@ -85,6 +85,20 @@ class ImportPageTests(unittest.TestCase):
             (self.content / "public/catalog.json").stat().st_mode & 0o777,
             0o644,
         )
+
+    def test_print_preserves_source_dpi_metadata_when_present(self):
+        Image.new("RGB", (1055, 1491), "white").save(
+            self.source, format="PNG", dpi=(300, 300)
+        )
+
+        importer.import_page(self.source, self.content, self.metadata())
+
+        with Image.open(self.content / "public/media/fire-pup-001/print.png") as print_image:
+            self.assertEqual(print_image.mode, "RGB")
+            dpi = print_image.info.get("dpi")
+            self.assertIsNotNone(dpi)
+            self.assertAlmostEqual(dpi[0], 300.0, delta=1.0)
+            self.assertAlmostEqual(dpi[1], 300.0, delta=1.0)
 
     def test_new_import_is_first_and_existing_order_is_preserved(self):
         existing = [{"id": "z-old"}, {"id": "a-older"}]
@@ -163,14 +177,18 @@ class ImportPageTests(unittest.TestCase):
         with Image.open(media / "preview.webp") as preview:
             self.assertGreater(preview.width, preview.height)
 
-    def test_print_image_preserves_source_colors_and_alpha(self):
+    def test_print_image_preserves_colors_and_composites_alpha_on_white(self):
         image = Image.new("RGBA", (3, 1), color=(255, 255, 255, 255))
         image.putpixel((1, 0), (255, 32, 64, 255))
         image.putpixel((2, 0), (32, 96, 255, 128))
 
         result = importer.build_print_image(image)
 
-        self.assertEqual(list(result.getdata()), list(image.getdata()))
+        self.assertEqual(result.mode, "RGB")
+        self.assertEqual(
+            list(result.getdata()),
+            [(255, 255, 255), (255, 32, 64), (143, 175, 255)],
+        )
 
     def test_color_source_stays_color_in_preview_and_print(self):
         image = Image.new("RGB", (900, 1350), color="white")
@@ -183,7 +201,7 @@ class ImportPageTests(unittest.TestCase):
         with Image.open(media / "preview.webp") as preview:
             self.assertEqual(preview.convert("RGB").getpixel((450, 675)), (255, 32, 64))
         with Image.open(media / "print.png") as print_image:
-            self.assertEqual(print_image.getpixel((450, 675)), (255, 32, 64, 255))
+            self.assertEqual(print_image.getpixel((450, 675)), (255, 32, 64))
 
     def test_importer_has_no_fixed_2480_by_3508_upscale(self):
         source = MODULE_PATH.read_text(encoding="utf-8")

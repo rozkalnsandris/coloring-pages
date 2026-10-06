@@ -141,7 +141,14 @@ def open_validated_source(path: Path) -> Image.Image:
             source.load()
             if source.format != "PNG":
                 raise ImportError("source must be PNG")
+            source_dpi = source.info.get("dpi")
             image = ImageOps.exif_transpose(source).convert("RGBA")
+            if (
+                isinstance(source_dpi, tuple)
+                and len(source_dpi) == 2
+                and all(isinstance(value, (int, float)) for value in source_dpi)
+            ):
+                image.info["dpi"] = source_dpi
     except UnidentifiedImageError as exc:
         raise ImportError("source is not a decodable image") from exc
     except OSError as exc:
@@ -186,8 +193,19 @@ def resized_copy(image: Image.Image, max_width: int) -> Image.Image:
 
 
 def build_print_image(image: Image.Image) -> Image.Image:
-    """Create an original-size public print PNG without recoloring source pixels."""
-    return image.copy()
+    """Create an original-size opaque RGB print image for white paper."""
+    rgba = image.convert("RGBA")
+    white = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+    white.alpha_composite(rgba)
+    result = white.convert("RGB")
+    dpi = image.info.get("dpi")
+    if (
+        isinstance(dpi, tuple)
+        and len(dpi) == 2
+        and all(isinstance(value, (int, float)) for value in dpi)
+    ):
+        result.info["dpi"] = dpi
+    return result
 
 
 def source_filename(index: int, page_count: int) -> str:
@@ -218,10 +236,16 @@ def build_derivatives(images: list[Image.Image], target: Path) -> None:
             quality=100,
             method=6,
         )
-        build_print_image(image).save(
+        print_image = build_print_image(image)
+        print_options: dict[str, Any] = {
+            "format": "PNG",
+            "optimize": True,
+        }
+        if "dpi" in print_image.info:
+            print_options["dpi"] = print_image.info["dpi"]
+        print_image.save(
             target / print_filename(index, page_count),
-            format="PNG",
-            optimize=True,
+            **print_options,
         )
 
 
