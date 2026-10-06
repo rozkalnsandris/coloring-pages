@@ -35,12 +35,12 @@ def test_stats_frontend_uses_first_party_random_id_only_on_engagement():
 
 
 def test_trending_sql_is_executable_and_ranks_seven_utc_days():
-    import re
     import sqlite3
 
     worker = read("cloudflare/stats-worker.js")
-    match = re.search(r"const trending = await env\\.DB\\.prepare\\(\\s*`([\\s\\S]*?)`", worker)
-    assert match is not None, "Trending SQL must be found in the deployed Worker source"
+    marker = "const trending = await env.DB.prepare("
+    assert worker.count(marker) == 1
+    sql = worker.split(marker, 1)[1].split("`", 2)[1]
 
     with sqlite3.connect(":memory:") as db:
         db.executescript(read("cloudflare/stats-schema.sql"))
@@ -62,7 +62,7 @@ def test_trending_sql_is_executable_and_ranks_seven_utc_days():
               ('edge', date('now', '-6 days'), 1),
               ('expired', date('now', '-7 days'), 15);
         """)
-        rows = db.execute(match.group(1), (6,)).fetchall()
+        rows = db.execute(sql, (6,)).fetchall()
         assert [(row[0], row[1], row[2]) for row in rows] == [
             ("alpha", 4, 8),
             ("beta", 4, 8),
@@ -70,4 +70,4 @@ def test_trending_sql_is_executable_and_ranks_seven_utc_days():
             ("edge", 1, 1),
         ]
         assert [row[3] for row in rows] == [0, 9, 0, 0]
-        assert len(db.execute(match.group(1), (2,)).fetchall()) == 2
+        assert len(db.execute(sql, (2,)).fetchall()) == 2
