@@ -8,6 +8,9 @@ const categoryButtons = [...document.querySelectorAll("[data-filter]")];
 const resultCount = document.querySelector("[data-result-count]");
 const totalCount = document.querySelector("[data-total-count]");
 const emptyState = document.querySelector("[data-empty-state]");
+const loadMoreButton = document.querySelector("[data-load-more]");
+
+const CATALOG_PAGE_SIZE = 20;
 
 const CATEGORY_LABELS = {
   tiere: "Tiere",
@@ -26,6 +29,8 @@ const DIFFICULTY_LABELS = {
 };
 
 let activeCategory = "";
+let catalogEntries = null;
+let visibleLimit = CATALOG_PAGE_SIZE;
 
 // Keep both menus in sync on direct links, anchor navigation and browser Back/Forward.
 function updateNavigation(hash = window.location.hash) {
@@ -55,12 +60,15 @@ function currentCards() {
   return [...document.querySelectorAll(".coloring-card")];
 }
 
-function updateCatalogCounts() {
-  const cards = currentCards();
+function updateCatalogCounts(entries = null) {
+  const cards = Array.isArray(entries) ? [] : currentCards();
+  const categories = Array.isArray(entries)
+    ? entries.map((entry) => entry.category)
+    : cards.map((card) => card.dataset.category);
   const counts = new Map();
 
-  cards.forEach((card) => {
-    const category = normalize(card.dataset.category ?? "");
+  categories.forEach((value) => {
+    const category = normalize(value ?? "");
     if (!category) return;
     counts.set(category, (counts.get(category) || 0) + 1);
   });
@@ -71,35 +79,63 @@ function updateCatalogCounts() {
     if (value) value.textContent = String(counts.get(category) || 0);
   });
 
-  if (totalCount) totalCount.textContent = String(cards.length);
+  if (totalCount) totalCount.textContent = String(Array.isArray(entries) ? entries.length : cards.length);
 }
 
-function updateCount(visible) {
+function updateCount(totalMatches) {
   if (resultCount) {
-    resultCount.textContent = `${visible} ${visible === 1 ? "Malvorlage" : "Malvorlagen"}`;
+    resultCount.textContent = `${totalMatches} ${totalMatches === 1 ? "Malvorlage" : "Malvorlagen"}`;
   }
   if (emptyState) {
-    emptyState.hidden = visible !== 0;
+    emptyState.hidden = totalMatches !== 0;
   }
 }
 
-function applyFilters() {
+function matchesFilters(titleValue, categoryValue) {
   const query = normalize(searchInput?.value ?? "");
+  const title = normalize(titleValue ?? "");
+  const category = normalize(categoryValue ?? "");
+  const categoryLabel = normalize(CATEGORY_LABELS[category] || category);
+  const matchesQuery = !query || title.includes(query) || category.includes(query) || categoryLabel.includes(query);
+  const matchesCategory = !activeCategory || category === activeCategory;
+  return matchesQuery && matchesCategory;
+}
+
+function renderCatalog() {
+  if (!gallery || !Array.isArray(catalogEntries)) return;
+
+  const matches = catalogEntries.filter((entry) => matchesFilters(entry.title, entry.category));
+  const visibleEntries = matches.slice(0, visibleLimit);
+  const fragment = document.createDocumentFragment();
+
+  visibleEntries.forEach((entry) => {
+    fragment.append(createCatalogCard(entry));
+  });
+
+  gallery.replaceChildren(fragment);
+  updateCount(matches.length);
+
+  if (loadMoreButton) {
+    loadMoreButton.hidden = visibleEntries.length >= matches.length;
+  }
+}
+
+function applyFilters({ resetLimit = true } = {}) {
+  if (Array.isArray(catalogEntries)) {
+    if (resetLimit) visibleLimit = CATALOG_PAGE_SIZE;
+    renderCatalog();
+    return;
+  }
+
   let visible = 0;
-
   currentCards().forEach((card) => {
-    const title = normalize(card.dataset.title ?? "");
-    const category = normalize(card.dataset.category ?? "");
-    const categoryLabel = normalize(CATEGORY_LABELS[category] || category);
-    const matchesQuery = !query || title.includes(query) || category.includes(query) || categoryLabel.includes(query);
-    const matchesCategory = !activeCategory || category === activeCategory;
-    const show = matchesQuery && matchesCategory;
-
+    const show = matchesFilters(card.dataset.title, card.dataset.category);
     card.hidden = !show;
     if (show) visible += 1;
   });
 
   updateCount(visible);
+  if (loadMoreButton) loadMoreButton.hidden = true;
 }
 
 function createBadge(label, className) {
@@ -172,17 +208,13 @@ async function hydrateCatalog() {
     const catalog = await response.json();
     if (!Array.isArray(catalog) || catalog.length === 0) return;
 
-    const fragment = document.createDocumentFragment();
-    catalog.forEach((entry) => {
-      if (!entry || !entry.id || !entry.title || !entry.thumb) return;
-      fragment.append(createCatalogCard(entry));
-    });
+    const entries = catalog.filter((entry) => entry && entry.id && entry.title && entry.thumb);
+    if (!entries.length) return;
 
-    if (!fragment.childNodes.length) return;
-
-    gallery.replaceChildren(fragment);
-    updateCatalogCounts();
-    applyFilters();
+    catalogEntries = entries;
+    visibleLimit = CATALOG_PAGE_SIZE;
+    updateCatalogCounts(catalogEntries);
+    renderCatalog();
   } catch {
     // Static fallback cards intentionally remain visible when catalog.json is unavailable.
   }
@@ -234,6 +266,12 @@ searchForm?.addEventListener("submit", (event) => {
 });
 
 searchInput?.addEventListener("input", applyFilters);
+
+loadMoreButton?.addEventListener("click", () => {
+  if (!Array.isArray(catalogEntries)) return;
+  visibleLimit += CATALOG_PAGE_SIZE;
+  renderCatalog();
+});
 
 categoryButtons.forEach((button) => {
   button.setAttribute("aria-pressed", "false");

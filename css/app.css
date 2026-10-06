@@ -242,6 +242,8 @@ a { color: inherit; }
   font-size: 12px; line-height: 1; font-weight: 800;
 }
 .gallery { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+.gallery-actions { display: flex; justify-content: center; margin-top: 20px; }
+.gallery-actions .outline-link { cursor: pointer; }
 .coloring-card {
   min-width: 0; display: flex; flex-direction: column; padding: 10px; border: 1px solid #e5edf7; border-radius: var(--radius-card);
   background: #fff; box-shadow: 0 6px 18px rgb(21 55 96 / 6%);
