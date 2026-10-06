@@ -107,6 +107,9 @@ class AdminStatsDashboardTests(unittest.TestCase):
         self.assertIn('<html lang="en">', html)
         self.assertIn("Internal dashboard", html)
         self.assertIn("Refresh", html)
+        self.assertIn('id="stats-catalog-table"', html)
+        self.assertIn("data-stats-load-more", html)
+        self.assertIn("More", html)
 
     def test_admin_dashboard_uses_read_only_shared_stats_api(self):
         shared = read("js/stats.js")
@@ -121,3 +124,8 @@ class AdminStatsDashboardTests(unittest.TestCase):
         self.assertNotIn('method: "POST"', admin)
         self.assertIn('new Intl.NumberFormat("en-GB")', admin)
         self.assertIn('new Intl.DateTimeFormat("en-GB"', admin)
+        self.assertIn("const CATALOG_PAGE_SIZE = 20;", admin)
+        self.assertIn("visible.slice(0, visibleLimit)", admin)
+        self.assertIn("visibleLimit += CATALOG_PAGE_SIZE", admin)
+        self.assertIn('addEventListener("input", resetTableLimit)', admin)
+        self.assertIn('addEventListener("change", resetTableLimit)', admin)
