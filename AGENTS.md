@@ -112,6 +112,7 @@ V1 intentionally uses:
 - Docker
 - `nginx-unprivileged`
 - RPi5 runtime behind the existing shared Cloudflare Tunnel
+- optional Cloudflare Web Analytics plus a same-origin Worker/D1 engagement-statistics edge layer; no analytics service/database runs on RPi5
 
 Do not add a framework, CMS, database or backend API without a documented need.
 
@@ -167,4 +168,4 @@ Keep the primary journey simple:
 
 **find → preview → print**
 
-Avoid adding accounts, login, ratings, comments, CMS, browser uploads, on-site AI generation, ads or advanced analytics in V1 unless the project plan is explicitly changed.
+Avoid adding accounts, login, ratings, comments, CMS, browser uploads, on-site AI generation or ads in V1. The explicitly approved analytics exception is `docs/CLOUDFLARE_STATS_V1.md`: Cloudflare Web Analytics for aggregate views plus a same-origin Worker/D1 store for print intent, reversible likes, Popular and 7-day Trending. Do not host analytics, a database or an API on RPi5; Cloudflare resource/settings activation remains separately owner-gated.
