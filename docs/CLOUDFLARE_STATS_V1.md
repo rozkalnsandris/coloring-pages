@@ -41,3 +41,17 @@ Repository source does **not** create or mutate Cloudflare resources. Activation
 6. enable Cloudflare Web Analytics separately for aggregate views if it is not already enabled.
 
 No RPi5 service, database, restart, package or host mutation is part of this design.
+
+## Internal statistics dashboard
+
+`/stats.html` is the read-only internal engagement dashboard for the site UI. It uses the same design system as the public application and reads only aggregate Stats V1 data.
+
+- `GET /api/stats/overview` returns aggregate totals plus per-page `print_count`, `like_count` and seven-day `recent_prints`.
+- The overview response never returns visitor IDs, visitor hashes, raw `likes` rows, IP addresses or Cloudflare credentials.
+- The dashboard also reads the public `catalog.json` to map page IDs to titles, thumbnails and categories.
+- `/stats.html` carries `noindex,nofollow,noarchive` and is intentionally not linked from public navigation.
+- `Drucken` remains print intent: a click on the A4 print action, not proof of a physical print.
+
+The source page contains no authentication secret. Before production exposure, protect the exact `/stats.html` path with a Cloudflare Access self-hosted application. That Access setting is a separate owner-gated Cloudflare mutation; it is not created by repository source or SIMPLE-DEPLOY.
+
+The aggregate `/api/stats/overview` endpoint may remain public and read-only. Its contract intentionally contains no visitor-level data.

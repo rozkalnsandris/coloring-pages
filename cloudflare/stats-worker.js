@@ -62,6 +62,45 @@ async function rankings(env, request) {
   ).bind(limit).all();
   return json({popular:popular.results||[],trending:trending.results||[],window_days:7});
 }
+async function overviewStats(env) {
+  const totals = await env.DB.prepare(
+    `SELECT COALESCE(SUM(print_count), 0) AS print_count,
+            COALESCE(SUM(like_count), 0) AS like_count,
+            COUNT(*) AS tracked_pages
+     FROM page_stats`
+  ).first();
+  const pages = await env.DB.prepare(
+    `SELECT p.page_id,
+            p.print_count,
+            p.like_count,
+            COALESCE(r.recent_prints, 0) AS recent_prints
+     FROM page_stats p
+     LEFT JOIN (
+       SELECT page_id, SUM(print_count) AS recent_prints
+       FROM daily_prints
+       WHERE day >= date('now', '-6 days')
+       GROUP BY page_id
+     ) r ON r.page_id = p.page_id
+     ORDER BY p.print_count DESC, p.like_count DESC, p.page_id ASC`
+  ).all();
+  const normalizedPages = (pages.results || []).map((row) => ({
+    page_id: String(row.page_id),
+    print_count: Number(row.print_count || 0),
+    like_count: Number(row.like_count || 0),
+    recent_prints: Number(row.recent_prints || 0),
+  }));
+  return json({
+    totals: {
+      print_count: Number(totals?.print_count || 0),
+      like_count: Number(totals?.like_count || 0),
+      tracked_pages: Number(totals?.tracked_pages || 0),
+      recent_prints: normalizedPages.reduce((sum, row) => sum + row.recent_prints, 0),
+    },
+    pages: normalizedPages,
+    window_days: 7,
+  });
+}
+
 async function pageStats(env, request) {
   const url = new URL(request.url);
   const pageId = url.searchParams.get("page_id") || "";
@@ -114,6 +153,7 @@ export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
     if (request.method==="GET" && path==="/api/stats/rankings") return rankings(env,request);
+    if (request.method==="GET" && path==="/api/stats/overview") return overviewStats(env);
     if (request.method==="GET" && path==="/api/stats/page") return pageStats(env,request);
     if (request.method==="POST" && path==="/api/stats/print") return recordPrint(env,request);
     if (request.method==="POST" && path==="/api/stats/like") return toggleLike(env,request);

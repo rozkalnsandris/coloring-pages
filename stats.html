@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="description" content="Interne Coloring Pages Statistikübersicht.">
+  <title>Statistik – Coloring Pages</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=c5d8c26a8a8349b2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css?v=bd09a17705d75813">
+</head>
+<body class="stats-page">
+  <a class="skip-link" href="#main">Zum Inhalt springen</a>
+
+  <header class="site-header">
+    <div class="container header-inner stats-header-inner">
+      <a class="brand" href="index.html" aria-label="Coloring Pages Startseite">
+        <span class="brand-paw" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="brand-word">
+          <span>Coloring</span>
+          <span class="brand-pages"><b>P</b><b>a</b><b>g</b><b>e</b><b>s</b></span>
+        </span>
+      </a>
+      <strong class="stats-header-title">Statistik</strong>
+      <a class="outline-link stats-home-link" href="index.html"><span aria-hidden="true">←</span> Zur Website</a>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <section class="stats-hero" aria-labelledby="stats-title">
+      <div class="container">
+        <span class="stats-eyebrow">Interne Übersicht</span>
+        <div class="stats-hero-row">
+          <div>
+            <h1 id="stats-title">Statistik</h1>
+            <p>Druckaktionen und Likes aus dem Cloudflare Stats V1 Backend.</p>
+          </div>
+          <button class="outline-link stats-refresh" type="button" data-stats-refresh>Aktualisieren <span aria-hidden="true">↻</span></button>
+        </div>
+        <p class="stats-status" data-stats-status aria-live="polite">Statistik wird geladen …</p>
+      </div>
+    </section>
+
+    <section class="stats-summary" aria-label="Zusammenfassung">
+      <div class="container stats-kpi-grid">
+        <article class="stats-kpi">
+          <span class="stats-kpi-icon" aria-hidden="true">🖨️</span>
+          <div><span class="stats-kpi-label">Druckaktionen gesamt</span><strong data-stats-total-prints>–</strong></div>
+        </article>
+        <article class="stats-kpi">
+          <span class="stats-kpi-icon" aria-hidden="true">♥</span>
+          <div><span class="stats-kpi-label">Likes gesamt</span><strong data-stats-total-likes>–</strong></div>
+        </article>
+        <article class="stats-kpi">
+          <span class="stats-kpi-icon" aria-hidden="true">🔥</span>
+          <div><span class="stats-kpi-label">Drucke letzte 7 Tage</span><strong data-stats-recent-prints>–</strong></div>
+        </article>
+        <article class="stats-kpi">
+          <span class="stats-kpi-icon" aria-hidden="true">🖍️</span>
+          <div><span class="stats-kpi-label">Veröffentlichte Seiten</span><strong data-stats-published-pages>–</strong></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="stats-rankings" aria-label="Top-Listen">
+      <div class="container stats-rankings-grid">
+        <article class="stats-panel">
+          <div class="stats-panel-heading">
+            <div><span class="stats-panel-kicker">Allzeit</span><h2>⭐ Popular TOP 10</h2></div>
+            <span class="stats-panel-caption">Nach Druckaktionen</span>
+          </div>
+          <ol class="stats-top-list" data-stats-popular></ol>
+          <p class="stats-empty" data-stats-popular-empty hidden>Noch keine Druckaktionen.</p>
+        </article>
+
+        <article class="stats-panel">
+          <div class="stats-panel-heading">
+            <div><span class="stats-panel-kicker">7 Tage</span><h2>🔥 Trending TOP 10</h2></div>
+            <span class="stats-panel-caption">Aktuelle Druckaktionen</span>
+          </div>
+          <ol class="stats-top-list" data-stats-trending></ol>
+          <p class="stats-empty" data-stats-trending-empty hidden>Noch keine Druckaktionen in diesem Zeitraum.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="stats-all" aria-labelledby="stats-all-title">
+      <div class="container">
+        <div class="stats-table-heading">
+          <div>
+            <span class="stats-panel-kicker">Katalog</span>
+            <h2 id="stats-all-title">Alle Malvorlagen</h2>
+          </div>
+          <div class="stats-controls">
+            <label class="stats-search">
+              <span class="sr-only">Malvorlage suchen</span>
+              <input type="search" placeholder="Malvorlage suchen …" data-stats-search>
+            </label>
+            <label class="stats-sort-label">
+              <span class="sr-only">Sortierung</span>
+              <select data-stats-sort>
+                <option value="prints">Drucke gesamt</option>
+                <option value="recent">Letzte 7 Tage</option>
+                <option value="likes">Likes</option>
+                <option value="title">Titel A–Z</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="stats-table-wrap">
+          <table class="stats-table">
+            <thead>
+              <tr>
+                <th scope="col">Malvorlage</th>
+                <th scope="col">Kategorie</th>
+                <th scope="col" class="stats-number">Drucke</th>
+                <th scope="col" class="stats-number">7 Tage</th>
+                <th scope="col" class="stats-number">Likes</th>
+              </tr>
+            </thead>
+            <tbody data-stats-table></tbody>
+          </table>
+        </div>
+        <p class="stats-empty" data-stats-table-empty hidden>Keine passende Malvorlage gefunden.</p>
+        <p class="stats-note">„Drucke“ zählt den Klick auf „A4 drucken“ als Druckabsicht – nicht den physischen Ausdruck.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/stats.js?v=0d8a4a7be32b1ed5" defer></script>
+  <script src="js/stats-admin.js?v=19d47d2127d8f5e8" defer></script>
+</body>
+</html>
