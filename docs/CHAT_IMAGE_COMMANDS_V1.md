@@ -131,6 +131,14 @@ The validator prints exact byte size and SHA-256. A manual validation failure is
 
 `PUBLISH` is the single normal publication command. It is explicit owner approval of the exact latest generated draft page or exact ordered draft set in the current conversation. The lower-resolution generation draft is never the published byte identity: `PUBLISH` first derives and validates fresh A4 print master(s) deterministically.
 
+`PUBLISH` is self-bootstrapping. It must not require `START coloring-pages`, `SYNC coloring-pages`, a second generic `PUBLISH`, or a new conversation/session as a routine prerequisite. The command itself performs the minimum-sufficient fresh repository/rules/runtime preflight needed for publication and then continues immediately when the required capabilities are available.
+
+`PUBLISH <descriptor>` has the same authority when the descriptor unambiguously identifies one draft/version in the current conversation. For example, `PUBLISH traktors ar acīm bez mutes` approves that exact unambiguous draft and must not be converted into a request for the owner to send `PUBLISH` again.
+
+Before saying that Drive, RPi5, a connector, plugin, app, remote action or other required publication tool is unavailable, inspect the capabilities actually exposed in the current conversation. Treat that discovery as read-only preflight. Do not infer current unavailability from a previous turn, another ChatGPT surface, Memory, or an earlier error. When an applicable connected action exists, use it rather than stopping with a generic "tools are unavailable" response.
+
+If a required action remains genuinely unavailable after fresh capability discovery, STOP before the first mutation and report the exact missing capability plus the minimum owner action needed to make it available. Also state explicitly whether any mutation occurred and whether the `PUBLISH` authorization was consumed. Do not redirect to `START` as a substitute for missing publication tooling.
+
 The `PUBLISH` chain is sequential and fail-closed:
 
 1. prepare every exact latest draft with `tools/coloring-pages-print-master prepare` (or an exact reviewed equivalent);
