@@ -1,0 +1,500 @@
+#!/usr/bin/env python3
+"""Plan or apply the bounded historical print-scale migration."""
+
+from __future__ import annotations
+
+import argparse
+import copy
+import fcntl
+import hashlib
+import importlib.machinery
+import importlib.util
+import io
+import json
+import os
+import sys
+from pathlib import Path
+from typing import Any
+
+CONTENT_ROOT = Path("/srv/coloring-pages-content")
+CONTRACT_SCHEMA = "rozkalns.coloring-pages.legacy-print-safe-margin-migration.v1"
+PLAN_SCHEMA = "rozkalns.coloring-pages.legacy-print-safe-margin-migration-plan.v1"
+CONTAINER_CONTRACT = Path(
+    "/usr/local/share/coloring-pages/legacy-print-safe-margin-migration-v1.json"
+)
+CONTAINER_PRINT_MASTER = Path("/usr/local/bin/coloring-pages-print-master")
+
+
+class MigrationError(RuntimeError):
+    """Fail-closed historical print-scale migration error."""
+
+
+def fail(message: str) -> None:
+    raise MigrationError(message)
+
+
+def sha256_bytes(body: bytes) -> str:
+    return hashlib.sha256(body).hexdigest()
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def contract_path() -> Path:
+    if CONTAINER_CONTRACT.is_file():
+        return CONTAINER_CONTRACT
+    return Path(__file__).resolve().parents[1] / (
+        "deploy/legacy-print-safe-margin-migration-v1.json"
+    )
+
+
+def print_master_path() -> Path:
+    if CONTAINER_PRINT_MASTER.is_file():
+        return CONTAINER_PRINT_MASTER
+    return Path(__file__).resolve().parent / "coloring-pages-print-master"
+
+
+def load_print_master():
+    path = print_master_path()
+    loader = importlib.machinery.SourceFileLoader("legacy_scale_print_master", str(path))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    if spec is None or spec.loader is None:
+        fail("print-master helper cannot be loaded")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_contract() -> dict[str, Any]:
+    try:
+        contract = json.loads(contract_path().read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise MigrationError("migration contract is unavailable or invalid") from exc
+    if not isinstance(contract, dict) or contract.get("schema") != CONTRACT_SCHEMA:
+        fail("migration contract schema mismatch")
+    validate_contract(contract)
+    return contract
+
+
+def validate_contract(contract: dict[str, Any]) -> None:
+    targets = contract.get("targets")
+    if not isinstance(targets, list) or len(targets) != 59:
+        fail("migration target count mismatch")
+    seen: set[tuple[str, int]] = set()
+    for target in targets:
+        if not isinstance(target, dict):
+            fail("migration target is invalid")
+        key = (target.get("id"), target.get("page_index"))
+        if (
+            not isinstance(key[0], str)
+            or not isinstance(key[1], int)
+            or key[1] < 1
+            or key in seen
+        ):
+            fail("migration target identity is invalid or duplicated")
+        seen.add(key)
+        if (
+            not isinstance(target.get("source_file"), str)
+            or not isinstance(target.get("source_sha256"), str)
+            or len(target["source_sha256"]) != 64
+            or not isinstance(target.get("source_size_bytes"), int)
+            or target["source_size_bytes"] <= 0
+            or not isinstance(target.get("current_print"), str)
+            or not target["current_print"].startswith(f"/media/{target['id']}/")
+        ):
+            fail("migration target baseline is invalid")
+    mutation = contract.get("mutation")
+    if not isinstance(mutation, dict):
+        fail("migration mutation contract is missing")
+    for key in (
+        "private_sources_immutable",
+        "existing_media_immutable",
+        "new_print_strategy",
+        "catalog_preserve_order",
+        "thumb_and_preview_unchanged",
+        "delete_allowed",
+        "overwrite_allowed",
+    ):
+        if key not in mutation:
+            fail("migration mutation contract is incomplete")
+    if mutation["private_sources_immutable"] is not True:
+        fail("private sources must remain immutable")
+    if mutation["existing_media_immutable"] is not True:
+        fail("existing media must remain immutable")
+    if mutation["new_print_strategy"] != "full-sha256-content-addressed-filename":
+        fail("new print identity strategy mismatch")
+    if mutation["delete_allowed"] is not False or mutation["overwrite_allowed"] is not False:
+        fail("delete/overwrite must remain forbidden")
+
+
+def read_catalog(path: Path) -> list[dict[str, Any]]:
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise MigrationError("catalog is unavailable or invalid") from exc
+    if not isinstance(raw, list) or not all(isinstance(item, dict) for item in raw):
+        fail("catalog must be an array of objects")
+    return raw
+
+
+def catalog_index(catalog: list[dict[str, Any]], page_id: str) -> int:
+    matches = [index for index, item in enumerate(catalog) if item.get("id") == page_id]
+    if len(matches) != 1:
+        fail(f"catalog target is missing or ambiguous: {page_id}")
+    return matches[0]
+
+
+def canonical_sha(value: Any) -> str:
+    body = json.dumps(
+        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return sha256_bytes(body)
+
+
+def current_print_url(entry: dict[str, Any], page_index: int) -> str:
+    pages = entry.get("pages")
+    if isinstance(pages, list) and pages:
+        if page_index > len(pages) or not isinstance(pages[page_index - 1], dict):
+            fail("catalog page index is unavailable")
+        value = pages[page_index - 1].get("print")
+        if page_index == 1 and entry.get("print") != value:
+            fail("catalog top-level print does not match page 1")
+    else:
+        if page_index != 1:
+            fail("single-page catalog entry received a non-1 page index")
+        value = entry.get("print")
+    if not isinstance(value, str):
+        fail("catalog print URL is invalid")
+    return value
+
+
+def set_print_url(entry: dict[str, Any], page_index: int, value: str) -> None:
+    pages = entry.get("pages")
+    if isinstance(pages, list) and pages:
+        pages[page_index - 1]["print"] = value
+        if page_index == 1:
+            entry["print"] = value
+    else:
+        entry["print"] = value
+
+
+def public_path(content_root: Path, url: str) -> Path:
+    if not url.startswith("/media/") or ".." in Path(url).parts:
+        fail("catalog print URL is outside the media root")
+    return content_root / "public" / url.lstrip("/")
+
+
+def generate_master_bytes(source: Path, print_master) -> tuple[bytes, dict[str, Any]]:
+    try:
+        draft = print_master.load_draft(source)
+        cleaned = print_master.normalize_neutral_white(
+            draft,
+            minimum=print_master.PRE_WHITE_MIN,
+            max_spread=print_master.PRE_WHITE_SPREAD,
+        )
+        canvas = print_master.fit_a4(
+            cleaned,
+            artwork_margin_px=print_master.PRINT_SAFE_MARGIN_PX,
+        )
+        canvas = print_master.normalize_neutral_white(
+            canvas,
+            minimum=print_master.POST_WHITE_MIN,
+            max_spread=print_master.POST_WHITE_SPREAD,
+        )
+        output = io.BytesIO()
+        canvas.save(
+            output,
+            format="PNG",
+            optimize=True,
+            dpi=print_master.TARGET_DPI,
+        )
+        body = output.getvalue()
+        with print_master.Image.open(io.BytesIO(body)) as image:
+            image.load()
+            if image.format != "PNG":
+                fail("generated print master is not PNG")
+            if image.size not in {
+                print_master.TARGET_SIZE,
+                print_master.LANDSCAPE_TARGET_SIZE,
+            }:
+                fail("generated print master geometry mismatch")
+            if image.mode != "RGB":
+                fail("generated print master is not RGB")
+            if not print_master.border_is_exact_white(image):
+                fail("generated print master border is not exact white")
+            if not print_master.safe_margin_is_exact_white(image):
+                fail("generated print master 15 mm safe margin is not exact white")
+            dpi = print_master.read_dpi(image)
+            if dpi is None or any(abs(value - 300.0) > 1.0 for value in dpi):
+                fail("generated print master DPI mismatch")
+        result = {
+            "width": canvas.size[0],
+            "height": canvas.size[1],
+            "dpi_x": dpi[0],
+            "dpi_y": dpi[1],
+            "size_bytes": len(body),
+            "sha256": sha256_bytes(body),
+        }
+        return body, result
+    except MigrationError:
+        raise
+    except Exception as exc:
+        raise MigrationError("print-master generation failed") from exc
+
+
+def versioned_print_filename(current_url: str, sha256: str) -> str:
+    current = Path(current_url).name
+    stem = Path(current).stem
+    if "-a4-" in stem:
+        stem = stem.split("-a4-", 1)[0]
+    return f"{stem}-a4-safe-{sha256}.png"
+
+
+def build_plan(
+    content_root: Path,
+    contract: dict[str, Any],
+) -> tuple[dict[str, Any], dict[tuple[str, int], bytes], list[dict[str, Any]]]:
+    print_master = load_print_master()
+    catalog_path = content_root / "public/catalog.json"
+    catalog = read_catalog(catalog_path)
+    output_bodies: dict[tuple[str, int], bytes] = {}
+    plan_targets: list[dict[str, Any]] = []
+
+    for target in contract["targets"]:
+        page_id = target["id"]
+        page_index = target["page_index"]
+        source = content_root / "originals" / page_id / target["source_file"]
+        if not source.is_file():
+            fail(f"private source is missing: {page_id}/{target['source_file']}")
+        if source.stat().st_size != target["source_size_bytes"]:
+            fail(f"private source size drifted: {page_id}/{target['source_file']}")
+        if sha256_file(source) != target["source_sha256"]:
+            fail(f"private source sha256 drifted: {page_id}/{target['source_file']}")
+
+        entry = catalog[catalog_index(catalog, page_id)]
+        current_url = current_print_url(entry, page_index)
+        if current_url != target["current_print"]:
+            fail(f"current print URL drifted: {page_id} page {page_index}")
+        current_path = public_path(content_root, current_url)
+        if not current_path.is_file():
+            fail(f"current print file is missing: {page_id} page {page_index}")
+
+        body, generated = generate_master_bytes(source, print_master)
+        filename = versioned_print_filename(current_url, generated["sha256"])
+        new_url = f"/media/{page_id}/{filename}"
+        new_path = public_path(content_root, new_url)
+        if os.path.lexists(new_path):
+            fail(f"content-addressed print target already exists: {filename}")
+
+        key = (page_id, page_index)
+        output_bodies[key] = body
+        plan_targets.append(
+            {
+                "id": page_id,
+                "page_index": page_index,
+                "source_file": target["source_file"],
+                "source_sha256": target["source_sha256"],
+                "source_size_bytes": target["source_size_bytes"],
+                "catalog_entry_sha256": canonical_sha(entry),
+                "current_print": current_url,
+                "current_print_sha256": sha256_file(current_path),
+                "current_print_size_bytes": current_path.stat().st_size,
+                "new_print": new_url,
+                "new_print_sha256": generated["sha256"],
+                "new_print_size_bytes": generated["size_bytes"],
+                "width": generated["width"],
+                "height": generated["height"],
+                "dpi_x": generated["dpi_x"],
+                "dpi_y": generated["dpi_y"],
+            }
+        )
+
+    plan = {
+        "schema": PLAN_SCHEMA,
+        "target_pages": len(plan_targets),
+        "target_activities": len({item["id"] for item in plan_targets}),
+        "targets": plan_targets,
+    }
+    return plan, output_bodies, catalog
+
+
+def plan_sha256(plan: dict[str, Any]) -> str:
+    return canonical_sha(plan)
+
+
+def write_exclusive(path: Path, body: bytes, mode: int = 0o644) -> None:
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        fd = os.open(path, flags, mode)
+    except OSError as exc:
+        raise MigrationError(f"cannot create immutable print target: {path}") from exc
+    with os.fdopen(fd, "wb", buffering=0) as handle:
+        handle.write(body)
+        os.fsync(handle.fileno())
+
+
+def fsync_directory(path: Path) -> None:
+    fd = os.open(path, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def serialize_catalog(catalog: list[dict[str, Any]]) -> bytes:
+    return (json.dumps(catalog, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+
+
+def execute_apply(
+    content_root: Path,
+    contract: dict[str, Any],
+    expected_plan_sha256: str,
+) -> dict[str, Any]:
+    lock_path = content_root / contract["runtime"]["shared_lock"]
+    if not lock_path.is_file():
+        fail("shared content lock is missing")
+
+    with lock_path.open("r+b", buffering=0) as lock_handle:
+        try:
+            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise MigrationError("another content operation is active") from exc
+
+        plan, output_bodies, catalog_before = build_plan(content_root, contract)
+        actual_plan_sha = plan_sha256(plan)
+        if actual_plan_sha != expected_plan_sha256:
+            fail("owner-bound migration plan sha256 mismatch")
+
+        catalog_after = copy.deepcopy(catalog_before)
+        target_map = {
+            (item["id"], item["page_index"]): item for item in plan["targets"]
+        }
+        for target in contract["targets"]:
+            key = (target["id"], target["page_index"])
+            item = target_map[key]
+            index = catalog_index(catalog_after, target["id"])
+            set_print_url(catalog_after[index], target["page_index"], item["new_print"])
+
+        catalog_path = content_root / "public/catalog.json"
+        catalog_stat = catalog_path.stat()
+        if catalog_stat.st_uid != os.getuid() or catalog_stat.st_gid != os.getgid():
+            fail("catalog owner/group does not match migration runtime user")
+        catalog_temp = catalog_path.parent / ".catalog.legacy-print-safe-margin.tmp"
+        if os.path.lexists(catalog_temp):
+            fail("catalog migration temp already exists")
+
+        # First persistent write starts here. After this point, failures STOP:
+        # there is no automatic retry, rollback, cleanup, or alternate mutation.
+        touched_dirs: set[Path] = set()
+        for item in plan["targets"]:
+            key = (item["id"], item["page_index"])
+            target_path = public_path(content_root, item["new_print"])
+            write_exclusive(target_path, output_bodies[key], 0o644)
+            touched_dirs.add(target_path.parent)
+        for directory in sorted(touched_dirs):
+            fsync_directory(directory)
+
+        body = serialize_catalog(catalog_after)
+        write_exclusive(catalog_temp, body, catalog_stat.st_mode & 0o777)
+        os.replace(catalog_temp, catalog_path)
+        fsync_directory(catalog_path.parent)
+
+        final_catalog = read_catalog(catalog_path)
+        if final_catalog != catalog_after:
+            fail("final catalog differs from planned catalog")
+        if (catalog_path.stat().st_mode & 0o777) != (catalog_stat.st_mode & 0o777):
+            fail("catalog mode changed during migration")
+        if catalog_path.stat().st_uid != catalog_stat.st_uid or catalog_path.stat().st_gid != catalog_stat.st_gid:
+            fail("catalog owner/group changed during migration")
+
+        for item in plan["targets"]:
+            target_path = public_path(content_root, item["new_print"])
+            if (
+                not target_path.is_file()
+                or target_path.stat().st_size != item["new_print_size_bytes"]
+                or sha256_file(target_path) != item["new_print_sha256"]
+            ):
+                fail("new immutable print verification failed")
+            source = content_root / "originals" / item["id"] / item["source_file"]
+            if (
+                source.stat().st_size != item["source_size_bytes"]
+                or sha256_file(source) != item["source_sha256"]
+            ):
+                fail("private source changed during migration")
+            old_print = public_path(content_root, item["current_print"])
+            if (
+                old_print.stat().st_size != item["current_print_size_bytes"]
+                or sha256_file(old_print) != item["current_print_sha256"]
+            ):
+                fail("existing immutable print changed during migration")
+
+        return plan
+
+
+def print_plan(plan: dict[str, Any]) -> None:
+    print("LEGACY_PRINT_SAFE_MARGIN_PLAN=PASS")
+    print(f"PLAN_SHA256={plan_sha256(plan)}")
+    print(f"TARGET_PAGES={plan['target_pages']}")
+    print(f"TARGET_ACTIVITIES={plan['target_activities']}")
+    for item in plan["targets"]:
+        print(
+            "TARGET="
+            f"{item['id']}:{item['page_index']} "
+            f"SOURCE_SHA256={item['source_sha256']} "
+            f"NEW_PRINT_SHA256={item['new_print_sha256']} "
+            f"NEW_PRINT_SIZE={item['new_print_size_bytes']} "
+            f"NEW_PRINT={item['new_print']}"
+        )
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--plan", action="store_true")
+    mode.add_argument("--apply", action="store_true")
+    parser.add_argument("--expected-plan-sha256")
+    args = parser.parse_args(argv)
+    if args.apply:
+        value = args.expected_plan_sha256
+        if not isinstance(value, str) or len(value) != 64:
+            parser.error("--apply requires --expected-plan-sha256 <64-hex>")
+    elif args.expected_plan_sha256:
+        parser.error("--expected-plan-sha256 is valid only with --apply")
+    return args
+
+
+def main(argv: list[str] | None = None) -> int:
+    try:
+        args = parse_args(argv)
+        contract = load_contract()
+        if args.plan:
+            plan, _, _ = build_plan(CONTENT_ROOT, contract)
+            print_plan(plan)
+        else:
+            plan = execute_apply(
+                CONTENT_ROOT,
+                contract,
+                args.expected_plan_sha256,
+            )
+            print("LEGACY_PRINT_SAFE_MARGIN_APPLY=PASS")
+            print(f"PLAN_SHA256={plan_sha256(plan)}")
+            print(f"TARGET_PAGES={plan['target_pages']}")
+            print(f"TARGET_ACTIVITIES={plan['target_activities']}")
+        return 0
+    except MigrationError as exc:
+        print(f"LEGACY_PRINT_SAFE_MARGIN=FAIL error={exc}", file=sys.stderr)
+        return 1
+    except Exception:
+        print("LEGACY_PRINT_SAFE_MARGIN=FAIL error=unexpected-migration-error", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

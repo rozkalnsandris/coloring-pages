@@ -75,7 +75,7 @@ public/media/<id>/
 └── print.png                color-preserving original-size derivative
 ```
 
-The exact approved source PNG bytes are not copied into the public media directory. The public `print.png` keeps the source dimensions and visual colors without grayscale or black-line conversion. The browser uses that same PNG for A4 printing and direct download without recoloring it.
+The exact approved source PNG bytes are not copied into the public media directory. The public `print.png` keeps the source dimensions and visual colors without grayscale or black-line conversion. The importer composites transparency onto white paper, writes the public print derivative as opaque RGB, and preserves valid source DPI metadata when present; therefore a canonical Chat print master keeps its approximately 300 DPI metadata in the public print PNG. The browser uses that same PNG for A4 printing and direct download without recoloring it.
 
 ## Stable IDs
 
@@ -157,6 +157,24 @@ The migration is deliberately narrower than a normal re-import:
 - no delete or overwrite is allowed.
 
 The helper has two phases. `--plan` performs no production write: it regenerates every candidate in memory, validates the outputs, freezes the source/current-print/new-print identities and emits one canonical `PLAN_SHA256`. `--apply --expected-plan-sha256 <sha>` is allowed only after a fresh owner LIVE authorization bound to that exact plan. Apply runs under the shared content lock, re-computes the same plan, writes all new immutable print files exclusively and atomically switches the catalog only after every new file has been written. After the first persistent write, any error is a STOP with no automatic retry, rollback, cleanup or alternate mutation path.
+
+## Existing print-standard migration
+
+A read-only LIVE audit on 2026-10-06 found one current print page already satisfying the complete current print contract. This follow-up freezes 59 other print pages across 54 activities for bounded migration to the same standard.
+
+Canonical source contract:
+
+`deploy/legacy-print-safe-margin-migration-v1.json`
+
+Migration helper:
+
+`tools/coloring-pages-migrate-legacy-print-safe-margin`
+
+The migration regenerates each frozen target from its immutable private source identity, not from the current public derivative. It uses the same canonical print-master preparation as current publication: portrait or landscape A4, approximately 300 DPI, RGB/no alpha, exact-white border and a complete 15 mm (`177 px`) exact-white artwork-safe band. This avoids compounding the earlier one-pixel migration resampling.
+
+The migration preserves private sources, existing public media files, thumbnails, previews, catalogue order and unrelated entries. Every replacement print is written once under a full-SHA-256 content-addressed `*-a4-safe-<sha256>.png` filename; only the selected catalogue print field(s) switch after all new files exist.
+
+The read-only `--plan` phase validates all 59 frozen outputs and current baselines and emits one canonical `PLAN_SHA256`. `--apply --expected-plan-sha256 <sha>` requires a fresh owner LIVE authorization bound to that exact plan, runs under the shared content lock, and is fail-closed: after the first persistent write there is no automatic retry, rollback, cleanup or alternate mutation path.
 
 ## Multi-page activities
 
