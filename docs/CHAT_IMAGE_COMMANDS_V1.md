@@ -37,7 +37,10 @@ Examples:
 MAKE lapsa
 MAKE lapsa mežā pie sēnēm
 MAKE ugunsdzēsēju mašīna pie stacijas
+MAKE random
 ```
+
+`MAKE random` is a special case: ChatGPT chooses the subject/scene itself and immediately generates a project-suitable coloring-page candidate. It must not ask the owner to choose a topic first. The random choice still follows the complete default generation contract below, including the 3–6 age target, canonical canvas sizing/orientation, simple printable composition and protected-character rule. `random` never means a generic illustration outside the coloring-pages project.
 
 Default generation contract:
 
