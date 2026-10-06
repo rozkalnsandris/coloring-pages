@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=c4aa079c75457b1f">
+  <link rel="stylesheet" href="css/app.css?v=c8251d3ebcfa7d91">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -173,6 +173,26 @@
         <p class="empty-state" data-empty-state hidden>Keine passenden Malvorlagen gefunden.</p>
       </div>
     </section>
+
+    <section id="beliebt" class="ranking-pages ranking-popular" data-ranking-section="popular" aria-labelledby="popular-title" hidden>
+      <div class="container">
+        <div class="section-heading ranking-heading"><div>
+          <h2 id="popular-title"><span aria-hidden="true">⭐</span> Beliebte Malvorlagen</h2>
+          <p>Nach den meisten A4-Druckaktionen.</p>
+        </div></div>
+        <div class="gallery ranking-gallery" data-ranking-gallery="popular"></div>
+      </div>
+    </section>
+
+    <section id="trending" class="ranking-pages ranking-trending" data-ranking-section="trending" aria-labelledby="trending-title" hidden>
+      <div class="container">
+        <div class="section-heading ranking-heading"><div>
+          <h2 id="trending-title"><span aria-hidden="true">🔥</span> Trending</h2>
+          <p>In den letzten 7 Tagen besonders oft gedruckt.</p>
+        </div></div>
+        <div class="gallery ranking-gallery" data-ranking-gallery="trending"></div>
+      </div>
+    </section>
     <section id="ueber-uns" class="about" aria-labelledby="about-title" tabindex="-1">
       <div class="container">
         <div class="about-intro">
@@ -198,6 +218,7 @@
     </section>
   </main>
 
-  <script src="js/app.js?v=61e62575723dbc75" defer></script>
+  <script src="js/stats.js?v=stats-v1" defer></script>
+  <script src="js/app.js?v=eec0b3c521c50513" defer></script>
 </body>
 </html>
