@@ -21,7 +21,7 @@ V1 remains intentionally small:
 - `nginx-unprivileged`
 - Raspberry Pi 5 runtime
 
-No framework, CMS, database or backend API is required.
+No framework, CMS or RPi5-hosted database/backend API is required. The only approved analytics exception is a small Cloudflare edge layer: Web Analytics for aggregate traffic plus Worker/D1 for print-intent counts, reversible likes, Popular and 7-day Trending.
 
 ## Source/content architecture
 
@@ -204,7 +204,7 @@ Do not add yet:
 - on-site AI generation
 - database
 - ads
-- advanced analytics
+- RPi5-hosted analytics/database/backend (the approved exception is the small Cloudflare Web Analytics + Worker/D1 engagement layer documented in `docs/CLOUDFLARE_STATS_V1.md`)
 
 ## Authority boundary
 

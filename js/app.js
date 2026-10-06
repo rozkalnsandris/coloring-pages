@@ -9,6 +9,9 @@ const resultCount = document.querySelector("[data-result-count]");
 const totalCount = document.querySelector("[data-total-count]");
 const emptyState = document.querySelector("[data-empty-state]");
 const loadMoreButton = document.querySelector("[data-load-more]");
+const rankingSections = new Map(
+  [...document.querySelectorAll("[data-ranking-section]")].map((section)=>[section.dataset.rankingSection,section])
+);
 
 const CATALOG_PAGE_SIZE = 20;
 
@@ -151,7 +154,20 @@ function entryPageCount(entry) {
     : 1;
 }
 
-function createCatalogCard(entry) {
+function formatMetric(value) {
+  return new Intl.NumberFormat("de-DE",{notation:"compact",maximumFractionDigits:1}).format(Number(value)||0);
+}
+function createMetricRow(stats) {
+  const row=document.createElement("div"); row.className="card-metrics";
+  const likes=document.createElement("span");
+  likes.setAttribute("aria-label",`${Number(stats?.like_count||0)} Likes`);
+  likes.textContent=`♥ ${formatMetric(stats?.like_count)}`;
+  const prints=document.createElement("span");
+  prints.setAttribute("aria-label",`${Number(stats?.print_count||0)} Druckaktionen`);
+  prints.textContent=`🖨 ${formatMetric(stats?.print_count)}`;
+  row.append(likes,prints); return row;
+}
+function createCatalogCard(entry, stats = null) {
   const card = document.createElement("article");
   card.className = "coloring-card";
   card.dataset.title = entry.title || "";
@@ -194,10 +210,33 @@ function createCatalogCard(entry) {
     badges.append(createBadge(`${pageCount} Seiten`, "pages-badge"));
   }
 
-  card.append(previewLink, heading, badges);
+  card.append(previewLink,heading);
+  if (stats) card.append(createMetricRow(stats));
+  card.append(badges);
   return card;
 }
 
+function renderRanking(kind, entries, statsItems) {
+  const section=rankingSections.get(kind);
+  const target=section?.querySelector(`[data-ranking-gallery="${kind}"]`);
+  if (!section || !target || !Array.isArray(statsItems)) return;
+  const byId=new Map(entries.map((entry)=>[String(entry.id),entry]));
+  const cards=statsItems.map((stats)=>{
+    const entry=byId.get(String(stats.page_id));
+    return entry ? createCatalogCard(entry,stats) : null;
+  }).filter(Boolean);
+  if (!cards.length) return;
+  target.replaceChildren(...cards);
+  section.hidden=false;
+}
+async function hydrateRankings(entries) {
+  if (!window.ColoringStats?.getRankings) return;
+  try {
+    const data=await window.ColoringStats.getRankings(6);
+    renderRanking("popular",entries,data.popular);
+    renderRanking("trending",entries,data.trending);
+  } catch {}
+}
 async function hydrateCatalog() {
   if (!gallery) return;
 
@@ -215,6 +254,7 @@ async function hydrateCatalog() {
     visibleLimit = CATALOG_PAGE_SIZE;
     updateCatalogCounts(catalogEntries);
     renderCatalog();
+    await hydrateRankings(catalogEntries);
   } catch {
     // Static fallback cards intentionally remain visible when catalog.json is unavailable.
   }

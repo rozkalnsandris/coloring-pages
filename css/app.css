@@ -663,3 +663,33 @@ a { color: inherit; }
     object-fit: contain;
   }
 }
+
+
+/* Cloudflare-backed engagement rankings */
+.ranking-pages { padding: 34px 0 42px; }
+.ranking-popular { background: #fffaf0; }
+.ranking-trending { background: #fff; }
+.ranking-heading { margin-bottom: 16px; }
+.ranking-heading > div { min-width: 0; }
+.ranking-heading h2 { display: flex; align-items: center; gap: 10px; }
+.ranking-heading p { margin: 7px 0 0; color: var(--muted); font-size: 14px; font-weight: 700; }
+.ranking-gallery .coloring-card { height: 100%; }
+.card-metrics { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 9px; color:#62728b; font-size:12px; font-weight:800; }
+.card-metrics span:first-child { color:#c44161; }
+.detail-actions .action-like {
+  display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:14px;
+  width:100%; min-height:62px; padding:14px 22px; border:1px solid #f1c8d2;
+  border-radius:var(--radius-card); background:#fff7f9; color:var(--text); cursor:pointer;
+  text-align:left; font-size:17px; font-weight:800;
+}
+.detail-actions .action-like:hover:not(:disabled) { border-color:#d85977; background:#fff0f4; }
+.detail-actions .action-like.is-liked { border-color:#d85977; background:#fff0f4; color:#a52f4c; }
+.detail-actions .action-like:disabled { cursor:default; opacity:.6; }
+.like-heart { color:#d85977; font-size:29px; line-height:1; }
+.like-count { min-width:34px; padding:4px 9px; border-radius:999px; background:#fff; color:#a52f4c; text-align:center; font-size:13px; }
+@media (max-width:720px) {
+  .ranking-pages { padding:26px 0 32px; }
+  .ranking-heading { display:block; }
+  .ranking-heading h2 { white-space:normal; }
+  .ranking-heading p { font-size:13px; }
+}
