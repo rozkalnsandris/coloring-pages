@@ -24,10 +24,13 @@
     search: document.querySelector("[data-stats-search]"),
     sort: document.querySelector("[data-stats-sort]"),
     refresh: document.querySelector("[data-stats-refresh]"),
+    loadMore: document.querySelector("[data-stats-load-more]"),
   };
 
+  const CATALOG_PAGE_SIZE = 20;
   const numberFormat = new Intl.NumberFormat("en-GB");
   let rows = [];
+  let visibleLimit = CATALOG_PAGE_SIZE;
 
   function number(value) {
     const parsed = Number(value);
@@ -156,8 +159,17 @@
       })
       .sort((a, b) => tableSort(a, b, mode));
 
-    els.table.replaceChildren(...visible.map(createTableRow));
+    const visibleRows = visible.slice(0, visibleLimit);
+    els.table.replaceChildren(...visibleRows.map(createTableRow));
     els.tableEmpty.hidden = visible.length !== 0;
+    if (els.loadMore) {
+      els.loadMore.hidden = visibleRows.length >= visible.length;
+    }
+  }
+
+  function resetTableLimit() {
+    visibleLimit = CATALOG_PAGE_SIZE;
+    renderTable();
   }
 
   async function load() {
@@ -199,6 +211,7 @@
 
       renderTopList(els.popular, els.popularEmpty, rows, "prints");
       renderTopList(els.trending, els.trendingEmpty, rows, "recent");
+      visibleLimit = CATALOG_PAGE_SIZE;
       renderTable();
 
       const catalogIds = new Set(rows.map((row) => row.id));
@@ -216,8 +229,12 @@
     }
   }
 
-  els.search?.addEventListener("input", renderTable);
-  els.sort?.addEventListener("change", renderTable);
+  els.search?.addEventListener("input", resetTableLimit);
+  els.sort?.addEventListener("change", resetTableLimit);
+  els.loadMore?.addEventListener("click", () => {
+    visibleLimit += CATALOG_PAGE_SIZE;
+    renderTable();
+  });
   els.refresh?.addEventListener("click", load);
 
   if (!window.ColoringStats?.getOverview) {

@@ -112,7 +112,7 @@
         </div>
 
         <div class="stats-table-wrap">
-          <table class="stats-table">
+          <table id="stats-catalog-table" class="stats-table">
             <thead>
               <tr>
                 <th scope="col">Coloring page</th>
@@ -125,6 +125,11 @@
             <tbody data-stats-table></tbody>
           </table>
         </div>
+        <div class="gallery-actions">
+          <button class="outline-link" type="button" data-stats-load-more aria-controls="stats-catalog-table" hidden>
+            More <span aria-hidden="true">↓</span>
+          </button>
+        </div>
         <p class="stats-empty" data-stats-table-empty hidden>No matching coloring page found.</p>
         <p class="stats-note">“Prints” counts clicks on the public “A4 drucken” button as print intent — not a physical print.</p>
       </div>
@@ -132,6 +137,6 @@
   </main>
 
   <script src="js/stats.js?v=0d8a4a7be32b1ed5" defer></script>
-  <script src="js/stats-admin.js?v=6f15156981f509e8" defer></script>
+  <script src="js/stats-admin.js?v=9a90ee7260bb9a03" defer></script>
 </body>
 </html>
