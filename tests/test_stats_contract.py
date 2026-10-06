@@ -73,3 +73,46 @@ class TrendingSqlRegressionTests(unittest.TestCase):
             ]
             assert [row[3] for row in rows] == [0, 9, 0, 0]
             assert len(db.execute(sql, (2,)).fetchall()) == 2
+
+
+class AdminStatsDashboardTests(unittest.TestCase):
+    def test_overview_endpoint_is_aggregate_and_read_only(self):
+        worker = read("cloudflare/stats-worker.js")
+        start = worker.index("async function overviewStats")
+        end = worker.index("async function pageStats", start)
+        overview = worker[start:end]
+
+        self.assertIn('path==="/api/stats/overview"', worker)
+        self.assertIn("FROM page_stats", overview)
+        self.assertIn("FROM daily_prints", overview)
+        self.assertIn("recent_prints", overview)
+        self.assertNotIn("visitor_hash", overview)
+        self.assertNotIn("FROM likes", overview)
+        self.assertNotIn("INSERT ", overview)
+        self.assertNotIn("UPDATE ", overview)
+        self.assertNotIn("DELETE ", overview)
+
+    def test_admin_dashboard_is_shipped_noindex_and_unlinked(self):
+        html = read("stats.html")
+        public_home = read("index.html")
+        dockerfile = read("Dockerfile")
+
+        self.assertIn('name="robots" content="noindex,nofollow,noarchive"', html)
+        self.assertIn("data-stats-total-prints", html)
+        self.assertIn("data-stats-popular", html)
+        self.assertIn("data-stats-trending", html)
+        self.assertIn("data-stats-table", html)
+        self.assertNotIn('href="stats.html"', public_home)
+        self.assertIn("stats.html", dockerfile)
+
+    def test_admin_dashboard_uses_read_only_shared_stats_api(self):
+        shared = read("js/stats.js")
+        admin = read("js/stats-admin.js")
+
+        self.assertIn("async function getOverview()", shared)
+        self.assertIn('requestJson("/overview")', shared)
+        self.assertIn("window.ColoringStats.getOverview()", admin)
+        self.assertIn('fetch("catalog.json", {cache: "no-store"})', admin)
+        self.assertNotIn("toggleLike", admin)
+        self.assertNotIn("trackPrint", admin)
+        self.assertNotIn('method: "POST"', admin)

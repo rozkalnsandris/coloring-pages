@@ -19,7 +19,7 @@ RUN chmod 0555 /usr/local/bin/coloring-pages-import /usr/local/bin/coloring-page
 USER 101
 
 COPY deploy/nginx.conf /etc/nginx/nginx.conf
-COPY index.html detail.html print.html /usr/share/nginx/html/
+COPY index.html detail.html print.html stats.html /usr/share/nginx/html/
 COPY css /usr/share/nginx/html/css
 COPY js /usr/share/nginx/html/js
 COPY assets /usr/share/nginx/html/assets

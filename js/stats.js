@@ -35,6 +35,10 @@
     return requestJson(`/rankings?limit=${safeLimit}`);
   }
 
+  async function getOverview() {
+    return requestJson("/overview");
+  }
+
   async function getPage(pageId) {
     const visitorId = getVisitorId(false);
     const query = new URLSearchParams({page_id: pageId});
@@ -68,5 +72,5 @@
     }).catch(() => {});
   }
 
-  window.ColoringStats = {getRankings, getPage, toggleLike, trackPrint};
+  window.ColoringStats = {getRankings, getOverview, getPage, toggleLike, trackPrint};
 })();
