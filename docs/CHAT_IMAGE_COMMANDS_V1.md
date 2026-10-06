@@ -44,22 +44,76 @@ MAKE random
 
 Default generation contract:
 
-- original illustration suitable for public project use;
-- output as PNG on either an exact `1024×1536` portrait (2:3) canvas or exact `1536×1024` landscape (3:2) canvas;
-- the selected canonical dimensions describe the whole page/canvas, not the subject dimensions;
-- when the image-generation surface exposes output-size/aspect-ratio controls, set the selected canonical size directly rather than relying only on prompt wording;
-- choose orientation from the composition: portrait for tall/vertical layouts and landscape for naturally wide layouts such as many cars, trains, buses or aircraft; keep the complete subject visible, centered naturally, with comfortable white space and no cropping;
-- white/light page background;
-- preserve intentional color when the requested worksheet uses color; ordinary coloring pages default to black/high-contrast line art;
-- thick, clean contours where line art is used;
-- large coloring regions;
-- few small details;
-- primary age target 3–6;
+Interpretation rule:
+
+- everything after `MAKE` defines the requested content; treat it as the complete brief, not merely inspiration for a richer scene;
+- do not invent extra scenery, props, characters, decorations, facial features, text or story elements unless they are required to satisfy the request;
+- when the request is short, prefer the simplest valid interpretation.
+
+Prompt-construction rule:
+
+- before calling image generation, reduce the request to a concise internal brief ordered as: **purpose/subject → composition/orientation → line-art style → constraints/exclusions**;
+- prefer a short, explicit prompt over a long descriptive prompt;
+- state important exclusions directly, especially no extra text, no logos/watermarks, no unwanted background elements and no unrequested facial features;
+- use the image-generation output-size control for the chosen canonical canvas whenever that control is available instead of relying only on prompt wording.
+
+Preschool simplicity profile (default for ordinary coloring pages):
+
+- primary age target: 3–6 years;
+- one clear focal subject by default;
+- clean white background by default;
+- add no supporting elements unless they materially help identify the requested subject/scene;
+- when supporting context is genuinely needed, use at most **two** large, simple supporting elements by default;
+- no decorative filler: no extra clouds, grass tufts, bushes, fences, stars, sparkles, stones, flowers, signs, textures, repeated tiny objects or scenery added merely to make the page look fuller;
+- use large simple silhouettes and a small number of large closed coloring regions;
+- thick, clean, high-contrast contours;
+- minimal interior line divisions;
+- avoid cross-hatching, texture hatching, dense patterning, tiny repeated detail, complex wheel/engine/mechanical detailing, or ornamental clutter;
+- keep ample white space around the subject;
+- keep the complete subject visible and uncropped.
+
+Faces and anthropomorphism:
+
+- animals/people may have simple expressions when appropriate;
+- **inanimate subjects** such as vehicles, buildings, tools, furniture and household objects must have **no eyes, mouth, face or anthropomorphic expression by default**;
+- add eyes/mouth/faces to an inanimate subject only when the owner's request explicitly asks for a character, a face, or a smiling/cartoon version;
+- never infer a face merely from words such as `cute`, `child-friendly`, `cartoon` or `random`.
+
+Canvas/orientation:
+
+- output PNG on either exact `1024×1536` portrait (2:3) or exact `1536×1024` landscape (3:2);
+- the selected dimensions describe the whole page/canvas, not the subject;
+- choose orientation from the natural shape of the requested composition;
+- wide subjects such as cars, tractors, trains, buses, fire engines, ambulances and aircraft normally use landscape;
+- do not shrink a wide subject into portrait merely to make room for scenery;
+- important artwork must stay inside comfortable page margins.
+
+Color/style:
+
+- ordinary coloring pages default to black line art on white;
+- no unnecessary grayscale shading or filled dark backgrounds;
+- preserve intentional color only when the requested worksheet/activity requires color;
 - no watermark;
-- no unnecessary text;
-- for ordinary coloring pages, avoid unnecessary grayscale shading or filled dark backgrounds; learning worksheets may use intentional color when the task requires it;
-- keep important artwork inside comfortable page margins;
-- prefer one clear focal subject and a simple supporting scene.
+- no unnecessary text; letters, numbers, labels or captions appear only when explicitly requested or intrinsically required by the learning activity.
+
+Worksheets/activities:
+
+- for mazes, matching, cutting, tracing and similar tasks, include only the elements necessary to perform the activity;
+- decorative scene elements do not count as task content and should be omitted;
+- optimize for a preschool child being able to understand the task visually without extra explanation.
+
+Examples of the default interpretation:
+
+- `MAKE dino` → one simple dinosaur, white background, no scenery;
+- `MAKE traktors` → one simple tractor, no eyes, no mouth, white background;
+- `MAKE ātrā palīdzība` → one recognizable ambulance, no face and no decorative city scene unless requested;
+- `MAKE lapsa mežā pie sēnēm` → one fox plus only the minimum large forest cues needed to satisfy “mežā pie sēnēm”, not a dense forest scene;
+- `MAKE random` → choose a simple original subject that naturally works as a mostly isolated preschool coloring page; do not use `random` as permission to create a busy scene.
+
+Originality/public-use rule:
+
+- create an original illustration suitable for public project use;
+- if the requested subject would require directly copying a protected branded character, preserve the general role/theme but create an original character instead.
 
 The canonical import gates remain in `docs/MEDIA_STANDARD_V1.md`. A generated candidate is not published merely because it was generated.
 
