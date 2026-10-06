@@ -57,7 +57,7 @@ async function rankings(env, request) {
      WHERE d.day >= date('now', '-6 days')
      GROUP BY d.page_id
      HAVING recent_prints > 0
-     ORDER BY recent_prints DESC, print_count DESC, page_id ASC
+     ORDER BY recent_prints DESC, print_count DESC, d.page_id ASC
      LIMIT ?`
   ).bind(limit).all();
   return json({popular:popular.results||[],trending:trending.results||[],window_days:7});

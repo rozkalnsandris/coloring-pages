@@ -1,3 +1,4 @@
+import unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 def read(path: str)->str:
@@ -32,3 +33,43 @@ def test_stats_frontend_uses_first_party_random_id_only_on_engagement():
     assert 'getVisitorId(true)' in js
     assert 'localStorage.getItem(VISITOR_KEY)' in js
     assert 'crypto?.randomUUID?.()' in js
+
+
+class TrendingSqlRegressionTests(unittest.TestCase):
+    def test_trending_sql_is_executable_and_ranks_seven_utc_days(self):
+        import sqlite3
+
+        worker = read("cloudflare/stats-worker.js")
+        marker = "const trending = await env.DB.prepare("
+        assert worker.count(marker) == 1
+        sql = worker.split(marker, 1)[1].split("`", 2)[1]
+
+        with sqlite3.connect(":memory:") as db:
+            db.executescript(read("cloudflare/stats-schema.sql"))
+            db.executemany(
+                "INSERT INTO page_stats (page_id, print_count, like_count) VALUES (?, ?, ?)",
+                [
+                    ("alpha", 8, 0),
+                    ("beta", 8, 9),
+                    ("gamma", 3, 0),
+                    ("edge", 1, 0),
+                    ("expired", 90, 0),
+                ],
+            )
+            db.executescript("""
+                INSERT INTO daily_prints (page_id, day, print_count) VALUES
+                  ('alpha', date('now'), 4),
+                  ('beta', date('now', '-1 days'), 4),
+                  ('gamma', date('now', '-2 days'), 4),
+                  ('edge', date('now', '-6 days'), 1),
+                  ('expired', date('now', '-7 days'), 15);
+            """)
+            rows = db.execute(sql, (6,)).fetchall()
+            assert [(row[0], row[1], row[2]) for row in rows] == [
+                ("alpha", 4, 8),
+                ("beta", 4, 8),
+                ("gamma", 4, 3),
+                ("edge", 1, 1),
+            ]
+            assert [row[3] for row in rows] == [0, 9, 0, 0]
+            assert len(db.execute(sql, (2,)).fetchall()) == 2
