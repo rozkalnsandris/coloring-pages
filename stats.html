@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="lv">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
-  <meta name="description" content="Iekšējais Coloring Pages statistikas pārskats.">
-  <title>Statistika – Coloring Pages</title>
+  <meta name="description" content="Internal Coloring Pages statistics dashboard.">
+  <title>Statistics – Coloring Pages</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=c5d8c26a8a8349b2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,76 +13,76 @@
   <link rel="stylesheet" href="css/app.css?v=bd09a17705d75813">
 </head>
 <body class="stats-page">
-  <a class="skip-link" href="#main">Pāriet uz saturu</a>
+  <a class="skip-link" href="#main">Skip to content</a>
 
   <header class="site-header">
     <div class="container header-inner stats-header-inner">
-      <a class="brand" href="index.html" aria-label="Coloring Pages sākumlapa">
+      <a class="brand" href="index.html" aria-label="Coloring Pages home">
         <span class="brand-paw" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
         <span class="brand-word">
           <span>Coloring</span>
           <span class="brand-pages"><b>P</b><b>a</b><b>g</b><b>e</b><b>s</b></span>
         </span>
       </a>
-      <strong class="stats-header-title">Statistika</strong>
-      <a class="outline-link stats-home-link" href="index.html"><span aria-hidden="true">←</span> Uz vietni</a>
+      <strong class="stats-header-title">Statistics</strong>
+      <a class="outline-link stats-home-link" href="index.html"><span aria-hidden="true">←</span> Back to website</a>
     </div>
   </header>
 
   <main id="main" tabindex="-1">
     <section class="stats-hero" aria-labelledby="stats-title">
       <div class="container">
-        <span class="stats-eyebrow">Iekšējais pārskats</span>
+        <span class="stats-eyebrow">Internal dashboard</span>
         <div class="stats-hero-row">
           <div>
-            <h1 id="stats-title">Statistika</h1>
-            <p>Drukas darbības un atzīmes “Patīk” no Cloudflare Stats V1 backend.</p>
+            <h1 id="stats-title">Statistics</h1>
+            <p>Print actions and likes from the Cloudflare Stats V1 backend.</p>
           </div>
-          <button class="outline-link stats-refresh" type="button" data-stats-refresh>Atjaunināt <span aria-hidden="true">↻</span></button>
+          <button class="outline-link stats-refresh" type="button" data-stats-refresh>Refresh <span aria-hidden="true">↻</span></button>
         </div>
-        <p class="stats-status" data-stats-status aria-live="polite">Statistika tiek ielādēta …</p>
+        <p class="stats-status" data-stats-status aria-live="polite">Loading statistics …</p>
       </div>
     </section>
 
-    <section class="stats-summary" aria-label="Kopsavilkums">
+    <section class="stats-summary" aria-label="Summary">
       <div class="container stats-kpi-grid">
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">🖨️</span>
-          <div><span class="stats-kpi-label">Kopā drukas darbības</span><strong data-stats-total-prints>–</strong></div>
+          <div><span class="stats-kpi-label">Total print actions</span><strong data-stats-total-prints>–</strong></div>
         </article>
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">♥</span>
-          <div><span class="stats-kpi-label">Kopā “Patīk”</span><strong data-stats-total-likes>–</strong></div>
+          <div><span class="stats-kpi-label">Total likes</span><strong data-stats-total-likes>–</strong></div>
         </article>
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">🔥</span>
-          <div><span class="stats-kpi-label">Drukas pēdējās 7 dienās</span><strong data-stats-recent-prints>–</strong></div>
+          <div><span class="stats-kpi-label">Prints in the last 7 days</span><strong data-stats-recent-prints>–</strong></div>
         </article>
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">🖍️</span>
-          <div><span class="stats-kpi-label">Publicētās lapas</span><strong data-stats-published-pages>–</strong></div>
+          <div><span class="stats-kpi-label">Published pages</span><strong data-stats-published-pages>–</strong></div>
         </article>
       </div>
     </section>
 
-    <section class="stats-rankings" aria-label="Top saraksti">
+    <section class="stats-rankings" aria-label="Top lists">
       <div class="container stats-rankings-grid">
         <article class="stats-panel">
           <div class="stats-panel-heading">
-            <div><span class="stats-panel-kicker">Visu laiku</span><h2>⭐ Populārākās TOP 10</h2></div>
-            <span class="stats-panel-caption">Pēc drukas darbībām</span>
+            <div><span class="stats-panel-kicker">All time</span><h2>⭐ Popular TOP 10</h2></div>
+            <span class="stats-panel-caption">By print actions</span>
           </div>
           <ol class="stats-top-list" data-stats-popular></ol>
-          <p class="stats-empty" data-stats-popular-empty hidden>Vēl nav drukas darbību.</p>
+          <p class="stats-empty" data-stats-popular-empty hidden>No print actions yet.</p>
         </article>
 
         <article class="stats-panel">
           <div class="stats-panel-heading">
-            <div><span class="stats-panel-kicker">7 dienas</span><h2>🔥 Tendences TOP 10</h2></div>
-            <span class="stats-panel-caption">Pēdējo 7 dienu drukas darbības</span>
+            <div><span class="stats-panel-kicker">7 days</span><h2>🔥 Trending TOP 10</h2></div>
+            <span class="stats-panel-caption">Print actions in the last 7 days</span>
           </div>
           <ol class="stats-top-list" data-stats-trending></ol>
-          <p class="stats-empty" data-stats-trending-empty hidden>Šajā periodā vēl nav drukas darbību.</p>
+          <p class="stats-empty" data-stats-trending-empty hidden>No print actions in this period yet.</p>
         </article>
       </div>
     </section>
@@ -91,21 +91,21 @@
       <div class="container">
         <div class="stats-table-heading">
           <div>
-            <span class="stats-panel-kicker">Katalogs</span>
-            <h2 id="stats-all-title">Visas krāsojamās lapas</h2>
+            <span class="stats-panel-kicker">Catalog</span>
+            <h2 id="stats-all-title">All coloring pages</h2>
           </div>
           <div class="stats-controls">
             <label class="stats-search">
-              <span class="sr-only">Meklēt krāsojamo lapu</span>
-              <input type="search" placeholder="Meklēt krāsojamo lapu …" data-stats-search>
+              <span class="sr-only">Search coloring pages</span>
+              <input type="search" placeholder="Search coloring pages …" data-stats-search>
             </label>
             <label class="stats-sort-label">
-              <span class="sr-only">Kārtošana</span>
+              <span class="sr-only">Sort</span>
               <select data-stats-sort>
-                <option value="prints">Kopā drukas</option>
-                <option value="recent">Pēdējās 7 dienas</option>
-                <option value="likes">Patīk</option>
-                <option value="title">Nosaukums A–Z</option>
+                <option value="prints">Total prints</option>
+                <option value="recent">Last 7 days</option>
+                <option value="likes">Likes</option>
+                <option value="title">Title A–Z</option>
               </select>
             </label>
           </div>
@@ -115,23 +115,23 @@
           <table class="stats-table">
             <thead>
               <tr>
-                <th scope="col">Krāsojamā lapa</th>
-                <th scope="col">Kategorija</th>
-                <th scope="col" class="stats-number">Drukas</th>
-                <th scope="col" class="stats-number">7 dienas</th>
-                <th scope="col" class="stats-number">Patīk</th>
+                <th scope="col">Coloring page</th>
+                <th scope="col">Category</th>
+                <th scope="col" class="stats-number">Prints</th>
+                <th scope="col" class="stats-number">7 days</th>
+                <th scope="col" class="stats-number">Likes</th>
               </tr>
             </thead>
             <tbody data-stats-table></tbody>
           </table>
         </div>
-        <p class="stats-empty" data-stats-table-empty hidden>Nav atrasta atbilstoša krāsojamā lapa.</p>
-        <p class="stats-note">“Drukas” skaita klikšķi uz “A4 drucken” kā drukāšanas nodomu — nevis fizisku izdruku.</p>
+        <p class="stats-empty" data-stats-table-empty hidden>No matching coloring page found.</p>
+        <p class="stats-note">“Prints” counts clicks on the public “A4 drucken” button as print intent — not a physical print.</p>
       </div>
     </section>
   </main>
 
   <script src="js/stats.js?v=0d8a4a7be32b1ed5" defer></script>
-  <script src="js/stats-admin.js?v=db2a95261fe0772c" defer></script>
+  <script src="js/stats-admin.js?v=6f15156981f509e8" defer></script>
 </body>
 </html>

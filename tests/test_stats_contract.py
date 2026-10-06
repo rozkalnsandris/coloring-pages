@@ -104,9 +104,9 @@ class AdminStatsDashboardTests(unittest.TestCase):
         self.assertIn("data-stats-table", html)
         self.assertNotIn('href="stats.html"', public_home)
         self.assertIn("stats.html", dockerfile)
-        self.assertIn('<html lang="lv">', html)
-        self.assertIn("Iekšējais pārskats", html)
-        self.assertIn("Atjaunināt", html)
+        self.assertIn('<html lang="en">', html)
+        self.assertIn("Internal dashboard", html)
+        self.assertIn("Refresh", html)
 
     def test_admin_dashboard_uses_read_only_shared_stats_api(self):
         shared = read("js/stats.js")
@@ -119,5 +119,5 @@ class AdminStatsDashboardTests(unittest.TestCase):
         self.assertNotIn("toggleLike", admin)
         self.assertNotIn("trackPrint", admin)
         self.assertNotIn('method: "POST"', admin)
-        self.assertIn('new Intl.NumberFormat("lv-LV")', admin)
-        self.assertIn('new Intl.DateTimeFormat("lv-LV"', admin)
+        self.assertIn('new Intl.NumberFormat("en-GB")', admin)
+        self.assertIn('new Intl.DateTimeFormat("en-GB"', admin)
