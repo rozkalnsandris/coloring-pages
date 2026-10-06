@@ -1,12 +1,12 @@
 (() => {
   const CATEGORY_LABELS = {
-    tiere: "Tiere",
-    fahrzeuge: "Fahrzeuge",
-    alphabet: "Alphabet",
-    lernen: "Lernen",
-    figuren: "Figuren & Helden",
-    jahreszeiten: "Jahreszeiten & Feste",
-    seasonal: "Jahreszeiten & Feste",
+    tiere: "Dzīvnieki",
+    fahrzeuge: "Transportlīdzekļi",
+    alphabet: "Alfabēts",
+    lernen: "Mācības",
+    figuren: "Figūras un varoņi",
+    jahreszeiten: "Gadalaiki un svētki",
+    seasonal: "Gadalaiki un svētki",
   };
 
   const els = {
@@ -26,7 +26,7 @@
     refresh: document.querySelector("[data-stats-refresh]"),
   };
 
-  const numberFormat = new Intl.NumberFormat("de-DE");
+  const numberFormat = new Intl.NumberFormat("lv-LV");
   let rows = [];
 
   function number(value) {
@@ -35,7 +35,7 @@
   }
 
   function normalize(value) {
-    return String(value || "").trim().toLocaleLowerCase("de");
+    return String(value || "").trim().toLocaleLowerCase("lv");
   }
 
   function formatNumber(value) {
@@ -77,8 +77,8 @@
     metric.setAttribute(
       "aria-label",
       kind === "recent"
-        ? formatNumber(row.recent_prints) + " Druckaktionen in den letzten 7 Tagen"
-        : formatNumber(row.print_count) + " Druckaktionen insgesamt"
+        ? formatNumber(row.recent_prints) + " drukas darbības pēdējās 7 dienās"
+        : formatNumber(row.print_count) + " drukas darbības kopā"
     );
 
     item.append(rank, image, copy, metric);
@@ -162,7 +162,7 @@
 
   async function load() {
     els.refresh.disabled = true;
-    els.status.textContent = "Statistik wird geladen …";
+    els.status.textContent = "Statistika tiek ielādēta …";
     try {
       const [catalogResponse, overview] = await Promise.all([
         fetch("catalog.json", {cache: "no-store"}),
@@ -204,12 +204,12 @@
       const catalogIds = new Set(rows.map((row) => row.id));
       const unknown = (Array.isArray(overview.pages) ? overview.pages : [])
         .filter((item) => !catalogIds.has(String(item.page_id))).length;
-      const time = new Intl.DateTimeFormat("de-DE", {hour: "2-digit", minute: "2-digit"}).format(new Date());
+      const time = new Intl.DateTimeFormat("lv-LV", {hour: "2-digit", minute: "2-digit"}).format(new Date());
       els.status.textContent = unknown
-        ? "Aktualisiert um " + time + " · " + unknown + " Statistik-ID(s) nicht im aktuellen Katalog"
-        : "Aktualisiert um " + time;
+        ? "Atjaunināts plkst. " + time + " · statistikā ir " + unknown + " ID, kas nav pašreizējā katalogā"
+        : "Atjaunināts plkst. " + time;
     } catch (error) {
-      els.status.textContent = "Statistik konnte nicht geladen werden.";
+      els.status.textContent = "Statistiku neizdevās ielādēt.";
       console.error(error);
     } finally {
       els.refresh.disabled = false;
@@ -221,7 +221,7 @@
   els.refresh?.addEventListener("click", load);
 
   if (!window.ColoringStats?.getOverview) {
-    els.status.textContent = "Statistik-API ist nicht verfügbar.";
+    els.status.textContent = "Statistikas API nav pieejama.";
   } else {
     load();
   }
