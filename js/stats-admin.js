@@ -1,12 +1,12 @@
 (() => {
   const CATEGORY_LABELS = {
-    tiere: "Dzīvnieki",
-    fahrzeuge: "Transportlīdzekļi",
-    alphabet: "Alfabēts",
-    lernen: "Mācības",
-    figuren: "Figūras un varoņi",
-    jahreszeiten: "Gadalaiki un svētki",
-    seasonal: "Gadalaiki un svētki",
+    tiere: "Animals",
+    fahrzeuge: "Vehicles",
+    alphabet: "Alphabet",
+    lernen: "Learning",
+    figuren: "Characters & Heroes",
+    jahreszeiten: "Seasons & Holidays",
+    seasonal: "Seasons & Holidays",
   };
 
   const els = {
@@ -26,7 +26,7 @@
     refresh: document.querySelector("[data-stats-refresh]"),
   };
 
-  const numberFormat = new Intl.NumberFormat("lv-LV");
+  const numberFormat = new Intl.NumberFormat("en-GB");
   let rows = [];
 
   function number(value) {
@@ -35,7 +35,7 @@
   }
 
   function normalize(value) {
-    return String(value || "").trim().toLocaleLowerCase("lv");
+    return String(value || "").trim().toLocaleLowerCase("en");
   }
 
   function formatNumber(value) {
@@ -77,8 +77,8 @@
     metric.setAttribute(
       "aria-label",
       kind === "recent"
-        ? formatNumber(row.recent_prints) + " drukas darbības pēdējās 7 dienās"
-        : formatNumber(row.print_count) + " drukas darbības kopā"
+        ? formatNumber(row.recent_prints) + " print actions in the last 7 days"
+        : formatNumber(row.print_count) + " print actions in total"
     );
 
     item.append(rank, image, copy, metric);
@@ -162,7 +162,7 @@
 
   async function load() {
     els.refresh.disabled = true;
-    els.status.textContent = "Statistika tiek ielādēta …";
+    els.status.textContent = "Loading statistics …";
     try {
       const [catalogResponse, overview] = await Promise.all([
         fetch("catalog.json", {cache: "no-store"}),
@@ -204,12 +204,12 @@
       const catalogIds = new Set(rows.map((row) => row.id));
       const unknown = (Array.isArray(overview.pages) ? overview.pages : [])
         .filter((item) => !catalogIds.has(String(item.page_id))).length;
-      const time = new Intl.DateTimeFormat("lv-LV", {hour: "2-digit", minute: "2-digit"}).format(new Date());
+      const time = new Intl.DateTimeFormat("en-GB", {hour: "2-digit", minute: "2-digit"}).format(new Date());
       els.status.textContent = unknown
-        ? "Atjaunināts plkst. " + time + " · statistikā ir " + unknown + " ID, kas nav pašreizējā katalogā"
-        : "Atjaunināts plkst. " + time;
+        ? "Updated at " + time + " · " + unknown + " stats ID" + (unknown === 1 ? "" : "s") + " not in the current catalog"
+        : "Updated at " + time;
     } catch (error) {
-      els.status.textContent = "Statistiku neizdevās ielādēt.";
+      els.status.textContent = "Could not load statistics.";
       console.error(error);
     } finally {
       els.refresh.disabled = false;
@@ -221,7 +221,7 @@
   els.refresh?.addEventListener("click", load);
 
   if (!window.ColoringStats?.getOverview) {
-    els.status.textContent = "Statistikas API nav pieejama.";
+    els.status.textContent = "Statistics API is unavailable.";
   } else {
     load();
   }
