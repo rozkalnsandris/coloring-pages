@@ -276,6 +276,20 @@ class RuntimeContractTests(unittest.TestCase):
             migration,
         )
 
+    def test_home_catalog_renders_twenty_items_per_batch(self):
+        index = (ROOT / "index.html").read_text(encoding="utf-8")
+        app = (ROOT / "js/app.js").read_text(encoding="utf-8")
+        css = (ROOT / "css/app.css").read_text(encoding="utf-8")
+
+        self.assertIn('id="new-pages-gallery"', index)
+        self.assertIn("data-load-more", index)
+        self.assertIn("Mehr anzeigen", index)
+        self.assertIn("const CATALOG_PAGE_SIZE = 20;", app)
+        self.assertIn("matches.slice(0, visibleLimit)", app)
+        self.assertIn("visibleLimit += CATALOG_PAGE_SIZE;", app)
+        self.assertIn('image.loading = "lazy";', app)
+        self.assertIn(".gallery-actions", css)
+
     def test_frontend_fetches_runtime_catalog(self):
         for path in ("js/app.js", "js/detail.js", "js/print.js"):
             source = (ROOT / path).read_text(encoding="utf-8")

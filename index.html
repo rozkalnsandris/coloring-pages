@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=33071f91c48248e8">
+  <link rel="stylesheet" href="css/app.css?v=c4aa079c75457b1f">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -123,7 +123,7 @@
           <a class="outline-link" href="#neu" data-reset-filters><span class="desktop-label">Alle Malvorlagen ansehen</span><span class="mobile-label">Alle ansehen</span><span class="catalog-total"><span data-total-count>0</span><span class="sr-only"> Malvorlagen insgesamt</span></span><span aria-hidden="true">→</span></a>
         </div>
 
-        <div class="gallery" data-gallery>
+        <div id="new-pages-gallery" class="gallery" data-gallery>
           <article class="coloring-card" data-title="Rettungshund in den Bergen" data-category="tiere">
             <a class="preview-placeholder" href="detail.html" aria-label="Rettungshund in den Bergen ansehen" data-fallback-detail>
               <span aria-hidden="true">🐕‍🦺</span><small>Vorschau folgt</small>
@@ -163,6 +163,12 @@
           </article>
         </div>
 
+        <div class="gallery-actions">
+          <button class="outline-link" type="button" data-load-more aria-controls="new-pages-gallery" hidden>
+            Mehr anzeigen <span aria-hidden="true">↓</span>
+          </button>
+        </div>
+
         <p class="result-count sr-only" aria-live="polite" data-result-count>6 Malvorlagen</p>
         <p class="empty-state" data-empty-state hidden>Keine passenden Malvorlagen gefunden.</p>
       </div>
@@ -192,6 +198,6 @@
     </section>
   </main>
 
-  <script src="js/app.js?v=cae49f939a775278" defer></script>
+  <script src="js/app.js?v=61e62575723dbc75" defer></script>
 </body>
 </html>
