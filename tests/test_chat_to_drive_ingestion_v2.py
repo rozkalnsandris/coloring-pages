@@ -96,7 +96,7 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
 
         self.assertIn("Current runtime eligibility preflight", v2_docs)
         self.assertIn("current runtime eligibility", multipage_docs)
-        self.assertIn("operator/importer alignment", agents)
+        self.assertIn("current runtime eligibility", agents)
         self.assertNotIn(
             "The trusted host implementation now runs `RPi5_main@",
             v2_docs,
