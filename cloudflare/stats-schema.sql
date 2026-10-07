@@ -47,3 +47,14 @@ CREATE TABLE IF NOT EXISTS daily_visitors (
   visitor_hash TEXT NOT NULL,
   PRIMARY KEY (day, visitor_hash)
 );
+
+CREATE TABLE IF NOT EXISTS daily_campaign_events (
+  campaign TEXT NOT NULL,
+  event TEXT NOT NULL CHECK (event IN ('landing', 'catalog', 'detail', 'print')),
+  page_id TEXT NOT NULL DEFAULT '',
+  day TEXT NOT NULL,
+  event_count INTEGER NOT NULL DEFAULT 0 CHECK (event_count >= 0),
+  PRIMARY KEY (campaign, event, page_id, day)
+);
+CREATE INDEX IF NOT EXISTS idx_daily_campaign_events_day
+ON daily_campaign_events(campaign, day, event, event_count DESC);
