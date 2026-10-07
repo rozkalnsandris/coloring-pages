@@ -176,7 +176,7 @@ a { color: inherit; }
 .category-card:hover { border-color: rgb(16 40 77 / 24%); transform: translateY(-2px); }
 .category-card.is-active { border-color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue); }
 .category-icon {
-  grid-column: 1 / -1; align-self: center; justify-self: center; font-size: 55px; line-height: 1;
+  grid-column: 1 / -1; grid-row: 1; align-self: center; justify-self: center; font-size: 55px; line-height: 1;
   filter: saturate(.9);
 }
 .category-name {
@@ -184,7 +184,7 @@ a { color: inherit; }
   font-size: 16px; font-weight: 800; hyphens: auto;
 }
 .category-arrow {
-  grid-column: 2; grid-row: 1; align-self: center; justify-self: end;
+  position: absolute; top: 50%; right: 14px; transform: translateY(-50%);
   display: grid; place-items: center; width: 31px; height: 31px; border-radius: 50%;
   font-size: 25px; line-height: 1; font-weight: 800;
 }
@@ -375,7 +375,7 @@ a { color: inherit; }
   }
   .category-icon { grid-column: auto; justify-self: start; font-size: 43px; }
   .category-name { grid-column: 1 / -1; grid-row: 2; padding-right: 30px; font-size: 15px; }
-  .category-arrow { grid-column: 2; grid-row: 1; width: 30px; height: 30px; }
+  .category-arrow { right: 11px; width: 30px; height: 30px; }
   .category-count { right: 11px; bottom: 11px; min-width: 24px; height: 24px; font-size: 11px; }
   .category-abc { font-size: 34px; }
   .new-pages { padding: 20px 0 36px; }
