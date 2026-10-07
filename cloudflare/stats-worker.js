@@ -3,6 +3,9 @@ const PAGE_ID_RE = /^[a-z0-9][a-z0-9_-]{0,79}$/i;
 const VISITOR_ID_RE = /^[a-z0-9][a-z0-9._:-]{5,127}$/i;
 const ANALYTICS_API = "https://api.cloudflare.com/client/v4/graphql";
 const ANALYTICS_RANGE_DAYS = new Set([7, 30]);
+const CAMPAIGN_IDS = new Set(["dortmund-01"]);
+const CAMPAIGN_STAGES = new Set(["landing", "catalog"]);
+const CAMPAIGN_EVENTS = new Set(["landing", "catalog", "detail", "print"]);
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -16,6 +19,7 @@ function json(data, status = 200) {
 }
 function validPageId(value) { return typeof value === "string" && PAGE_ID_RE.test(value); }
 function validVisitorId(value) { return typeof value === "string" && VISITOR_ID_RE.test(value); }
+function validCampaign(value) { return typeof value === "string" && CAMPAIGN_IDS.has(value); }
 
 async function sha256(value) {
   const bytes = new TextEncoder().encode(value);
@@ -50,6 +54,17 @@ async function rateLimit(env, visitorId, action) {
   if (!env.RATE_LIMITER || !visitorId) return true;
   const {success} = await env.RATE_LIMITER.limit({key:`${action}:${visitorId}`});
   return success;
+}
+function campaignEventStatement(env, campaign, event, pageId = "") {
+  if (!validCampaign(campaign) || !CAMPAIGN_EVENTS.has(event)) return null;
+  const pageEvent = event === "detail" || event === "print";
+  if (pageEvent ? !validPageId(pageId) : pageId !== "") return null;
+  return env.DB.prepare(
+    `INSERT INTO daily_campaign_events (campaign, event, page_id, day, event_count)
+     VALUES (?, ?, ?, date('now'), 1)
+     ON CONFLICT(campaign, event, page_id, day)
+     DO UPDATE SET event_count=event_count+1`
+  ).bind(campaign,event,pageId);
 }
 async function rankings(env, request) {
   const url = new URL(request.url);
@@ -148,6 +163,35 @@ async function overviewStats(env) {
   });
 }
 
+async function campaignStats(env, request) {
+  const url = new URL(request.url);
+  const requestedDays = Number(url.searchParams.get("days")) || 30;
+  const days = ANALYTICS_RANGE_DAYS.has(requestedDays) ? requestedDays : 30;
+  const modifier = "-" + String(days - 1) + " days";
+  const rows = await env.DB.prepare(
+    `SELECT campaign,
+            SUM(CASE WHEN event = 'landing' THEN event_count ELSE 0 END) AS landing_count,
+            SUM(CASE WHEN event = 'catalog' THEN event_count ELSE 0 END) AS catalog_count,
+            SUM(CASE WHEN event = 'detail' THEN event_count ELSE 0 END) AS detail_count,
+            SUM(CASE WHEN event = 'print' THEN event_count ELSE 0 END) AS print_count
+     FROM daily_campaign_events
+     WHERE day >= date('now', ?)
+     GROUP BY campaign
+     ORDER BY campaign ASC`
+  ).bind(modifier).all();
+  return json({
+    range_days:days,
+    campaigns:(rows.results || []).map((row)=>({
+      campaign:String(row.campaign),
+      landing_count:Number(row.landing_count || 0),
+      catalog_count:Number(row.catalog_count || 0),
+      detail_count:Number(row.detail_count || 0),
+      print_count:Number(row.print_count || 0),
+    })),
+    counting_basis:"aggregate-event-counts-not-unique-kitas",
+  });
+}
+
 function crawlerName(userAgent) {
   const ua = String(userAgent || "").toLowerCase();
   const known = [
@@ -200,16 +244,22 @@ async function recordVisitor(env, request) {
   const secret = String(env.VISITOR_HMAC_KEY || "");
   const ip = request.headers.get("CF-Connecting-IP") || "";
   if (secret.length < 32 || !ip) return json({error:"visitor_tracking_unavailable"},503);
+  const body = await request.json().catch(()=>({}));
   const day = new Date().toISOString().slice(0,10);
   const host = new URL(env.PUBLIC_ORIGIN || DEFAULT_ORIGIN).hostname;
   const visitorHash = await hmacSha256(secret,`${day}\n${host}\n${ip}`);
-  await env.DB.batch([
+  const statements = [
     env.DB.prepare(
       `INSERT OR IGNORE INTO daily_visitors (day, visitor_hash)
        VALUES (?, ?)`
     ).bind(day,visitorHash),
     env.DB.prepare("DELETE FROM daily_visitors WHERE day < date('now', '-1 day')"),
-  ]);
+  ];
+  if (validCampaign(body.campaign) && CAMPAIGN_STAGES.has(body.stage)) {
+    const campaign = campaignEventStatement(env,body.campaign,body.stage);
+    if (campaign) statements.push(campaign);
+  }
+  await env.DB.batch(statements);
   return json({ok:true},201);
 }
 
@@ -336,11 +386,16 @@ async function recordView(env, request) {
   if (!allowedWriteOrigin(request,env)) return json({error:"forbidden"},403);
   const body = await parseBody(request);
   if (!body) return json({error:"invalid request"},400);
-  await env.DB.prepare(
-    `INSERT INTO daily_views (page_id, day, view_count)
-     VALUES (?, date('now'), 1)
-     ON CONFLICT(page_id, day) DO UPDATE SET view_count=view_count+1`
-  ).bind(body.page_id).run();
+  const statements = [
+    env.DB.prepare(
+      `INSERT INTO daily_views (page_id, day, view_count)
+       VALUES (?, date('now'), 1)
+       ON CONFLICT(page_id, day) DO UPDATE SET view_count=view_count+1`
+    ).bind(body.page_id),
+  ];
+  const campaign = campaignEventStatement(env,body.campaign,"detail",body.page_id);
+  if (campaign) statements.push(campaign);
+  await env.DB.batch(statements);
   return json({ok:true},201);
 }
 
@@ -363,7 +418,7 @@ async function recordPrint(env, request) {
   const body = await parseBody(request);
   if (!body || !validVisitorId(body.visitor_id)) return json({error:"invalid request"},400);
   if (!(await rateLimit(env,body.visitor_id,"print"))) return json({error:"rate_limited"},429);
-  await env.DB.batch([
+  const statements = [
     env.DB.prepare(
       `INSERT INTO page_stats (page_id, print_count, updated_at)
        VALUES (?, 1, datetime('now'))
@@ -374,7 +429,10 @@ async function recordPrint(env, request) {
        VALUES (?, date('now'), 1)
        ON CONFLICT(page_id, day) DO UPDATE SET print_count=print_count+1`
     ).bind(body.page_id),
-  ]);
+  ];
+  const campaign = campaignEventStatement(env,body.campaign,"print",body.page_id);
+  if (campaign) statements.push(campaign);
+  await env.DB.batch(statements);
   return json({ok:true},201);
 }
 async function toggleLike(env, request) {
@@ -397,6 +455,7 @@ export default {
     const path = new URL(request.url).pathname;
     if (request.method==="GET" && path==="/api/stats/rankings") return rankings(env,request);
     if (request.method==="GET" && path==="/api/stats/overview") return overviewStats(env);
+    if (request.method==="GET" && path==="/api/stats/campaigns") return campaignStats(env,request);
     if (request.method==="GET" && path==="/api/stats/traffic") return trafficStats(env,request);
     if (request.method==="GET" && path==="/api/stats/page") return pageStats(env,request);
     if (request.method==="POST" && path==="/api/stats/visit") return recordVisitor(env,request);

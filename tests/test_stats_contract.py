@@ -314,3 +314,42 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertIn("CF_ANALYTICS_API_TOKEN", docs)
         self.assertIn("VISITOR_HMAC_KEY", docs)
         self.assertIn("separate Cloudflare owner gate", docs)
+
+
+class KitaCampaignStatsTests(unittest.TestCase):
+    def test_campaign_schema_is_aggregate_and_allowlisted(self):
+        schema = read("cloudflare/stats-schema.sql")
+        worker = read("cloudflare/stats-worker.js")
+        self.assertIn("CREATE TABLE IF NOT EXISTS daily_campaign_events", schema)
+        self.assertIn("PRIMARY KEY (campaign, event, page_id, day)", schema)
+        self.assertIn('const CAMPAIGN_IDS = new Set(["dortmund-01"])', worker)
+        self.assertIn("INSERT INTO daily_campaign_events", worker)
+        self.assertIn('path==="/api/stats/campaigns"', worker)
+        campaign = worker[worker.index("async function campaignStats"):worker.index("function crawlerName")]
+        self.assertNotIn("visitor_hash", campaign)
+        self.assertNotIn("CF-Connecting-IP", campaign)
+
+    def test_campaign_is_carried_through_existing_funnel(self):
+        shared = read("js/stats.js")
+        app = read("js/app.js")
+        kita = read("js/kita.js")
+        detail = read("js/detail.js")
+        self.assertIn('new Set(["dortmund-01"])', shared)
+        self.assertIn('trackVisit?.("landing")', kita)
+        self.assertIn('params.set("campaign","dortmund-01")', app)
+        self.assertIn("payload.campaign = campaign", shared)
+        self.assertIn("ColoringStats?.trackView?.(entry.id)", detail)
+        self.assertIn("ColoringStats?.trackPrint?.(loadedEntryId)", detail)
+
+    def test_admin_campaign_panel_is_read_only_and_optional(self):
+        html = read("stats.html")
+        shared = read("js/stats.js")
+        admin = read("js/stats-admin.js")
+        self.assertIn("data-stats-kita-landing", html)
+        self.assertIn("data-stats-kita-catalog", html)
+        self.assertIn("data-stats-kita-detail", html)
+        self.assertIn("data-stats-kita-prints", html)
+        self.assertIn("async function getCampaigns(days = 30)", shared)
+        self.assertIn("getCampaigns?.(30).catch(() => null)", admin)
+        self.assertIn('item.campaign === "dortmund-01"', admin)
+        self.assertNotIn('method: "POST"', admin)

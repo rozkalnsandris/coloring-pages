@@ -1,6 +1,12 @@
 (() => {
   const API_BASE = "/api/stats";
   const VISITOR_KEY = "coloring-pages-visitor-v1";
+  const CAMPAIGN_IDS = new Set(["dortmund-01"]);
+
+  function currentCampaign() {
+    const value = new URLSearchParams(location.search).get("campaign") || "";
+    return CAMPAIGN_IDS.has(value) ? value : "";
+  }
 
   function getVisitorId(create = false) {
     try {
@@ -44,6 +50,11 @@
     return requestJson(`/traffic?days=${safeDays}`);
   }
 
+  async function getCampaigns(days = 30) {
+    const safeDays = Number(days) === 7 ? 7 : 30;
+    return requestJson(`/campaigns?days=${safeDays}`);
+  }
+
   async function getPage(pageId) {
     const visitorId = getVisitorId(false);
     const query = new URLSearchParams({page_id: pageId});
@@ -60,17 +71,25 @@
   }
 
   function trackVisit() {
+    const stage = arguments[0] || "";
+    const campaign = currentCampaign();
+    const body = campaign && (stage === "landing" || stage === "catalog")
+      ? {campaign,stage}
+      : {};
     fetch(`${API_BASE}/visit`, {
       method: "POST",
       credentials: "same-origin",
       keepalive: true,
       headers: {"Content-Type": "application/json"},
-      body: "{}",
+      body: JSON.stringify(body),
     }).catch(() => {});
   }
 
   function trackView(pageId) {
-    const body = JSON.stringify({page_id: pageId});
+    const payload = {page_id: pageId};
+    const campaign = currentCampaign();
+    if (campaign) payload.campaign = campaign;
+    const body = JSON.stringify(payload);
     if (navigator.sendBeacon) {
       try {
         const blob = new Blob([body], {type: "application/json"});
@@ -88,7 +107,10 @@
 
   function trackPrint(pageId) {
     const visitorId = getVisitorId(true);
-    const body = JSON.stringify({page_id: pageId, visitor_id: visitorId});
+    const payload = {page_id: pageId, visitor_id: visitorId};
+    const campaign = currentCampaign();
+    if (campaign) payload.campaign = campaign;
+    const body = JSON.stringify(payload);
     if (navigator.sendBeacon) {
       try {
         const blob = new Blob([body], {type: "application/json"});
@@ -104,8 +126,10 @@
     }).catch(() => {});
   }
 
-  window.ColoringStats = {getRankings, getOverview, getTraffic, getPage, toggleLike, trackVisit, trackView, trackPrint};
+  window.ColoringStats = {getRankings, getOverview, getTraffic, getCampaigns, getPage, toggleLike, trackVisit, trackView, trackPrint};
 
-  const publicPath = location.pathname === "/" || location.pathname === "/index.html" || location.pathname === "/detail.html";
-  if (publicPath) trackVisit();
+  const homePath = location.pathname === "/" || location.pathname === "/index.html";
+  const detailPath = location.pathname === "/detail.html";
+  if (homePath) trackVisit(currentCampaign() ? "catalog" : "");
+  if (detailPath) trackVisit();
 })();

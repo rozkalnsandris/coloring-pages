@@ -174,6 +174,14 @@ function createMetricRow(stats) {
   prints.textContent=`🖨 ${formatMetric(stats?.print_count)}`;
   row.append(likes,prints); return row;
 }
+function detailHref(pageId) {
+  const params = new URLSearchParams({id:String(pageId)});
+  if (new URLSearchParams(location.search).get("campaign") === "dortmund-01") {
+    params.set("campaign","dortmund-01");
+  }
+  return `detail.html?${params.toString()}`;
+}
+
 function createCatalogCard(entry, stats = null) {
   const card = document.createElement("article");
   card.className = "coloring-card";
@@ -182,7 +190,7 @@ function createCatalogCard(entry, stats = null) {
 
   const previewLink = document.createElement("a");
   previewLink.className = "preview-image";
-  previewLink.href = `detail.html?id=${encodeURIComponent(entry.id)}`;
+  previewLink.href = detailHref(entry.id);
   previewLink.setAttribute("aria-label", `${entry.title} ansehen`);
 
   const image = document.createElement("img");
