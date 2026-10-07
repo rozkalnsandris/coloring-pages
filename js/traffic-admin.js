@@ -10,21 +10,22 @@
   };
 
   const els = {
-    status: document.querySelector("[data-stats-status]"),
-    totalPrints: document.querySelector("[data-stats-total-prints]"),
-    totalLikes: document.querySelector("[data-stats-total-likes]"),
-    recentPrints: document.querySelector("[data-stats-recent-prints]"),
-    publishedPages: document.querySelector("[data-stats-published-pages]"),
-    popular: document.querySelector("[data-stats-popular]"),
-    popularEmpty: document.querySelector("[data-stats-popular-empty]"),
-    trending: document.querySelector("[data-stats-trending]"),
-    trendingEmpty: document.querySelector("[data-stats-trending-empty]"),
-    table: document.querySelector("[data-stats-table]"),
-    tableEmpty: document.querySelector("[data-stats-table-empty]"),
-    search: document.querySelector("[data-stats-search]"),
-    sort: document.querySelector("[data-stats-sort]"),
-    refresh: document.querySelector("[data-stats-refresh]"),
-    loadMore: document.querySelector("[data-stats-load-more]"),
+    status: document.querySelector("[data-traffic-page-status]"),
+    visits: document.querySelector("[data-stats-visits]"),
+    totalViews: document.querySelector("[data-stats-total-views]"),
+    recentViews: document.querySelector("[data-stats-recent-views]"),
+    crawlerRequests: document.querySelector("[data-stats-crawler-requests]"),
+    trafficStatus: document.querySelector("[data-traffic-status]"),
+    viewed: document.querySelector("[data-stats-viewed]"),
+    viewedEmpty: document.querySelector("[data-stats-viewed-empty]"),
+    crawlers: document.querySelector("[data-stats-crawlers]"),
+    crawlersEmpty: document.querySelector("[data-stats-crawlers-empty]"),
+    table: document.querySelector("[data-traffic-table]"),
+    tableEmpty: document.querySelector("[data-traffic-table-empty]"),
+    search: document.querySelector("[data-traffic-search]"),
+    sort: document.querySelector("[data-traffic-sort]"),
+    refresh: document.querySelector("[data-traffic-refresh]"),
+    loadMore: document.querySelector("[data-traffic-load-more]"),
   };
 
   const CATALOG_PAGE_SIZE = 20;
@@ -49,7 +50,7 @@
     return CATEGORY_LABELS[value] || value || "–";
   }
 
-  function createTopItem(row, index, kind) {
+  function createTopItem(row, index) {
     const item = document.createElement("li");
     item.className = "stats-top-item";
 
@@ -74,41 +75,52 @@
 
     const metric = document.createElement("strong");
     metric.className = "stats-top-metric";
-    metric.textContent = kind === "recent"
-      ? "🔥 " + formatNumber(row.recent_prints)
-      : "🖨 " + formatNumber(row.print_count);
-    metric.setAttribute(
-      "aria-label",
-      kind === "recent"
-        ? formatNumber(row.recent_prints) + " print actions in the last 7 days"
-        : formatNumber(row.print_count) + " print actions in total"
-    );
+    metric.textContent = "👁 " + formatNumber(row.recent_views);
+    metric.setAttribute("aria-label", formatNumber(row.recent_views) + " coloring page views in the last 7 days");
 
     item.append(rank, image, copy, metric);
     return item;
   }
 
-  function renderTopList(target, empty, source, kind) {
-    const metricKey = kind === "recent" ? "recent_prints" : "print_count";
-    const sorted = [...source]
-      .filter((row) => number(row[metricKey]) > 0)
+  function renderTopList() {
+    const sorted = [...rows]
+      .filter((row) => number(row.recent_views) > 0)
       .sort((a, b) =>
-        number(b[metricKey]) - number(a[metricKey])
-        || number(b.print_count) - number(a.print_count)
-        || number(b.like_count) - number(a.like_count)
+        number(b.recent_views) - number(a.recent_views)
+        || number(b.view_count) - number(a.view_count)
         || String(a.title).localeCompare(String(b.title), "de")
       )
       .slice(0, 10);
 
-    target.replaceChildren(...sorted.map((row, index) => createTopItem(row, index, kind)));
-    empty.hidden = sorted.length !== 0;
+    els.viewed.replaceChildren(...sorted.map(createTopItem));
+    els.viewedEmpty.hidden = sorted.length !== 0;
+  }
+
+  function renderCrawlers(crawlers) {
+    const source = Array.isArray(crawlers) ? crawlers : [];
+    const crawlerRows = source.map((crawler) => {
+      const tr = document.createElement("tr");
+      const name = document.createElement("td");
+      name.textContent = crawler.name || "Other crawler";
+      const requests = document.createElement("td");
+      requests.className = "stats-number";
+      requests.textContent = formatNumber(crawler.requests);
+      const paths = document.createElement("td");
+      paths.textContent = (Array.isArray(crawler.paths) ? crawler.paths : [])
+        .map((item) => (item.path || "/") + " (" + formatNumber(item.requests) + ")")
+        .join(" · ");
+      tr.append(name, requests, paths);
+      return tr;
+    });
+    els.crawlers.replaceChildren(...crawlerRows);
+    els.crawlersEmpty.hidden = crawlerRows.length !== 0;
   }
 
   function tableSort(a, b, mode) {
     if (mode === "title") return String(a.title).localeCompare(String(b.title), "de");
-    const key = mode === "recent" ? "recent_prints" : mode === "likes" ? "like_count" : "print_count";
+    const key = mode === "views" ? "view_count" : "recent_views";
     return number(b[key]) - number(a[key])
-      || number(b.print_count) - number(a.print_count)
+      || number(b.view_count) - number(a.view_count)
       || String(a.title).localeCompare(String(b.title), "de");
   }
 
@@ -131,25 +143,21 @@
     const category = document.createElement("td");
     category.textContent = categoryLabel(row.category);
 
-    const prints = document.createElement("td");
-    prints.className = "stats-number";
-    prints.textContent = formatNumber(row.print_count);
+    const views = document.createElement("td");
+    views.className = "stats-number";
+    views.textContent = formatNumber(row.view_count);
 
-    const recent = document.createElement("td");
-    recent.className = "stats-number";
-    recent.textContent = formatNumber(row.recent_prints);
+    const recentViews = document.createElement("td");
+    recentViews.className = "stats-number";
+    recentViews.textContent = formatNumber(row.recent_views);
 
-    const likes = document.createElement("td");
-    likes.className = "stats-number";
-    likes.textContent = formatNumber(row.like_count);
-
-    tr.append(page, category, prints, recent, likes);
+    tr.append(page, category, views, recentViews);
     return tr;
   }
 
   function renderTable() {
     const query = normalize(els.search?.value);
-    const mode = els.sort?.value || "prints";
+    const mode = els.sort?.value || "recentViews";
     const visible = rows
       .filter((row) => {
         if (!query) return true;
@@ -162,7 +170,7 @@
     const visibleRows = visible.slice(0, visibleLimit);
     els.table.replaceChildren(...visibleRows.map(createTableRow));
     els.tableEmpty.hidden = visible.length !== 0;
-    if (els.loadMore) els.loadMore.hidden = visibleRows.length >= visible.length;
+    els.loadMore.hidden = visibleRows.length >= visible.length;
   }
 
   function resetTableLimit() {
@@ -172,11 +180,12 @@
 
   async function load() {
     els.refresh.disabled = true;
-    els.status.textContent = "Loading statistics …";
+    els.status.textContent = "Loading traffic analytics …";
     try {
-      const [catalogResponse, overview] = await Promise.all([
+      const [catalogResponse, overview, traffic] = await Promise.all([
         fetch("catalog.json", {cache: "no-store"}),
         window.ColoringStats.getOverview(),
+        window.ColoringStats.getTraffic(7),
       ]);
       if (!catalogResponse.ok) throw new Error("catalog request failed: " + catalogResponse.status);
       const catalog = await catalogResponse.json();
@@ -196,19 +205,19 @@
             title: entry.title,
             category: entry.category,
             thumb: entry.thumb,
-            print_count: number(stats.print_count),
-            like_count: number(stats.like_count),
-            recent_prints: number(stats.recent_prints),
+            view_count: number(stats.view_count),
+            recent_views: number(stats.recent_views),
           };
         });
 
-      els.totalPrints.textContent = formatNumber(overview.totals?.print_count);
-      els.totalLikes.textContent = formatNumber(overview.totals?.like_count);
-      els.recentPrints.textContent = formatNumber(overview.totals?.recent_prints);
-      els.publishedPages.textContent = formatNumber(rows.length);
+      els.visits.textContent = formatNumber(traffic.visits);
+      els.totalViews.textContent = formatNumber(overview.totals?.view_count);
+      els.recentViews.textContent = formatNumber(overview.totals?.recent_views);
+      els.crawlerRequests.textContent = formatNumber(traffic.crawler_requests);
+      els.trafficStatus.textContent = traffic.sampled ? "Sampled · User-Agent heuristic" : "User-Agent heuristic";
 
-      renderTopList(els.popular, els.popularEmpty, rows, "prints");
-      renderTopList(els.trending, els.trendingEmpty, rows, "recent");
+      renderTopList();
+      renderCrawlers(traffic.crawlers);
       visibleLimit = CATALOG_PAGE_SIZE;
       renderTable();
 
@@ -216,11 +225,13 @@
       const unknown = (Array.isArray(overview.pages) ? overview.pages : [])
         .filter((item) => !catalogIds.has(String(item.page_id))).length;
       const time = new Intl.DateTimeFormat("en-GB", {hour: "2-digit", minute: "2-digit"}).format(new Date());
+      const sampling = traffic.sampled ? " · sampled analytics" : "";
       els.status.textContent = unknown
-        ? "Updated at " + time + " · " + unknown + " stats ID" + (unknown === 1 ? "" : "s") + " not in the current catalog"
-        : "Updated at " + time;
+        ? "Updated at " + time + sampling + " · " + unknown + " stats ID" + (unknown === 1 ? "" : "s") + " not in the current catalog"
+        : "Updated at " + time + sampling;
     } catch (error) {
-      els.status.textContent = "Could not load statistics.";
+      els.status.textContent = "Could not load traffic analytics.";
+      els.trafficStatus.textContent = "Traffic analytics unavailable";
       console.error(error);
     } finally {
       els.refresh.disabled = false;
@@ -235,8 +246,8 @@
   });
   els.refresh?.addEventListener("click", load);
 
-  if (!window.ColoringStats?.getOverview) {
-    els.status.textContent = "Statistics API is unavailable.";
+  if (!window.ColoringStats?.getOverview || !window.ColoringStats?.getTraffic) {
+    els.status.textContent = "Traffic analytics API is unavailable.";
   } else {
     load();
   }
