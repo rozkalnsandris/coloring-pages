@@ -196,6 +196,7 @@ a { color: inherit; }
   background: rgb(255 255 255 / 72%); color: #53657d;
   font-size: 12px; line-height: 1; font-weight: 800;
 }
+.category-count-label { display: none; }
 .category-animals { background: #effcf3; }
 .category-animals .category-arrow { background: #d9f6df; color: #319454; }
 .category-vehicles { background: #edf8ff; }
@@ -370,13 +371,21 @@ a { color: inherit; }
   .categories { padding: 8px 0 26px; }
   .category-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .category-card {
-    min-height: 108px; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 1fr auto;
-    align-items: center; gap: 8px; padding: 12px 14px;
+    min-height: 108px; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: minmax(52px, 1fr) auto auto;
+    align-items: center; column-gap: 10px; row-gap: 4px; padding: 12px 14px;
   }
-  .category-icon { grid-column: auto; justify-self: start; font-size: 43px; }
-  .category-name { grid-column: 1 / -1; grid-row: 2; padding-right: 30px; font-size: 15px; }
-  .category-arrow { right: 11px; width: 30px; height: 30px; }
-  .category-count { right: 11px; bottom: 11px; min-width: 24px; height: 24px; font-size: 11px; }
+  .category-icon { grid-column: 1; grid-row: 1; justify-self: start; align-self: center; font-size: 43px; }
+  .category-name { grid-column: 1; grid-row: 2; align-self: end; padding-right: 0; font-size: 15px; line-height: 1.15; }
+  .category-arrow {
+    position: static; grid-column: 2; grid-row: 1; justify-self: end; align-self: center;
+    right: auto; transform: none; width: 30px; height: 30px;
+  }
+  .category-count {
+    position: static; grid-column: 1; grid-row: 3; justify-self: start; align-self: start;
+    min-width: 0; height: auto; padding: 0; border: 0; border-radius: 0;
+    background: transparent; color: #65758d; font-size: 11px; line-height: 1.2; font-weight: 700;
+  }
+  .category-count-label { display: inline; }
   .category-abc { font-size: 34px; }
   .new-pages { padding: 20px 0 36px; }
   .about { padding: 32px 0; }
