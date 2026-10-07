@@ -22,8 +22,10 @@ def test_cloudflare_stats_contract_keeps_rpi5_out_of_state():
     assert '"/api/stats/rankings"' in worker
     assert '"/api/stats/print"' in worker
     assert '"/api/stats/like"' in worker
+    assert '"/api/stats/visit"' in worker
     assert "RATE_LIMITER" in worker
     assert "CREATE TABLE IF NOT EXISTS page_stats" in schema
+    assert "CREATE TABLE IF NOT EXISTS daily_visitors" in schema
     assert "PRIMARY KEY (page_id, visitor_hash)" in schema
     assert "Raspberry Pi" in docs
     assert "print intent" in docs
@@ -86,7 +88,9 @@ class AdminStatsDashboardTests(unittest.TestCase):
         self.assertIn("FROM page_stats", overview)
         self.assertIn("FROM daily_prints", overview)
         self.assertIn("recent_prints", overview)
-        self.assertNotIn("visitor_hash", overview)
+        self.assertIn("COUNT(DISTINCT visitor_hash)", overview)
+        response = overview[overview.rindex("return json({"):]
+        self.assertNotIn("visitor_hash", response)
         self.assertNotIn("FROM likes", overview)
         self.assertNotIn("INSERT ", overview)
         self.assertNotIn("UPDATE ", overview)
@@ -133,6 +137,45 @@ class AdminStatsDashboardTests(unittest.TestCase):
         self.assertIn("visibleLimit += CATALOG_PAGE_SIZE", admin)
         self.assertIn('addEventListener("input", resetTableLimit)', admin)
         self.assertIn('addEventListener("change", resetTableLimit)', admin)
+
+
+class AnonymousVisitorCounterTests(unittest.TestCase):
+    def test_browser_counter_is_hash_only_bounded_and_aggregate(self):
+        worker = read("cloudflare/stats-worker.js")
+        schema = read("cloudflare/stats-schema.sql")
+
+        self.assertIn("CREATE TABLE IF NOT EXISTS daily_visitors", schema)
+        self.assertIn("PRIMARY KEY (day, visitor_hash)", schema)
+        self.assertIn("idx_daily_visitors_day", schema)
+        self.assertIn('path==="/api/stats/visit"', worker)
+
+        start = worker.index("async function recordVisitor")
+        end = worker.index("async function pageStats", start)
+        record = worker[start:end]
+        self.assertIn("sha256(visitorId)", record)
+        self.assertIn("INSERT OR IGNORE INTO daily_visitors", record)
+        self.assertIn("DELETE FROM daily_visitors", record)
+        self.assertIn("date('now', '-30 days')", record)
+        self.assertNotIn("clientIP", record)
+        self.assertNotIn("userAgent", record)
+        self.assertNotIn("fingerprint", record.lower())
+
+        overview_start = worker.index("async function overviewStats")
+        overview_end = worker.index("function crawlerName", overview_start)
+        overview = worker[overview_start:overview_end]
+        self.assertIn("COUNT(DISTINCT visitor_hash)", overview)
+        self.assertIn("unique_browsers_7d", overview)
+        response = overview[overview.rindex("return json({"):]
+        self.assertNotIn("visitor_hash", response)
+
+    def test_frontend_tracking_is_not_activated_in_backend_phase(self):
+        shared = read("js/stats.js")
+        app = read("js/app.js")
+        detail = read("js/detail.js")
+
+        self.assertNotIn("trackVisitor", shared)
+        self.assertNotIn("trackVisitor", app)
+        self.assertNotIn("trackVisitor", detail)
 
 
 class AdminTrafficAnalyticsTests(unittest.TestCase):

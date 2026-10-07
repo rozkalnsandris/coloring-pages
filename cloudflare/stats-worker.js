@@ -91,6 +91,11 @@ async function overviewStats(env) {
      FROM daily_views
      GROUP BY page_id`
   ).all();
+  const visitorTotals = await env.DB.prepare(
+    `SELECT COUNT(DISTINCT visitor_hash) AS unique_browsers_7d
+     FROM daily_visitors
+     WHERE day >= date('now', '-6 days')`
+  ).first();
 
   const pageMap = new Map();
   for (const row of engagement.results || []) {
@@ -131,6 +136,7 @@ async function overviewStats(env) {
       recent_prints: pages.reduce((sum, row) => sum + row.recent_prints, 0),
       view_count: pages.reduce((sum, row) => sum + row.view_count, 0),
       recent_views: pages.reduce((sum, row) => sum + row.recent_views, 0),
+      unique_browsers_7d: Number(visitorTotals?.unique_browsers_7d || 0),
     },
     pages,
     window_days: 7,
@@ -290,6 +296,26 @@ async function recordView(env, request) {
   return json({ok:true},201);
 }
 
+async function recordVisitor(env, request) {
+  if (!allowedWriteOrigin(request,env)) return json({error:"forbidden"},403);
+  const body = await request.json().catch(()=>null);
+  const visitorId = body?.visitor_id;
+  if (!validVisitorId(visitorId)) return json({error:"invalid request"},400);
+  if (!(await rateLimit(env,visitorId,"visit"))) return json({error:"rate_limited"},429);
+  const visitorHash = await sha256(visitorId);
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT OR IGNORE INTO daily_visitors (day, visitor_hash)
+       VALUES (date('now'), ?)`
+    ).bind(visitorHash),
+    env.DB.prepare(
+      `DELETE FROM daily_visitors
+       WHERE day < date('now', '-30 days')`
+    ),
+  ]);
+  return json({ok:true},201);
+}
+
 async function pageStats(env, request) {
   const url = new URL(request.url);
   const pageId = url.searchParams.get("page_id") || "";
@@ -346,6 +372,7 @@ export default {
     if (request.method==="GET" && path==="/api/stats/traffic") return trafficStats(env,request);
     if (request.method==="GET" && path==="/api/stats/page") return pageStats(env,request);
     if (request.method==="POST" && path==="/api/stats/view") return recordView(env,request);
+    if (request.method==="POST" && path==="/api/stats/visit") return recordVisitor(env,request);
     if (request.method==="POST" && path==="/api/stats/print") return recordPrint(env,request);
     if (request.method==="POST" && path==="/api/stats/like") return toggleLike(env,request);
     return json({error:"not_found"},404);
