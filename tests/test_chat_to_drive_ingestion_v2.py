@@ -89,6 +89,23 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
         self.assertFalse(evidence["docker_executed"])
         self.assertFalse(evidence["production_content_mutated"])
 
+    def test_docs_require_fresh_runtime_alignment_and_do_not_claim_v1_only(self):
+        v2_docs = (ROOT / "docs/CHAT_TO_DRIVE_INGESTION_V2.md").read_text(encoding="utf-8")
+        multipage_docs = (ROOT / "docs/MULTIPAGE_ACTIVITIES_V1.md").read_text(encoding="utf-8")
+        agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+
+        self.assertIn("Current runtime eligibility preflight", v2_docs)
+        self.assertIn("current runtime eligibility", multipage_docs)
+        self.assertIn("operator/importer alignment", agents)
+        self.assertNotIn(
+            "The trusted host implementation now runs `RPi5_main@",
+            v2_docs,
+        )
+        self.assertNotIn(
+            "v1 path remains the only production-activated publication path",
+            multipage_docs,
+        )
+
     def test_v2_source_merge_grants_no_live_authority(self):
         authority = self.v2["authority"]
         for key in (
