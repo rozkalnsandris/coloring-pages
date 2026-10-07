@@ -259,7 +259,7 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertIn("traffic.unique_visitors", traffic_admin)
         self.assertIn("traffic.unique_visitors_date", traffic_admin)
         self.assertIn("privacy-preserving unique-IP count", traffic_admin)
-        self.assertIn("separate sampled metric", traffic_admin)
+        self.assertIn("separate sampled Cloudflare metric", traffic_admin)
         self.assertIn("window.ColoringStats.getOverview()", traffic_admin)
         self.assertIn('fetch("catalog.json", {cache: "no-store"})', traffic_admin)
         self.assertIn("const CATALOG_PAGE_SIZE = 20;", traffic_admin)
