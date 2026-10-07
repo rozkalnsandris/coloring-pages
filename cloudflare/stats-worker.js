@@ -191,37 +191,65 @@ async function trafficStats(env, request) {
   const host = env.CF_ANALYTICS_HOST || new URL(env.PUBLIC_ORIGIN || DEFAULT_ORIGIN).hostname;
   const end = new Date();
   const start = new Date(end.getTime() - days * 86400000);
-  const query = [
-    "query AdminTraffic($zoneTag: string, $start: Time, $end: Time, $host: string) {",
+  const commonFilter = {
+    datetime_geq: start.toISOString(),
+    datetime_lt: end.toISOString(),
+    requestSource: "eyeball",
+    clientRequestHTTPHost: host,
+  };
+
+  const visitsQuery = [
+    "query AdminVisits($zoneTag: string, $filter: filter) {",
     " viewer { zones(filter: { zoneTag: $zoneTag }) {",
-    "  summary: httpRequestsAdaptiveGroups(limit: 1, filter: { datetime_geq: $start, datetime_lt: $end, requestSource: \"eyeball\", clientRequestHTTPHost: $host }) { sum { visits } avg { sampleInterval } }",
-    "  crawlers: httpRequestsAdaptiveGroups(limit: 500, orderBy: [count_DESC], filter: {",
-    "   datetime_geq: $start, datetime_lt: $end, requestSource: \"eyeball\", clientRequestHTTPHost: $host,",
-    "   edgeResponseStatus_geq: 200, edgeResponseStatus_lt: 400,",
-    "   OR: [",
-    "    { userAgent_like: \"%bot%\" },",
-    "    { userAgent_like: \"%crawler%\" },",
-    "    { userAgent_like: \"%spider%\" },",
-    "    { userAgent_like: \"%slurp%\" },",
-    "    { userAgent_like: \"%ChatGPT-User%\" },",
-    "    { userAgent_like: \"%facebookexternalhit%\" }",
-    "   ]",
-    "  }) { count avg { sampleInterval } dimensions { clientRequestPath userAgent } }",
+    "  visits: httpRequestsAdaptiveGroups(limit: 1000, orderBy: [datetimeHour_ASC], filter: $filter) {",
+    "   sum { visits }",
+    "   avg { sampleInterval }",
+    "   dimensions { datetimeHour }",
+    "  }",
     " } } }",
   ].join("\n");
-  const result = await queryCloudflareAnalytics(env, query, {
+  const visitsResult = await queryCloudflareAnalytics(env, visitsQuery, {
     zoneTag: env.CF_ZONE_TAG,
-    start: start.toISOString(),
-    end: end.toISOString(),
-    host,
+    filter: commonFilter,
   });
-  if (result.error) return json({error:result.error},result.status);
+  if (visitsResult.error) return json({error:visitsResult.error},visitsResult.status);
 
-  const zone = result.data?.viewer?.zones?.[0];
-  const summary = zone?.summary?.[0] || {};
+  const crawlerQuery = [
+    "query AdminCrawlers($zoneTag: string, $filter: filter) {",
+    " viewer { zones(filter: { zoneTag: $zoneTag }) {",
+    "  crawlers: httpRequestsAdaptiveGroups(limit: 500, orderBy: [count_DESC], filter: $filter) {",
+    "   count",
+    "   avg { sampleInterval }",
+    "   dimensions { clientRequestPath userAgent }",
+    "  }",
+    " } } }",
+  ].join("\n");
+  const crawlerFilter = {
+    ...commonFilter,
+    edgeResponseStatus_geq: 200,
+    edgeResponseStatus_lt: 400,
+    OR: [
+      {userAgent_like:"%bot%"},
+      {userAgent_like:"%crawler%"},
+      {userAgent_like:"%spider%"},
+      {userAgent_like:"%slurp%"},
+      {userAgent_like:"%ChatGPT-User%"},
+      {userAgent_like:"%facebookexternalhit%"},
+    ],
+  };
+  const crawlerResult = await queryCloudflareAnalytics(env, crawlerQuery, {
+    zoneTag: env.CF_ZONE_TAG,
+    filter: crawlerFilter,
+  });
+  if (crawlerResult.error) return json({error:crawlerResult.error},crawlerResult.status);
+
+  const visitsRows = visitsResult.data?.viewer?.zones?.[0]?.visits || [];
+  const crawlerRows = crawlerResult.data?.viewer?.zones?.[0]?.crawlers || [];
+  const visits = visitsRows.reduce((sum, row) => sum + Number(row.sum?.visits || 0), 0);
+  let sampled = visitsRows.some((row) => Number(row.avg?.sampleInterval || 1) > 1);
+
   const crawlerMap = new Map();
-  let sampled = Number(summary.avg?.sampleInterval || 1) > 1;
-  for (const row of zone?.crawlers || []) {
+  for (const row of crawlerRows) {
     sampled ||= Number(row.avg?.sampleInterval || 1) > 1;
     const name = crawlerName(row?.dimensions?.userAgent);
     const path = String(row?.dimensions?.clientRequestPath || "/");
@@ -242,7 +270,7 @@ async function trafficStats(env, request) {
 
   return json({
     range_days:days,
-    visits:Number(summary.sum?.visits || 0),
+    visits,
     crawler_requests:crawlers.reduce((sum,crawler)=>sum+crawler.requests,0),
     crawlers,
     sampled,
