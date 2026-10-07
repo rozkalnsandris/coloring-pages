@@ -67,11 +67,13 @@ class CategoryContractTests(unittest.TestCase):
         filters = set(re.findall(r'data-filter="([^"]+)"', index))
         self.assertEqual(filters, registry_ids)
 
-    def test_category_arrow_is_centered_on_right_edge(self):
+    def test_category_arrow_is_centered_on_desktop_and_grid_aligned_on_mobile(self):
         css = (ROOT / "css" / "app.css").read_text(encoding="utf-8")
         self.assertIn("grid-column: 1 / -1; grid-row: 1;", css)
         self.assertIn("position: absolute; top: 50%; right: 14px; transform: translateY(-50%);", css)
-        self.assertIn(".category-arrow { right: 11px; width: 30px; height: 30px; }", css)
+        self.assertIn("position: static; grid-column: 2; grid-row: 1; justify-self: end; align-self: center;", css)
+        self.assertIn("position: static; grid-column: 2; grid-row: 2; justify-self: end; align-self: end;", css)
+        self.assertIn("grid-column: 1; grid-row: 2; align-self: end; padding-right: 0;", css)
 
     def test_runtime_image_contains_category_registry(self):
         dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
