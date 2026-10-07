@@ -32,18 +32,41 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
         self.assertTrue(compatibility["v2_does_not_change_v1_publish_semantics"])
         host = self.v2["host_ingestion"]
         self.assertEqual(host["activation_state"], "production-activated")
-        self.assertEqual(
-            host["operator_repository_revision"],
-            "7e3e6b6d6574c1dc5199618dbb974b1fae83eaf5",
-        )
-        self.assertEqual(
-            host["installed_blob_sha"],
-            "399df72159479c405166d011f140a967bdb749a5",
-        )
         self.assertEqual(host["installed_path"], "/usr/local/bin/coloring-pages-drive-ingest")
-        self.assertEqual(host["installed_identity"], "root:root:755")
-        self.assertEqual(host["importer_image_digest"], "sha256:53801684e0ce5a30d195d3436220a71b350112fc6e6fdc6fe107779d13c857ba")
-        self.assertTrue(self.v2["authority"]["host_operator_activation_satisfied"])
+        self.assertNotIn("operator_repository_revision", host)
+        self.assertNotIn("installed_blob_sha", host)
+        self.assertNotIn("installed_identity", host)
+        self.assertNotIn("importer_image_digest", host)
+        self.assertNotIn("host_operator_activation_satisfied", self.v2["authority"])
+        self.assertTrue(
+            self.v2["authority"]["host_operator_activation_must_be_verified_fresh_before_publish"]
+        )
+        self.assertTrue(
+            self.v2["authority"]["host_importer_alignment_must_be_verified_fresh_before_publish"]
+        )
+        self.assertTrue(
+            self.v2["authority"]["historical_activation_evidence_is_not_current_runtime_authority"]
+        )
+        preflight = host["current_runtime_preflight"]
+        self.assertTrue(preflight["required_before_first_drive_mutation"])
+        self.assertEqual(preflight["runtime_owner_repository"], "rozkalnsandris/RPi5_main")
+        self.assertEqual(preflight["operator_source_path"], "ops/bin/coloring-pages-drive-ingest")
+        self.assertEqual(
+            preflight["operator_contract_path"],
+            "ops/contracts/coloring-pages-drive-ingest-operator-v1.json",
+        )
+        self.assertEqual(preflight["consumer_importer_path"], "tools/coloring-pages-import")
+        self.assertTrue(preflight["installed_operator_blob_must_match_fresh_operator_source"])
+        self.assertTrue(
+            preflight["operator_contract_pinned_consumer_source_revision_must_resolve"]
+        )
+        self.assertTrue(
+            preflight["operator_pinned_importer_blob_must_match_current_consumer_importer_blob"]
+        )
+        self.assertEqual(
+            preflight["mismatch_disposition"],
+            "stop-before-first-drive-mutation-requires-rpi5-main-repin",
+        )
         repin = host["repin_activation_evidence"]
         self.assertEqual(repin["activated_at"], "2026-10-05")
         self.assertEqual(repin["source_revision"], "7e3e6b6d6574c1dc5199618dbb974b1fae83eaf5")
@@ -65,6 +88,23 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
         self.assertFalse(evidence["rclone_executed"])
         self.assertFalse(evidence["docker_executed"])
         self.assertFalse(evidence["production_content_mutated"])
+
+    def test_docs_require_fresh_runtime_alignment_and_do_not_claim_v1_only(self):
+        v2_docs = (ROOT / "docs/CHAT_TO_DRIVE_INGESTION_V2.md").read_text(encoding="utf-8")
+        multipage_docs = (ROOT / "docs/MULTIPAGE_ACTIVITIES_V1.md").read_text(encoding="utf-8")
+        agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+
+        self.assertIn("Current runtime eligibility preflight", v2_docs)
+        self.assertIn("current runtime eligibility", multipage_docs)
+        self.assertIn("current runtime eligibility", agents)
+        self.assertNotIn(
+            "The trusted host implementation now runs `RPi5_main@",
+            v2_docs,
+        )
+        self.assertNotIn(
+            "v1 path remains the only production-activated publication path",
+            multipage_docs,
+        )
 
     def test_v2_source_merge_grants_no_live_authority(self):
         authority = self.v2["authority"]

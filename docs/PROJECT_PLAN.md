@@ -104,7 +104,7 @@ The exact validated print-master PNG bytes are preserved as the canonical source
 
 Repository source tool: `tools/coloring-pages-import`.
 
-The production path is activated and uses one reviewed RPi5 publish operator.
+The production path is activated and uses one reviewed RPi5 publish operator. Activation history is not current runtime proof: before the first Drive mutation, `PUBLISH` must freshly verify installed-operator identity and importer-source alignment according to `deploy/chat-to-drive-ingestion.json` / `deploy/chat-to-drive-ingestion-v2.json`; any mismatch fails closed and requires a separately reviewed `RPi5_main` repin/install.
 
 The operator verifies the exact staged manifest, byte size and SHA-256, atomically publishes the PNG into `inbox/`, then directly runs the immutable Coloring Pages importer image under the isolation contract in `deploy/importer-runtime.json`.
 

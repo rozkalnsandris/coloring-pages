@@ -28,6 +28,9 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertFalse(authority["source_merge_authorizes_drive_archive_or_delete"])
         self.assertTrue(authority["live_content_import_requires_fresh_owner_authorization"])
         self.assertTrue(authority["category_binding_required_before_first_mutation"])
+        self.assertTrue(
+            authority["host_operator_and_importer_alignment_required_before_first_mutation"]
+        )
         self.assertEqual(authority["publication_command"], "PUBLISH")
         self.assertFalse(authority["ok_is_publication_authority"])
 
@@ -151,6 +154,26 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertEqual(host["inbox_publish"], "atomic-rename-after-integrity-pass")
         self.assertEqual(host["importer_contract_ref"], "deploy/importer-runtime.json")
         self.assertTrue(host["immutable_importer_image_digest_required_at_live"])
+        preflight = host["current_runtime_preflight"]
+        self.assertTrue(preflight["required_before_first_drive_mutation"])
+        self.assertEqual(preflight["runtime_owner_repository"], "rozkalnsandris/RPi5_main")
+        self.assertEqual(preflight["operator_source_path"], "ops/bin/coloring-pages-drive-ingest")
+        self.assertEqual(
+            preflight["operator_contract_path"],
+            "ops/contracts/coloring-pages-drive-ingest-operator-v1.json",
+        )
+        self.assertEqual(preflight["consumer_importer_path"], "tools/coloring-pages-import")
+        self.assertTrue(preflight["installed_operator_blob_must_match_fresh_operator_source"])
+        self.assertTrue(
+            preflight["operator_contract_pinned_consumer_source_revision_must_resolve"]
+        )
+        self.assertTrue(
+            preflight["operator_pinned_importer_blob_must_match_current_consumer_importer_blob"]
+        )
+        self.assertEqual(
+            preflight["mismatch_disposition"],
+            "stop-before-first-drive-mutation-requires-rpi5-main-repin",
+        )
         self.assertIn("category", host["verify_before_inbox_publish"])
         self.assertFalse(host["application_redeploy_required"])
 

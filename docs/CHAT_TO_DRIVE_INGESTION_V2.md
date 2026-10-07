@@ -10,7 +10,18 @@ The existing single-page production path remains unchanged and continues to use:
 - manifest schema `rozkalns.coloring-pages.drive-staging-manifest.v1`;
 - one staged `<id>.png` plus `<id>.json`.
 
-The trusted host implementation now runs `RPi5_main@7e3e6b6d6574c1dc5199618dbb974b1fae83eaf5`. The verified installed `/usr/local/bin/coloring-pages-drive-ingest` blob is `399df72159479c405166d011f140a967bdb749a5` (`root:root:755`) and pins importer image `ghcr.io/rozkalnsandris/coloring-pages@sha256:53801684e0ce5a30d195d3436220a71b350112fc6e6fdc6fe107779d13c857ba`. This restores normal v1/v2 `PUBLISH` eligibility while preserving the existing rule that every activity requires fresh owner approval of the exact latest draft or ordered draft set.
+Historical repin evidence from 2026-10-05 records `RPi5_main@7e3e6b6d6574c1dc5199618dbb974b1fae83eaf5`, installed operator blob `399df72159479c405166d011f140a967bdb749a5` (`root:root:755`) and importer image `ghcr.io/rozkalnsandris/coloring-pages@sha256:53801684e0ce5a30d195d3436220a71b350112fc6e6fdc6fe107779d13c857ba`. Those identities prove historical activation only; they are not reusable current runtime authority or current `PUBLISH` eligibility.
+
+## Current runtime eligibility preflight
+
+Before the first Drive mutation, `PUBLISH` must read fresh `RPi5_main/main` and LIVE operator evidence and prove all of the following:
+
+- the installed `/usr/local/bin/coloring-pages-drive-ingest` Git blob matches the current `RPi5_main` `ops/bin/coloring-pages-drive-ingest` blob;
+- the current `RPi5_main` operator contract `ops/contracts/coloring-pages-drive-ingest-operator-v1.json` resolves its pinned Coloring Pages consumer source revision;
+- the `tools/coloring-pages-import` blob at that pinned consumer revision matches the current `coloring-pages/main` `tools/coloring-pages-import` blob;
+- the exact immutable importer image required by the current operator contract is locally available before invocation.
+
+Any mismatch is a fail-closed STOP before the first Drive/content mutation and requires a separately reviewed `RPi5_main` source repin plus explicit LIVE install/update authority. Historical activation or repin evidence never overrides this fresh preflight.
 
 ## Simple model
 
@@ -97,4 +108,4 @@ Production activation was completed on 2026-10-04 after:
 - an installed-operator non-production v2 canary passed for two ordered page identities and rejected a deliberately mismatched page SHA-256;
 - the canary executed no `rclone`, Docker/import or production-content mutation.
 
-Single-page v1 remains active and backward compatible. Multi-page v2 publication is active through the same owner-gated `PUBLISH` trust boundary, now using the repinned newest-first importer image.
+Single-page v1 remains active and backward compatible. Multi-page v2 remains a production-activated capability through the same owner-gated `PUBLISH` trust boundary, but each publication is eligible only after the fresh runtime alignment preflight above passes.
