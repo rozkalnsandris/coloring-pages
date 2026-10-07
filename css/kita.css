@@ -1,0 +1,23 @@
+/* Layout only: typography, colours, cards and actions come from app.css. */
+.kita-page .hero-copy h1 { max-width: 960px; }
+.kita-page .hero-text { max-width: 760px; }
+.kita-trust {
+  display: flex; flex-wrap: wrap; gap: 8px 24px;
+  margin: 20px 0; padding: 0; list-style: none;
+  color: var(--muted); font-weight: 700;
+}
+.kita-trust li::before { content: "✓"; margin-right: 8px; color: var(--blue-deep); }
+.kita-actions { max-width: 480px; }
+.kita-actions a {
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 56px; padding: 14px 18px;
+}
+.kita-page .new-pages > .container > p { color: var(--muted); }
+.kita-page a:focus-visible, .kita-page button:focus-visible {
+  outline: 3px solid var(--blue-deep); outline-offset: 3px;
+}
+@media (max-width: 720px) {
+  .kita-page .hero-copy h1 { font-size: clamp(32px, 8vw, 48px); }
+  .kita-trust { gap: 8px 16px; font-size: 14px; }
+  .kita-actions a { font-size: 16px; }
+}
