@@ -63,6 +63,7 @@ The internal dashboard has a bounded traffic extension:
 - `POST /api/stats/view` records one anonymous coloring-page detail view for a validated `page_id`.
 - `daily_views` stores only `page_id`, UTC day and aggregate `view_count`. It stores no IP address, User-Agent, fingerprint or visitor ID.
 - `GET /api/stats/traffic?days=7` (or `30`) is a fixed read-only proxy to Cloudflare GraphQL `httpRequestsAdaptiveGroups`.
+- Visits and crawler rows use separate GraphQL queries. The visits query follows Cloudflare's hostname analytics pattern with a `$filter: filter` variable, hourly `dimensions { datetimeHour }`, and client-side summation of `sum.visits`; crawler path/User-Agent aggregation uses its own fixed filter/query shape.
 - Cloudflare `sum.visits` is shown as **Visits**. A visit is not an identified or unique person; one visitor can create multiple visits.
 - Crawler rows aggregate User-Agent, request count and top requested paths. URL query strings are intentionally not returned.
 - Crawler names are labelled **User-Agent heuristic** because User-Agent strings can be spoofed. This is not equivalent to Cloudflare Bot Management verification.
