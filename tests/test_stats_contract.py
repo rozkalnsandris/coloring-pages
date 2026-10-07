@@ -25,7 +25,8 @@ def test_cloudflare_stats_contract_keeps_rpi5_out_of_state():
     assert '"/api/stats/visit"' not in worker
     assert "RATE_LIMITER" in worker
     assert "CREATE TABLE IF NOT EXISTS page_stats" in schema
-    assert "CREATE TABLE IF NOT EXISTS daily_visitors" not in schema
+    assert "CREATE TABLE IF NOT EXISTS daily_visitors" in schema
+    assert "VISITOR_HMAC_KEY" in worker
     assert "PRIMARY KEY (page_id, visitor_hash)" in schema
     assert "Raspberry Pi" in docs
     assert "print intent" in docs
@@ -140,27 +141,41 @@ class AdminStatsDashboardTests(unittest.TestCase):
 
 
 class CloudflareUniqueVisitorTests(unittest.TestCase):
-    def test_unique_visitors_use_cloudflare_daily_unique_ips_only(self):
+    def test_unique_visitors_use_day_scoped_hmac_without_persisting_raw_ip(self):
         worker = read("cloudflare/stats-worker.js")
         schema = read("cloudflare/stats-schema.sql")
+
+        self.assertIn("CREATE TABLE IF NOT EXISTS daily_visitors", schema)
+        self.assertIn("PRIMARY KEY (day, visitor_hash)", schema)
+        self.assertNotIn("client_ip", schema)
+        self.assertNotIn("CF-Connecting-IP", schema)
+
+        self.assertIn('path==="/api/stats/visit"', worker)
+        self.assertIn('request.headers.get("CF-Connecting-IP")', worker)
+        self.assertIn("VISITOR_HMAC_KEY", worker)
+        self.assertIn('{name:"HMAC",hash:"SHA-256"}', worker)
+        self.assertIn("INSERT OR IGNORE INTO daily_visitors", worker)
+        self.assertIn("DELETE FROM daily_visitors", worker)
+
+        traffic = worker[worker.index("async function trafficStats"):worker.index("async function recordView")]
+        self.assertIn("FROM daily_visitors", traffic)
+        self.assertIn('unique_visitors_basis:"worker-d1-daily-hmac-ip"', traffic)
+        self.assertNotIn("httpRequests1dGroups", traffic)
+        self.assertNotIn("uniq { uniques }", traffic)
+
+    def test_public_pages_track_visit_without_creating_browser_identity(self):
         shared = read("js/stats.js")
 
-        self.assertNotIn("CREATE TABLE IF NOT EXISTS daily_visitors", schema)
-        self.assertNotIn('path==="/api/stats/visit"', worker)
-        self.assertNotIn("async function recordVisitor", worker)
-        self.assertNotIn("trackVisitor", shared)
-
-        start = worker.index("async function trafficStats")
-        end = worker.index("async function recordView", start)
-        traffic = worker[start:end]
-        self.assertIn("query AdminUniqueVisitors", traffic)
-        self.assertIn("httpRequests1dGroups", traffic)
-        self.assertIn("uniq { uniques }", traffic)
-        self.assertIn("dimensions { date }", traffic)
-        self.assertIn("clientRequestHTTPHost: host", traffic)
-        self.assertIn('unique_visitors_basis:"cloudflare-daily-unique-ips"', traffic)
-        self.assertNotIn("clientIP", traffic)
-        self.assertNotIn("visitor_hash", traffic)
+        self.assertIn("function trackVisit()", shared)
+        self.assertIn("${API_BASE}/visit", shared)
+        track_visit = shared[shared.index("function trackVisit"):shared.index("function trackView")]
+        self.assertNotIn("getVisitorId", track_visit)
+        self.assertNotIn("visitor_id", track_visit)
+        self.assertIn('location.pathname === "/"', shared)
+        self.assertIn('location.pathname === "/index.html"', shared)
+        self.assertIn('location.pathname === "/detail.html"', shared)
+        self.assertNotIn('location.pathname === "/stats.html"', shared)
+        self.assertNotIn('location.pathname === "/traffic.html"', shared)
 
 
 class AdminTrafficAnalyticsTests(unittest.TestCase):
@@ -189,10 +204,12 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertIn("httpRequestsAdaptiveGroups", traffic)
         self.assertIn("query AdminVisits($zoneTag: string, $filter: filter)", traffic)
         self.assertIn("query AdminCrawlers($zoneTag: string, $filter: filter)", traffic)
-        self.assertIn("query AdminUniqueVisitors($zoneTag: string, $filter: filter)", traffic)
-        self.assertIn("httpRequests1dGroups", traffic)
-        self.assertIn("uniq { uniques }", traffic)
+        self.assertNotIn("query AdminUniqueVisitors", traffic)
+        self.assertNotIn("httpRequests1dGroups", traffic)
+        self.assertNotIn("uniq { uniques }", traffic)
+        self.assertIn("FROM daily_visitors", traffic)
         self.assertIn("unique_visitors_date", traffic)
+        self.assertIn('unique_visitors_basis:"worker-d1-daily-hmac-ip"', traffic)
         self.assertIn("dimensions { datetimeHour }", traffic)
         self.assertIn("sum { visits }", traffic)
         self.assertIn("visitsRows.reduce", traffic)
@@ -253,4 +270,5 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertNotIn('href="traffic.html"', public_home)
         self.assertIn("/traffic.html", docs)
         self.assertIn("CF_ANALYTICS_API_TOKEN", docs)
+        self.assertIn("VISITOR_HMAC_KEY", docs)
         self.assertIn("separate Cloudflare owner gate", docs)
