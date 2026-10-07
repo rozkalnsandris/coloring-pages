@@ -11,6 +11,8 @@
 
   const els = {
     status: document.querySelector("[data-traffic-page-status]"),
+    uniqueVisitors: document.querySelector("[data-stats-unique-visitors]"),
+    uniqueVisitorsLabel: document.querySelector("[data-stats-unique-visitors-label]"),
     visits: document.querySelector("[data-stats-visits]"),
     totalViews: document.querySelector("[data-stats-total-views]"),
     recentViews: document.querySelector("[data-stats-recent-views]"),
@@ -211,13 +213,22 @@
           };
         });
 
+      const uniqueVisitors = Number(traffic.unique_visitors);
+      const uniqueVisitorsAvailable = traffic.unique_visitors_status === "available"
+        && Number.isFinite(uniqueVisitors);
+      els.uniqueVisitors.textContent = uniqueVisitorsAvailable ? formatNumber(uniqueVisitors) : "N/A";
+      if (els.uniqueVisitorsLabel) {
+        els.uniqueVisitorsLabel.textContent = traffic.unique_visitors_date
+          ? "Approx. unique visitors · " + traffic.unique_visitors_date
+          : "Approx. unique visitors · latest day";
+      }
       els.visits.textContent = formatNumber(traffic.visits);
       els.totalViews.textContent = formatNumber(overview.totals?.view_count);
       els.recentViews.textContent = formatNumber(overview.totals?.recent_views);
       els.crawlerRequests.textContent = formatNumber(traffic.crawler_requests);
       els.trafficStatus.textContent = traffic.sampled ? "Sampled · User-Agent heuristic" : "User-Agent heuristic";
       if (els.visitsNote && traffic.sampled) {
-        els.visitsNote.textContent = "“Website visits” is Cloudflare’s sampled visit metric, not a count of unique people. One person can create multiple visits. “Crawler requests” is a separate request count and must not be subtracted from visits.";
+        els.visitsNote.textContent = "“Approx. unique visitors” is Cloudflare’s latest available daily unique-IP metric, not an exact people count. Free-plan traffic analytics can include crawlers and threats. “Website visits” is a separate sampled metric.";
       }
 
       renderTopList();

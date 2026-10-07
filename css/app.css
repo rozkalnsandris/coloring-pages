@@ -727,6 +727,7 @@ a { color: inherit; }
 .stats-status { min-height: 22px; font-size: 13px; }
 .stats-summary { padding: 0 0 28px; background: #f7faff; }
 .stats-kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.traffic-kpi-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .stats-kpi {
   display: flex; align-items: center; gap: 14px; min-width: 0; padding: 20px;
   border: 1px solid var(--line); border-radius: var(--radius-card); background: #fff; box-shadow: var(--shadow);
@@ -796,8 +797,12 @@ a { color: inherit; }
 .stats-empty { margin: 16px 0 0; color: var(--muted); font-weight: 700; }
 .stats-note { margin: 16px 2px 0; color: var(--muted); font-size: 12px; font-weight: 700; }
 
+@media (max-width: 1100px) {
+  .traffic-kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 @media (max-width: 900px) {
-  .stats-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stats-kpi-grid, .traffic-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .stats-rankings-grid { grid-template-columns: 1fr; }
   .stats-table-heading { align-items: stretch; flex-direction: column; }
   .stats-controls { width: 100%; }
