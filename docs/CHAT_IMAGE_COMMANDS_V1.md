@@ -202,10 +202,11 @@ The `PUBLISH` chain is sequential and fail-closed:
 5. read fresh LIVE catalogue state and allocate one random seven-digit new-publication ID from `metadata/id-policy.json`; the candidate must be absent from the LIVE catalogue and distinct from any other candidate already allocated in the same local publish batch before any mutation;
 6. freeze that activity/page ID, the ordered page count, SHA-256 and exact byte size of every validated print master, category and required catalogue metadata;
 7. fully materialize and locally validate the complete v1/v2 manifest;
-8. before the first Drive write, select one Drive upload surface that can accept every locally prepared PNG plus the already-built manifest, then stage the exact prepared PNG(s) followed by the manifest through that same surface;
-9. run the trusted RPi5 verify/import operator once; RPi5-side `rclone` is Drive-to-RPi5 pull-only and is not a Chat staging upload path;
-10. let that trusted operator perform the contract-required post-import catalogue, derivative and public-HTTP proof internally;
-11. when the operator returns `COLORING_PAGES_DRIVE_INGEST=PASS`, treat it as terminal publication success, immediately report `PASS`, and stop.
+8. run the fresh host-runtime alignment preflight from `deploy/chat-to-drive-ingestion.json` / `deploy/chat-to-drive-ingestion-v2.json`: installed operator blob must match current `RPi5_main` source, the operator contract’s pinned consumer source revision must resolve, and its `tools/coloring-pages-import` blob must match current `coloring-pages/main`; mismatch means STOP before the first Drive write and requires a separately reviewed `RPi5_main` repin/install;
+9. before the first Drive write, select one Drive upload surface that can accept every locally prepared PNG plus the already-built manifest, then stage the exact prepared PNG(s) followed by the manifest through that same surface;
+10. run the trusted RPi5 verify/import operator once; RPi5-side `rclone` is Drive-to-RPi5 pull-only and is not a Chat staging upload path;
+11. let that trusted operator perform the contract-required post-import catalogue, derivative and public-HTTP proof internally;
+12. when the operator returns `COLORING_PAGES_DRIVE_INGEST=PASS`, treat it as terminal publication success, immediately report `PASS`, and stop.
 
 Do not switch Drive upload surfaces after the first mutation. A staging/file-handoff/tool error after mutation begins is a fail-closed STOP, not permission to try host-side `rclone`, a second uploader, overwrite, retry, rollback or cleanup. Do not run discretionary post-success diagnostics, repeated health checks, external/public HTTP rechecks, extra catalogue scans, Drive archive/delete, cleanup or unrelated runtime verification after trusted operator PASS.
 
@@ -248,7 +249,7 @@ exact approved page or ordered page set
 → public catalogue/media verification
 ```
 
-For multi-page v2, page filenames are `<id>-1.png`, `<id>-2.png`, … and every manifest page entry binds its exact index, filename, SHA-256 and byte size. The trusted host operator at `RPi5_main@dc6b784bba471731ff060ece207e06d67cda16d3` supports this v2 path through the same installed `/usr/local/bin/coloring-pages-drive-ingest` command.
+For multi-page v2, page filenames are `<id>-1.png`, `<id>-2.png`, … and every manifest page entry binds its exact index, filename, SHA-256 and byte size. Historical `RPi5_main` activation revisions prove that v2 was activated, but they do not prove current runtime eligibility. Before the first Drive mutation, freshly verify that the installed `/usr/local/bin/coloring-pages-drive-ingest` Git blob matches the current `RPi5_main` operator source and that the importer blob at the operator contract’s pinned consumer source revision matches current `coloring-pages/main` `tools/coloring-pages-import`; any mismatch is a STOP requiring a separately reviewed host repin/install.
 
 `PUBLISH` does **not** authorize:
 
