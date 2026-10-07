@@ -55,3 +55,25 @@ No RPi5 service, database, restart, package or host mutation is part of this des
 The source page contains no authentication secret. Before production exposure, protect the exact `/stats.html` path with a Cloudflare Access self-hosted application. That Access setting is a separate owner-gated Cloudflare mutation; it is not created by repository source or SIMPLE-DEPLOY.
 
 The aggregate `/api/stats/overview` endpoint may remain public and read-only. Its contract intentionally contains no visitor-level data.
+
+## Admin traffic and crawler analytics
+
+The internal dashboard has a bounded traffic extension:
+
+- `POST /api/stats/view` records one anonymous coloring-page detail view for a validated `page_id`.
+- `daily_views` stores only `page_id`, UTC day and aggregate `view_count`. It stores no IP address, User-Agent, fingerprint or visitor ID.
+- `GET /api/stats/traffic?days=7` (or `30`) is a fixed read-only proxy to Cloudflare GraphQL `httpRequestsAdaptiveGroups`.
+- Cloudflare `sum.visits` is shown as **Visits**. A visit is not an identified or unique person; one visitor can create multiple visits.
+- Crawler rows aggregate User-Agent, request count and top requested paths. URL query strings are intentionally not returned.
+- Crawler names are labelled **User-Agent heuristic** because User-Agent strings can be spoofed. This is not equivalent to Cloudflare Bot Management verification.
+- Adaptive Analytics data can be sampled; the dashboard marks sampled results.
+
+Required Worker runtime configuration for the traffic endpoint:
+
+- secret `CF_ANALYTICS_API_TOKEN`;
+- variable `CF_ZONE_TAG`;
+- optional `CF_ANALYTICS_HOST` (defaults to the `PUBLIC_ORIGIN` hostname).
+
+Use a least-privilege Cloudflare API token with Analytics read access scoped to the relevant zone. The token is a runtime secret and must never be committed to GitHub or returned to the browser.
+
+Activation is a separate Cloudflare owner gate. Applying the additive `daily_views` D1 schema, adding the Worker secret/variables, deploying the updated Worker, and changing Cloudflare Access or analytics settings are **not** authorized by repository source work or by an application merge.

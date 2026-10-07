@@ -79,7 +79,7 @@ class AdminStatsDashboardTests(unittest.TestCase):
     def test_overview_endpoint_is_aggregate_and_read_only(self):
         worker = read("cloudflare/stats-worker.js")
         start = worker.index("async function overviewStats")
-        end = worker.index("async function pageStats", start)
+        end = worker.index("function crawlerName", start)
         overview = worker[start:end]
 
         self.assertIn('path==="/api/stats/overview"', worker)
@@ -129,3 +129,53 @@ class AdminStatsDashboardTests(unittest.TestCase):
         self.assertIn("visibleLimit += CATALOG_PAGE_SIZE", admin)
         self.assertIn('addEventListener("input", resetTableLimit)', admin)
         self.assertIn('addEventListener("change", resetTableLimit)', admin)
+
+
+class AdminTrafficAnalyticsTests(unittest.TestCase):
+    def test_detail_views_are_anonymous_aggregate_events(self):
+        schema = read("cloudflare/stats-schema.sql")
+        worker = read("cloudflare/stats-worker.js")
+        shared = read("js/stats.js")
+        detail = read("js/detail.js")
+
+        self.assertIn("CREATE TABLE IF NOT EXISTS daily_views", schema)
+        self.assertIn('path==="/api/stats/view"', worker)
+        self.assertIn("INSERT INTO daily_views", worker)
+        self.assertIn("function trackView(pageId)", shared)
+        self.assertIn("ColoringStats?.trackView?.(entry.id)", detail)
+        track_view = shared[shared.index("function trackView"):shared.index("function trackPrint")]
+        self.assertNotIn("getVisitorId", track_view)
+        self.assertNotIn("visitor_id", track_view)
+
+    def test_traffic_proxy_is_fixed_read_only_cloudflare_analytics(self):
+        worker = read("cloudflare/stats-worker.js")
+        start = worker.index("async function trafficStats")
+        end = worker.index("async function recordView", start)
+        traffic = worker[start:end]
+
+        self.assertIn('path==="/api/stats/traffic"', worker)
+        self.assertIn("httpRequestsAdaptiveGroups", traffic)
+        self.assertIn("sum { visits }", traffic)
+        self.assertIn("userAgent_like", traffic)
+        self.assertIn("clientRequestPath", traffic)
+        self.assertIn("CF_ANALYTICS_API_TOKEN", worker)
+        self.assertIn("CF_ZONE_TAG", worker)
+        self.assertNotIn("clientIP", traffic)
+        self.assertNotIn("visitor_hash", traffic)
+
+    def test_admin_dashboard_renders_views_visits_and_crawler_paths(self):
+        html = read("stats.html")
+        shared = read("js/stats.js")
+        admin = read("js/stats-admin.js")
+        docs = read("docs/CLOUDFLARE_STATS_V1.md")
+
+        self.assertIn("data-stats-visits", html)
+        self.assertIn("data-stats-recent-views", html)
+        self.assertIn("data-stats-crawler-requests", html)
+        self.assertIn("data-stats-viewed", html)
+        self.assertIn("data-stats-crawlers", html)
+        self.assertIn("async function getTraffic(days = 7)", shared)
+        self.assertIn("window.ColoringStats.getTraffic(7)", admin)
+        self.assertIn("User-Agent heuristic", html)
+        self.assertIn("CF_ANALYTICS_API_TOKEN", docs)
+        self.assertIn("separate Cloudflare owner gate", docs)

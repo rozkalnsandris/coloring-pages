@@ -39,6 +39,11 @@
     return requestJson("/overview");
   }
 
+  async function getTraffic(days = 7) {
+    const safeDays = Number(days) === 30 ? 30 : 7;
+    return requestJson(`/traffic?days=${safeDays}`);
+  }
+
   async function getPage(pageId) {
     const visitorId = getVisitorId(false);
     const query = new URLSearchParams({page_id: pageId});
@@ -52,6 +57,23 @@
       method: "POST",
       body: JSON.stringify({page_id: pageId, visitor_id: visitorId}),
     });
+  }
+
+  function trackView(pageId) {
+    const body = JSON.stringify({page_id: pageId});
+    if (navigator.sendBeacon) {
+      try {
+        const blob = new Blob([body], {type: "application/json"});
+        if (navigator.sendBeacon(`${API_BASE}/view`, blob)) return;
+      } catch {}
+    }
+    fetch(`${API_BASE}/view`, {
+      method: "POST",
+      credentials: "same-origin",
+      keepalive: true,
+      headers: {"Content-Type": "application/json"},
+      body,
+    }).catch(() => {});
   }
 
   function trackPrint(pageId) {
@@ -72,5 +94,5 @@
     }).catch(() => {});
   }
 
-  window.ColoringStats = {getRankings, getOverview, getPage, toggleLike, trackPrint};
+  window.ColoringStats = {getRankings, getOverview, getTraffic, getPage, toggleLike, trackView, trackPrint};
 })();
