@@ -289,7 +289,7 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertIn("data-traffic-table", traffic_html)
         self.assertIn("data-traffic-load-more", traffic_html)
         self.assertIn("User-Agent heuristic", traffic_html)
-        self.assertIn('href="css/app.css?v=2c2d1b3961f8d00d"', traffic_html)
+        self.assertIn('href="css/app.css?v=0183523f7f73806a"', traffic_html)
         self.assertIn("grid-template-columns: 30px 88px minmax(0, 1fr) auto", css)
         self.assertIn("width: 88px; height: 88px", css)
         self.assertIn("object-fit: contain", css)
