@@ -258,7 +258,7 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertIn("window.ColoringStats.getTraffic(7)", traffic_admin)
         self.assertIn("traffic.unique_visitors", traffic_admin)
         self.assertIn("traffic.unique_visitors_date", traffic_admin)
-        self.assertIn("daily unique-IP metric", traffic_admin)
+        self.assertIn("privacy-preserving unique-IP count", traffic_admin)
         self.assertIn("separate sampled metric", traffic_admin)
         self.assertIn("window.ColoringStats.getOverview()", traffic_admin)
         self.assertIn('fetch("catalog.json", {cache: "no-store"})', traffic_admin)
