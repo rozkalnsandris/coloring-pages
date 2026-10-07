@@ -252,6 +252,7 @@ async function loadDetail() {
     document.title = `${entry.title} | Coloring Pages`;
     detailRoot?.setAttribute("data-loaded-id",entry.id);
     loadedEntryId=entry.id;
+    window.ColoringStats?.trackView?.(entry.id);
     if (detailTitle) detailTitle.textContent = entry.title;
     const detailBadges = document.querySelector(".detail-badges");
     if (detailBadges) detailBadges.hidden = false;

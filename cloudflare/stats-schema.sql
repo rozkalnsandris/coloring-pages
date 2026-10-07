@@ -33,3 +33,11 @@ BEGIN
   SET like_count=MAX(like_count-1,0), updated_at=datetime('now')
   WHERE page_id=OLD.page_id;
 END;
+
+CREATE TABLE IF NOT EXISTS daily_views (
+  page_id TEXT NOT NULL,
+  day TEXT NOT NULL,
+  view_count INTEGER NOT NULL DEFAULT 0 CHECK (view_count >= 0),
+  PRIMARY KEY (page_id, day)
+);
+CREATE INDEX IF NOT EXISTS idx_daily_views_day ON daily_views(day, view_count DESC);

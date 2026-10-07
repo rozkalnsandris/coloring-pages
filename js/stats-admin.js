@@ -15,10 +15,18 @@
     totalLikes: document.querySelector("[data-stats-total-likes]"),
     recentPrints: document.querySelector("[data-stats-recent-prints]"),
     publishedPages: document.querySelector("[data-stats-published-pages]"),
+    visits: document.querySelector("[data-stats-visits]"),
+    recentViews: document.querySelector("[data-stats-recent-views]"),
+    crawlerRequests: document.querySelector("[data-stats-crawler-requests]"),
+    trafficStatus: document.querySelector("[data-traffic-status]"),
     popular: document.querySelector("[data-stats-popular]"),
     popularEmpty: document.querySelector("[data-stats-popular-empty]"),
     trending: document.querySelector("[data-stats-trending]"),
     trendingEmpty: document.querySelector("[data-stats-trending-empty]"),
+    viewed: document.querySelector("[data-stats-viewed]"),
+    viewedEmpty: document.querySelector("[data-stats-viewed-empty]"),
+    crawlers: document.querySelector("[data-stats-crawlers]"),
+    crawlersEmpty: document.querySelector("[data-stats-crawlers-empty]"),
     table: document.querySelector("[data-stats-table]"),
     tableEmpty: document.querySelector("[data-stats-table-empty]"),
     search: document.querySelector("[data-stats-search]"),
@@ -76,12 +84,16 @@
     metric.className = "stats-top-metric";
     metric.textContent = kind === "recent"
       ? "🔥 " + formatNumber(row.recent_prints)
-      : "🖨 " + formatNumber(row.print_count);
+      : kind === "views"
+        ? "👁 " + formatNumber(row.recent_views)
+        : "🖨 " + formatNumber(row.print_count);
     metric.setAttribute(
       "aria-label",
       kind === "recent"
         ? formatNumber(row.recent_prints) + " print actions in the last 7 days"
-        : formatNumber(row.print_count) + " print actions in total"
+        : kind === "views"
+          ? formatNumber(row.recent_views) + " coloring page views in the last 7 days"
+          : formatNumber(row.print_count) + " print actions in total"
     );
 
     item.append(rank, image, copy, metric);
@@ -89,7 +101,7 @@
   }
 
   function renderTopList(target, empty, source, kind) {
-    const metricKey = kind === "recent" ? "recent_prints" : "print_count";
+    const metricKey = kind === "recent" ? "recent_prints" : kind === "views" ? "recent_views" : "print_count";
     const sorted = [...source]
       .filter((row) => number(row[metricKey]) > 0)
       .sort((a, b) =>
@@ -106,7 +118,7 @@
 
   function tableSort(a, b, mode) {
     if (mode === "title") return String(a.title).localeCompare(String(b.title), "de");
-    const key = mode === "recent" ? "recent_prints" : mode === "likes" ? "like_count" : "print_count";
+    const key = mode === "recent" ? "recent_prints" : mode === "likes" ? "like_count" : mode === "views" ? "view_count" : mode === "recentViews" ? "recent_views" : "print_count";
     return number(b[key]) - number(a[key])
       || number(b.print_count) - number(a.print_count)
       || String(a.title).localeCompare(String(b.title), "de");
@@ -131,6 +143,14 @@
     const category = document.createElement("td");
     category.textContent = categoryLabel(row.category);
 
+    const views = document.createElement("td");
+    views.className = "stats-number";
+    views.textContent = formatNumber(row.view_count);
+
+    const recentViews = document.createElement("td");
+    recentViews.className = "stats-number";
+    recentViews.textContent = formatNumber(row.recent_views);
+
     const prints = document.createElement("td");
     prints.className = "stats-number";
     prints.textContent = formatNumber(row.print_count);
@@ -143,8 +163,45 @@
     likes.className = "stats-number";
     likes.textContent = formatNumber(row.like_count);
 
-    tr.append(page, category, prints, recent, likes);
+    tr.append(page, category, views, recentViews, prints, recent, likes);
     return tr;
+  }
+
+  function renderCrawlers(crawlers) {
+    const source = Array.isArray(crawlers) ? crawlers : [];
+    const crawlerRows = source.map((crawler) => {
+      const tr = document.createElement("tr");
+      const name = document.createElement("td");
+      name.textContent = crawler.name || "Other crawler";
+      const requests = document.createElement("td");
+      requests.className = "stats-number";
+      requests.textContent = formatNumber(crawler.requests);
+      const paths = document.createElement("td");
+      paths.textContent = (Array.isArray(crawler.paths) ? crawler.paths : [])
+        .map((item) => (item.path || "/") + " (" + formatNumber(item.requests) + ")")
+        .join(" · ");
+      tr.append(name, requests, paths);
+      return tr;
+    });
+    els.crawlers?.replaceChildren(...crawlerRows);
+    if (els.crawlersEmpty) els.crawlersEmpty.hidden = crawlerRows.length !== 0;
+  }
+
+  async function loadTraffic() {
+    if (!window.ColoringStats?.getTraffic) return;
+    try {
+      const traffic = await window.ColoringStats.getTraffic(7);
+      if (els.visits) els.visits.textContent = formatNumber(traffic.visits);
+      if (els.crawlerRequests) els.crawlerRequests.textContent = formatNumber(traffic.crawler_requests);
+      renderCrawlers(traffic.crawlers);
+      if (els.trafficStatus) els.trafficStatus.textContent = traffic.sampled ? "Sampled · User-Agent heuristic" : "User-Agent heuristic";
+    } catch (error) {
+      if (els.visits) els.visits.textContent = "–";
+      if (els.crawlerRequests) els.crawlerRequests.textContent = "–";
+      renderCrawlers([]);
+      if (els.trafficStatus) els.trafficStatus.textContent = "Traffic analytics not configured";
+      console.error(error);
+    }
   }
 
   function renderTable() {
@@ -201,6 +258,8 @@
             print_count: number(stats.print_count),
             like_count: number(stats.like_count),
             recent_prints: number(stats.recent_prints),
+            view_count: number(stats.view_count),
+            recent_views: number(stats.recent_views),
           };
         });
 
@@ -208,9 +267,11 @@
       els.totalLikes.textContent = formatNumber(overview.totals?.like_count);
       els.recentPrints.textContent = formatNumber(overview.totals?.recent_prints);
       els.publishedPages.textContent = formatNumber(rows.length);
+      if (els.recentViews) els.recentViews.textContent = formatNumber(overview.totals?.recent_views);
 
       renderTopList(els.popular, els.popularEmpty, rows, "prints");
       renderTopList(els.trending, els.trendingEmpty, rows, "recent");
+      renderTopList(els.viewed, els.viewedEmpty, rows, "views");
       visibleLimit = CATALOG_PAGE_SIZE;
       renderTable();
 
@@ -221,6 +282,7 @@
       els.status.textContent = unknown
         ? "Updated at " + time + " · " + unknown + " stats ID" + (unknown === 1 ? "" : "s") + " not in the current catalog"
         : "Updated at " + time;
+      loadTraffic();
     } catch (error) {
       els.status.textContent = "Could not load statistics.";
       console.error(error);
