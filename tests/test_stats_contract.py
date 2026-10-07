@@ -22,7 +22,7 @@ def test_cloudflare_stats_contract_keeps_rpi5_out_of_state():
     assert '"/api/stats/rankings"' in worker
     assert '"/api/stats/print"' in worker
     assert '"/api/stats/like"' in worker
-    assert '"/api/stats/visit"' in worker
+    assert '"/api/stats/visit"' not in worker
     assert "RATE_LIMITER" in worker
     assert "CREATE TABLE IF NOT EXISTS page_stats" in schema
     assert "CREATE TABLE IF NOT EXISTS daily_visitors" not in schema
@@ -227,7 +227,7 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertIn("data-stats-visits", traffic_html)
         self.assertIn("Website visits in the last 7 days", traffic_html)
         self.assertIn("not unique people", traffic_html)
-        self.assertIn("must not be subtracted from visits", traffic_html)
+        self.assertIn("must not be subtracted from Website visits", traffic_html)
         self.assertIn("data-stats-total-views", traffic_html)
         self.assertIn("data-stats-recent-views", traffic_html)
         self.assertIn("data-stats-crawler-requests", traffic_html)
@@ -241,7 +241,8 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertIn("window.ColoringStats.getTraffic(7)", traffic_admin)
         self.assertIn("traffic.unique_visitors", traffic_admin)
         self.assertIn("traffic.unique_visitors_date", traffic_admin)
-        self.assertIn("Cloudflare’s sampled visit metric", traffic_admin)
+        self.assertIn("daily unique-IP metric", traffic_admin)
+        self.assertIn("separate sampled metric", traffic_admin)
         self.assertIn("window.ColoringStats.getOverview()", traffic_admin)
         self.assertIn('fetch("catalog.json", {cache: "no-store"})', traffic_admin)
         self.assertIn("const CATALOG_PAGE_SIZE = 20;", traffic_admin)
