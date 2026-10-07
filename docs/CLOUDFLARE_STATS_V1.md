@@ -48,7 +48,7 @@ No RPi5 service, database, restart, package or host mutation is part of this des
 
 - `GET /api/stats/overview` returns aggregate totals plus per-page print, like and anonymous page-view counters.
 - `/stats.html` renders print actions, likes, Popular, Trending and the engagement catalog table.
-- `/traffic.html` renders visits, total/seven-day page views, Most viewed, crawler activity and a page-view catalog table.
+- `/traffic.html` renders website visits (explicitly labelled as not unique people), total/seven-day page views, Most viewed, crawler activity and a page-view catalog table.
 - Both dashboards read the public `catalog.json` to map page IDs to titles, thumbnails and categories.
 - Neither dashboard returns visitor IDs, visitor hashes, raw `likes` rows, IP addresses or Cloudflare credentials.
 - Both pages carry `noindex,nofollow,noarchive` and are intentionally absent from public navigation.
@@ -66,7 +66,7 @@ The separate `/traffic.html` dashboard uses a bounded traffic extension:
 - `daily_views` stores only `page_id`, UTC day and aggregate `view_count`. It stores no IP address, User-Agent, fingerprint or visitor ID.
 - `GET /api/stats/traffic?days=7` (or `30`) is a fixed read-only proxy to Cloudflare GraphQL `httpRequestsAdaptiveGroups`.
 - Visits and crawler rows use separate GraphQL queries. The visits query follows Cloudflare's hostname analytics pattern with a `$filter: filter` variable, hourly `dimensions { datetimeHour }`, and client-side summation of `sum.visits`; crawler path/User-Agent aggregation uses its own fixed filter/query shape.
-- Cloudflare `sum.visits` is shown as **Visits**. A visit is not an identified or unique person; one visitor can create multiple visits.
+- Cloudflare `sum.visits` is shown as **Website visits (not unique people)**. A visit is not an identified or unique person; one person can create multiple visits. `crawler_requests` is a separate request-count metric and must not be subtracted from visits to estimate humans.
 - Crawler rows aggregate User-Agent, request count and top requested paths. URL query strings are intentionally not returned.
 - Crawler names are labelled **User-Agent heuristic** because User-Agent strings can be spoofed. This is not equivalent to Cloudflare Bot Management verification.
 - Adaptive Analytics data can be sampled; the dashboard marks sampled results.

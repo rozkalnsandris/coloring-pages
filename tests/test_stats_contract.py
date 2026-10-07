@@ -190,6 +190,9 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertIn('name="robots" content="noindex,nofollow,noarchive"', traffic_html)
         self.assertIn('href="stats.html"', traffic_html)
         self.assertIn("data-stats-visits", traffic_html)
+        self.assertIn("Website visits in the last 7 days", traffic_html)
+        self.assertIn("not unique people", traffic_html)
+        self.assertIn("must not be subtracted from visits", traffic_html)
         self.assertIn("data-stats-total-views", traffic_html)
         self.assertIn("data-stats-recent-views", traffic_html)
         self.assertIn("data-stats-crawler-requests", traffic_html)
@@ -201,6 +204,7 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
 
         self.assertIn("async function getTraffic(days = 7)", shared)
         self.assertIn("window.ColoringStats.getTraffic(7)", traffic_admin)
+        self.assertIn("Cloudflare’s sampled visit metric", traffic_admin)
         self.assertIn("window.ColoringStats.getOverview()", traffic_admin)
         self.assertIn('fetch("catalog.json", {cache: "no-store"})', traffic_admin)
         self.assertIn("const CATALOG_PAGE_SIZE = 20;", traffic_admin)

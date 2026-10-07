@@ -16,6 +16,7 @@
     recentViews: document.querySelector("[data-stats-recent-views]"),
     crawlerRequests: document.querySelector("[data-stats-crawler-requests]"),
     trafficStatus: document.querySelector("[data-traffic-status]"),
+    visitsNote: document.querySelector("[data-traffic-visits-note]"),
     viewed: document.querySelector("[data-stats-viewed]"),
     viewedEmpty: document.querySelector("[data-stats-viewed-empty]"),
     crawlers: document.querySelector("[data-stats-crawlers]"),
@@ -215,6 +216,9 @@
       els.recentViews.textContent = formatNumber(overview.totals?.recent_views);
       els.crawlerRequests.textContent = formatNumber(traffic.crawler_requests);
       els.trafficStatus.textContent = traffic.sampled ? "Sampled · User-Agent heuristic" : "User-Agent heuristic";
+      if (els.visitsNote && traffic.sampled) {
+        els.visitsNote.textContent = "“Website visits” is Cloudflare’s sampled visit metric, not a count of unique people. One person can create multiple visits. “Crawler requests” is a separate request count and must not be subtracted from visits.";
+      }
 
       renderTopList();
       renderCrawlers(traffic.crawlers);
