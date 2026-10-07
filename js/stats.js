@@ -70,7 +70,8 @@
     });
   }
 
-  function trackVisit(stage = "") {
+  function trackVisit() {
+    const stage = arguments[0] || "";
     const campaign = currentCampaign();
     const body = campaign && (stage === "landing" || stage === "catalog")
       ? {campaign,stage}
