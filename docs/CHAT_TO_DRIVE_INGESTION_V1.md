@@ -97,6 +97,19 @@ For new Chat publications, the authoring layer follows `metadata/id-policy.json`
 
 The canonical category registry is `metadata/categories.json`. The current allowed category IDs are `tiere`, `fahrzeuge`, `alphabet`, `lernen`, `figuren` and `jahreszeiten`. The normal workflow must choose one of these before Drive staging; no default or arbitrary free-text category is accepted. Adding a future category is a reviewed source change that updates the registry and the corresponding public UI category surface.
 
+## Current runtime eligibility preflight
+
+Production activation is historical capability evidence, not proof that the currently installed host operator still matches the current Coloring Pages importer contract.
+
+Before the first Drive mutation, `PUBLISH` must freshly verify:
+
+- the installed `/usr/local/bin/coloring-pages-drive-ingest` Git blob matches current `RPi5_main/main` `ops/bin/coloring-pages-drive-ingest`;
+- the current `RPi5_main` operator contract `ops/contracts/coloring-pages-drive-ingest-operator-v1.json` resolves its pinned Coloring Pages consumer source revision;
+- the `tools/coloring-pages-import` blob at that pinned revision matches current `coloring-pages/main` `tools/coloring-pages-import`;
+- the exact immutable importer image required by the current operator contract is locally available before invocation.
+
+Any mismatch is a STOP before the first Drive/content mutation and requires a separately reviewed `RPi5_main` repin plus explicit LIVE install/update authority. Historical activation evidence below is never reusable current runtime authority.
+
 ## Historical activation canary
 
 Production activation required one separately authorized non-production canary:
@@ -111,7 +124,7 @@ A mismatch, conversion or re-encode blocks activation.
 
 ## Production activation evidence
 
-The path is now production-activated.
+The path is production-activated as a capability; current publication eligibility still depends on the fresh runtime alignment preflight above.
 
 The first owner-authorized production import completed successfully on 2026-10-03 with:
 
