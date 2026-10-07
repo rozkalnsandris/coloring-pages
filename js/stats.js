@@ -60,19 +60,12 @@
   }
 
   function trackVisit() {
-    const body = "{}";
-    if (navigator.sendBeacon) {
-      try {
-        const blob = new Blob([body], {type: "application/json"});
-        if (navigator.sendBeacon(`${API_BASE}/visit`, blob)) return;
-      } catch {}
-    }
     fetch(`${API_BASE}/visit`, {
       method: "POST",
       credentials: "same-origin",
       keepalive: true,
       headers: {"Content-Type": "application/json"},
-      body,
+      body: "{}",
     }).catch(() => {});
   }
 
