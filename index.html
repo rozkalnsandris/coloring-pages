@@ -85,6 +85,30 @@
       </div>
     </section>
 
+    <section id="entdecken" class="ranking-pages ranking-discover" data-ranking-root aria-labelledby="discover-title" hidden>
+      <div class="container">
+        <div class="section-heading ranking-heading">
+          <div class="ranking-heading-copy">
+            <span class="ranking-eyebrow">Entdecken</span>
+            <h2 id="discover-title">Malvorlagen entdecken</h2>
+            <p data-ranking-description>In den letzten 7 Tagen besonders oft gedruckt.</p>
+          </div>
+          <div class="ranking-tabs" role="tablist" aria-label="Malvorlagen-Rangliste">
+            <button id="ranking-tab-trending" class="ranking-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="ranking-panel-trending" tabindex="0" data-ranking-tab="trending">🔥 Im Trend</button>
+            <button id="ranking-tab-popular" class="ranking-tab" type="button" role="tab" aria-selected="false" aria-controls="ranking-panel-popular" tabindex="-1" data-ranking-tab="popular">⭐ Am beliebtesten</button>
+          </div>
+        </div>
+
+        <div id="ranking-panel-trending" class="ranking-panel" role="tabpanel" aria-labelledby="ranking-tab-trending" data-ranking-section="trending">
+          <div class="gallery ranking-gallery" data-ranking-gallery="trending"></div>
+        </div>
+
+        <div id="ranking-panel-popular" class="ranking-panel" role="tabpanel" aria-labelledby="ranking-tab-popular" data-ranking-section="popular" hidden>
+          <div class="gallery ranking-gallery" data-ranking-gallery="popular"></div>
+        </div>
+      </div>
+    </section>
+
     <section id="kategorien" class="categories" aria-label="Kategorien">
       <div class="container">
         <div class="category-grid" data-category-grid>
@@ -174,25 +198,6 @@
       </div>
     </section>
 
-    <section id="beliebt" class="ranking-pages ranking-popular" data-ranking-section="popular" aria-labelledby="popular-title" hidden>
-      <div class="container">
-        <div class="section-heading ranking-heading"><div>
-          <h2 id="popular-title"><span aria-hidden="true">⭐</span> Beliebte Malvorlagen</h2>
-          <p>Nach den meisten A4-Druckaktionen.</p>
-        </div></div>
-        <div class="gallery ranking-gallery" data-ranking-gallery="popular"></div>
-      </div>
-    </section>
-
-    <section id="trending" class="ranking-pages ranking-trending" data-ranking-section="trending" aria-labelledby="trending-title" hidden>
-      <div class="container">
-        <div class="section-heading ranking-heading"><div>
-          <h2 id="trending-title"><span aria-hidden="true">🔥</span> Trending</h2>
-          <p>In den letzten 7 Tagen besonders oft gedruckt.</p>
-        </div></div>
-        <div class="gallery ranking-gallery" data-ranking-gallery="trending"></div>
-      </div>
-    </section>
     <section id="ueber-uns" class="about" aria-labelledby="about-title" tabindex="-1">
       <div class="container">
         <div class="about-intro">
