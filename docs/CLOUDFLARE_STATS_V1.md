@@ -68,6 +68,7 @@ The production site is `coloring.rozkalns.net` inside the shared `rozkalns.net` 
 Coloring Pages keeps the metric host-scoped without storing raw IP addresses:
 
 - Public `index.html` and `detail.html` loads call `POST /api/stats/visit`. Internal admin pages do not call this endpoint.
+- The browser sends this visit with same-origin `fetch(..., { keepalive: true })`; `sendBeacon()` is intentionally not used for this metric because its boolean result only indicates that the request was queued, not that the Worker accepted it.
 - The Worker reads `CF-Connecting-IP` only in memory and derives `HMAC-SHA-256(VISITOR_HMAC_KEY, UTC-day + hostname + IP)`.
 - D1 stores only `day` and the HMAC in `daily_visitors`, unique on `(day, visitor_hash)`.
 - Each successful visit also removes rows older than yesterday; the read path ignores anything older than yesterday.
