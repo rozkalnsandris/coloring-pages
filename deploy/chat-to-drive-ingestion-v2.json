@@ -21,7 +21,9 @@
     "host_operator_activation_required_before_v2_publish": true,
     "publication_command_reserved": "PUBLISH",
     "ok_is_publication_authority": false,
-    "host_operator_activation_satisfied": true
+    "host_operator_activation_must_be_verified_fresh_before_publish": true,
+    "host_importer_alignment_must_be_verified_fresh_before_publish": true,
+    "historical_activation_evidence_is_not_current_runtime_authority": true
   },
   "canonical_domains": {
     "application_source": "github",
@@ -141,11 +143,7 @@
     "importer_contract_ref": "deploy/importer-runtime.json",
     "immutable_importer_image_digest_required_at_live": true,
     "application_redeploy_required": false,
-    "operator_repository_revision": "7e3e6b6d6574c1dc5199618dbb974b1fae83eaf5",
     "installed_path": "/usr/local/bin/coloring-pages-drive-ingest",
-    "installed_blob_sha": "399df72159479c405166d011f140a967bdb749a5",
-    "installed_identity": "root:root:755",
-    "importer_image_digest": "sha256:53801684e0ce5a30d195d3436220a71b350112fc6e6fdc6fe107779d13c857ba",
     "activation_evidence": {
       "activated_at": "2026-10-04",
       "exact_installed_identity_verified": true,
@@ -173,7 +171,19 @@
       "systemd_changed": false
     },
     "transport_direction": "drive-to-rpi5-pull-only",
-    "host_rclone_upload_allowed": false
+    "host_rclone_upload_allowed": false,
+    "current_runtime_preflight": {
+      "required_before_first_drive_mutation": true,
+      "runtime_owner_repository": "rozkalnsandris/RPi5_main",
+      "operator_source_path": "ops/bin/coloring-pages-drive-ingest",
+      "operator_contract_path": "ops/contracts/coloring-pages-drive-ingest-operator-v1.json",
+      "installed_operator_path": "/usr/local/bin/coloring-pages-drive-ingest",
+      "installed_operator_blob_must_match_fresh_operator_source": true,
+      "operator_contract_pinned_consumer_source_revision_must_resolve": true,
+      "operator_pinned_importer_blob_must_match_current_consumer_importer_blob": true,
+      "consumer_importer_path": "tools/coloring-pages-import",
+      "mismatch_disposition": "stop-before-first-drive-mutation-requires-rpi5-main-repin"
+    }
   },
   "idempotency": {
     "receipt_path": "/srv/coloring-pages-content/state/drive-ingest/<id>.receipt.json",
