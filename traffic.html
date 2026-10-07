@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="description" content="Internal Coloring Pages traffic and crawler analytics dashboard.">
+  <title>Traffic analytics – Coloring Pages</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=c5d8c26a8a8349b2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css?v=9e8b65fda507de5b">
+</head>
+<body class="stats-page">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner stats-header-inner">
+      <a class="brand" href="index.html" aria-label="Coloring Pages home">
+        <span class="brand-paw" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="brand-word">
+          <span>Coloring</span>
+          <span class="brand-pages"><b>P</b><b>a</b><b>g</b><b>e</b><b>s</b></span>
+        </span>
+      </a>
+      <strong class="stats-header-title">Traffic analytics</strong>
+      <a class="outline-link stats-home-link" href="stats.html"><span aria-hidden="true">←</span> Statistics</a>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <section class="stats-hero" aria-labelledby="traffic-title">
+      <div class="container">
+        <span class="stats-eyebrow">Internal dashboard</span>
+        <div class="stats-hero-row">
+          <div>
+            <h1 id="traffic-title">Traffic analytics</h1>
+            <p>Visits, coloring page views and crawler activity from Cloudflare.</p>
+          </div>
+          <button class="outline-link stats-refresh" type="button" data-traffic-refresh>Refresh <span aria-hidden="true">↻</span></button>
+        </div>
+        <p class="stats-status" data-traffic-page-status aria-live="polite">Loading traffic analytics …</p>
+      </div>
+    </section>
+
+    <section class="stats-summary" aria-label="Traffic summary">
+      <div class="container stats-kpi-grid">
+        <article class="stats-kpi">
+          <span class="stats-kpi-icon" aria-hidden="true">↪</span>
+          <div><span class="stats-kpi-label">Visits in the last 7 days</span><strong data-stats-visits>–</strong></div>
+        </article>
+        <article class="stats-kpi">
+          <span class="stats-kpi-icon" aria-hidden="true">👁️</span>
+          <div><span class="stats-kpi-label">Total coloring page views</span><strong data-stats-total-views>–</strong></div>
+        </article>
+        <article class="stats-kpi">
+          <span class="stats-kpi-icon" aria-hidden="true">📅</span>
+          <div><span class="stats-kpi-label">Coloring page views in the last 7 days</span><strong data-stats-recent-views>–</strong></div>
+        </article>
+        <article class="stats-kpi">
+          <span class="stats-kpi-icon" aria-hidden="true">🤖</span>
+          <div><span class="stats-kpi-label">Crawler requests in the last 7 days</span><strong data-stats-crawler-requests>–</strong></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="stats-rankings" aria-label="Traffic and crawler analytics">
+      <div class="container stats-rankings-grid">
+        <article class="stats-panel">
+          <div class="stats-panel-heading">
+            <div><span class="stats-panel-kicker">7 days</span><h2>👁 Most viewed TOP 10</h2></div>
+            <span class="stats-panel-caption">Coloring page detail views</span>
+          </div>
+          <ol class="stats-top-list" data-stats-viewed></ol>
+          <p class="stats-empty" data-stats-viewed-empty hidden>No coloring page views yet.</p>
+        </article>
+
+        <article class="stats-panel">
+          <div class="stats-panel-heading">
+            <div><span class="stats-panel-kicker">7 days</span><h2>🤖 Crawlers</h2></div>
+            <span class="stats-panel-caption" data-traffic-status>User-Agent heuristic</span>
+          </div>
+          <div class="stats-table-wrap">
+            <table class="stats-table">
+              <thead>
+                <tr>
+                  <th scope="col">Crawler</th>
+                  <th scope="col" class="stats-number">Requests</th>
+                  <th scope="col">Top requested paths</th>
+                </tr>
+              </thead>
+              <tbody data-stats-crawlers></tbody>
+            </table>
+          </div>
+          <p class="stats-empty" data-stats-crawlers-empty hidden>No crawler requests in this period.</p>
+          <p class="stats-note">Crawler names are inferred from User-Agent strings. Paths do not include URL query strings.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="stats-all" aria-labelledby="traffic-all-title">
+      <div class="container">
+        <div class="stats-table-heading">
+          <div>
+            <span class="stats-panel-kicker">Page views</span>
+            <h2 id="traffic-all-title">Views by coloring page</h2>
+          </div>
+          <div class="stats-controls">
+            <label class="stats-search">
+              <span class="sr-only">Search coloring pages</span>
+              <input type="search" placeholder="Search coloring pages …" data-traffic-search>
+            </label>
+            <label class="stats-sort-label">
+              <span class="sr-only">Sort</span>
+              <select data-traffic-sort>
+                <option value="recentViews">Views in the last 7 days</option>
+                <option value="views">Total views</option>
+                <option value="title">Title A–Z</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="stats-table-wrap">
+          <table id="traffic-catalog-table" class="stats-table">
+            <thead>
+              <tr>
+                <th scope="col">Coloring page</th>
+                <th scope="col">Category</th>
+                <th scope="col" class="stats-number">Total views</th>
+                <th scope="col" class="stats-number">7 day views</th>
+              </tr>
+            </thead>
+            <tbody data-traffic-table></tbody>
+          </table>
+        </div>
+        <div class="gallery-actions">
+          <button class="outline-link" type="button" data-traffic-load-more aria-controls="traffic-catalog-table" hidden>
+            More <span aria-hidden="true">↓</span>
+          </button>
+        </div>
+        <p class="stats-empty" data-traffic-table-empty hidden>No matching coloring page found.</p>
+        <p class="stats-note">Visits are aggregate Cloudflare analytics. A visit is not the same as a unique person. Adaptive analytics may be sampled.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/stats.js?v=1560fa5a11b2c6e2" defer></script>
+  <script src="js/traffic-admin.js?v=traffic-split-1" defer></script>
+</body>
+</html>

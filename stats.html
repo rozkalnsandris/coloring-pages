@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
-  <meta name="description" content="Internal Coloring Pages statistics dashboard.">
+  <meta name="description" content="Internal Coloring Pages engagement statistics dashboard.">
   <title>Statistics – Coloring Pages</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=c5d8c26a8a8349b2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,9 +36,12 @@
         <div class="stats-hero-row">
           <div>
             <h1 id="stats-title">Statistics</h1>
-            <p>Engagement, page views, visits and crawler activity from the Cloudflare analytics stack.</p>
+            <p>Print activity, likes and catalog engagement.</p>
           </div>
-          <button class="outline-link stats-refresh" type="button" data-stats-refresh>Refresh <span aria-hidden="true">↻</span></button>
+          <div class="stats-controls">
+            <a class="outline-link" href="traffic.html">Traffic analytics <span aria-hidden="true">→</span></a>
+            <button class="outline-link stats-refresh" type="button" data-stats-refresh>Refresh <span aria-hidden="true">↻</span></button>
+          </div>
         </div>
         <p class="stats-status" data-stats-status aria-live="polite">Loading statistics …</p>
       </div>
@@ -87,48 +90,6 @@
       </div>
     </section>
 
-
-    <section class="stats-rankings" aria-label="Traffic and crawler analytics">
-      <div class="container stats-kpi-grid">
-        <article class="stats-kpi">
-          <span class="stats-kpi-icon" aria-hidden="true">↪</span>
-          <div><span class="stats-kpi-label">Visits in the last 7 days</span><strong data-stats-visits>–</strong></div>
-        </article>
-        <article class="stats-kpi">
-          <span class="stats-kpi-icon" aria-hidden="true">👁️</span>
-          <div><span class="stats-kpi-label">Coloring page views in the last 7 days</span><strong data-stats-recent-views>–</strong></div>
-        </article>
-        <article class="stats-kpi">
-          <span class="stats-kpi-icon" aria-hidden="true">🤖</span>
-          <div><span class="stats-kpi-label">Crawler requests in the last 7 days</span><strong data-stats-crawler-requests>–</strong></div>
-        </article>
-      </div>
-      <div class="container stats-rankings-grid">
-        <article class="stats-panel">
-          <div class="stats-panel-heading">
-            <div><span class="stats-panel-kicker">7 days</span><h2>👁 Most viewed TOP 10</h2></div>
-            <span class="stats-panel-caption">Coloring page detail views</span>
-          </div>
-          <ol class="stats-top-list" data-stats-viewed></ol>
-          <p class="stats-empty" data-stats-viewed-empty hidden>No coloring page views yet.</p>
-        </article>
-        <article class="stats-panel">
-          <div class="stats-panel-heading">
-            <div><span class="stats-panel-kicker">7 days</span><h2>🤖 Crawlers</h2></div>
-            <span class="stats-panel-caption" data-traffic-status>User-Agent heuristic</span>
-          </div>
-          <div class="stats-table-wrap">
-            <table class="stats-table">
-              <thead><tr><th scope="col">Crawler</th><th scope="col" class="stats-number">Requests</th><th scope="col">Top requested paths</th></tr></thead>
-              <tbody data-stats-crawlers></tbody>
-            </table>
-          </div>
-          <p class="stats-empty" data-stats-crawlers-empty hidden>No crawler requests in this period.</p>
-          <p class="stats-note">Crawler names are inferred from User-Agent strings. Paths do not include URL query strings.</p>
-        </article>
-      </div>
-    </section>
-
     <section class="stats-all" aria-labelledby="stats-all-title">
       <div class="container">
         <div class="stats-table-heading">
@@ -145,9 +106,7 @@
               <span class="sr-only">Sort</span>
               <select data-stats-sort>
                 <option value="prints">Total prints</option>
-                <option value="views">Total views</option>
-                <option value="recentViews">Views in the last 7 days</option>
-                <option value="recent">Last 7 days</option>
+                <option value="recent">Prints in the last 7 days</option>
                 <option value="likes">Likes</option>
                 <option value="title">Title A–Z</option>
               </select>
@@ -161,8 +120,6 @@
               <tr>
                 <th scope="col">Coloring page</th>
                 <th scope="col">Category</th>
-                <th scope="col" class="stats-number">Views</th>
-                <th scope="col" class="stats-number">7 day views</th>
                 <th scope="col" class="stats-number">Prints</th>
                 <th scope="col" class="stats-number">7 day prints</th>
                 <th scope="col" class="stats-number">Likes</th>
@@ -183,6 +140,6 @@
   </main>
 
   <script src="js/stats.js?v=1560fa5a11b2c6e2" defer></script>
-  <script src="js/stats-admin.js?v=574ebf0da640c2ae" defer></script>
+  <script src="js/stats-admin.js?v=traffic-split-1" defer></script>
 </body>
 </html>

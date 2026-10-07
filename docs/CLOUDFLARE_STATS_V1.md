@@ -42,23 +42,25 @@ Repository source does **not** create or mutate Cloudflare resources. Activation
 
 No RPi5 service, database, restart, package or host mutation is part of this design.
 
-## Internal statistics dashboard
+## Internal statistics dashboards
 
-`/stats.html` is the read-only internal engagement dashboard for the site UI. It uses the same design system as the public application and reads only aggregate Stats V1 data.
+`/stats.html` is the read-only internal **engagement** dashboard. `/traffic.html` is the separate read-only **traffic and crawler analytics** dashboard linked from `/stats.html`. Both use the same design system as the public application and read only aggregate Stats V1 data.
 
-- `GET /api/stats/overview` returns aggregate totals plus per-page `print_count`, `like_count` and seven-day `recent_prints`.
-- The overview response never returns visitor IDs, visitor hashes, raw `likes` rows, IP addresses or Cloudflare credentials.
-- The dashboard also reads the public `catalog.json` to map page IDs to titles, thumbnails and categories.
-- `/stats.html` carries `noindex,nofollow,noarchive` and is intentionally not linked from public navigation.
+- `GET /api/stats/overview` returns aggregate totals plus per-page print, like and anonymous page-view counters.
+- `/stats.html` renders print actions, likes, Popular, Trending and the engagement catalog table.
+- `/traffic.html` renders visits, total/seven-day page views, Most viewed, crawler activity and a page-view catalog table.
+- Both dashboards read the public `catalog.json` to map page IDs to titles, thumbnails and categories.
+- Neither dashboard returns visitor IDs, visitor hashes, raw `likes` rows, IP addresses or Cloudflare credentials.
+- Both pages carry `noindex,nofollow,noarchive` and are intentionally absent from public navigation.
 - `Drucken` remains print intent: a click on the A4 print action, not proof of a physical print.
 
-The source page contains no authentication secret. Before production exposure, protect the exact `/stats.html` path with a Cloudflare Access self-hosted application. That Access setting is a separate owner-gated Cloudflare mutation; it is not created by repository source or SIMPLE-DEPLOY.
+The source pages contain no authentication secret. Before production exposure, protect both exact internal paths (`/stats.html` and `/traffic.html`) or an equivalently bounded pattern with Cloudflare Access. That Access setting is a separate owner-gated Cloudflare mutation; it is not created by repository source or SIMPLE-DEPLOY.
 
-The aggregate `/api/stats/overview` endpoint may remain public and read-only. Its contract intentionally contains no visitor-level data.
+The aggregate read-only API responses intentionally contain no visitor-level data.
 
 ## Admin traffic and crawler analytics
 
-The internal dashboard has a bounded traffic extension:
+The separate `/traffic.html` dashboard uses a bounded traffic extension:
 
 - `POST /api/stats/view` records one anonymous coloring-page detail view for a validated `page_id`.
 - `daily_views` stores only `page_id`, UTC day and aggregate `view_count`. It stores no IP address, User-Agent, fingerprint or visitor ID.
