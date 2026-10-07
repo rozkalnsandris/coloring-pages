@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=9e8b65fda507de5b">
+  <link rel="stylesheet" href="css/app.css?v=unique-visitors-1">
 </head>
 <body class="stats-page">
   <a class="skip-link" href="#main">Skip to content</a>
@@ -45,7 +45,11 @@
     </section>
 
     <section class="stats-summary" aria-label="Traffic summary">
-      <div class="container stats-kpi-grid">
+      <div class="container stats-kpi-grid traffic-kpi-grid">
+        <article class="stats-kpi">
+          <span class="stats-kpi-icon" aria-hidden="true">👤</span>
+          <div><span class="stats-kpi-label">Approx. unique visitors in the last 7 days</span><strong data-stats-unique-browsers>–</strong></div>
+        </article>
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">↪</span>
           <div><span class="stats-kpi-label">Website visits in the last 7 days <span aria-hidden="true">·</span> not unique people</span><strong data-stats-visits>–</strong></div>
@@ -65,7 +69,7 @@
       </div>
       <div class="container">
         <p class="stats-note" data-traffic-visits-note>
-          “Website visits” is Cloudflare’s visit metric, not a count of unique people. One person can create multiple visits. “Crawler requests” is a separate request count and must not be subtracted from visits.
+          “Approx. unique visitors” counts first-party browser profiles that loaded a public page after this counter went live. It is not an exact people count: one person can use multiple browsers or devices, while people sharing one browser profile count once. Historical visits are not backfilled. “Website visits” remains a separate Cloudflare metric.
         </p>
       </div>
     </section>
@@ -152,6 +156,6 @@
   </main>
 
   <script src="js/stats.js?v=1560fa5a11b2c6e2" defer></script>
-  <script src="js/traffic-admin.js?v=traffic-split-1" defer></script>
+  <script src="js/traffic-admin.js?v=unique-visitors-1" defer></script>
 </body>
 </html>

@@ -29,12 +29,18 @@ def test_cloudflare_stats_contract_keeps_rpi5_out_of_state():
     assert "PRIMARY KEY (page_id, visitor_hash)" in schema
     assert "Raspberry Pi" in docs
     assert "print intent" in docs
-def test_stats_frontend_uses_first_party_random_id_only_on_engagement():
+def test_stats_frontend_uses_first_party_random_id_for_public_visitor_and_engagement():
     js=read("js/stats.js")
     assert 'getVisitorId(false)' in js
     assert 'getVisitorId(true)' in js
     assert 'localStorage.getItem(VISITOR_KEY)' in js
     assert 'crypto?.randomUUID?.()' in js
+    assert 'const VISITOR_DAY_KEY = "coloring-pages-visitor-day-v1"' in js
+    assert 'async function trackVisitor()' in js
+    assert 'requestJson("/visit"' in js
+    assert 'localStorage.getItem(VISITOR_DAY_KEY) === day' in js
+    assert 'localStorage.setItem(VISITOR_DAY_KEY, day)' in js
+    assert '!document.body.classList.contains("stats-page")' in js
 
 
 class TrendingSqlRegressionTests(unittest.TestCase):
@@ -168,14 +174,17 @@ class AnonymousVisitorCounterTests(unittest.TestCase):
         response = overview[overview.rindex("return json({"):]
         self.assertNotIn("visitor_hash", response)
 
-    def test_frontend_tracking_is_not_activated_in_backend_phase(self):
+    def test_frontend_tracking_registers_public_browser_profile_once_per_utc_day(self):
         shared = read("js/stats.js")
-        app = read("js/app.js")
-        detail = read("js/detail.js")
 
-        self.assertNotIn("trackVisitor", shared)
-        self.assertNotIn("trackVisitor", app)
-        self.assertNotIn("trackVisitor", detail)
+        self.assertIn("async function trackVisitor()", shared)
+        self.assertIn('requestJson("/visit"', shared)
+        self.assertIn('localStorage.getItem(VISITOR_DAY_KEY) === day', shared)
+        self.assertIn('localStorage.setItem(VISITOR_DAY_KEY, day)', shared)
+        self.assertIn('trackVisitor();', shared)
+        self.assertIn('!document.body.classList.contains("stats-page")', shared)
+        self.assertNotIn("clientIP", shared)
+        self.assertNotIn("userAgent", shared)
 
 
 class AdminTrafficAnalyticsTests(unittest.TestCase):
@@ -232,6 +241,9 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
 
         self.assertIn('name="robots" content="noindex,nofollow,noarchive"', traffic_html)
         self.assertIn('href="stats.html"', traffic_html)
+        self.assertIn("data-stats-unique-browsers", traffic_html)
+        self.assertIn("Approx. unique visitors in the last 7 days", traffic_html)
+        self.assertIn("Historical visits are not backfilled", traffic_html)
         self.assertIn("data-stats-visits", traffic_html)
         self.assertIn("Website visits in the last 7 days", traffic_html)
         self.assertIn("not unique people", traffic_html)
@@ -249,6 +261,7 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertIn("window.ColoringStats.getTraffic(7)", traffic_admin)
         self.assertIn("Cloudflare’s sampled visit metric", traffic_admin)
         self.assertIn("window.ColoringStats.getOverview()", traffic_admin)
+        self.assertIn("overview.totals?.unique_browsers_7d", traffic_admin)
         self.assertIn('fetch("catalog.json", {cache: "no-store"})', traffic_admin)
         self.assertIn("const CATALOG_PAGE_SIZE = 20;", traffic_admin)
         self.assertIn("visible.slice(0, visibleLimit)", traffic_admin)

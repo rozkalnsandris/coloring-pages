@@ -11,6 +11,7 @@
 
   const els = {
     status: document.querySelector("[data-traffic-page-status]"),
+    uniqueBrowsers: document.querySelector("[data-stats-unique-browsers]"),
     visits: document.querySelector("[data-stats-visits]"),
     totalViews: document.querySelector("[data-stats-total-views]"),
     recentViews: document.querySelector("[data-stats-recent-views]"),
@@ -211,6 +212,7 @@
           };
         });
 
+      els.uniqueBrowsers.textContent = formatNumber(overview.totals?.unique_browsers_7d);
       els.visits.textContent = formatNumber(traffic.visits);
       els.totalViews.textContent = formatNumber(overview.totals?.view_count);
       els.recentViews.textContent = formatNumber(overview.totals?.recent_views);

@@ -14,7 +14,7 @@ A print count means **print intent** (the user pressed the print action), not pr
 - One same-origin Cloudflare Worker owns `/api/stats/*`.
 - One D1 database owns the small engagement state.
 - The Raspberry Pi application remains static and does not host an analytics database or API.
-- The browser currently creates a first-party random visitor ID only when the user first likes or prints. D1 stores only its SHA-256 hash for likes. The backend also supports a separate hash-only daily visitor counter; frontend activation of that counter is a later source step.
+- Public pages create one first-party random browser-profile ID in localStorage. The browser registers that profile with `/api/stats/visit` at most once per UTC day; the Worker stores only its SHA-256 hash. The same random ID is reused for likes/print rate-limiting.
 - An optional Workers Rate Limiting binding uses the random visitor ID rather than IP address.
 
 ## API
@@ -50,7 +50,7 @@ No RPi5 service, database, restart, package or host mutation is part of this des
 - `GET /api/stats/overview` returns aggregate totals plus per-page print, like and anonymous page-view counters.
 - The overview also returns `unique_browsers_7d`, calculated as `COUNT(DISTINCT visitor_hash)` across the current UTC day plus the previous six days.
 - `/stats.html` renders print actions, likes, Popular, Trending and the engagement catalog table.
-- `/traffic.html` renders website visits (explicitly labelled as not unique people), total/seven-day page views, Most viewed, crawler activity and a page-view catalog table.
+- `/traffic.html` renders **Approx. unique visitors** (browser profiles over seven days), website visits (explicitly labelled as not unique people), total/seven-day page views, Most viewed, crawler activity and a page-view catalog table.
 - Both dashboards read the public `catalog.json` to map page IDs to titles, thumbnails and categories.
 - Neither dashboard returns visitor IDs, visitor hashes, raw `likes` rows, IP addresses or Cloudflare credentials.
 - Both pages carry `noindex,nofollow,noarchive` and are intentionally absent from public navigation.
@@ -71,9 +71,11 @@ The backend contains an additive, privacy-bounded counter intended to provide a 
 - Visitor rows older than 30 days are deleted during successful visitor registration.
 - `GET /api/stats/overview` exposes only the aggregate `unique_browsers_7d`; hashes are never returned to the browser.
 - This metric represents **browser profiles, not people**. One person using multiple browsers/devices can count more than once, while multiple people sharing one browser profile count once.
-- This commit does not activate frontend visitor registration. Activation requires a later reviewed application source change after the additive D1 schema and Worker version are LIVE.
+- Public `index.html` and `detail.html` activate registration through the shared `js/stats.js`; internal `stats.html` and `traffic.html` carry the `stats-page` class and are excluded from visitor registration.
+- The browser keeps a separate UTC-day marker and sends at most one successful registration per day. If registration fails, the marker is not advanced, so a later public page load may retry.
+- The dashboard label is **Approx. unique visitors** because this is a browser-profile count, not a person count. Historical visits before frontend activation are not backfilled.
 
-Deployment order is fail-closed: apply the additive D1 schema first, then deploy the matching Worker, verify the new aggregate field, and only then enable frontend registration/UI in a separate application change.
+Deployment order remains fail-closed: the additive D1 schema and matching Worker must be LIVE and verified before the frontend registration/UI application change is merged.
 
 ## Admin traffic and crawler analytics
 

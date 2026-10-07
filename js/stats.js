@@ -1,6 +1,7 @@
 (() => {
   const API_BASE = "/api/stats";
   const VISITOR_KEY = "coloring-pages-visitor-v1";
+  const VISITOR_DAY_KEY = "coloring-pages-visitor-day-v1";
 
   function getVisitorId(create = false) {
     try {
@@ -42,6 +43,26 @@
   async function getTraffic(days = 7) {
     const safeDays = Number(days) === 30 ? 30 : 7;
     return requestJson(`/traffic?days=${safeDays}`);
+  }
+
+  async function trackVisitor() {
+    const day = new Date().toISOString().slice(0, 10);
+    try {
+      if (localStorage.getItem(VISITOR_DAY_KEY) === day) return;
+    } catch {}
+
+    const visitorId = getVisitorId(true);
+    if (!visitorId) return;
+
+    try {
+      await requestJson("/visit", {
+        method: "POST",
+        body: JSON.stringify({visitor_id: visitorId}),
+      });
+      try {
+        localStorage.setItem(VISITOR_DAY_KEY, day);
+      } catch {}
+    } catch {}
   }
 
   async function getPage(pageId) {
@@ -94,5 +115,8 @@
     }).catch(() => {});
   }
 
-  window.ColoringStats = {getRankings, getOverview, getTraffic, getPage, toggleLike, trackView, trackPrint};
+  window.ColoringStats = {getRankings, getOverview, getTraffic, getPage, toggleLike, trackVisitor, trackView, trackPrint};
+  if (!document.body.classList.contains("stats-page")) {
+    trackVisitor();
+  }
 })();
