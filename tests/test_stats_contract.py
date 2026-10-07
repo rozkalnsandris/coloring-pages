@@ -171,6 +171,9 @@ class CloudflareUniqueVisitorTests(unittest.TestCase):
         track_visit = shared[shared.index("function trackVisit"):shared.index("function trackView")]
         self.assertNotIn("getVisitorId", track_visit)
         self.assertNotIn("visitor_id", track_visit)
+        self.assertIn('fetch(`${API_BASE}/visit`', track_visit)
+        self.assertIn("keepalive: true", track_visit)
+        self.assertNotIn("sendBeacon", track_visit)
         self.assertIn('location.pathname === "/"', shared)
         self.assertIn('location.pathname === "/index.html"', shared)
         self.assertIn('location.pathname === "/detail.html"', shared)
