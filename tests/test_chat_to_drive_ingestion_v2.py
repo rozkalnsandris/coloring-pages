@@ -32,18 +32,41 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
         self.assertTrue(compatibility["v2_does_not_change_v1_publish_semantics"])
         host = self.v2["host_ingestion"]
         self.assertEqual(host["activation_state"], "production-activated")
-        self.assertEqual(
-            host["operator_repository_revision"],
-            "7e3e6b6d6574c1dc5199618dbb974b1fae83eaf5",
-        )
-        self.assertEqual(
-            host["installed_blob_sha"],
-            "399df72159479c405166d011f140a967bdb749a5",
-        )
         self.assertEqual(host["installed_path"], "/usr/local/bin/coloring-pages-drive-ingest")
-        self.assertEqual(host["installed_identity"], "root:root:755")
-        self.assertEqual(host["importer_image_digest"], "sha256:53801684e0ce5a30d195d3436220a71b350112fc6e6fdc6fe107779d13c857ba")
-        self.assertTrue(self.v2["authority"]["host_operator_activation_satisfied"])
+        self.assertNotIn("operator_repository_revision", host)
+        self.assertNotIn("installed_blob_sha", host)
+        self.assertNotIn("installed_identity", host)
+        self.assertNotIn("importer_image_digest", host)
+        self.assertNotIn("host_operator_activation_satisfied", self.v2["authority"])
+        self.assertTrue(
+            self.v2["authority"]["host_operator_activation_must_be_verified_fresh_before_publish"]
+        )
+        self.assertTrue(
+            self.v2["authority"]["host_importer_alignment_must_be_verified_fresh_before_publish"]
+        )
+        self.assertTrue(
+            self.v2["authority"]["historical_activation_evidence_is_not_current_runtime_authority"]
+        )
+        preflight = host["current_runtime_preflight"]
+        self.assertTrue(preflight["required_before_first_drive_mutation"])
+        self.assertEqual(preflight["runtime_owner_repository"], "rozkalnsandris/RPi5_main")
+        self.assertEqual(preflight["operator_source_path"], "ops/bin/coloring-pages-drive-ingest")
+        self.assertEqual(
+            preflight["operator_contract_path"],
+            "ops/contracts/coloring-pages-drive-ingest-operator-v1.json",
+        )
+        self.assertEqual(preflight["consumer_importer_path"], "tools/coloring-pages-import")
+        self.assertTrue(preflight["installed_operator_blob_must_match_fresh_operator_source"])
+        self.assertTrue(
+            preflight["operator_contract_pinned_consumer_source_revision_must_resolve"]
+        )
+        self.assertTrue(
+            preflight["operator_pinned_importer_blob_must_match_current_consumer_importer_blob"]
+        )
+        self.assertEqual(
+            preflight["mismatch_disposition"],
+            "stop-before-first-drive-mutation-requires-rpi5-main-repin",
+        )
         repin = host["repin_activation_evidence"]
         self.assertEqual(repin["activated_at"], "2026-10-05")
         self.assertEqual(repin["source_revision"], "7e3e6b6d6574c1dc5199618dbb974b1fae83eaf5")
