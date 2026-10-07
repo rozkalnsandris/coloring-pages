@@ -228,7 +228,7 @@
       els.crawlerRequests.textContent = formatNumber(traffic.crawler_requests);
       els.trafficStatus.textContent = traffic.sampled ? "Sampled · User-Agent heuristic" : "User-Agent heuristic";
       if (els.visitsNote && traffic.sampled) {
-        els.visitsNote.textContent = "“Approx. unique visitors” is Cloudflare’s latest available daily unique-IP metric, not an exact people count. Free-plan traffic analytics can include crawlers and threats. “Website visits” is a separate sampled metric.";
+        els.visitsNote.textContent = "“Approx. unique visitors” is the Stats Worker’s latest daily privacy-preserving unique-IP count, not an exact people count. “Website visits” is a separate sampled Cloudflare metric.";
       }
 
       renderTopList();

@@ -22,6 +22,18 @@ async function sha256(value) {
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(digest)].map((byte)=>byte.toString(16).padStart(2,"0")).join("");
 }
+async function hmacSha256(secret, value) {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    {name:"HMAC",hash:"SHA-256"},
+    false,
+    ["sign"]
+  );
+  const digest = await crypto.subtle.sign("HMAC",key,encoder.encode(value));
+  return [...new Uint8Array(digest)].map((byte)=>byte.toString(16).padStart(2,"0")).join("");
+}
 async function parseBody(request) {
   const body = await request.json().catch(()=>null);
   if (!body || !validPageId(body.page_id)) return null;
@@ -183,6 +195,24 @@ async function queryCloudflareAnalytics(env, query, variables) {
   return {data:body.data,status:200};
 }
 
+async function recordVisitor(env, request) {
+  if (!allowedWriteOrigin(request,env)) return json({error:"forbidden"},403);
+  const secret = String(env.VISITOR_HMAC_KEY || "");
+  const ip = request.headers.get("CF-Connecting-IP") || "";
+  if (secret.length < 32 || !ip) return json({error:"visitor_tracking_unavailable"},503);
+  const day = new Date().toISOString().slice(0,10);
+  const host = new URL(env.PUBLIC_ORIGIN || DEFAULT_ORIGIN).hostname;
+  const visitorHash = await hmacSha256(secret,`${day}\n${host}\n${ip}`);
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT OR IGNORE INTO daily_visitors (day, visitor_hash)
+       VALUES (?, ?)`
+    ).bind(day,visitorHash),
+    env.DB.prepare("DELETE FROM daily_visitors WHERE day < date('now', '-1 day')"),
+  ]);
+  return json({ok:true},201);
+}
+
 async function trafficStats(env, request) {
   const url = new URL(request.url);
   const requestedDays = Number(url.searchParams.get("days")) || 7;
@@ -213,33 +243,26 @@ async function trafficStats(env, request) {
   });
   if (visitsResult.error) return json({error:visitsResult.error},visitsResult.status);
 
-  const uniqueStartDate = new Date(Date.UTC(
-    end.getUTCFullYear(),
-    end.getUTCMonth(),
-    end.getUTCDate() - (days - 1)
-  )).toISOString().slice(0,10);
-  const uniqueEndDate = new Date(Date.UTC(
-    end.getUTCFullYear(),
-    end.getUTCMonth(),
-    end.getUTCDate() + 1
-  )).toISOString().slice(0,10);
-  const uniqueVisitorsQuery = [
-    "query AdminUniqueVisitors($zoneTag: string, $filter: filter) {",
-    " viewer { zones(filter: { zoneTag: $zoneTag }) {",
-    "  uniqueVisitors: httpRequests1dGroups(limit: 31, orderBy: [date_DESC], filter: $filter) {",
-    "   uniq { uniques }",
-    "   dimensions { date }",
-    "  }",
-    " } } }",
-  ].join("\n");
-  const uniqueVisitorsResult = await queryCloudflareAnalytics(env, uniqueVisitorsQuery, {
-    zoneTag: env.CF_ZONE_TAG,
-    filter: {
-      date_geq: uniqueStartDate,
-      date_lt: uniqueEndDate,
-      clientRequestHTTPHost: host,
-    },
-  });
+  let uniqueVisitors = null;
+  let uniqueVisitorsDate = null;
+  let uniqueVisitorsStatus = "unavailable";
+  try {
+    const latestUniqueVisitorRow = await env.DB.prepare(
+      `SELECT day, COUNT(*) AS unique_visitors
+       FROM daily_visitors
+       WHERE day >= date('now', '-1 day')
+       GROUP BY day
+       ORDER BY day DESC
+       LIMIT 1`
+    ).first();
+    if (latestUniqueVisitorRow?.day && Number.isFinite(Number(latestUniqueVisitorRow?.unique_visitors))) {
+      uniqueVisitors = Number(latestUniqueVisitorRow.unique_visitors);
+      uniqueVisitorsDate = String(latestUniqueVisitorRow.day);
+      uniqueVisitorsStatus = "available";
+    } else {
+      uniqueVisitorsStatus = "empty";
+    }
+  } catch {}
 
   const crawlerQuery = [
     "query AdminCrawlers($zoneTag: string, $filter: filter) {",
@@ -272,21 +295,6 @@ async function trafficStats(env, request) {
 
   const visitsRows = visitsResult.data?.viewer?.zones?.[0]?.visits || [];
   const crawlerRows = crawlerResult.data?.viewer?.zones?.[0]?.crawlers || [];
-  const uniqueVisitorRows = uniqueVisitorsResult.error
-    ? []
-    : uniqueVisitorsResult.data?.viewer?.zones?.[0]?.uniqueVisitors || [];
-  const latestUniqueVisitorRow = uniqueVisitorRows.find((row) =>
-    row?.dimensions?.date && Number.isFinite(Number(row?.uniq?.uniques))
-  );
-  const uniqueVisitors = latestUniqueVisitorRow
-    ? Number(latestUniqueVisitorRow.uniq.uniques)
-    : null;
-  const uniqueVisitorsDate = latestUniqueVisitorRow?.dimensions?.date || null;
-  const uniqueVisitorsStatus = uniqueVisitorsResult.error
-    ? "unavailable"
-    : latestUniqueVisitorRow
-      ? "available"
-      : "empty";
   const visits = visitsRows.reduce((sum, row) => sum + Number(row.sum?.visits || 0), 0);
   let sampled = visitsRows.some((row) => Number(row.avg?.sampleInterval || 1) > 1);
 
@@ -315,7 +323,7 @@ async function trafficStats(env, request) {
     unique_visitors:uniqueVisitors,
     unique_visitors_date:uniqueVisitorsDate,
     unique_visitors_status:uniqueVisitorsStatus,
-    unique_visitors_basis:"cloudflare-daily-unique-ips",
+    unique_visitors_basis:"worker-d1-daily-hmac-ip",
     visits,
     crawler_requests:crawlers.reduce((sum,crawler)=>sum+crawler.requests,0),
     crawlers,
@@ -391,6 +399,7 @@ export default {
     if (request.method==="GET" && path==="/api/stats/overview") return overviewStats(env);
     if (request.method==="GET" && path==="/api/stats/traffic") return trafficStats(env,request);
     if (request.method==="GET" && path==="/api/stats/page") return pageStats(env,request);
+    if (request.method==="POST" && path==="/api/stats/visit") return recordVisitor(env,request);
     if (request.method==="POST" && path==="/api/stats/view") return recordView(env,request);
     if (request.method==="POST" && path==="/api/stats/print") return recordPrint(env,request);
     if (request.method==="POST" && path==="/api/stats/like") return toggleLike(env,request);

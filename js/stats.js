@@ -59,6 +59,23 @@
     });
   }
 
+  function trackVisit() {
+    const body = "{}";
+    if (navigator.sendBeacon) {
+      try {
+        const blob = new Blob([body], {type: "application/json"});
+        if (navigator.sendBeacon(`${API_BASE}/visit`, blob)) return;
+      } catch {}
+    }
+    fetch(`${API_BASE}/visit`, {
+      method: "POST",
+      credentials: "same-origin",
+      keepalive: true,
+      headers: {"Content-Type": "application/json"},
+      body,
+    }).catch(() => {});
+  }
+
   function trackView(pageId) {
     const body = JSON.stringify({page_id: pageId});
     if (navigator.sendBeacon) {
@@ -94,5 +111,8 @@
     }).catch(() => {});
   }
 
-  window.ColoringStats = {getRankings, getOverview, getTraffic, getPage, toggleLike, trackView, trackPrint};
+  window.ColoringStats = {getRankings, getOverview, getTraffic, getPage, toggleLike, trackVisit, trackView, trackPrint};
+
+  const publicPath = location.pathname === "/" || location.pathname === "/index.html" || location.pathname === "/detail.html";
+  if (publicPath) trackVisit();
 })();
