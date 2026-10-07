@@ -101,3 +101,28 @@ Required Worker runtime configuration for the traffic endpoint:
 Use a least-privilege Cloudflare API token with Analytics read access scoped to the relevant zone. The token is a runtime secret and must never be committed to GitHub or returned to the browser.
 
 Activation is a separate Cloudflare owner gate. Applying the `daily_visitors` D1 schema, adding `VISITOR_HMAC_KEY` or other Worker secret/variables, deploying the updated Worker, and changing Cloudflare Access or analytics settings are **not** authorized by repository source work or by an application merge.
+
+
+## Kita pilot campaign counters
+
+The Dortmund Kita letter pilot adds one allowlisted aggregate campaign:
+`dortmund-01`. It does not accept arbitrary campaign names or recipient identifiers.
+
+`daily_campaign_events` stores only `campaign`, one of
+`landing|catalog|detail|print`, optional validated `page_id`, UTC day and an
+aggregate event count. It stores no IP address, visitor ID, visitor hash, User-Agent or
+recipient identity.
+
+- `GET /api/stats/campaigns?days=30` returns aggregate campaign funnel totals.
+- `POST /api/stats/visit` may include the allowlisted `campaign` plus
+  `stage=landing|catalog`.
+- Existing `view` and `print` writes may include the same allowlisted campaign;
+  their existing page-view/print behavior is unchanged.
+- `/stats.html` displays the four Dortmund pilot counters and remains tolerant if
+  the campaign endpoint has not yet been activated.
+
+These numbers measure events, not unique Kitas. The existing day-scoped unique-IP HMAC
+is intentionally not joined to campaign events, so returning use across days remains
+unmeasured. Applying the additive D1 schema and deploying the matching Worker remain a
+separate Cloudflare owner-gated activation; an application-image deployment alone does
+not activate these counters.

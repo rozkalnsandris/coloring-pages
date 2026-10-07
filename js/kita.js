@@ -18,8 +18,8 @@
     });
   }
   preserveCampaign(document);
-  // Reuse the existing aggregate visit metric; it has no campaign dimension.
-  window.ColoringStats?.trackVisit?.();
+  // Reuse the existing visit metric and label only the shared pilot landing stage.
+  window.ColoringStats?.trackVisit?.("landing");
 
   async function loadExamples() {
     try {

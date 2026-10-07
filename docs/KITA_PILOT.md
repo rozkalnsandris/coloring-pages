@@ -103,3 +103,26 @@ print assets load only after entering the existing print flow.
 - Local screenshots: `output/playwright/kita-390.png`, `kita-1280.png`, and
   `kita-detail.png`. Screenshots/media snapshots are verification artifacts only,
   excluded from the source PR.
+
+
+## Campaign measurement follow-up
+
+The source-level follow-up uses only the shared allowlisted campaign `dortmund-01`.
+The browser carries that campaign from `/kita` into the existing catalog and detail flow.
+The Stats Worker stores only aggregate daily event counts for four funnel stages:
+
+- `landing` — the campaign Kita page was loaded;
+- `catalog` — the user followed the campaign into the main catalog;
+- `detail` — a coloring-page detail view occurred while the campaign label was present;
+- `print` — the existing A4 print action was pressed while the campaign label was present.
+
+The internal `/stats.html` dashboard shows the four 30-day counters. These are event
+counts, not unique Kitas or unique people. Repeated loads/actions can increment them.
+The existing daily unique-IP HMAC remains separate and is not joined to the campaign,
+so cross-day returning use is deliberately not inferred.
+
+The new D1 table and Worker code require a separately owner-authorized Cloudflare
+activation after source merge. The public application remains compatible with the
+currently deployed Worker while that activation is pending: extra campaign fields are
+ignored by the old write endpoints and the dashboard treats a missing campaign endpoint
+as unavailable instead of failing the existing statistics.

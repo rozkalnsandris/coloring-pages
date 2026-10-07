@@ -15,6 +15,11 @@
     totalLikes: document.querySelector("[data-stats-total-likes]"),
     recentPrints: document.querySelector("[data-stats-recent-prints]"),
     publishedPages: document.querySelector("[data-stats-published-pages]"),
+    kitaLanding: document.querySelector("[data-stats-kita-landing]"),
+    kitaCatalog: document.querySelector("[data-stats-kita-catalog]"),
+    kitaDetail: document.querySelector("[data-stats-kita-detail]"),
+    kitaPrints: document.querySelector("[data-stats-kita-prints]"),
+    kitaNote: document.querySelector("[data-stats-kita-note]"),
     popular: document.querySelector("[data-stats-popular]"),
     popularEmpty: document.querySelector("[data-stats-popular-empty]"),
     trending: document.querySelector("[data-stats-trending]"),
@@ -174,9 +179,10 @@
     els.refresh.disabled = true;
     els.status.textContent = "Loading statistics …";
     try {
-      const [catalogResponse, overview] = await Promise.all([
+      const [catalogResponse, overview, campaignData] = await Promise.all([
         fetch("catalog.json", {cache: "no-store"}),
         window.ColoringStats.getOverview(),
+        window.ColoringStats.getCampaigns?.(30).catch(() => null),
       ]);
       if (!catalogResponse.ok) throw new Error("catalog request failed: " + catalogResponse.status);
       const catalog = await catalogResponse.json();
@@ -206,6 +212,18 @@
       els.totalLikes.textContent = formatNumber(overview.totals?.like_count);
       els.recentPrints.textContent = formatNumber(overview.totals?.recent_prints);
       els.publishedPages.textContent = formatNumber(rows.length);
+
+      const kita = Array.isArray(campaignData?.campaigns)
+        ? campaignData.campaigns.find((item) => item.campaign === "dortmund-01")
+        : null;
+      if (kita) {
+        els.kitaLanding.textContent = formatNumber(kita.landing_count);
+        els.kitaCatalog.textContent = formatNumber(kita.catalog_count);
+        els.kitaDetail.textContent = formatNumber(kita.detail_count);
+        els.kitaPrints.textContent = formatNumber(kita.print_count);
+      } else if (els.kitaNote && campaignData === null) {
+        els.kitaNote.textContent = "Campaign statistics are not activated yet. Existing engagement statistics remain available.";
+      }
 
       renderTopList(els.popular, els.popularEmpty, rows, "prints");
       renderTopList(els.trending, els.trendingEmpty, rows, "recent");
