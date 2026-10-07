@@ -66,14 +66,16 @@ class CategoryContractTests(unittest.TestCase):
         index = (ROOT / "index.html").read_text(encoding="utf-8")
         filters = set(re.findall(r'data-filter="([^"]+)"', index))
         self.assertEqual(filters, registry_ids)
+        self.assertEqual(index.count('class="category-count-label"> Malvorlagen</span>'), 6)
 
     def test_category_arrow_is_centered_on_desktop_and_grid_aligned_on_mobile(self):
         css = (ROOT / "css" / "app.css").read_text(encoding="utf-8")
         self.assertIn("grid-column: 1 / -1; grid-row: 1;", css)
         self.assertIn("position: absolute; top: 50%; right: 14px; transform: translateY(-50%);", css)
         self.assertIn("position: static; grid-column: 2; grid-row: 1; justify-self: end; align-self: center;", css)
-        self.assertIn("position: static; grid-column: 2; grid-row: 2; justify-self: end; align-self: end;", css)
+        self.assertIn("position: static; grid-column: 1; grid-row: 3; justify-self: start; align-self: start;", css)
         self.assertIn("grid-column: 1; grid-row: 2; align-self: end; padding-right: 0;", css)
+        self.assertIn(".category-count-label { display: inline; }", css)
 
     def test_runtime_image_contains_category_registry(self):
         dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
