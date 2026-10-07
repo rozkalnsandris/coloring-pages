@@ -3,14 +3,46 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 def read(path: str)->str:
     return (ROOT/path).read_text(encoding="utf-8")
-def test_home_has_progressive_popular_and_trending_sections():
-    html=read("index.html"); js=read("js/app.js")
-    assert 'data-ranking-section="popular"' in html
-    assert 'data-ranking-section="trending"' in html
-    assert 'data-ranking-gallery="popular"' in html
-    assert 'data-ranking-gallery="trending"' in html
-    assert 'window.ColoringStats.getRankings(6)' in js
-    assert 'section.hidden=false' in js
+class HomeRankingLayoutTests(unittest.TestCase):
+    def test_home_keeps_large_hero_and_moves_discovery_before_categories(self):
+        html = read("index.html")
+        css = read("css/app.css")
+        js = read("js/app.js")
+
+        hero = html.index('id="hero" class="hero"')
+        discover = html.index('id="entdecken"')
+        categories = html.index('id="kategorien"')
+        newest = html.index('id="neu"')
+        about = html.index('id="ueber-uns"')
+        self.assertLess(hero, discover)
+        self.assertLess(discover, categories)
+        self.assertLess(categories, newest)
+        self.assertLess(newest, about)
+        self.assertIn('class="hero-art"', html)
+        self.assertIn('data-search-form', html)
+
+        self.assertIn('data-ranking-root', html)
+        self.assertIn('role="tablist"', html)
+        self.assertIn('data-ranking-tab="trending"', html)
+        self.assertIn('data-ranking-tab="popular"', html)
+        self.assertIn('aria-selected="true"', html)
+        self.assertIn('data-ranking-section="trending"', html)
+        self.assertIn('data-ranking-section="popular"', html)
+        self.assertIn('data-ranking-gallery="trending"', html)
+        self.assertIn('data-ranking-gallery="popular"', html)
+        self.assertNotIn('id="beliebt"', html)
+        self.assertNotIn('id="trending"', html)
+
+        self.assertIn('window.ColoringStats.getRankings(6)', js)
+        self.assertIn('function setRankingTab', js)
+        self.assertIn('rankingRoot.hidden=false', js)
+        self.assertIn('available.get("trending")', js)
+        self.assertIn('"ArrowLeft"', js)
+        self.assertIn('"ArrowRight"', js)
+
+        self.assertIn('.ranking-tabs {', css)
+        self.assertIn('.ranking-tab.is-active', css)
+        self.assertIn('grid-template-columns: repeat(2, minmax(0, 1fr))', css)
 def test_detail_tracks_print_intent_and_reversible_like():
     html=read("detail.html"); js=read("js/detail.js")
     assert 'data-action-like' in html
@@ -257,7 +289,7 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertIn("data-traffic-table", traffic_html)
         self.assertIn("data-traffic-load-more", traffic_html)
         self.assertIn("User-Agent heuristic", traffic_html)
-        self.assertIn('href="css/app.css?v=2c2d1b3961f8d00d"', traffic_html)
+        self.assertIn('href="css/app.css?v=0183523f7f73806a"', traffic_html)
         self.assertIn("grid-template-columns: 30px 88px minmax(0, 1fr) auto", css)
         self.assertIn("width: 88px; height: 88px", css)
         self.assertIn("object-fit: contain", css)

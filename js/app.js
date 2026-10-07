@@ -9,11 +9,18 @@ const resultCount = document.querySelector("[data-result-count]");
 const totalCount = document.querySelector("[data-total-count]");
 const emptyState = document.querySelector("[data-empty-state]");
 const loadMoreButton = document.querySelector("[data-load-more]");
+const rankingRoot = document.querySelector("[data-ranking-root]");
+const rankingTabs = [...document.querySelectorAll("[data-ranking-tab]")];
+const rankingDescription = document.querySelector("[data-ranking-description]");
 const rankingSections = new Map(
   [...document.querySelectorAll("[data-ranking-section]")].map((section)=>[section.dataset.rankingSection,section])
 );
 
 const CATALOG_PAGE_SIZE = 20;
+const RANKING_DESCRIPTIONS = {
+  trending: "In den letzten 7 Tagen besonders oft gedruckt.",
+  popular: "Nach den meisten A4-Druckaktionen.",
+};
 
 const CATEGORY_LABELS = {
   tiere: "Tiere",
@@ -216,25 +223,78 @@ function createCatalogCard(entry, stats = null) {
   return card;
 }
 
+function setRankingTab(kind, {focus = false} = {}) {
+  const panel = rankingSections.get(kind);
+  const button = rankingTabs.find((candidate) => candidate.dataset.rankingTab === kind);
+  if (!panel || !button || button.hidden) return;
+
+  rankingTabs.forEach((candidate) => {
+    const selected = candidate.dataset.rankingTab === kind;
+    candidate.classList.toggle("is-active", selected);
+    candidate.setAttribute("aria-selected", String(selected));
+    candidate.tabIndex = selected ? 0 : -1;
+  });
+  rankingSections.forEach((candidate, candidateKind) => {
+    candidate.hidden = candidateKind !== kind;
+  });
+  if (rankingDescription) {
+    rankingDescription.textContent = RANKING_DESCRIPTIONS[kind] || "";
+  }
+  if (focus) button.focus();
+}
+
 function renderRanking(kind, entries, statsItems) {
   const section=rankingSections.get(kind);
   const target=section?.querySelector(`[data-ranking-gallery="${kind}"]`);
-  if (!section || !target || !Array.isArray(statsItems)) return;
+  if (!section || !target || !Array.isArray(statsItems)) return false;
   const byId=new Map(entries.map((entry)=>[String(entry.id),entry]));
   const cards=statsItems.map((stats)=>{
     const entry=byId.get(String(stats.page_id));
     return entry ? createCatalogCard(entry,stats) : null;
   }).filter(Boolean);
-  if (!cards.length) return;
+  if (!cards.length) return false;
   target.replaceChildren(...cards);
-  section.hidden=false;
+  return true;
 }
+
+rankingTabs.forEach((button) => {
+  button.addEventListener("click", () => setRankingTab(button.dataset.rankingTab));
+  button.addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    const available = rankingTabs.filter((candidate) => !candidate.hidden);
+    if (!available.length) return;
+
+    const currentIndex = Math.max(0, available.indexOf(button));
+    let nextIndex = currentIndex;
+    if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + available.length) % available.length;
+    if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % available.length;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = available.length - 1;
+
+    event.preventDefault();
+    setRankingTab(available[nextIndex].dataset.rankingTab, {focus: true});
+  });
+});
+
 async function hydrateRankings(entries) {
   if (!window.ColoringStats?.getRankings) return;
   try {
     const data=await window.ColoringStats.getRankings(6);
-    renderRanking("popular",entries,data.popular);
-    renderRanking("trending",entries,data.trending);
+    const available = new Map([
+      ["trending", renderRanking("trending",entries,data.trending)],
+      ["popular", renderRanking("popular",entries,data.popular)],
+    ]);
+    rankingTabs.forEach((button) => {
+      button.hidden = !available.get(button.dataset.rankingTab);
+    });
+    const initialKind = available.get("trending")
+      ? "trending"
+      : available.get("popular")
+        ? "popular"
+        : "";
+    if (!initialKind || !rankingRoot) return;
+    rankingRoot.hidden=false;
+    setRankingTab(initialKind);
   } catch {}
 }
 async function hydrateCatalog() {

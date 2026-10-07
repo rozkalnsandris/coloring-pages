@@ -675,13 +675,30 @@ a { color: inherit; }
 
 
 /* Cloudflare-backed engagement rankings */
-.ranking-pages { padding: 34px 0 42px; }
-.ranking-popular { background: #fffaf0; }
-.ranking-trending { background: #fff; }
-.ranking-heading { margin-bottom: 16px; }
-.ranking-heading > div { min-width: 0; }
+.ranking-pages { padding: 30px 0 34px; }
+.ranking-discover { background: #f7faff; }
+.ranking-discover + .categories { padding-top: 24px; }
+.ranking-heading { align-items: flex-end; margin-bottom: 18px; }
+.ranking-heading-copy { min-width: 0; }
+.ranking-eyebrow {
+  display: block; margin-bottom: 5px; color: var(--blue-deep);
+  font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase;
+}
 .ranking-heading h2 { display: flex; align-items: center; gap: 10px; }
 .ranking-heading p { margin: 7px 0 0; color: var(--muted); font-size: 14px; font-weight: 700; }
+.ranking-tabs {
+  display: inline-flex; flex: 0 0 auto; gap: 4px; padding: 4px;
+  border: 1px solid #d8e5f5; border-radius: 999px; background: #edf5ff;
+}
+.ranking-tab {
+  min-height: 42px; padding: 9px 15px; border: 0; border-radius: 999px;
+  background: transparent; color: #52657e; font: inherit; font-size: 13px; font-weight: 900;
+  white-space: nowrap; cursor: pointer;
+}
+.ranking-tab:hover, .ranking-tab:focus-visible { color: var(--blue-deep); background: rgb(255 255 255 / 72%); }
+.ranking-tab:focus-visible { outline: 3px solid rgb(20 116 212 / 20%); outline-offset: 2px; }
+.ranking-tab.is-active { background: #fff; color: var(--blue-deep); box-shadow: 0 3px 10px rgb(33 75 126 / 10%); }
+.ranking-panel[hidden] { display: none; }
 .ranking-gallery .coloring-card { height: 100%; }
 .card-metrics { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 9px; color:#62728b; font-size:12px; font-weight:800; }
 .card-metrics span:first-child { color:#c44161; }
@@ -697,10 +714,13 @@ a { color: inherit; }
 .like-heart { color:#d85977; font-size:29px; line-height:1; }
 .like-count { min-width:34px; padding:4px 9px; border-radius:999px; background:#fff; color:#a52f4c; text-align:center; font-size:13px; }
 @media (max-width:720px) {
-  .ranking-pages { padding:26px 0 32px; }
-  .ranking-heading { display:block; }
-  .ranking-heading h2 { white-space:normal; }
-  .ranking-heading p { font-size:13px; }
+  .ranking-pages { padding: 24px 0 28px; }
+  .ranking-discover + .categories { padding-top: 20px; }
+  .ranking-heading { display: block; }
+  .ranking-heading h2 { white-space: normal; }
+  .ranking-heading p { font-size: 13px; }
+  .ranking-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; margin-top: 15px; }
+  .ranking-tab { min-width: 0; padding-inline: 10px; white-space: normal; }
 }
 
 
