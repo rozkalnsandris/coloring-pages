@@ -22,10 +22,10 @@ def test_cloudflare_stats_contract_keeps_rpi5_out_of_state():
     assert '"/api/stats/rankings"' in worker
     assert '"/api/stats/print"' in worker
     assert '"/api/stats/like"' in worker
-    assert '"/api/stats/visit"' in worker
+    assert '"/api/stats/visit"' not in worker
     assert "RATE_LIMITER" in worker
     assert "CREATE TABLE IF NOT EXISTS page_stats" in schema
-    assert "CREATE TABLE IF NOT EXISTS daily_visitors" in schema
+    assert "CREATE TABLE IF NOT EXISTS daily_visitors" not in schema
     assert "PRIMARY KEY (page_id, visitor_hash)" in schema
     assert "Raspberry Pi" in docs
     assert "print intent" in docs
@@ -88,7 +88,7 @@ class AdminStatsDashboardTests(unittest.TestCase):
         self.assertIn("FROM page_stats", overview)
         self.assertIn("FROM daily_prints", overview)
         self.assertIn("recent_prints", overview)
-        self.assertIn("COUNT(DISTINCT visitor_hash)", overview)
+        self.assertNotIn("daily_visitors", overview)
         response = overview[overview.rindex("return json({"):]
         self.assertNotIn("visitor_hash", response)
         self.assertNotIn("FROM likes", overview)
@@ -139,43 +139,28 @@ class AdminStatsDashboardTests(unittest.TestCase):
         self.assertIn('addEventListener("change", resetTableLimit)', admin)
 
 
-class AnonymousVisitorCounterTests(unittest.TestCase):
-    def test_browser_counter_is_hash_only_bounded_and_aggregate(self):
+class CloudflareUniqueVisitorTests(unittest.TestCase):
+    def test_unique_visitors_use_cloudflare_daily_unique_ips_only(self):
         worker = read("cloudflare/stats-worker.js")
         schema = read("cloudflare/stats-schema.sql")
-
-        self.assertIn("CREATE TABLE IF NOT EXISTS daily_visitors", schema)
-        self.assertIn("PRIMARY KEY (day, visitor_hash)", schema)
-        self.assertIn("idx_daily_visitors_day", schema)
-        self.assertIn('path==="/api/stats/visit"', worker)
-
-        start = worker.index("async function recordVisitor")
-        end = worker.index("async function pageStats", start)
-        record = worker[start:end]
-        self.assertIn("sha256(visitorId)", record)
-        self.assertIn("INSERT OR IGNORE INTO daily_visitors", record)
-        self.assertIn("DELETE FROM daily_visitors", record)
-        self.assertIn("date('now', '-30 days')", record)
-        self.assertNotIn("clientIP", record)
-        self.assertNotIn("userAgent", record)
-        self.assertNotIn("fingerprint", record.lower())
-
-        overview_start = worker.index("async function overviewStats")
-        overview_end = worker.index("function crawlerName", overview_start)
-        overview = worker[overview_start:overview_end]
-        self.assertIn("COUNT(DISTINCT visitor_hash)", overview)
-        self.assertIn("unique_browsers_7d", overview)
-        response = overview[overview.rindex("return json({"):]
-        self.assertNotIn("visitor_hash", response)
-
-    def test_frontend_tracking_is_not_activated_in_backend_phase(self):
         shared = read("js/stats.js")
-        app = read("js/app.js")
-        detail = read("js/detail.js")
 
+        self.assertNotIn("CREATE TABLE IF NOT EXISTS daily_visitors", schema)
+        self.assertNotIn('path==="/api/stats/visit"', worker)
+        self.assertNotIn("async function recordVisitor", worker)
         self.assertNotIn("trackVisitor", shared)
-        self.assertNotIn("trackVisitor", app)
-        self.assertNotIn("trackVisitor", detail)
+
+        start = worker.index("async function trafficStats")
+        end = worker.index("async function recordView", start)
+        traffic = worker[start:end]
+        self.assertIn("query AdminUniqueVisitors", traffic)
+        self.assertIn("httpRequests1dGroups", traffic)
+        self.assertIn("uniq { uniques }", traffic)
+        self.assertIn("dimensions { date }", traffic)
+        self.assertIn("clientRequestHTTPHost: host", traffic)
+        self.assertIn('unique_visitors_basis:"cloudflare-daily-unique-ips"', traffic)
+        self.assertNotIn("clientIP", traffic)
+        self.assertNotIn("visitor_hash", traffic)
 
 
 class AdminTrafficAnalyticsTests(unittest.TestCase):
@@ -204,6 +189,10 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertIn("httpRequestsAdaptiveGroups", traffic)
         self.assertIn("query AdminVisits($zoneTag: string, $filter: filter)", traffic)
         self.assertIn("query AdminCrawlers($zoneTag: string, $filter: filter)", traffic)
+        self.assertIn("query AdminUniqueVisitors($zoneTag: string, $filter: filter)", traffic)
+        self.assertIn("httpRequests1dGroups", traffic)
+        self.assertIn("uniq { uniques }", traffic)
+        self.assertIn("unique_visitors_date", traffic)
         self.assertIn("dimensions { datetimeHour }", traffic)
         self.assertIn("sum { visits }", traffic)
         self.assertIn("visitsRows.reduce", traffic)
@@ -232,10 +221,13 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
 
         self.assertIn('name="robots" content="noindex,nofollow,noarchive"', traffic_html)
         self.assertIn('href="stats.html"', traffic_html)
+        self.assertIn("data-stats-unique-visitors", traffic_html)
+        self.assertIn("Approx. unique visitors", traffic_html)
+        self.assertIn("daily Unique Visitors", traffic_html)
         self.assertIn("data-stats-visits", traffic_html)
         self.assertIn("Website visits in the last 7 days", traffic_html)
         self.assertIn("not unique people", traffic_html)
-        self.assertIn("must not be subtracted from visits", traffic_html)
+        self.assertIn("must not be subtracted from Website visits", traffic_html)
         self.assertIn("data-stats-total-views", traffic_html)
         self.assertIn("data-stats-recent-views", traffic_html)
         self.assertIn("data-stats-crawler-requests", traffic_html)
@@ -247,7 +239,10 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
 
         self.assertIn("async function getTraffic(days = 7)", shared)
         self.assertIn("window.ColoringStats.getTraffic(7)", traffic_admin)
-        self.assertIn("Cloudflare’s sampled visit metric", traffic_admin)
+        self.assertIn("traffic.unique_visitors", traffic_admin)
+        self.assertIn("traffic.unique_visitors_date", traffic_admin)
+        self.assertIn("daily unique-IP metric", traffic_admin)
+        self.assertIn("separate sampled metric", traffic_admin)
         self.assertIn("window.ColoringStats.getOverview()", traffic_admin)
         self.assertIn('fetch("catalog.json", {cache: "no-store"})', traffic_admin)
         self.assertIn("const CATALOG_PAGE_SIZE = 20;", traffic_admin)

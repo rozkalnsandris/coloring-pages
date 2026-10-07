@@ -41,10 +41,3 @@ CREATE TABLE IF NOT EXISTS daily_views (
   PRIMARY KEY (page_id, day)
 );
 CREATE INDEX IF NOT EXISTS idx_daily_views_day ON daily_views(day, view_count DESC);
-
-CREATE TABLE IF NOT EXISTS daily_visitors (
-  day TEXT NOT NULL,
-  visitor_hash TEXT NOT NULL,
-  PRIMARY KEY (day, visitor_hash)
-);
-CREATE INDEX IF NOT EXISTS idx_daily_visitors_day ON daily_visitors(day);
