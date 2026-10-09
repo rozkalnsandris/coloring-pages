@@ -5,6 +5,7 @@ import json
 import shutil
 import subprocess
 import unittest
+import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -182,12 +183,37 @@ class SEOPreflightTests(unittest.TestCase):
             parser.feed((ROOT / page).read_text(encoding="utf-8"))
             self.assertIn("noindex", parser.robots)
 
-    def test_preflight_is_not_a_fake_sitemap(self):
-        document = (ROOT / "docs/SEO_PREFLIGHT_V1.md").read_text(encoding="utf-8")
-        self.assertIn("production catalogue", document)
-        self.assertIn("HTTP 200", document)
-        self.assertIn("Cloudflare Access", document)
-        self.assertFalse((ROOT / "sitemap.xml").exists())
+    def test_sitemap_lists_only_verified_public_canonicals(self):
+        docker = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+        self.assertIn("COPY robots.txt sitemap.xml /usr/share/nginx/html/", docker)
+
+        sitemap = ET.parse(ROOT / "sitemap.xml").getroot()
+        namespace = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+        self.assertEqual(sitemap.tag, "{http://www.sitemaps.org/schemas/sitemap/0.9}urlset")
+        urls = [element.text for element in sitemap.findall("sm:url/sm:loc", namespace)]
+        self.assertEqual(urls, [
+            "https://coloring.rozkalns.net/",
+            "https://coloring.rozkalns.net/kita",
+        ])
+        self.assertEqual(len(urls), len(set(urls)), "Duplicate URLs in sitemap")
+        self.assertFalse(any("?" in item or "detail.html" in item for item in urls))
+        self.assertFalse(any("stats.html" in item or "traffic.html" in item for item in urls))
+        self.assertFalse(sitemap.findall(".//sm:lastmod", namespace),
+                         "Do not invent update timestamps")
+
+        robots = (ROOT / "robots.txt").read_text(encoding="utf-8")
+        self.assertEqual(robots.splitlines(), [
+            "User-agent: *",
+            "Allow: /",
+            "",
+            "Sitemap: https://coloring.rozkalns.net/sitemap.xml",
+        ])
+        self.assertNotIn("Disallow:", robots,
+                         "Keep existing admin noindex crawlable")
+        doc = (ROOT / "docs/SEO_PREFLIGHT_V1.md").read_text(encoding="utf-8")
+        self.assertIn("production catalogue", doc)
+        self.assertIn("HTTP 200", doc)
+        self.assertIn("Cloudflare Access", doc)
 
     def test_error_status_is_in_initial_markup_and_versions_match(self):
         index = (ROOT / "index.html").read_text(encoding="utf-8")
