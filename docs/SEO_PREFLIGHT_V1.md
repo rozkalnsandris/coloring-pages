@@ -73,3 +73,34 @@ Google documentation:
 - https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics
 - https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls
 - https://developers.google.com/search/docs/crawling-indexing/javascript/dynamic-rendering
+
+## Catalogue-derived sitemap generator (source-only)
+
+The current root sitemap contains only the two verified canonical URLs for home
+and Kita; the authoritative published activity IDs belong to the RPi5 LIVE
+public/catalog.json, not to GitHub. The standalone read-only helper
+tools/coloring-pages-sitemap --catalog PATH now generates a candidate UTF-8 XML
+sitemap on stdout from that catalogue, retaining those two static URLs and
+adding one canonical detail.html?id=ID URL per verified renderable record.
+IDs are validated using the importer ID contract, duplicates and malformed
+records fail closed, output order is stable, and no invented lastmod dates or
+marketing query parameters are emitted. A multi-page activity is one URL.
+The single-file 50,000-URL/50 MB limits fail closed rather than truncating.
+
+Not activated: This helper does not modify the importer, its pinned RPi5
+operator identity, the public content store, Dockerfile, nginx, existing static
+/sitemap.xml, Cloudflare or Google Search Console. It has no production write
+side effect and does not assert that entries are currently reachable or indexed.
+Passing tests is source evidence only.
+
+A later separately reviewed runtime lane must (1) check the helper against the
+current LIVE catalogue and representative detail pages, (2) stage and validate
+the exact output and its equivalence to the published catalogue, (3) publish it
+atomically through a trusted content/host operator without breaking the
+current importer boundary, (4) route public /sitemap.xml to the generated
+artifact with a fail-safe fallback, and (5) verify public XML and Search
+Console status. Production writes, host/operator changes and Search Console
+submission require their own exact owner authorization.
+
+Reference: https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap
+
