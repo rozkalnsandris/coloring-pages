@@ -41,6 +41,16 @@ The reviewed JavaScript branch handles one narrow case: when an ID is not presen
 
 Official Google guidance: https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics and https://developers.google.com/search/docs/crawling-indexing/javascript/fix-search-javascript
 
+## Verified-entry meta description follow-up
+
+For a successfully loaded existing catalogue activity with at least one page, the detail JavaScript updates the existing HTML meta description with the catalogue title and the actual A4 page count. The original generic description is retained if the catalogue request fails, the ID does not exist, the catalog is invalid, or the detail cannot be rendered. The script's HTML cache-busting version is pinned to its SHA-256 prefix, and regression tests cover one- and multi-page items as well as missing/failure paths.
+
+This is client-side metadata, not per-item static HTML, a catalogue-derived sitemap, a new per-ID canonical, or an HTTP status-code change. Google's displayed snippet may differ from the supplied description. Indexing is not guaranteed.
+
+Official documentation:
+- https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics
+- https://developers.google.com/search/docs/appearance/snippet
+
 ## Next owner-gated SEO work
 
 - Read-only: inspect LIVE status codes, redirect chains, rendered HTML, indexability and catalog cardinality; establish sample mobile/desktop crawl results without mutating production.

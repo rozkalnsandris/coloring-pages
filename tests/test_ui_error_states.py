@@ -104,13 +104,17 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const fixture = JSON.parse(process.argv[1]);
 const tags = [];
+const description = {
+  content: 'Malvorlage für Kinder, optimiert für A4.',
+  setAttribute(name, value) { if (name === 'content') this.content = value; },
+};
 const document = {
   head: {append: tag => tags.push(tag)},
   createElement: tag => ({
     tagName: tag, attributes: {},
     setAttribute(name, value) { this.attributes[name] = value; },
   }),
-  querySelector: () => null,
+  querySelector: selector => selector === 'meta[name="description"]' ? description : null,
 };
 const ctx = {
   document, URLSearchParams,
@@ -120,7 +124,7 @@ const ctx = {
   detailCategory: null, detailCharacter: null, detailAge: null,
   detailDifficulty: null, detailPagesBadge: null,
   printLink: null, printLabel: null,
-  entryPages: () => [{preview:'/preview.webp', print:'/print.png'}],
+  entryPages: entry => entry.pages || [{preview:'/preview.webp', print:'/print.png'}],
   DETAIL_CATEGORY_LABELS: {}, DETAIL_DIFFICULTY_LABELS: {},
   renderPageSwitcher() {}, selectPage() {}, setAction() {},
   hydrateLikeState: async () => {},
@@ -138,6 +142,7 @@ vm.runInNewContext('let loadedEntryId = "";\n' + source.slice(start, end), ctx);
 ctx.loadDetail().then(() => console.log(JSON.stringify({
   robots: tags.map(tag => tag.attributes),
   title: ctx.detailTitle.textContent,
+  description: description.content,
 })));
 """
 
@@ -167,6 +172,40 @@ class UIErrorStateTests(unittest.TestCase):
                     self.assertIn("nicht verfügbar", state["title"])
                 elif label == "valid":
                     self.assertEqual(state["title"], "Dino")
+
+    def test_catalog_verified_detail_meta_descriptions(self):
+        original = "Malvorlage für Kinder, optimiert für A4."
+        one_page = {"id":"1234567","title":"Dino","category":"tiere",
+                    "difficulty":"easy","age":"3-6"}
+        two_page = {**one_page, "id":"7654321", "title":"Kürbis",
+                    "pages":[{"preview":"/one.webp","print":"/one.png"},
+                             {"preview":"/two.webp","print":"/two.png"}]}
+        for label, query, catalog, want in (
+            ("one-page", "?id=1234567", [one_page],
+             "Dino – kostenlose A4-Malvorlage für Kinder. "
+             "Als PNG herunterladen oder direkt ausdrucken."),
+            ("two-page", "?id=7654321", [two_page],
+             "Kürbis – kostenlose Malaktivität mit 2 A4-Seiten für Kinder. "
+             "Als PNG herunterladen oder direkt ausdrucken."),
+        ):
+            with self.subTest(case=label):
+                state = node_check(DETAIL_SEO_HARNESS, {
+                    "search":query,"mode":"ok","catalog":catalog})
+                self.assertEqual(state["description"], want)
+                self.assertEqual(state["robots"], [])
+                self.assertNotEqual(state["description"], original)
+
+        for label, query, mode, catalog in (
+            ("missing", "?id=9999999", "ok", [one_page]),
+            ("offline", "?id=1234567", "network", [one_page]),
+            ("http-error", "?id=1234567", "http", [one_page]),
+            ("invalid-catalog", "?id=1234567", "ok", {"error":"invalid"}),
+            ("no-id", "", "ok", [one_page]),
+        ):
+            with self.subTest(case=label):
+                state = node_check(DETAIL_SEO_HARNESS, {
+                    "search":query,"mode":mode,"catalog":catalog})
+                self.assertEqual(state["description"], original)
 
     def test_catalog_http_network_and_invalid_json_are_not_demo_cards(self):
         for mode, catalog in [

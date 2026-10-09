@@ -282,6 +282,16 @@ async function loadDetail() {
     const difficultyLabel = DETAIL_DIFFICULTY_LABELS[entry.difficulty] || entry.difficulty;
 
     document.title = `${entry.title} | Coloring Pages`;
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      const summary = pages.length > 1
+        ? `kostenlose Malaktivität mit ${pages.length} A4-Seiten`
+        : "kostenlose A4-Malvorlage";
+      metaDescription.setAttribute(
+        "content",
+        `${entry.title} – ${summary} für Kinder. Als PNG herunterladen oder direkt ausdrucken.`
+      );
+    }
     detailRoot?.setAttribute("data-loaded-id",entry.id);
     loadedEntryId=entry.id;
     window.ColoringStats?.trackView?.(entry.id);
