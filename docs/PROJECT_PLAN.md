@@ -85,7 +85,7 @@ See `docs/MEDIA_STANDARD_V1.md`.
 V1 source requirements:
 
 - PNG
-- portrait / approximately A4 aspect ratio
+- portrait or landscape A4-like aspect ratio, including legacy 2:3 / 3:2 generator inputs
 - preserve intentional source colors; ordinary coloring pages may be black-and-white while learning worksheets may use color
 - thick, clean, high-contrast outlines where line art is used
 - large coloring areas
@@ -95,7 +95,7 @@ V1 source requirements:
 - no watermark
 - no mandatory vectorization
 - new Chat-generated publication uses `PUBLISH` as the single normal command; it internally prepares and validates the A4 print master(s) before any Drive/content mutation, while `UPSCALE-PRINT` and `VALIDATE-PRINT` remain optional manual inspection/debug commands
-- the validated Chat print master is exact `2480×3508` PNG with approximately 300×300 DPI metadata and an exact-white outer border
+- the validated Chat print master is exact `2480×3508` portrait or `3508×2480` landscape PNG, matching source orientation, with approximately 300×300 DPI metadata, exact-white outer border and the current 15 mm artwork-safe margin
 - the importer remains backward compatible with its broader accepted A4/2:3 source geometry and does not perform the upscale itself
 
 The exact validated print-master PNG bytes are preserved as the canonical source: `source.png` for single-page activities or ordered `source-1.png`, `source-2.png`, … for multi-page activities.
@@ -118,7 +118,7 @@ The importer requires the pre-created content-store layout and accepts only dire
 
 The importer:
 
-1. validates PNG and safe A4-like portrait geometry;
+1. validates PNG and safe A4-like portrait or landscape geometry, including backward-compatible accepted source ratios;
 2. derives/validates a stable lowercase-hyphen page ID;
 3. rejects duplicate IDs;
 4. preserves the approved source page(s) under `originals/<activity-id>/`;
