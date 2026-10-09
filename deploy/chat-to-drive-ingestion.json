@@ -62,8 +62,6 @@
       "freeze-id-sha256-size-category-and-metadata",
       "materialize-manifest-locally",
       "validate-manifest-locally",
-      "materialize-stable-upload-source-refs",
-      "validate-stable-upload-source-refs",
       "upload-image",
       "upload-manifest"
     ],
