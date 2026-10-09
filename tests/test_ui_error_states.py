@@ -114,7 +114,13 @@ const document = {
     tagName: tag, attributes: {},
     setAttribute(name, value) { this.attributes[name] = value; },
   }),
-  querySelector: selector => selector === 'meta[name="description"]' ? description : null,
+  querySelector: selector => {
+    if (selector === 'meta[name="description"]') return description;
+    if (selector === 'link[rel="canonical"]') {
+      return tags.find(tag => tag.tagName === 'link' && tag.attributes.rel === 'canonical') || null;
+    }
+    return null;
+  },
 };
 const ctx = {
   document, URLSearchParams,
@@ -139,8 +145,11 @@ const start = source.indexOf('function markMissingDetailNoindex()');
 const end = source.indexOf('\nloadDetail();', start);
 if (start < 0 || end < 0) throw Error('detail SEO segment absent');
 vm.runInNewContext('let loadedEntryId = "";\n' + source.slice(start, end), ctx);
-ctx.loadDetail().then(() => console.log(JSON.stringify({
-  robots: tags.map(tag => tag.attributes),
+ctx.loadDetail().then(() => fixture.repeat ? ctx.loadDetail() : null)
+  .then(() => console.log(JSON.stringify({
+  robots: tags.filter(tag => tag.tagName === 'meta').map(tag => tag.attributes),
+  canonicals: tags.filter(tag => tag.tagName === 'link' && tag.attributes.rel === 'canonical')
+                  .map(tag => tag.attributes.href),
   title: ctx.detailTitle.textContent,
   description: description.content,
 })));
@@ -172,6 +181,32 @@ class UIErrorStateTests(unittest.TestCase):
                     self.assertIn("nicht verfügbar", state["title"])
                 elif label == "valid":
                     self.assertEqual(state["title"], "Dino")
+
+    def test_only_verified_detail_ids_receive_one_canonical(self):
+        entry = {"id":"1234567","title":"Dino","category":"tiere",
+                 "difficulty":"easy","age":"3-6"}
+        cases = [
+            ("valid-with-campaign", "?id=1234567&campaign=school", "ok",
+             [entry], ["https://coloring.rozkalns.net/detail.html?id=1234567"], True),
+            ("unknown-id", "?id=7654321", "ok", [entry], [], False),
+            ("no-id", "", "ok", [entry], [], False),
+            ("network", "?id=1234567", "network", [entry], [], False),
+            ("http-failure", "?id=1234567", "http", [entry], [], False),
+            ("invalid-catalog", "?id=1234567", "ok", {"bad":True}, [], False),
+            ("unrenderable", "?id=1234567", "ok", [{**entry,"pages":[]}], [], False),
+        ]
+        for label, query, mode, catalog, expected, repeat in cases:
+            with self.subTest(case=label):
+                result = node_check(DETAIL_SEO_HARNESS, {
+                    "search":query,"mode":mode,"catalog":catalog,"repeat":repeat})
+                self.assertEqual(result["canonicals"], expected)
+                self.assertEqual(len(result["canonicals"]),
+                                 len(set(result["canonicals"])))
+                if label == "unknown-id":
+                    self.assertEqual(result["robots"],
+                                     [{"name":"robots","content":"noindex"}])
+                else:
+                    self.assertEqual(result["robots"], [])
 
     def test_catalog_verified_detail_meta_descriptions(self):
         original = "Malvorlage für Kinder, optimiert für A4."

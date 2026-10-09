@@ -259,6 +259,16 @@ function markMissingDetailNoindex() {
   robots.setAttribute("content", "noindex");
 }
 
+function addVerifiedDetailCanonical(id) {
+  // The shared HTML shell cannot know which catalogue ID it represents.
+  // Only an existing, renderable activity gets a canonical URL.
+  if (document.querySelector('link[rel="canonical"]')) return;
+  const link = document.createElement("link");
+  link.setAttribute("rel", "canonical");
+  link.setAttribute("href", `https://coloring.rozkalns.net/detail.html?id=${encodeURIComponent(id)}`);
+  document.head.append(link);
+}
+
 async function loadDetail() {
   const id = new URLSearchParams(window.location.search).get("id");
   if (!id) return;
@@ -282,6 +292,7 @@ async function loadDetail() {
     const difficultyLabel = DETAIL_DIFFICULTY_LABELS[entry.difficulty] || entry.difficulty;
 
     document.title = `${entry.title} | Coloring Pages`;
+    addVerifiedDetailCanonical(entry.id);
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
       const summary = pages.length > 1
