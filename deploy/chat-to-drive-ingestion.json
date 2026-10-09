@@ -71,7 +71,16 @@
       "prepared-png",
       "prebuilt-manifest"
     ],
-    "host_rclone_upload_forbidden": true
+    "host_rclone_upload_forbidden": true,
+    "stable_upload_source_refs_required_before_first_mutation": true,
+    "stable_upload_source_ref_semantics": "immutable-exported-file-snapshot",
+    "stable_upload_source_ref_required_for": [
+      "prepared-png",
+      "prebuilt-manifest"
+    ],
+    "current_files_surface_source_field": "source_file_ref",
+    "legacy_ephemeral_container_path_upload_forbidden": true,
+    "stable_upload_source_ref_failure_before_first_mutation": "stop"
   },
   "manifest": {
     "schema": "rozkalns.coloring-pages.drive-staging-manifest.v1",
