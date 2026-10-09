@@ -86,7 +86,7 @@
       </div>
     </section>
 
-    <section id="entdecken" class="ranking-pages ranking-discover" data-ranking-root aria-labelledby="discover-title" hidden>
+    <section id="entdecken" class="ranking-pages ranking-discover" data-ranking-root aria-labelledby="discover-title" aria-busy="true">
       <div class="container">
         <div class="section-heading ranking-heading">
           <div class="ranking-heading-copy">
@@ -95,12 +95,13 @@
             <p data-ranking-description>In den letzten 7 Tagen besonders oft gedruckt.</p>
           </div>
           <div class="ranking-tabs" role="tablist" aria-label="Malvorlagen-Rangliste">
-            <button id="ranking-tab-trending" class="ranking-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="ranking-panel-trending" tabindex="0" data-ranking-tab="trending">🔥 Im Trend</button>
-            <button id="ranking-tab-popular" class="ranking-tab" type="button" role="tab" aria-selected="false" aria-controls="ranking-panel-popular" tabindex="-1" data-ranking-tab="popular">⭐ Am beliebtesten</button>
+            <button id="ranking-tab-trending" class="ranking-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="ranking-panel-trending" tabindex="0" data-ranking-tab="trending" disabled>🔥 Im Trend</button>
+            <button id="ranking-tab-popular" class="ranking-tab" type="button" role="tab" aria-selected="false" aria-controls="ranking-panel-popular" tabindex="-1" data-ranking-tab="popular" disabled>⭐ Am beliebtesten</button>
           </div>
         </div>
 
         <div id="ranking-panel-trending" class="ranking-panel" role="tabpanel" aria-labelledby="ranking-tab-trending" data-ranking-section="trending">
+          <p class="ranking-status" data-ranking-status role="status">Ranglisten werden geladen …</p>
           <div class="gallery ranking-gallery" data-ranking-gallery="trending"></div>
         </div>
 
