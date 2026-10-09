@@ -700,6 +700,27 @@ a { color: inherit; }
 .ranking-tab.is-active { background: #fff; color: var(--blue-deep); box-shadow: 0 3px 10px rgb(33 75 126 / 10%); }
 .ranking-panel[hidden] { display: none; }
 .ranking-gallery .coloring-card { height: 100%; }
+/* Keep the asynchronously hydrated six-card ranking region in document flow.
+   Reserve enough space for its responsive image ratios and text/badges. */
+.ranking-panel { position: relative; }
+.ranking-gallery { min-height: 420px; }
+.ranking-status {
+  position: absolute; inset: 18px 0 auto;
+  margin: 0; padding: 14px 18px; border: 1px solid #d8e5f5;
+  border-radius: 14px; background: #fff; color: var(--muted);
+  font-size: 14px; font-weight: 700; text-align: center;
+}
+.ranking-tab:disabled { cursor: default; opacity: .65; }
+@media (min-width: 901px) and (max-width: 1200px) {
+  .ranking-gallery { min-height: calc((100vw - 76px) * .527 + 332px); }
+}
+@media (min-width: 721px) and (max-width: 900px) {
+  .ranking-gallery { min-height: calc((100vw - 64px) * .703 + 332px); }
+}
+@media (max-width: 720px) {
+  .ranking-gallery { min-height: calc((100vw - 38px) * 1.581 + 500px); }
+}
+
 .card-metrics { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 9px; color:#62728b; font-size:12px; font-weight:800; }
 .card-metrics span:first-child { color:#c44161; }
 .detail-actions .action-like {
