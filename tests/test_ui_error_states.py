@@ -155,14 +155,28 @@ class PageHead(HTMLParser):
 
 
 class SEOPreflightTests(unittest.TestCase):
-    def test_initial_public_heads_and_admin_noindex(self):
-        for page in ("index.html", "detail.html", "kita.html"):
+    def test_verified_home_kita_canonicals_and_admin_noindex(self):
+        verified = {
+            "index.html": "https://coloring.rozkalns.net/",
+            "kita.html": "https://coloring.rozkalns.net/kita",
+        }
+        for page, expected in verified.items():
             parser = PageHead()
             parser.feed((ROOT / page).read_text(encoding="utf-8"))
             self.assertTrue(parser.title, page)
             self.assertTrue(parser.description, page)
-            self.assertFalse(parser.canonicals,
-                             "Do not introduce unverified canonical before LIVE route preflight")
+            self.assertEqual(parser.canonicals, [expected], page)
+            self.assertNotIn("?", parser.canonicals[0],
+                             "Campaign parameters must not enter the canonical")
+
+        # The detail shell serves many distinct IDs. A generic canonical
+        # here would collapse every individual coloring page to one URL.
+        detail = PageHead()
+        detail.feed((ROOT / "detail.html").read_text(encoding="utf-8"))
+        self.assertTrue(detail.title)
+        self.assertTrue(detail.description)
+        self.assertEqual(detail.canonicals, [])
+
         for page in ("stats.html", "traffic.html"):
             parser = PageHead()
             parser.feed((ROOT / page).read_text(encoding="utf-8"))
