@@ -16,6 +16,7 @@ const pngLabel = document.querySelector("[data-action-png-label]");
 const likeButton=document.querySelector("[data-action-like]");
 const likeLabel=document.querySelector("[data-action-like-label]");
 const likeCount=document.querySelector("[data-action-like-count]");
+const likeStatus=document.querySelector("[data-like-status]");
 let activePrintSession=null;
 let loadedEntryId="";
 
@@ -221,13 +222,30 @@ async function hydrateLikeState(pageId) {
     renderLikeState(data);
     likeButton.disabled=false;
     likeButton.classList.remove("is-disabled");
-  } catch {}
+  } catch {
+    if (likeStatus) {
+      likeStatus.textContent = "Gefällt mir ist gerade nicht verfügbar.";
+      likeStatus.hidden = false;
+    }
+  }
 }
 likeButton?.addEventListener("click",async()=>{
   if (!loadedEntryId || likeButton.disabled || !window.ColoringStats?.toggleLike) return;
+  if (likeStatus) {
+    likeStatus.textContent = "";
+    likeStatus.hidden = true;
+  }
   likeButton.disabled=true;
-  try { renderLikeState(await window.ColoringStats.toggleLike(loadedEntryId)); }
-  finally { likeButton.disabled=false; }
+  try {
+    renderLikeState(await window.ColoringStats.toggleLike(loadedEntryId));
+  } catch {
+    if (likeStatus) {
+      likeStatus.textContent = "Gefällt mir konnte nicht gespeichert werden. Bitte versuche es erneut.";
+      likeStatus.hidden = false;
+    }
+  } finally {
+    likeButton.disabled=false;
+  }
 });
 
 async function loadDetail() {
