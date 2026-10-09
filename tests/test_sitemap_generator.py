@@ -1,5 +1,6 @@
 """Source-only contract tests for a catalogue-backed SEO sitemap candidate."""
 
+import hashlib
 import json
 import subprocess
 import sys
@@ -31,14 +32,14 @@ def sitemap_urls(xml):
 
 
 class SitemapGeneratorTests(unittest.TestCase):
-    def invoke(self, data=None, *, raw=None):
+    def invoke(self, data=None, *, raw=None, extra_args=()):
         with tempfile.TemporaryDirectory() as temp:
             catalogue = Path(temp) / "catalog.json"
             catalogue.write_text(
                 json.dumps(data) if raw is None else raw, encoding="utf-8"
             )
             return subprocess.run(
-                [sys.executable, str(HELPER), "--catalog", str(catalogue)],
+                [sys.executable, str(HELPER), "--catalog", str(catalogue), *extra_args],
                 capture_output=True,
                 text=True,
                 check=False,
@@ -57,6 +58,39 @@ class SitemapGeneratorTests(unittest.TestCase):
             ],
         )
         self.assertNotIn("<lastmod>", result.stdout)
+
+    def test_exact_catalogue_snapshot_hash_accepts_current_bytes(self):
+        catalog = [entry("9912254"), entry("1234567")]
+        raw = json.dumps(catalog)
+        expected = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+        result = self.invoke(
+            catalog, extra_args=("--expected-catalog-sha256", expected)
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len(sitemap_urls(result.stdout)), 4)
+
+    def test_catalogue_snapshot_mismatch_fails_without_output(self):
+        catalog = [entry("9912254")]
+        result = self.invoke(
+            catalog, extra_args=("--expected-catalog-sha256", "0" * 64)
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("SITEMAP_ERROR: catalogue SHA-256 does not match", result.stderr)
+
+    def test_malformed_expected_hash_fails_closed(self):
+        result = self.invoke(
+            [entry("9912254")],
+            extra_args=("--expected-catalog-sha256", "NOT-A-DIGEST"),
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("SITEMAP_ERROR: expected catalogue SHA-256", result.stderr)
+
+    def test_optional_hash_keeps_original_read_only_usage_compatible(self):
+        result = self.invoke([entry("9912254")])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len(sitemap_urls(result.stdout)), 3)
 
     def test_multi_page_activity_is_one_url(self):
         activity = entry("1234567")
