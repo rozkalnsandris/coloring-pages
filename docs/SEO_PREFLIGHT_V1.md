@@ -104,3 +104,35 @@ submission require their own exact owner authorization.
 
 Reference: https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap
 
+## Sitemap runtime routing with static fallback (source only)
+
+The approved narrow routing change in deploy/nginx.conf adds an **exact**
+/sitemap.xml location. If a separately trusted RPi5 content operator has
+already published a validated public/sitemap.xml, nginx serves that file
+from the existing read-only /var/lib/coloring-pages/public mount with
+Cache-Control: no-cache. If absent, the named @static_sitemap location
+serves the existing image-bundled two-URL sitemap.xml instead. Both paths
+remain static-file responses, with no new network API, service, volume,
+mount, privileged process or on-request sitemap generation. A missing
+fallback is a 404, never a fabricated success.
+
+**This route does not publish or activate catalogue-derived sitemap content.**
+Only a separately reviewed host/operator flow may generate, validate and
+atomically write public/sitemap.xml. The operator must check current catalogue
+SHA-256, the generated XML URL set, non-empty valid content and catalogue
+identity again immediately before rename; errors must preserve the last valid
+file. The operator must coordinate sitemap publication with ongoing catalogue
+updates so that no stale or partially written sitemap appears. This is not a
+modification of the pinned import operator or an implied PUBLISH authority.
+The configured static fallback will remain visible until that separate
+owner-authorized runtime integration completes.
+
+Since deploy/nginx.conf is an approved application-image input, an eventual
+owner-authorized merge of this route may trigger only the already reviewed
+bounded application auto-LIVE flow. It does not authorize a content-store
+sitemap write, a new RPi5 operator, manual host mutation, Cloudflare,
+Search Console, DNS or credentials. LIVE evidence, including the deployed
+image and public HTTP response, must be checked fresh after authorized merge.
+
+Reference: https://nginx.org/en/docs/http/ngx_http_core_module.html#try_files
+
