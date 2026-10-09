@@ -51,6 +51,16 @@ Official documentation:
 - https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics
 - https://developers.google.com/search/docs/appearance/snippet
 
+## Per-activity canonical follow-up
+
+The shared `detail.html` source intentionally has no static canonical because it represents many distinct catalogue IDs. After a successfully loaded and renderable catalogue entry, `js/detail.js` appends **one** canonical link to `https://coloring.rozkalns.net/detail.html?id=<url-encoded-catalogue-id>`. Marketing query parameters are not copied to canonical URLs. Repeated page hydration must not duplicate the canonical link. No canonical is added when the ID is absent, the catalogue cannot be fetched/parsed, or the activity is not renderable. The separately reviewed missing-ID `noindex` behavior remains intact.
+
+Google recommends providing canonicals in original HTML where possible; it supports a JavaScript-inserted canonical if the source cannot contain the correct per-item URL, but indexing and Google-selected canonicals are not guaranteed. This change does **not** create per-ID static HTML, server-side HTTP 404, catalogue-derived sitemap or Search Console submission. The site domain is frozen only for this existing production hostname and must be revisited with any authorized domain migration.
+
+Google documentation:
+- https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics
+- https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls
+
 ## Next owner-gated SEO work
 
 - Read-only: inspect LIVE status codes, redirect chains, rendered HTML, indexability and catalog cardinality; establish sample mobile/desktop crawl results without mutating production.
