@@ -1,0 +1,39 @@
+{
+  "schema": "rozkalns.coloring-pages.sitemap-publisher-handoff.v1",
+  "status": "source-only-advisory-not-host-authority",
+  "consumer_repository": "rozkalnsandris/coloring-pages",
+  "host_owner_repository": "rozkalnsandris/RPi5_main",
+  "canonical_origin": "https://coloring.rozkalns.net",
+  "generator": {
+    "source_path": "tools/coloring-pages-sitemap",
+    "git_blob_sha1": "5644c8fd366c0c57f6339fddd163c5091ea134c5",
+    "input_argument": "--catalog",
+    "snapshot_argument": "--expected-catalog-sha256",
+    "candidate_verify_argument": "--verify-sitemap",
+    "writes_files": false
+  },
+  "static_urls": [
+    "https://coloring.rozkalns.net/",
+    "https://coloring.rozkalns.net/kita"
+  ],
+  "publisher_requirements": [
+    "trusted-host-owned-fixed-paths-not-consumer-CLI",
+    "pin-and-verify-exact-generator-Git-blob",
+    "reuse-existing-Drive-ingest-advisory-lock-with-same-inode",
+    "exclude-any-other-catalogue-writer-before-publication",
+    "validate-live-catalogue-identity-and-URL-set",
+    "verify-candidate-XML-byte-for-byte-under-held-lock",
+    "verify-stage-and-destination-share-a-filesystem",
+    "atomic-same-directory-replace-and-fsync",
+    "fail-closed-no-retry-no-rollback-after-mutation",
+    "read-only-public-HTTP-verification"
+  ],
+  "authority": {
+    "allows_host_operator_install": false,
+    "allows_content_publication": false,
+    "allows_application_deploy": false,
+    "allows_scheduling": false,
+    "allows_host_permission_changes": false,
+    "allows_cloudflare_or_search_console_changes": false
+  }
+}
