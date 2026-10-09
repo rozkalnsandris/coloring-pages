@@ -1,6 +1,6 @@
-# Kita landing-page prototype
+# Kita landing-page pilot — source and activation status
 
-Source review only; no merge, deployment or analytics activation is part of this change.
+The original landing-page prototype was reviewed on 2026-10-07. Its verification notes below are historical source evidence, not a current production check. The campaign funnel follow-up later merged into GitHub source (PR #140); its Cloudflare D1 migration and Worker activation still require fresh LIVE verification and separately scoped owner authorization. A source merge alone is not proof of Cloudflare activation.
 
 ## Page and content
 
@@ -34,7 +34,9 @@ always come from the current `catalog.json`. Keep the selection explicit and
 review replacement artwork before changing IDs. No branded figures or automatic
 category selection. No safe dedicated number example was selected for this pilot.
 
-## Campaign and measurement limits
+## Initial prototype campaign limits (2026-10-07; superseded in source by PR #140)
+
+The following text describes the initial landing-only prototype before the aggregate funnel source change. It must not be read as the current GitHub feature contract.
 
 Proposed shared QR URL: `/kita?campaign=dortmund-01` (same for all letters).
 Only this known campaign value is forwarded to same-origin catalog/detail links.
@@ -62,7 +64,7 @@ Cloudflare/schema activation. Do not infer repeat use from the current daily
 unique-IP HMAC: it deliberately changes each day. Leave returning usage
 unmeasured unless an existing approved privacy-safe aggregate supports it.
 
-## Local verification
+## Historical local prototype verification (2026-10-07)
 
 Use an isolated checkout and an uncommitted public-catalog snapshot plus only
 needed public media under `catalog.json` / `media/`, or route those requests in
@@ -105,7 +107,9 @@ print assets load only after entering the existing print flow.
   excluded from the source PR.
 
 
-## Campaign measurement follow-up
+## Current merged GitHub source: aggregate campaign measurement (PR #140)
+
+This is a source contract, not proof that Cloudflare migration or Worker deployment has occurred. Fresh Cloudflare runtime evidence is required before declaring production campaign counters active.
 
 The source-level follow-up uses only the shared allowlisted campaign `dortmund-01`.
 The browser carries that campaign from `/kita` into the existing catalog and detail flow.
