@@ -44,6 +44,14 @@ class KitaTests(unittest.TestCase):
         self.assertLess(assets.urls.index(next(x for x in assets.urls if x.startswith('js/app.js'))),
                         assets.urls.index(next(x for x in assets.urls if x.startswith('js/kita.js'))))
 
+    def test_kita_trailing_slash_redirect_is_relative_and_query_preserving(self):
+        nginx = (ROOT / 'deploy/nginx.conf').read_text()
+        redirect = nginx.split('location = /kita/ {', 1)[1].split('}', 1)[0]
+        self.assertIn('absolute_redirect off;', redirect)
+        self.assertIn('return 308 /kita$is_args$args;', redirect)
+        # Keep this setting local to the Kita slash route.
+        self.assertEqual(nginx.count('absolute_redirect off;'), 1)
+
     def run_controller(self, catalog, campaign='dortmund-01', ok=True):
         if not shutil.which('node'):
             self.skipTest('Node is needed for the dependency-free browser-controller check')
