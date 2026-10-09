@@ -187,3 +187,6 @@ Official references:
 - https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap
 - https://docs.python.org/3/library/os.html#os.replace
 
+## Source-to-RPi5 publisher handoff
+
+The non-executable, source-side operator handoff is [Sitemap publisher handoff v1](SITEMAP_PUBLISHER_HANDOFF_V1.md), with machine-readable advisory invariants in `deploy/sitemap-publication-handoff-v1.json`. The trusted implementation and any LIVE publication remain owned by `RPi5_main` and require independent review/authorization.
