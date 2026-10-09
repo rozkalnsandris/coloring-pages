@@ -41,6 +41,7 @@ const DIFFICULTY_LABELS = {
 let activeCategory = "";
 let catalogEntries = null;
 let visibleLimit = CATALOG_PAGE_SIZE;
+let catalogIssueText = "";
 
 // Keep both menus in sync on direct links, anchor navigation and browser Back/Forward.
 function updateNavigation(hash = window.location.hash) {
@@ -97,6 +98,7 @@ function updateCount(totalMatches) {
     resultCount.textContent = `${totalMatches} ${totalMatches === 1 ? "Malvorlage" : "Malvorlagen"}`;
   }
   if (emptyState) {
+    emptyState.textContent = catalogIssueText || "Keine passenden Malvorlagen gefunden.";
     emptyState.hidden = totalMatches !== 0;
   }
 }
@@ -310,21 +312,25 @@ async function hydrateCatalog() {
 
   try {
     const response = await fetch("catalog.json", { cache: "no-store" });
-    if (!response.ok) return;
+    if (!response.ok) throw new Error("catalog unavailable");
 
     const catalog = await response.json();
-    if (!Array.isArray(catalog) || catalog.length === 0) return;
+    if (!Array.isArray(catalog)) throw new Error("invalid catalog");
 
     const entries = catalog.filter((entry) => entry && entry.id && entry.title && entry.thumb);
-    if (!entries.length) return;
-
+    catalogIssueText = entries.length ? "" : "Zurzeit sind keine Malvorlagen verfügbar.";
     catalogEntries = entries;
     visibleLimit = CATALOG_PAGE_SIZE;
     updateCatalogCounts(catalogEntries);
     renderCatalog();
-    await hydrateRankings(catalogEntries);
+    if (entries.length) await hydrateRankings(catalogEntries);
   } catch {
-    // Static fallback cards intentionally remain visible when catalog.json is unavailable.
+    // Never present demonstration cards as real published media on a failed load.
+    catalogIssueText = "Die Malvorlagen konnten nicht geladen werden. Bitte versuche es später erneut.";
+    catalogEntries = [];
+    visibleLimit = CATALOG_PAGE_SIZE;
+    updateCatalogCounts(catalogEntries);
+    renderCatalog();
   }
 }
 
