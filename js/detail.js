@@ -248,6 +248,17 @@ likeButton?.addEventListener("click",async()=>{
   }
 });
 
+function markMissingDetailNoindex() {
+  // Only confirmed absent IDs are excluded; a failed catalog fetch is not proof.
+  let robots = document.querySelector('meta[name="robots"]');
+  if (!robots) {
+    robots = document.createElement("meta");
+    robots.setAttribute("name", "robots");
+    document.head.append(robots);
+  }
+  robots.setAttribute("content", "noindex");
+}
+
 async function loadDetail() {
   const id = new URLSearchParams(window.location.search).get("id");
   if (!id) return;
@@ -260,7 +271,10 @@ async function loadDetail() {
     if (!Array.isArray(catalog)) throw new Error("invalid catalog");
 
     const entry = catalog.find((item) => item && item.id === id);
-    if (!entry) throw new Error("entry unavailable");
+    if (!entry) {
+      markMissingDetailNoindex();
+      throw new Error("entry unavailable");
+    }
 
     const pages = entryPages(entry);
     if (!pages.length) throw new Error("pages unavailable");

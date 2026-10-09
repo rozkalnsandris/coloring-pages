@@ -99,7 +99,75 @@ Promise.resolve(handlers.click()).then(() => console.log(JSON.stringify({
 """
 
 
+DETAIL_SEO_HARNESS = r"""
+const fs = require('node:fs');
+const vm = require('node:vm');
+const fixture = JSON.parse(process.argv[1]);
+const tags = [];
+const document = {
+  head: {append: tag => tags.push(tag)},
+  createElement: tag => ({
+    tagName: tag, attributes: {},
+    setAttribute(name, value) { this.attributes[name] = value; },
+  }),
+  querySelector: () => null,
+};
+const ctx = {
+  document, URLSearchParams,
+  window: {location: {search: fixture.search}, ColoringStats: {}},
+  detailRoot: null, detailTitle: {textContent: ''},
+  detailDescription: {textContent: ''},
+  detailCategory: null, detailCharacter: null, detailAge: null,
+  detailDifficulty: null, detailPagesBadge: null,
+  printLink: null, printLabel: null,
+  entryPages: () => [{preview:'/preview.webp', print:'/print.png'}],
+  DETAIL_CATEGORY_LABELS: {}, DETAIL_DIFFICULTY_LABELS: {},
+  renderPageSwitcher() {}, selectPage() {}, setAction() {},
+  hydrateLikeState: async () => {},
+  fetch: async () => {
+    if (fixture.mode === 'network') throw Error('temporary network failure');
+    if (fixture.mode === 'http') return {ok:false};
+    return {ok:true, json: async () => fixture.catalog};
+  },
+};
+const source = fs.readFileSync('js/detail.js', 'utf8');
+const start = source.indexOf('function markMissingDetailNoindex()');
+const end = source.indexOf('\nloadDetail();', start);
+if (start < 0 || end < 0) throw Error('detail SEO segment absent');
+vm.runInNewContext('let loadedEntryId = "";\n' + source.slice(start, end), ctx);
+ctx.loadDetail().then(() => console.log(JSON.stringify({
+  robots: tags.map(tag => tag.attributes),
+  title: ctx.detailTitle.textContent,
+})));
+"""
+
+
 class UIErrorStateTests(unittest.TestCase):
+    def test_only_confirmed_absent_detail_ids_get_noindex(self):
+        known = {"id":"1234567","title":"Dino","preview":"/p.webp",
+                 "print":"/p.png","category":"tiere",
+                 "difficulty":"easy","age":"3-6"}
+        cases = [
+            ("confirmed-missing", "?id=7654321", "ok", [known], True),
+            ("valid", "?id=1234567", "ok", [known], False),
+            ("missing-id", "", "ok", [known], False),
+            ("network-failure", "?id=7654321", "network", [known], False),
+            ("http-failure", "?id=7654321", "http", [known], False),
+            ("invalid-catalog", "?id=7654321", "ok", {"error":"bad"}, False),
+        ]
+        for label, query, mode, catalog, expected_noindex in cases:
+            with self.subTest(case=label):
+                state = node_check(DETAIL_SEO_HARNESS, {
+                    "search": query, "mode": mode, "catalog": catalog})
+                self.assertEqual(
+                    state["robots"],
+                    [{"name": "robots", "content": "noindex"}]
+                    if expected_noindex else [])
+                if expected_noindex:
+                    self.assertIn("nicht verfügbar", state["title"])
+                elif label == "valid":
+                    self.assertEqual(state["title"], "Dino")
+
     def test_catalog_http_network_and_invalid_json_are_not_demo_cards(self):
         for mode, catalog in [
             ("http", []), ("network", []), ("ok", {"error":"bad"})

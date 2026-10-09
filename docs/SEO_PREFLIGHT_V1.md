@@ -18,7 +18,7 @@ Google guidance: https://developers.google.com/search/docs/crawling-indexing/con
 
 1. Home (`/` and `/index.html`) and Kita (`/kita` and `/kita.html`) have verified HTTPS HTTP 200 responses. The reviewed source adds canonical links for these two pages only. Keep future redirect and sitemap signals consistent with these choices.
 2. The index catalogue and detail content are populated from runtime `catalog.json` with JavaScript; `detail.html?id=<id>` initially has a generic `<title>` and description. Google can render JS, but a static app shell is not guaranteed to expose discoverable per-item content to all crawlers. Test actual rendered HTML and Search Console coverage before promising individual item indexing.
-3. An unknown `detail.html?id=` currently uses HTTP 200 for the HTML shell, then shows a client-side unavailable state. Investigate a server-side missing-item/404 or static per-item HTML strategy before indexing these query URLs; do not claim the browser message is a real HTTP 404.
+3. The HTML shell for `detail.html?id=` still returns HTTP 200. A focused client-side follow-up adds a `robots` `noindex` meta tag **only** after `catalog.json` loads successfully and the requested ID is confirmed absent. A catalogue network failure, HTTP failure or invalid response must **not** mark a potentially valid detail as `noindex`. This is a conservative soft-404 mitigation, **not** an HTTP 404 or an indexing guarantee. A later separately reviewed server-side 404/static-per-item HTML strategy is still required for comprehensive crawl semantics.
 4. The focused static sitemap/robots follow-up adds only the two verified canonical HTML routes (`/` and `/kita`) and no dates, detail IDs, admin routes or invented catalogue data. Individual coloring pages still need a separately reviewed catalogue-backed sitemap strategy that includes only fresh LIVE IDs and respects content-publication authority; do not fabricate a fixed ID list.
 5. Campaign query labels (`?campaign=dortmund-01`) and fragment routes must not become accidental duplicate canonical URLs. Choose query-safe canonical behavior only after verifying `/kita`, `/index.html`, and `/detail.html?id=` routes.
 6. Internal `/stats.html` and `/traffic.html` already use `noindex,nofollow,noarchive`, but this does **not** provide access control. Cloudflare Access protection is a separate owner-gated LIVE task; do not expose confidential metrics through SEO work.
@@ -34,6 +34,12 @@ Google documentation:
 - https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap
 - https://developers.google.com/search/docs/crawling-indexing/robots/intro
 - https://developers.google.com/search/docs/crawling-indexing/block-indexing
+
+## Detail missing-ID noindex follow-up
+
+The reviewed JavaScript branch handles one narrow case: when an ID is not present in a successfully fetched and parsed production catalogue, dynamically append `<meta name="robots" content="noindex">` to the detail head. Do not treat a temporary catalogue outage as proof of deletion. No generic canonical URL is added to the detail shell. The `js/detail.js` version parameter is updated to the exact content hash to prevent stale browser-side execution. Initial HTTP 200 remains unchanged; indexing outcomes must be validated separately.
+
+Official Google guidance: https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics and https://developers.google.com/search/docs/crawling-indexing/javascript/fix-search-javascript
 
 ## Next owner-gated SEO work
 
