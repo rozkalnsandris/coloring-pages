@@ -211,7 +211,7 @@ class SEOPreflightTests(unittest.TestCase):
         self.assertNotIn("Disallow:", robots,
                          "Keep existing admin noindex crawlable")
         doc = (ROOT / "docs/SEO_PREFLIGHT_V1.md").read_text(encoding="utf-8")
-        self.assertIn("production catalogue", doc)
+        self.assertIn("fresh LIVE IDs", doc)
         self.assertIn("HTTP 200", doc)
         self.assertIn("Cloudflare Access", doc)
 
