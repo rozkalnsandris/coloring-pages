@@ -1,3 +1,4 @@
+import hashlib
 import unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
@@ -295,7 +296,8 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertIn("data-traffic-table", traffic_html)
         self.assertIn("data-traffic-load-more", traffic_html)
         self.assertIn("User-Agent heuristic", traffic_html)
-        self.assertIn('href="css/app.css?v=0183523f7f73806a"', traffic_html)
+        css_version = hashlib.sha256((ROOT / "css/app.css").read_bytes()).hexdigest()[:16]
+        self.assertIn(f'href="css/app.css?v={css_version}"', traffic_html)
         self.assertIn("grid-template-columns: 30px 88px minmax(0, 1fr) auto", css)
         self.assertIn("width: 88px; height: 88px", css)
         self.assertIn("object-fit: contain", css)
