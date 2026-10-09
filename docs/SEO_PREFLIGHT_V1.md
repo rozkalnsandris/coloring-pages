@@ -162,3 +162,28 @@ References:
 - https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap
 - https://docs.python.org/3/library/os.html#os.replace
 
+## Exact sitemap candidate verification (source only)
+
+The read-only generator accepts an additional `--verify-sitemap PATH` mode.
+It **requires** `--expected-catalog-sha256` and recreates the canonical
+UTF-8 XML from the byte-bound catalogue. It then compares a supplied candidate
+XML file **byte for byte**, reading no more than the expected length plus one
+byte. Exact equality returns exit 0 with no stdout; invalid or stale hashes,
+missing/modified/truncated/extended XML and invalid catalogues fail nonzero with
+`SITEMAP_ERROR` and no stdout. Normal generation to stdout is unchanged.
+
+This is a source-only handoff for a **separately reviewed RPi5_main operator**,
+not an installer or a publisher. The host operator must still pin the exact
+trusted generator Git blob; constrain source/staged paths to reviewed locations;
+reject symlinks and unsafe file permissions; coordinate with the existing Drive
+importer's catalogue update; revalidate catalogue byte identity under that
+coordination before publication; use a same-filesystem temporary file and
+atomic replace; and verify public HTTP/URL-set evidence. Merely verifying a
+snapshot does not lock the LIVE catalogue or provide authority to publish.
+Any operator installation, public content write, timer/restart, Cloudflare
+mutation or Search Console submission requires its own exact owner gate.
+
+Official references:
+- https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap
+- https://docs.python.org/3/library/os.html#os.replace
+

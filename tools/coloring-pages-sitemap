@@ -94,8 +94,15 @@ def main() -> int:
         "--expected-catalog-sha256",
         help="Require the exact SHA-256 of the published catalogue's raw bytes",
     )
+    parser.add_argument(
+        "--verify-sitemap",
+        type=Path,
+        help="Verify a candidate XML file byte-for-byte without writing or emitting XML",
+    )
     args = parser.parse_args()
     try:
+        if args.verify_sitemap is not None and args.expected_catalog_sha256 is None:
+            raise ValueError("sitemap verification requires --expected-catalog-sha256")
         catalog_bytes = args.catalog.read_bytes()
         expected = args.expected_catalog_sha256
         if expected is not None:
@@ -105,6 +112,14 @@ def main() -> int:
                 raise ValueError("catalogue SHA-256 does not match the expected snapshot")
         catalog = json.loads(catalog_bytes.decode("utf-8"))
         sitemap = generate_sitemap(catalog)
+        if args.verify_sitemap is not None:
+            expected_xml = sitemap.encode("utf-8")
+            # Read at most one excess byte: oversized or modified candidates fail.
+            with args.verify_sitemap.open("rb") as candidate:
+                actual_xml = candidate.read(len(expected_xml) + 1)
+            if actual_xml != expected_xml:
+                raise ValueError("candidate sitemap differs from exact catalogue XML")
+            return 0
     except (OSError, UnicodeError, ValueError) as exc:
         print(f"SITEMAP_ERROR: {exc}", file=sys.stderr)
         return 1

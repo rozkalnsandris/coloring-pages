@@ -32,14 +32,22 @@ def sitemap_urls(xml):
 
 
 class SitemapGeneratorTests(unittest.TestCase):
-    def invoke(self, data=None, *, raw=None, extra_args=()):
+    def invoke(self, data=None, *, raw=None, extra_args=(), staged_xml=None):
         with tempfile.TemporaryDirectory() as temp:
             catalogue = Path(temp) / "catalog.json"
             catalogue.write_text(
                 json.dumps(data) if raw is None else raw, encoding="utf-8"
             )
+            argv = [sys.executable, str(HELPER), "--catalog", str(catalogue), *extra_args]
+            if staged_xml is not None:
+                candidate = Path(temp) / "candidate.xml"
+                candidate.write_bytes(
+                    staged_xml.encode("utf-8")
+                    if isinstance(staged_xml, str) else staged_xml
+                )
+                argv.extend(("--verify-sitemap", str(candidate)))
             return subprocess.run(
-                [sys.executable, str(HELPER), "--catalog", str(catalogue), *extra_args],
+                argv,
                 capture_output=True,
                 text=True,
                 check=False,
@@ -91,6 +99,74 @@ class SitemapGeneratorTests(unittest.TestCase):
         result = self.invoke([entry("9912254")])
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(len(sitemap_urls(result.stdout)), 3)
+
+    def test_verify_exact_candidate_has_no_output_and_no_write(self):
+        items = [entry("9912254"), entry("1234567")]
+        candidate = self.invoke(items)
+        self.assertEqual(candidate.returncode, 0)
+        expected = hashlib.sha256(json.dumps(items).encode("utf-8")).hexdigest()
+        verified = self.invoke(
+            items,
+            extra_args=("--expected-catalog-sha256", expected),
+            staged_xml=candidate.stdout,
+        )
+        self.assertEqual(verified.returncode, 0, verified.stderr)
+        self.assertEqual(verified.stdout, "")
+        self.assertEqual(verified.stderr, "")
+
+    def test_verify_rejects_tampered_truncated_and_extra_xml(self):
+        items = [entry("9912254")]
+        output = self.invoke(items).stdout
+        expected = hashlib.sha256(json.dumps(items).encode("utf-8")).hexdigest()
+        for candidate in (
+            output.replace("9912254", "1234567"),
+            output[:-1],
+            output + "\n",
+            b"",
+        ):
+            with self.subTest(candidate=candidate[:36]):
+                verified = self.invoke(
+                    items,
+                    extra_args=("--expected-catalog-sha256", expected),
+                    staged_xml=candidate,
+                )
+                self.assertNotEqual(verified.returncode, 0)
+                self.assertEqual(verified.stdout, "")
+                self.assertIn("SITEMAP_ERROR: candidate sitemap differs", verified.stderr)
+
+    def test_verify_requires_catalogue_snapshot_binding(self):
+        items = [entry("9912254")]
+        output = self.invoke(items).stdout
+        verified = self.invoke(items, staged_xml=output)
+        self.assertNotEqual(verified.returncode, 0)
+        self.assertEqual(verified.stdout, "")
+        self.assertIn("SITEMAP_ERROR: sitemap verification requires", verified.stderr)
+
+    def test_verify_refuses_stale_catalogue_hash_even_with_current_candidate(self):
+        items = [entry("9912254")]
+        output = self.invoke(items).stdout
+        verified = self.invoke(
+            items,
+            extra_args=("--expected-catalog-sha256", "0" * 64),
+            staged_xml=output,
+        )
+        self.assertNotEqual(verified.returncode, 0)
+        self.assertEqual(verified.stdout, "")
+        self.assertIn("SITEMAP_ERROR: catalogue SHA-256 does not match", verified.stderr)
+
+    def test_verify_missing_candidate_fails_closed(self):
+        items = [entry("9912254")]
+        expected = hashlib.sha256(json.dumps(items).encode("utf-8")).hexdigest()
+        verified = self.invoke(
+            items,
+            extra_args=(
+                "--expected-catalog-sha256", expected,
+                "--verify-sitemap", "/nonexistent/coloring-pages-sitemap.xml",
+            ),
+        )
+        self.assertNotEqual(verified.returncode, 0)
+        self.assertEqual(verified.stdout, "")
+        self.assertIn("SITEMAP_ERROR", verified.stderr)
 
     def test_multi_page_activity_is_one_url(self):
         activity = entry("1234567")
