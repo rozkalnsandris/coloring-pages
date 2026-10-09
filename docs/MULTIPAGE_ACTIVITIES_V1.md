@@ -25,7 +25,7 @@ The implementation intentionally stays with HTML/CSS/PNG rather than introducing
 Current browser standards used:
 
 - `window.print()` opens the browser print flow;
-- CSS Paged Media `@page { size: A4 portrait; margin: 0; }` defines the print sheet;
+- named CSS Paged Media `@page` rules select `A4 portrait` or `A4 landscape` for each print PNG's orientation;
 - CSS Fragmentation `break-after: page` forces each activity sheet onto the next printed page.
 
 References:
@@ -77,7 +77,7 @@ The importer accepts one or more ordered PNG source arguments.
 - multiple pages: private masters become `source-1.png`, `source-2.png`, ...;
 - multi-page public media becomes `preview-1.webp`, `print-1.png`, ...;
 - `thumb.webp` always derives from page 1;
-- every page must pass the existing PNG, portrait, geometry and light-corner validation;
+- every page must pass the existing PNG, orientation-neutral A4-like geometry and light-corner validation (portrait or landscape);
 - maximum activity size is 12 pages;
 - the page ID stays one stable activity ID.
 
