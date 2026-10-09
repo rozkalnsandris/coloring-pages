@@ -136,3 +136,29 @@ image and public HTTP response, must be checked fresh after authorized merge.
 
 Reference: https://nginx.org/en/docs/http/ngx_http_core_module.html#try_files
 
+## Catalogue snapshot guard for sitemap generation (source only)
+
+The standalone `tools/coloring-pages-sitemap` helper now accepts the optional
+`--expected-catalog-sha256 <64-lowercase-hex>` argument. When provided, it
+hashes the exact raw bytes of the catalogue it reads and refuses to emit any
+XML unless that SHA-256 matches. It still rejects invalid catalogue records,
+duplicate IDs and excessive sitemap size. Without the option, the existing
+read-only stdout-only interface remains compatible. Invalid digest arguments,
+UTF-8 decoding failures and snapshot mismatches emit `SITEMAP_ERROR` on stderr,
+exit nonzero and emit **no stdout**. No generated sitemap, master PNG or live
+catalogue is written by this helper.
+
+The snapshot guard is necessary but not sufficient for publication. A separate
+RPi5_main-owned, explicitly owner-authorized publisher must verify both the
+catalogue byte identity and the full generated XML immediately before atomic
+same-filesystem replacement of `public/sitemap.xml`, serialize against a
+concurrent content import, preserve the old sitemap on error, and verify public
+HTTP output. Production host filesystem writes, operator installation and
+scheduling remain outside `START coloring-pages` and this PR. Do not attach
+this helper to the existing pinned PUBLISH/importer operator without a
+separate trust-boundary review.
+
+References:
+- https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap
+- https://docs.python.org/3/library/os.html#os.replace
+
