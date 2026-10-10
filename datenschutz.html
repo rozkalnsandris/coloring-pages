@@ -6,6 +6,7 @@
   <meta name="description" content="Informationen zum Datenschutz auf Coloring Pages.">
   <title>Datenschutzerklärung | Coloring Pages</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=c5d8c26a8a8349b2">
+  <link rel="stylesheet" href="css/fonts.css?v=privacy-ofl-v1">
   <link rel="stylesheet" href="css/app.css?v=69b2a5abc7cf88ec">
 </head>
 <body>
@@ -81,40 +82,47 @@
 
       <section aria-labelledby="privacy-engagement">
         <h2 id="privacy-engagement">4. „Gefällt mir“ und Druckaktionen</h2>
-        <p>Wenn Sie erstmals eine Vorlage liken oder die Druckfunktion nutzen,
+        <p>Wenn Sie erstmals eine Vorlage mit „Gefällt mir“ markieren,
           erzeugt die Website eine zufällige Besucherkennung und speichert
-          sie unter <code>coloring-pages-visitor-v1</code> im <code>localStorage</code>
-          Ihres Browsers. Die Kennung bleibt dort bestehen, bis Sie diese
-          Browserdaten löschen.</p>
-        <p>Beim Abruf des Bewertungsstatus wird eine bereits vorhandene
-          Besucherkennung als URL-Parameter <code>visitor_id</code> an den
-          Cloudflare Worker übermittelt. Bei einer „Gefällt mir“-Aktion und
-          beim Drucken wird die Kennung im Anfragekörper an den Worker
-          gesendet. Die Kennung wird dabei nicht bereits im Browser gehasht.
-          Erst der Worker bildet für die Speicherung einer Bewertung einen
-          SHA-256-Hash. In Cloudflare D1 wird für die Bewertung dieser Hash
-          zusammen mit der Vorlagenkennung gespeichert. Beim Entfernen der
-          Bewertung wird der zugehörige Eintrag gelöscht.</p>
-        <p>Beim Drucken wird eine Druckaktion gezählt; damit wird
-          <strong>nicht</strong> nachgewiesen, dass Papier tatsächlich ausgedruckt
-          wurde. Eine Rate-Limit-Funktion kann die übermittelte Besucherkennung
-          zur Begrenzung wiederholter Aktionen verwenden.</p>
-        <p>Die datenschutzrechtliche Einordnung der Speicherung und des
-          Auslesens dieser Kennung nach § 25 TDDDG sowie die
-          konkrete Aufbewahrungsdauer verbliebener Hash-Daten müssen
-          vor Veröffentlichung nochmals geprüft werden.</p>
+          sie unter <code>coloring-pages-visitor-v1</code> im
+          <code>localStorage</code> Ihres Browsers. Diese Kennung bleibt
+          dort bestehen, bis Sie diese Browserdaten löschen. Beim bloßen
+          Ansehen oder Drucken wird keine neue Kennung angelegt.</p>
+        <p>Beim Abruf des Bewertungsstatus sowie bei „Gefällt mir“-Aktionen
+          wird eine vorhandene Kennung im Körper einer HTTPS-POST-Anfrage
+          an den Cloudflare Worker übermittelt, nicht als URL-Parameter.
+          Die Kennung wird nicht zuvor im Browser gehasht; erst der Worker
+          bildet für eine Bewertung einen SHA-256-Hash. Zusammen mit der
+          Vorlagenkennung wird dieser in Cloudflare D1 gespeichert.
+          Beim Entfernen der Bewertung wird der Eintrag gelöscht.
+          Ältere, zwischengespeicherte Website-Versionen können die
+          Kennung übergangsweise noch als URL-Parameter übermitteln.</p>
+        <p>Beim Auslösen der Druckfunktion wird eine Druckabsicht gezählt,
+          nicht ein tatsächlicher Ausdruck auf Papier. Die dauerhafte
+          Besucherkennung wird dabei nicht übertragen. Für eine
+          Begrenzung wiederholter Druckereignisse kann der Worker aus
+          der Verbindungs-IP-Adresse, dem UTC-Tag und dem Hostnamen
+          mittels eines geheimen Schlüssels einen tagesbezogenen
+          HMAC-Wert berechnen und an einen Rate Limiter übergeben.
+          Diese Druckkennung wird nicht in der Cloudflare-D1-Druckstatistik
+          gespeichert. Über die gesonderte Verarbeitung und
+          Aufbewahrungsdauer des Rate Limiters liegen noch keine
+          bestätigten Angaben vor. Die Druckfunktion selbst hängt
+          nicht vom Erfolg dieser Statistik ab.</p>
+        <p>Die rechtliche Beurteilung der Like-Kennung nach § 25 TDDDG,
+          die Rechtsgrundlagen für diese Vorgänge sowie die konkrete
+          Aufbewahrungsdauer verbliebener Hash-Daten müssen vor
+          Veröffentlichung nochmals geprüft werden.</p>
       </section>
 
       <section aria-labelledby="privacy-fonts">
-        <h2 id="privacy-fonts">5. Google Fonts</h2>
-        <p>Für die Gestaltung verwendet die Website derzeit Schriftarten von
-          Google Fonts. Der Browser fordert Stylesheets von
-          <code>fonts.googleapis.com</code> und Schriftdateien von
-          <code>fonts.gstatic.com</code> an. Dabei erhält Google
-          Verbindungsdaten, insbesondere Ihre IP-Adresse und browserbezogene
-          Anfrageinformationen. Diese externe Einbindung soll im Rahmen der
-          Datenschutzprüfung durch lokal bereitgestellte Schriftarten
-          ersetzt oder rechtlich gesondert bewertet werden.</p>
+        <h2 id="privacy-fonts">5. Schriftarten</h2>
+        <p>Wir verwenden die Schriftarten Baloo 2 und Nunito unter
+          der SIL Open Font License 1.1. Sie werden lokal mit dieser
+          Website ausgeliefert, sodass der Browser beim Laden dieser
+          Schriftarten keine Verbindung zu Google Fonts herstellen muss.
+          Vor Veröffentlichung wird geprüft, ob diese Umstellung
+          tatsächlich produktiv aktiv ist.</p>
       </section>
 
       <section aria-labelledby="privacy-communication">

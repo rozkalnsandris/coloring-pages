@@ -39,7 +39,11 @@ class KitaTests(unittest.TestCase):
                 continue
             path, version = url.split('?v=')
             self.assertTrue((ROOT / path).is_file())
-            if path != 'js/stats.js':  # Existing shared semantic version.
+            if path == 'js/stats.js':
+                self.assertEqual(version, 'privacy-v1')
+            elif path == 'css/fonts.css':
+                self.assertEqual(version, 'privacy-ofl-v1')
+            else:
                 self.assertEqual(version, hashlib.sha256((ROOT / path).read_bytes()).hexdigest()[:16])
         self.assertLess(assets.urls.index(next(x for x in assets.urls if x.startswith('js/app.js'))),
                         assets.urls.index(next(x for x in assets.urls if x.startswith('js/kita.js'))))

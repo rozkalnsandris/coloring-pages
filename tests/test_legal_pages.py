@@ -32,17 +32,46 @@ class LegalPageSourceTests(unittest.TestCase):
                 self.assertIn('class="legal-footer"', s)
                 self.assertNotIn("<script", s)
 
-    def test_privacy_notice_describes_raw_identifier_transmission(self):
+    def test_privacy_minimization_matches_worker_and_browser(self):
         privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
         frontend = (ROOT / "js/stats.js").read_text(encoding="utf-8")
         worker = (ROOT / "cloudflare/stats-worker.js").read_text(encoding="utf-8")
-        self.assertIn('URL-Parameter <code>visitor_id</code>', privacy)
-        self.assertIn('nicht bereits im Browser gehasht', privacy)
-        self.assertIn('pseudonymisierte Nutzungsstatistik', privacy)
-        self.assertIn('query.set("visitor_id", visitorId)', frontend)
+        self.assertIn("Körper einer HTTPS-POST-Anfrage", privacy)
+        self.assertIn("pseudonymisierte Nutzungsstatistik", privacy)
+        self.assertNotIn('query.set("visitor_id", visitorId)', frontend)
+        self.assertIn('return requestJson("/page", {', frontend)
+        self.assertIn('body: JSON.stringify({page_id: pageId, visitor_id: visitorId})', frontend)
+        self.assertIn('(request.method==="GET" || request.method==="POST") && path==="/api/stats/page"', worker)
         self.assertIn('const visitorHash = await sha256(visitorId);', worker)
-        self.assertIn('Landesbeauftragten für Datenschutz', privacy)
-        self.assertNotIn('als SHA-256-Hash an den', privacy)
+        print_source = frontend.split("function trackPrint(pageId) {", 1)[1].split("window.ColoringStats =", 1)[0]
+        self.assertNotIn("getVisitorId", print_source)
+        self.assertNotIn("visitor_id", print_source)
+        self.assertIn('rateLimit(env,dailyKey,"print")', worker)
+        self.assertIn("Landesbeauftragten für Datenschutz", privacy)
+
+    def test_self_hosted_woff2_and_licenses(self):
+        import base64
+        import re
+        css = (ROOT / "css/fonts.css").read_text(encoding="utf-8")
+        payloads = re.findall(r'data:font/woff2;base64,([A-Za-z0-9+/=]+)', css)
+        self.assertEqual(len(payloads), 2)
+        for payload in payloads:
+            content = base64.b64decode(payload, validate=True)
+            self.assertEqual(content[:4], b"wOF2")
+            self.assertGreater(len(content), 10000)
+        for family in ("Baloo 2", "Nunito"):
+            self.assertIn('font-family: "' + family + '";', css)
+        for name in ("OFL-Baloo2.txt", "OFL-Nunito.txt"):
+            license = (ROOT / "assets/fonts" / name).read_text(encoding="utf-8")
+            self.assertIn("SIL OPEN FONT LICENSE Version 1.1", license)
+        for name in (*PUBLIC_PAGES, "impressum.html", "datenschutz.html"):
+            html = (ROOT / name).read_text(encoding="utf-8")
+            self.assertIn('href="css/fonts.css?v=privacy-ofl-v1"', html)
+            self.assertNotIn("fonts.googleapis.com", html)
+            self.assertNotIn("fonts.gstatic.com", html)
+        for name in PUBLIC_PAGES:
+            html = (ROOT / name).read_text(encoding="utf-8")
+            self.assertIn("js/stats.js?v=privacy-v1", html)
 
     def test_public_pages_link_both_legal_pages(self):
         for name in PUBLIC_PAGES:

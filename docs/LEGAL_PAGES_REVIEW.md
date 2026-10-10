@@ -1,7 +1,17 @@
 # Legal pages — source draft; **NOT RELEASE READY**
 
-Scope: German `impressum.html`, `datenschutz.html`, legal footer links and static nginx image packaging.
+Scope: German `impressum.html`, `datenschutz.html`, legal footer links and static nginx image packaging; owner-approved source-only privacy minimization, local fonts, tests and legal draft wording. No merge or LIVE.
 Source only; no GSC, Cloudflare, RPi5, deployed Worker or production data changes.
+
+## Source-only privacy and font update — 2026-10-10
+
+**Draft branch only; NOT LIVE; NOT RELEASE READY.**
+
+- Seven HTML pages now reference first-party `css/fonts.css`, embedding Baloo 2/Nunito Latin variable WOFF2 with `font-display: optional`. Licensing is SIL OFL v1.1, with verbatim `assets/fonts/OFL-Baloo2.txt` and `assets/fonts/OFL-Nunito.txt`. Font binary provenance: `fontsource/font-files@c3f4e3e5a664d2c3002e800050ce809a790d7281`; original licenses: `google/fonts/ofl/{baloo2,nunito}/OFL.txt`. Browser visual/network verification is still required after authorized release.
+- The frontend now posts existing Like IDs in the **body** of `POST /api/stats/page`, not the URL query. The Worker already supports POST and retains a legacy GET route for cached clients; legacy URLs may still expose a visitor ID. Creating/reading a persistent `localStorage` ID for Like is still subject to TDDDG §25 and GDPR Art. 6 review.
+- Print intent does not create, read or transmit a permanent browser ID. The Worker uses a day-scoped HMAC derived from connection IP/host for rate limiting; no per-visitor print ID is stored in D1. The separate Rate Limiter receives a pseudonymous key, and its retention is not verified. Cloudflare warns that IP-derived keys can group users behind shared addresses; this is a tradeoff, not anonymity. Printing stays independent of tracking success.
+- **Worker-first deployment gate:** the updated Worker must be explicitly authorized, deployed and verified *before* merging the application PR: the old Worker can reject the new frontend POST status request and ID-free print payload. This authorization permits source/tests/CI only. It does not permit Worker deployment, D1 mutation, merge or auto-LIVE.
+- **Legal blockers remain:** Cloudflare account-specific DPA/transfers, processor and retention facts, purposes/legal bases for telemetry, TDDDG §25 Like storage, DDG §5 suitability of the provider's postal address, and actual LIVE/edge data flows. Historic review sections below describe previous source/edge behavior and must not be quoted as evidence that this new code is deployed.
 
 ## Confirmed owner choices
 
