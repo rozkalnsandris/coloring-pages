@@ -8,8 +8,8 @@
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=c5d8c26a8a8349b2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=0183523f7f73806a">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=optional" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css?v=69b2a5abc7cf88ec">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -25,10 +25,16 @@
         <a href="index.html#kategorien">Kategorien</a>
         <a href="index.html#ueber-uns">Über uns</a>
       </nav>
-      <a class="header-search" href="index.html#hero" aria-label="Zur Suche"><span aria-hidden="true"></span></a>
-      <button class="menu-button" type="button" aria-expanded="false" aria-controls="mobile-nav">
-        <span class="sr-only">Menü öffnen</span><span class="menu-lines" aria-hidden="true"></span>
-      </button>
+      <div class="header-actions">
+        <a class="header-support" href="index.html#unterstuetzen" aria-label="Projekt unterstützen – Informationen">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+          <span class="header-support-label">Unterstützen</span>
+        </a>
+        <a class="header-search" href="index.html#hero" aria-label="Zur Suche"><span aria-hidden="true"></span></a>
+        <button class="menu-button" type="button" aria-expanded="false" aria-controls="mobile-nav">
+          <span class="sr-only">Menü öffnen</span><span class="menu-lines" aria-hidden="true"></span>
+        </button>
+      </div>
     </div>
     <nav id="mobile-nav" class="mobile-nav container" aria-label="Mobile Navigation" hidden>
       <a href="index.html">Startseite</a><a href="index.html#kategorien">Kategorien</a><a href="index.html#ueber-uns">Über uns</a>
@@ -76,6 +82,9 @@
             <a class="is-disabled" data-action-png download aria-disabled="true"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg><span data-action-png-label>PNG herunterladen</span><b aria-hidden="true">→</b></a>
           </div>
           <p class="empty-state" data-like-status role="status" aria-live="polite" hidden></p>
+          <div data-like-retry-wrap hidden>
+            <button class="outline-link" type="button" data-like-retry>Erneut versuchen</button>
+          </div>
 
           <div class="detail-note">
             <span class="info-dot" aria-hidden="true">i</span>
@@ -95,9 +104,8 @@
     </div>
   </footer>
 
-
   <script src="js/stats.js?v=kita-campaign-v1" defer></script>
-  <script src="js/app.js?v=b0b7d77139afe68e" defer></script>
-  <script src="js/detail.js?v=3cbafea8321ee569" defer></script>
+  <script src="js/app.js?v=13ea80090209fd1a" defer></script>
+  <script src="js/detail.js?v=df1b581ad41c4f0d" defer></script>
 </body>
 </html>

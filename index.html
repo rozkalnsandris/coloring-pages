@@ -9,8 +9,8 @@
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=c5d8c26a8a8349b2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=0183523f7f73806a">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=optional" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css?v=69b2a5abc7cf88ec">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -33,14 +33,16 @@
         <a href="#ueber-uns">Über uns</a>
       </nav>
 
-      <button class="header-search" type="button" aria-label="Suche öffnen" data-header-search>
-        <span aria-hidden="true"></span>
-      </button>
-
-      <button class="menu-button" type="button" aria-expanded="false" aria-controls="mobile-nav">
-        <span class="sr-only">Menü öffnen</span>
-        <span class="menu-lines" aria-hidden="true"></span>
-      </button>
+      <div class="header-actions">
+        <a class="header-support" href="index.html#unterstuetzen" aria-label="Projekt unterstützen – Informationen">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+          <span class="header-support-label">Unterstützen</span>
+        </a>
+        <button class="header-search" type="button" aria-label="Suche öffnen" data-header-search><span aria-hidden="true"></span></button>
+        <button class="menu-button" type="button" aria-expanded="false" aria-controls="mobile-nav">
+          <span class="sr-only">Menü öffnen</span><span class="menu-lines" aria-hidden="true"></span>
+        </button>
+      </div>
     </div>
 
     <nav id="mobile-nav" class="mobile-nav container" aria-label="Mobile Navigation" hidden>
@@ -74,7 +76,7 @@
         </div>
 
         <div class="hero-art">
-          <img src="assets/hero-illustration.png" width="1408" height="736" alt="Fröhlicher Rettungshund mit Rucksack in einer Berglandschaft neben einem Wegweiser">
+          <img src="assets/hero-illustration.png" width="1408" height="736" fetchpriority="high" alt="Fröhlicher Rettungshund mit Rucksack in einer Berglandschaft neben einem Wegweiser">
         </div>
 
         <form class="search" role="search" data-search-form>
@@ -86,7 +88,7 @@
       </div>
     </section>
 
-    <section id="entdecken" class="ranking-pages ranking-discover" data-ranking-root aria-labelledby="discover-title" hidden>
+    <section id="entdecken" class="ranking-pages ranking-discover" data-ranking-root aria-labelledby="discover-title" aria-busy="true">
       <div class="container">
         <div class="section-heading ranking-heading">
           <div class="ranking-heading-copy">
@@ -95,12 +97,13 @@
             <p data-ranking-description>In den letzten 7 Tagen besonders oft gedruckt.</p>
           </div>
           <div class="ranking-tabs" role="tablist" aria-label="Malvorlagen-Rangliste">
-            <button id="ranking-tab-trending" class="ranking-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="ranking-panel-trending" tabindex="0" data-ranking-tab="trending">🔥 Im Trend</button>
-            <button id="ranking-tab-popular" class="ranking-tab" type="button" role="tab" aria-selected="false" aria-controls="ranking-panel-popular" tabindex="-1" data-ranking-tab="popular">⭐ Am beliebtesten</button>
+            <button id="ranking-tab-trending" class="ranking-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="ranking-panel-trending" tabindex="0" data-ranking-tab="trending" disabled>🔥 Im Trend</button>
+            <button id="ranking-tab-popular" class="ranking-tab" type="button" role="tab" aria-selected="false" aria-controls="ranking-panel-popular" tabindex="-1" data-ranking-tab="popular" disabled>⭐ Am beliebtesten</button>
           </div>
         </div>
 
         <div id="ranking-panel-trending" class="ranking-panel" role="tabpanel" aria-labelledby="ranking-tab-trending" data-ranking-section="trending">
+          <p class="ranking-status" data-ranking-status role="status">Ranglisten werden geladen …</p>
           <div class="gallery ranking-gallery" data-ranking-gallery="trending"></div>
         </div>
 
@@ -199,6 +202,14 @@
       </div>
     </section>
 
+    <section id="unterstuetzen" class="support-info" aria-labelledby="support-title" tabindex="-1">
+      <div class="container">
+        <h2 id="support-title">Coloring Pages unterstützen</h2>
+        <p>Alle unsere Malvorlagen bleiben kostenlos. Eine Möglichkeit zur freiwilligen finanziellen Unterstützung ist derzeit noch nicht verfügbar. Wir nehmen aktuell keine Zahlungen entgegen.</p>
+        <p>Du möchtest uns trotzdem helfen? Teile unsere Website mit Familien, Kitas oder Vorschulen. Vielen Dank!</p>
+      </div>
+    </section>
+
     <section id="ueber-uns" class="about" aria-labelledby="about-title" tabindex="-1">
       <div class="container">
         <div class="about-intro">
@@ -232,8 +243,7 @@
     </div>
   </footer>
 
-
   <script src="js/stats.js?v=kita-campaign-v1" defer></script>
-  <script src="js/app.js?v=b0b7d77139afe68e" defer></script>
+  <script src="js/app.js?v=13ea80090209fd1a" defer></script>
 </body>
 </html>

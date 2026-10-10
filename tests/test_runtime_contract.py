@@ -8,6 +8,16 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class RuntimeContractTests(unittest.TestCase):
+    def test_home_hero_lcp_image_has_high_fetch_priority(self):
+        html = (ROOT / "index.html").read_text(encoding="utf-8")
+        marker = '<img src="assets/hero-illustration.png"'
+        self.assertEqual(html.count(marker), 1)
+        hero_img = html.split(marker, 1)[1].split(">", 1)[0]
+        self.assertIn('width="1408"', hero_img)
+        self.assertIn('height="736"', hero_img)
+        self.assertIn('fetchpriority="high"', hero_img)
+        self.assertNotIn('loading="lazy"', hero_img)
+
     def test_simple_deploy_contract_declares_read_only_content_bind(self):
         contract = json.loads((ROOT / ".simple-deploy.json").read_text(encoding="utf-8"))
         self.assertEqual(contract["schema"], "rozkalns.simple-deploy.consumer.v1")

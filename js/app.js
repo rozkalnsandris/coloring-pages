@@ -10,6 +10,7 @@ const totalCount = document.querySelector("[data-total-count]");
 const emptyState = document.querySelector("[data-empty-state]");
 const loadMoreButton = document.querySelector("[data-load-more]");
 const rankingRoot = document.querySelector("[data-ranking-root]");
+const rankingStatus = document.querySelector("[data-ranking-status]");
 const rankingTabs = [...document.querySelectorAll("[data-ranking-tab]")];
 const rankingDescription = document.querySelector("[data-ranking-description]");
 const rankingSections = new Map(
@@ -236,7 +237,7 @@ function createCatalogCard(entry, stats = null) {
 function setRankingTab(kind, {focus = false} = {}) {
   const panel = rankingSections.get(kind);
   const button = rankingTabs.find((candidate) => candidate.dataset.rankingTab === kind);
-  if (!panel || !button || button.hidden) return;
+  if (!panel || !button || button.disabled) return;
 
   rankingTabs.forEach((candidate) => {
     const selected = candidate.dataset.rankingTab === kind;
@@ -271,7 +272,7 @@ rankingTabs.forEach((button) => {
   button.addEventListener("click", () => setRankingTab(button.dataset.rankingTab));
   button.addEventListener("keydown", (event) => {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-    const available = rankingTabs.filter((candidate) => !candidate.hidden);
+    const available = rankingTabs.filter((candidate) => !candidate.disabled);
     if (!available.length) return;
 
     const currentIndex = Math.max(0, available.indexOf(button));
@@ -286,8 +287,18 @@ rankingTabs.forEach((button) => {
   });
 });
 
+function rankingsUnavailable() {
+  if (rankingStatus) {
+    rankingStatus.textContent = "Die Ranglisten sind gerade nicht verfügbar. Entdecke weiter unten unsere Malvorlagen.";
+  }
+  rankingRoot?.setAttribute("aria-busy", "false");
+}
+
 async function hydrateRankings(entries) {
-  if (!window.ColoringStats?.getRankings) return;
+  if (!window.ColoringStats?.getRankings) {
+    rankingsUnavailable();
+    return;
+  }
   try {
     const data=await window.ColoringStats.getRankings(6);
     const available = new Map([
@@ -295,17 +306,23 @@ async function hydrateRankings(entries) {
       ["popular", renderRanking("popular",entries,data.popular)],
     ]);
     rankingTabs.forEach((button) => {
-      button.hidden = !available.get(button.dataset.rankingTab);
+      button.disabled = !available.get(button.dataset.rankingTab);
     });
     const initialKind = available.get("trending")
       ? "trending"
       : available.get("popular")
         ? "popular"
         : "";
-    if (!initialKind || !rankingRoot) return;
-    rankingRoot.hidden=false;
+    if (!initialKind) {
+      rankingsUnavailable();
+      return;
+    }
     setRankingTab(initialKind);
-  } catch {}
+    if (rankingStatus) rankingStatus.hidden = true;
+    rankingRoot?.setAttribute("aria-busy", "false");
+  } catch {
+    rankingsUnavailable();
+  }
 }
 async function hydrateCatalog() {
   if (!gallery) return;
@@ -324,6 +341,7 @@ async function hydrateCatalog() {
     updateCatalogCounts(catalogEntries);
     renderCatalog();
     if (entries.length) await hydrateRankings(catalogEntries);
+    else rankingsUnavailable();
   } catch {
     // Never present demonstration cards as real published media on a failed load.
     catalogIssueText = "Die Malvorlagen konnten nicht geladen werden. Bitte versuche es später erneut.";
@@ -331,6 +349,7 @@ async function hydrateCatalog() {
     visibleLimit = CATALOG_PAGE_SIZE;
     updateCatalogCounts(catalogEntries);
     renderCatalog();
+    rankingsUnavailable();
   }
 }
 

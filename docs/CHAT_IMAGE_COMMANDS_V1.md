@@ -310,3 +310,63 @@ This command layer is intentionally thin:
 - `AGENTS.md` defines repository authority and STOP/owner gates.
 
 Where this convenience command layer conflicts with any stricter canonical contract, the stricter contract wins.
+
+## Simpler independent-activity batch flow (source-only preflight)
+
+When the owner requests multiple **separate coloring pages**, they are independent v1
+activities, not an ordered v2 multi-page activity. Preserve the exact generation order
+and the owner's separate-page intent until publication. One unambiguous `PUBLISH`
+approves the entire explicitly selected set; do **not** demand one approval or
+`PUBLISH RESUME ...` command per page. Each page still gets its own random
+seven-digit ID, frozen SHA-256, byte size, category and v1 manifest.
+
+First check generated images visually against the `MAKE` contract: they MUST
+actually be black-outlines-on-white coloring-page drafts (unless intentional
+worksheet color was requested), not photos, painted illustrations, or completed
+colored art. Reject an unsuitable result and regenerate it **before** requesting
+`PUBLISH`; never silently publish an unsuitable image.
+
+To reduce repetitive local preparation, use
+`tools/coloring-pages-publish-preflight` with a complete owner-approved plan
+and freshly retrieved read-only LIVE catalog snapshot. Example plan:
+
+```json
+{
+  "schema": "rozkalns.coloring-pages.publish-preflight-plan.v1",
+  "activities": [
+    {"draft": "reading.png", "title": "Junge liest ein Buch", "category": "figuren"},
+    {"draft": "football.png", "title": "Junge spielt Fußball", "category": "figuren"}
+  ]
+}
+```
+
+```bash
+python3 tools/coloring-pages-publish-preflight \
+  --plan /tmp/approved-pages/plan.json \
+  --fresh-live-catalog /tmp/approved-pages/live-catalog.json \
+  --output-dir /tmp/approved-pages/prepared
+```
+
+This **offline, source-only helper** creates all `<id>.png` and
+`<id>.json` v1 pairs and a local `preflight-index.json` summary in one
+invocation, using the reviewed print-master helper for preparation and validation.
+It does **not** connect to Drive or RPi5, and its output alone is **not**
+publication eligibility or a LIVE-state proof. The caller remains responsible
+for fresh runtime operator/importer alignment, current LIVE-catalog ID
+non-collision, manifest and media integrity, and exact stable uploaded-file refs
+for **every** PNG and JSON before the first Drive mutation.
+
+Export/materialize all pairs as stable provider-supported source refs **before
+any** upload; use one upload surface for the full batch. For each independent
+item stage PNG then its prebuilt manifest, then invoke the already-authorized
+trusted RPi5 importer once per item, observing each terminal PASS. This does
+not grant retry, alternate staging, overwrite or rollback; after any mutation
+failure, STOP and report the exact succeeded subset, with no automatic
+continuation of the rest.
+
+Normal user-facing outcome is **one compact status** for the whole set: PASS
+with number published, or a precise STOP with whether any mutation happened,
+which items succeeded, and the one actual blocked capability/gate. Never
+invent new magic `PUBLISH ... RESUME ...` syntax as a workaround for missing
+tool capabilities. A repeated command alone cannot create missing file refs.
+
