@@ -34,7 +34,7 @@ class SupportHeaderTests(unittest.TestCase):
     def test_css_versions(self):
         for name in ("index.html", "detail.html", "print.html", "kita.html", "stats.html", "traffic.html"):
             html = (ROOT / name).read_text(encoding="utf-8")
-            self.assertIn('href="css/app.css?v=5e9842ed2f6c1edc"', html)
+            self.assertIn('href="css/app.css?v=0ea72b8fd21c604a"', html)
 
 
 if __name__ == "__main__":
