@@ -59,6 +59,23 @@ This section concerns **public external documents and minimally scoped public-ed
 
 **Decision:** keep this PR Draft and **NOT RELEASE READY**. A production-accurate privacy notice cannot be signed off from public provider material or static source alone. Any redesign of the statistics/Fonts subsystem, consent feature, Cloudflare/D1 change, host inspection of protected data or release needs its own appropriately scoped owner decision; this follow-up does not authorize any such mutation.
 
+## Sanitized LIVE origin logging metadata — 2026-10-10
+
+**Authorization and evidence scope:** the owner explicitly authorized one minimum-sufficient **read-only** metadata inspection of the existing RPi5 container `coloring-pages-public-coloring-pages-1`: `LOG-DRIVER, ROTATION, RETENTION, ACCESS-LOG-FIELDS`, with **sanitized output only**. The observation queried target container logging configuration and the *effective NGINX configuration's access-log directives and format names*, rather than raw log events. This authorization did not grant source/runtime changes, credential or environment access, raw-log access, database access or merge.
+
+| Observed target metadata (not raw records) | Confirmed result | Interpretation / limitation |
+| --- | --- | --- |
+| Container Docker log driver | `json-file` | Docker stores container `stdout`/`stderr` log messages in JSON files; this is not an analytics-platform retention policy. |
+| Rotation options | `max-size=10m`; `max-file=3` | File-size/count-based rotation; does **not** imply deletion after 7/30 days or any fixed time interval. Options apply to this inspected container, not every service or Cloudflare. |
+| Time-based retention option | Not configured among the inspected Docker log-driver options | No complete end-to-end retention period can be derived; other copies/collectors/backups were not inspected. |
+| Effective NGINX access-log directives | Three directives classified as `stdout` and `off` | Some NGINX locations suppress access logging; normal logged requests go to `stdout`, which Docker can capture. This is not proof every request is logged. |
+| NGINX access-log format | Default `combined`, with no custom `log_format` declaration found | The standard fields include client address, remote user, local time, request line, HTTP status, response-body byte count, referer and user agent. The request line can include a query string. |
+| Worker/D1/edge log processing | **Not inspected** | Do not infer Worker/D1 log persistence, Cloudflare retention, Cloudflare IP-address treatment, or whether `/api/stats/*` requests traverse this NGINX instance. |
+
+**Privacy consequence:** for requests that actually reach an NGINX location using `combined`, a query string **may** appear in an origin access log. The project's `js/stats.js` sends an existing raw `visitor_id` in a request URL to `/api/stats/page`, but routing through the Cloudflare Worker is a separate data-flow boundary. The metadata inspection does **not** show that this particular endpoint reaches NGINX or that such a raw ID appears in any real NGINX entry. Assess the Worker/edge handling separately before a statement about endpoint-level log exposure.
+
+**Evidence hygiene and release gate:** no raw log records, personal information, secrets, process/container environment, database content or protected configuration dumps were copied into GitHub. This new, separately granted read-only review supersedes the **inspection authorization status** reported in the earlier public-evidence section, not its legal conclusions. The present evidence improves the origin logging inventory only. `Datenschutzerklärung` remains a **draft / NOT RELEASE READY** until the real purposes, legal bases, processor/transfer arrangements and valid retention **periods or criteria** are documented for each service and processing activity. Do not replace the outstanding retention text with an invented number of days or conflate Docker's file rotation with GDPR-compliant data deletion.
+
 ## Reference sources
 
 - DDG § 5: https://www.gesetze-im-internet.de/ddg/__5.html
@@ -73,5 +90,7 @@ This section concerns **public external documents and minimally scoped public-ed
 - Cloudflare Analytics retention update (2026-10-02): https://developers.cloudflare.com/changelog/post/2026-10-02-30-days-analytics-on-every-plan/
 - Cloudflare DPA v6.4: https://www.cloudflare.com/cloudflare-customer-dpa/
 - Google Fonts API: https://developers.google.com/fonts/docs/technical_considerations
+- Docker JSON File logging driver (rotation behavior): https://docs.docker.com/engine/logging/drivers/json-file/
+- NGINX ngx_http_log_module (default combined format, access_log directives): https://nginx.org/en/docs/http/ngx_http_log_module.html
 
 **Policy:** Draft only; no merge or automatic application LIVE before the blockers are resolved and owner expressly authorizes the exact merge. Do not conflate CI success with legal compliance.
