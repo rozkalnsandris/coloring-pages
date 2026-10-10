@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+"""Offline, fail-closed preparation of independent PUBLISH activities.
+
+Uses the reviewed print-master helper; never uploads to Drive or touches LIVE.
+The supplied catalogue MUST be a fresh read-only snapshot of LIVE state.
+"""
+
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import re
+import secrets
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+PLAN_SCHEMA = "rozkalns.coloring-pages.publish-preflight-plan.v1"
+MANIFEST_SCHEMA = "rozkalns.coloring-pages.drive-staging-manifest.v1"
+
+
+class PreflightError(ValueError):
+    pass
+
+
+def load(path):
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise PreflightError(f"invalid input JSON: {path.name}") from exc
+
+
+def text(value, field, allow_empty=False):
+    if not isinstance(value, str) or len(value) > 128:
+        raise PreflightError(f"invalid {field}")
+    if any(ord(c) < 32 or ord(c) == 127 for c in value):
+        raise PreflightError(f"invalid {field}")
+    if not allow_empty and not value.strip():
+        raise PreflightError(f"empty {field}")
+    return value
+
+
+def check_inputs(plan_file, catalog_file):
+    plan = load(plan_file)
+    if not isinstance(plan, dict) or set(plan) != {"schema", "activities"} or plan["schema"] != PLAN_SCHEMA:
+        raise PreflightError("invalid preflight plan schema")
+    activities = plan["activities"]
+    if not isinstance(activities, list) or not 1 <= len(activities) <= 20:
+        raise PreflightError("independent activity count must be 1..20")
+    categories = load(ROOT / "metadata/categories.json")
+    valid_categories = {item["id"] for item in categories["categories"]}
+    catalog = load(catalog_file)
+    if not isinstance(catalog, list) or any(
+        not isinstance(row, dict) or not isinstance(row.get("id"), str) for row in catalog
+    ):
+        raise PreflightError("LIVE catalogue snapshot is invalid")
+    existing = [row["id"] for row in catalog]
+    if len(set(existing)) != len(existing):
+        raise PreflightError("duplicate LIVE catalogue ID")
+    seen_drafts = set()
+    checked = []
+    for row in activities:
+        if not isinstance(row, dict) or set(row) - {
+            "draft", "title", "category", "character", "age", "difficulty"
+        } or not {"draft", "title", "category"}.issubset(row):
+            raise PreflightError("invalid activity fields")
+        draft = (plan_file.parent / text(row["draft"], "draft")).resolve()
+        if draft.suffix.lower() != ".png" or not draft.is_file() or draft in seen_drafts:
+            raise PreflightError("draft missing, not PNG or duplicated")
+        seen_drafts.add(draft)
+        category = text(row["category"], "category")
+        if category not in valid_categories:
+            raise PreflightError("unsupported category")
+        age, difficulty = row.get("age", "3-6"), row.get("difficulty", "easy")
+        if age not in ("3-6", "4-8") or difficulty not in ("easy", "normal", "detailed"):
+            raise PreflightError("unsupported age or difficulty")
+        checked.append({
+            "draft": draft,
+            "title": text(row["title"], "title"),
+            "character": text(row.get("character", ""), "character", True),
+            "category": category,
+            "age": age,
+            "difficulty": difficulty,
+        })
+    return checked, set(existing)
+
+
+def run_helper(helper, action, source, output=None):
+    command = [sys.executable, str(helper), action, str(source)]
+    if output is not None:
+        command.append(str(output))
+    result = subprocess.run(command, capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        raise PreflightError(f"print-master {action} failed: {source.name}")
+    return dict(line.split("=", 1) for line in result.stdout.splitlines() if "=" in line)
+
+
+def prepare(plan_file, catalog_file, target, helper):
+    activities, used = check_inputs(plan_file, catalog_file)
+    if not helper.is_file() or target.exists():
+        raise PreflightError("print helper missing or output directory already exists")
+    target.mkdir(parents=True)
+    results = []
+    for activity in activities:
+        for _ in range(100):
+            activity_id = f"{secrets.randbelow(10_000_000):07d}"
+            if activity_id not in used:
+                used.add(activity_id)
+                break
+        else:
+            raise PreflightError("ID allocation exhausted")
+        png = target / f"{activity_id}.png"
+        run_helper(helper, "prepare", activity["draft"], png)
+        evidence = run_helper(helper, "validate", png)
+        sha = hashlib.sha256(png.read_bytes()).hexdigest()
+        size = png.stat().st_size
+        if (evidence.get("VALIDATE_PRINT") != "PASS"
+                or evidence.get("SHA256") != sha
+                or evidence.get("SIZE_BYTES") != str(size)):
+            raise PreflightError("print-master SHA/size validation mismatch")
+        manifest = {
+            "schema": MANIFEST_SCHEMA,
+            "id": activity_id,
+            "sha256": sha,
+            "size_bytes": size,
+            "title": activity["title"],
+            "character": activity["character"],
+            "category": activity["category"],
+            "age": activity["age"],
+            "difficulty": activity["difficulty"],
+            "language": "de",
+            "source_kind": "chatgpt-generated-png",
+            "approval_class": "explicit-owner-chat-approval",
+        }
+        manifest_file = target / f"{activity_id}.json"
+        manifest_file.write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+        if load(manifest_file) != manifest or not re.fullmatch(r"[0-9]{7}", activity_id):
+            raise PreflightError("manifest validation failed")
+        results.append({
+            "id": activity_id, "png": png.name, "manifest": manifest_file.name,
+            "sha256": sha, "size_bytes": size,
+        })
+    index = target / "preflight-index.json"
+    index.write_text(json.dumps({
+        "schema": "rozkalns.coloring-pages.publish-preflight-result.v1",
+        "activities": results,
+    }, indent=2) + "\n", encoding="utf-8")
+    print(f"PUBLISH_PREFLIGHT=PASS\nINDEPENDENT_ACTIVITIES={len(results)}")
+    print(index.read_text(encoding="utf-8"))
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--plan", type=Path, required=True)
+    parser.add_argument("--fresh-live-catalog", type=Path, required=True)
+    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument(
+        "--print-helper", type=Path,
+        default=ROOT / "tools/coloring-pages-print-master",
+    )
+    args = parser.parse_args()
+    try:
+        prepare(
+            args.plan.resolve(), args.fresh_live_catalog.resolve(),
+            args.output_dir.resolve(), args.print_helper.resolve(),
+        )
+    except (PreflightError, OSError) as exc:
+        print(f"PUBLISH_PREFLIGHT=FAIL: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
