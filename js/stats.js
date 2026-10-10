@@ -57,9 +57,11 @@
 
   async function getPage(pageId) {
     const visitorId = getVisitorId(false);
-    const query = new URLSearchParams({page_id: pageId});
-    if (visitorId) query.set("visitor_id", visitorId);
-    return requestJson(`/page?${query}`);
+    // Send the Like ID in a POST body, not a logged URL query string.
+    return requestJson("/page", {
+      method: "POST",
+      body: JSON.stringify({page_id: pageId, visitor_id: visitorId}),
+    });
   }
 
   async function toggleLike(pageId) {
@@ -106,8 +108,8 @@
   }
 
   function trackPrint(pageId) {
-    const visitorId = getVisitorId(true);
-    const payload = {page_id: pageId, visitor_id: visitorId};
+    // Print counting must not create or read a durable browser ID.
+    const payload = {page_id: pageId};
     const campaign = currentCampaign();
     if (campaign) payload.campaign = campaign;
     const body = JSON.stringify(payload);
