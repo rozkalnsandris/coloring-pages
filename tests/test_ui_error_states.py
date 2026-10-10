@@ -109,21 +109,19 @@ const snapshot = () => ({
 });
 const context = {
   likeStatus, likeRetryWrap, likeRetryButton, likeButton,
-  likeLabel, likeCount, window, handlers, f, snapshot,
-  getCounts:() => ({getCalls, likeCalls}),
+  likeLabel, likeCount, window, handlers,
 };
-const script = 'let loadedEntryId="sample";\n'+section+`
+vm.runInNewContext('let loadedEntryId="sample";\n'+section+
+                   '\nglobalThis.runHydrate = hydrateLikeState;', context);
 if (f.init) {
-  Promise.resolve(hydrateLikeState("sample")).then(async () => {
+  Promise.resolve(context.runHydrate("sample")).then(async () => {
     const initial=snapshot();
     await handlers.retry();
-    console.log(JSON.stringify({initial, afterRetry:snapshot(), ...getCounts()}));
+    console.log(JSON.stringify({initial, afterRetry:snapshot(), getCalls, likeCalls}));
   });
 } else {
   Promise.resolve(handlers.click()).then(() => console.log(JSON.stringify(snapshot())));
 }
-`;
-vm.runInNewContext(script, context);
 """
 
 
