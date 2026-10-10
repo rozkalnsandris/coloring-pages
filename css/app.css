@@ -86,9 +86,15 @@ a { color: inherit; }
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 44px; padding: 0 16px; border: 1px solid #efd0d9; border-radius: 999px;
   background: #fff1f5; color: #a52f4c; font-size: 14px; font-weight: 800; white-space: nowrap;
+  text-decoration: none; cursor: pointer;
 }
 .header-support svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.header-support:disabled { opacity: .7; cursor: not-allowed; }
+.header-support:hover, .header-support:focus-visible { background: #ffe2eb; border-color: #df9fb0; }
+.header-support:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.support-info { padding: 32px 0; background: #fff6f8; scroll-margin-top: 84px; }
+.support-info .container { max-width: 880px; }
+.support-info h2 { margin: 0 0 12px; font-family: var(--font-display); font-size: clamp(25px, 3vw, 34px); }
+.support-info p { margin: 0 0 10px; max-width: 70ch; line-height: 1.65; }
 @media (max-width: 1100px) {
   .header-inner { gap: 16px; }
   .desktop-nav { gap: 20px; }
