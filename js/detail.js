@@ -17,6 +17,8 @@ const likeButton=document.querySelector("[data-action-like]");
 const likeLabel=document.querySelector("[data-action-like-label]");
 const likeCount=document.querySelector("[data-action-like-count]");
 const likeStatus=document.querySelector("[data-like-status]");
+const likeRetryWrap=document.querySelector("[data-like-retry-wrap]");
+const likeRetryButton=document.querySelector("[data-like-retry]");
 let activePrintSession=null;
 let loadedEntryId="";
 
@@ -216,8 +218,17 @@ function renderLikeState(data) {
   if (likeCount) likeCount.textContent=String(Number(data?.like_count||0));
 }
 async function hydrateLikeState(pageId) {
-  if (!likeButton || !window.ColoringStats?.getPage) return;
+  if (!likeButton) return;
+  // Do not guess whether this visitor already liked the page when the initial GET fails.
+  likeButton.disabled=true;
+  if (likeRetryWrap) likeRetryWrap.hidden=true;
+  if (likeRetryButton) likeRetryButton.disabled=true;
+  if (likeStatus) {
+    likeStatus.textContent="";
+    likeStatus.hidden=true;
+  }
   try {
+    if (!window.ColoringStats?.getPage) throw new Error("Like status unavailable");
     const data=await window.ColoringStats.getPage(pageId);
     renderLikeState(data);
     likeButton.disabled=false;
@@ -227,8 +238,14 @@ async function hydrateLikeState(pageId) {
       likeStatus.textContent = "Gefällt mir ist gerade nicht verfügbar.";
       likeStatus.hidden = false;
     }
+    if (likeRetryWrap) likeRetryWrap.hidden=false;
+    if (likeRetryButton) likeRetryButton.disabled=false;
   }
 }
+likeRetryButton?.addEventListener("click", () => {
+  if (!loadedEntryId || likeRetryButton.disabled) return;
+  return hydrateLikeState(loadedEntryId);
+});
 likeButton?.addEventListener("click",async()=>{
   if (!loadedEntryId || likeButton.disabled || !window.ColoringStats?.toggleLike) return;
   if (likeStatus) {
