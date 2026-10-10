@@ -46,6 +46,19 @@ This is an evidence and decision checklist, **not** an approval that the deploye
 
 **Smallest next decisions (no mutation implied):** (1) confirm provider/business classification and whether this address receives legally served mail; (2) choose a privacy-preserving approach to optional Print/Like telemetry, without disabling printing; (3) obtain minimum-sufficient read-only *actual* hosting, Cloudflare agreement/settings and retention evidence through the appropriate authorized runtime/provider boundary; (4) verify Google Fonts handling. Once these are resolved, update the public wording with established facts, rerun source tests/CI, and request legal/content sign-off before Ready/MERGE. No automatic LIVE, Worker, D1, network, consent or font-source change is authorized by this review.
 
+## Follow-up: provider documents and bounded public evidence (2026-10-10)
+
+This section concerns **public external documents and minimally scoped public-edge evidence**, not authenticated proof of the Cloudflare account's contract or protected host configuration. No Worker/D1/provider configuration, private logs, personal data or secret material was accessed for this follow-up.
+
+- **Public edge response:** A read-only `HEAD https://coloring.rozkalns.net/` returned `HTTP/2 200` with `server: cloudflare` and `cf-cache-status: DYNAMIC`. This supports Cloudflare involvement at the public edge **only**. It does not establish the deployed Worker revision, whether the Web Analytics beacon runs on each page, server/container-log retention or actual D1 contents.
+- **Public Cloudflare DPA:** Cloudflare's published **Data Processing Addendum v6.4 (effective 2026-04-03)** describes the controller/processor relationship and possible EEA-to-third-country transfers, and includes contractual provisions for EU Standard Contractual Clauses. The *existence* of this public document is not evidence that this owner/account has agreed to that version, which services and sub-processors apply, or which safeguards govern a particular LIVE data flow. Do not copy generic contract terms into the notice as account-proven facts.
+- **Cloudflare analytics retention is product/dataset-specific:** The public *Web Analytics* FAQ says the Web Analytics interface currently offers the previous **six months**. Cloudflare's 2026-10-02 Analytics changelog separately announces 30 days of queryable history for certain general analytics datasets (at least 31 days retained for Free/Pro). Neither statement proves retention of origin logs, the project's own D1 `likes`/daily counters, Rate Limiter input or the owner's account-specific dataset settings. **Do not substitute any of these values as a blanket visitor-data deletion period.**
+- **TDDDG § 25(1)–(2):** the official statute requires informed consent for accessing/storing terminal information unless the expressly defined necessity exemptions apply. The project's persistent `localStorage` visitor ID and optional print counts remain an open purpose-by-purpose consent/necessity decision; a cookie-free Cloudflare Web Analytics beacon does not settle this.
+- **GDPR Art. 13 and DDG § 5:** the current public legal draft must still disclose supported processing bases, recipients, transfer information, retention periods/criteria and any actually required provider-contact information. Confirm whether an email-only operator contact is sufficient for the legally required immediate communication; do not fabricate phone, register details, contractual acceptance or address serviceability.
+- **Protected runtime boundary:** `RPi5_main/AGENTS.md` excludes protected configuration, process/container environment, `docker inspect`, logs and other restricted host data unless there is separately explicit, appropriately scoped authority. Public edge/source observations cannot replace this proof. Further protected-runtime checks are **not** authorized by the current review command.
+
+**Decision:** keep this PR Draft and **NOT RELEASE READY**. A production-accurate privacy notice cannot be signed off from public provider material or static source alone. Any redesign of the statistics/Fonts subsystem, consent feature, Cloudflare/D1 change, host inspection of protected data or release needs its own appropriately scoped owner decision; this follow-up does not authorize any such mutation.
+
 ## Reference sources
 
 - DDG § 5: https://www.gesetze-im-internet.de/ddg/__5.html
@@ -56,6 +69,9 @@ This is an evidence and decision checklist, **not** an approval that the deploye
 - LDI NRW complaint authority: https://www.ldi.nrw.de/
 - Datenschutzkonferenz OH Digitale Dienste: https://www.datenschutzkonferenz-online.de/media/oh/OH_Digitale_Dienste.pdf
 - Cloudflare Web Analytics: https://developers.cloudflare.com/web-analytics/data-metrics/data-origin-and-collection/
+- Cloudflare Web Analytics FAQ (interface data window): https://developers.cloudflare.com/web-analytics/faq/
+- Cloudflare Analytics retention update (2026-10-02): https://developers.cloudflare.com/changelog/post/2026-10-02-30-days-analytics-on-every-plan/
+- Cloudflare DPA v6.4: https://www.cloudflare.com/cloudflare-customer-dpa/
 - Google Fonts API: https://developers.google.com/fonts/docs/technical_considerations
 
 **Policy:** Draft only; no merge or automatic application LIVE before the blockers are resolved and owner expressly authorizes the exact merge. Do not conflate CI success with legal compliance.
