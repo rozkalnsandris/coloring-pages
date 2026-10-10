@@ -71,6 +71,11 @@ const f = JSON.parse(process.argv[1]);
 const handlers = {};
 const attrs = {};
 const likeStatus = {textContent:'', hidden:true};
+const likeRetryWrap = {hidden:true};
+const likeRetryButton = {
+  disabled:true,
+  addEventListener(name,cb){handlers.retry=cb},
+};
 const likeLabel = {textContent:''};
 const likeCount = {textContent:'0'};
 const heart = {textContent:'♡'};
@@ -80,8 +85,15 @@ const likeButton = {
   querySelector:() => heart,
   addEventListener(name,cb){handlers[name]=cb},
 };
+let getCalls=0, likeCalls=0;
 const window = {ColoringStats:{
+  getPage: async () => {
+    getCalls++;
+    if (getCalls <= (f.initialFailures || 0)) throw new Error('status api unavailable');
+    return {liked:true,like_count:4};
+  },
   toggleLike: async () => {
+    likeCalls++;
     if (f.fail) throw new Error('api unavailable');
     return {liked:true,like_count:1};
   },
@@ -89,13 +101,29 @@ const window = {ColoringStats:{
 const code = fs.readFileSync('js/detail.js','utf8');
 const section = code.slice(code.indexOf('function renderLikeState('),
                            code.indexOf('async function loadDetail()'));
-vm.runInNewContext('let loadedEntryId="sample";\n'+section, {
-  likeStatus, likeButton, likeLabel, likeCount, window,
-});
-Promise.resolve(handlers.click()).then(() => console.log(JSON.stringify({
+const snapshot = () => ({
   disabled:likeButton.disabled, text:likeStatus.textContent,
   hidden:likeStatus.hidden, pressed:attrs['aria-pressed'],
-})));
+  retryHidden:likeRetryWrap.hidden, retryDisabled:likeRetryButton.disabled,
+  count:likeCount.textContent,
+});
+const context = {
+  likeStatus, likeRetryWrap, likeRetryButton, likeButton,
+  likeLabel, likeCount, window, handlers, f, snapshot,
+  getCounts:() => ({getCalls, likeCalls}),
+};
+const script = 'let loadedEntryId="sample";\n'+section+`
+if (f.init) {
+  Promise.resolve(hydrateLikeState("sample")).then(async () => {
+    const initial=snapshot();
+    await handlers.retry();
+    console.log(JSON.stringify({initial, afterRetry:snapshot(), ...getCounts()}));
+  });
+} else {
+  Promise.resolve(handlers.click()).then(() => console.log(JSON.stringify(snapshot())));
+}
+`;
+vm.runInNewContext(script, context);
 """
 
 
@@ -264,6 +292,30 @@ class UIErrorStateTests(unittest.TestCase):
         self.assertEqual(loaded["cards"], [{"demo":False,"title":"Dino"}])
         self.assertTrue(loaded["hidden"])
         self.assertEqual(loaded["total"], "1")
+
+    def test_like_initial_read_error_offers_safe_retry(self):
+        result = node_check(LIKE_HARNESS, {"init":True, "initialFailures":1})
+        failed = result["initial"]
+        self.assertTrue(failed["disabled"])
+        self.assertFalse(failed["hidden"])
+        self.assertIn("nicht verfügbar", failed["text"])
+        self.assertFalse(failed["retryHidden"])
+        self.assertFalse(failed["retryDisabled"])
+        restored = result["afterRetry"]
+        self.assertFalse(restored["disabled"])
+        self.assertTrue(restored["hidden"])
+        self.assertTrue(restored["retryHidden"])
+        self.assertEqual(restored["pressed"], "true")
+        self.assertEqual(restored["count"], "4")
+        self.assertEqual(result["getCalls"], 2)
+        self.assertEqual(result["likeCalls"], 0)
+
+    def test_like_retry_can_fail_again_without_enabling_unknown_state(self):
+        result = node_check(LIKE_HARNESS, {"init":True, "initialFailures":2})
+        self.assertTrue(result["afterRetry"]["disabled"])
+        self.assertFalse(result["afterRetry"]["retryHidden"])
+        self.assertFalse(result["afterRetry"]["retryDisabled"])
+        self.assertEqual(result["likeCalls"], 0)
 
     def test_like_failure_is_visible_and_reenables_button(self):
         failed = node_check(LIKE_HARNESS, {"fail":True})
