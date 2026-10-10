@@ -55,7 +55,7 @@
       </section>
 
       <section aria-labelledby="privacy-analytics">
-        <h2 id="privacy-analytics">3. Webanalyse und anonyme Nutzungsstatistik</h2>
+        <h2 id="privacy-analytics">3. Webanalyse und pseudonymisierte Nutzungsstatistik</h2>
         <p>Wir nutzen <strong>Cloudflare Web Analytics</strong>. Dabei wird ein
           Analyse-Skript von Cloudflare geladen, das technische Informationen
           zur Seitennutzung und zur Ladeleistung verarbeitet. Nach Angaben von
@@ -67,7 +67,10 @@
           und erzeugt daraus zusammen mit dem UTC-Tag und dem Hostnamen einen
           mit einem geheimen Schlüssel berechneten HMAC-Wert. In der Cloudflare-D1-
           Datenbank werden nur Tag und HMAC-Wert gespeichert, keine rohe IP-Adresse.
-          Bei erfolgreichen Besuchen werden Werte vor dem Vortag gelöscht.
+          Bei erfolgreichen Besuchen werden Werte vor dem Vortag gelöscht;
+          eine zeitgesteuerte Löschung unabhängig von neuen Besuchen ist im
+          verwendeten Worker nicht vorgesehen. Da die HMAC-Werte aus der
+          IP-Adresse abgeleitet werden, behandeln wir sie als pseudonyme Daten.
           Diese Tageswerte sind eine ungefähre Statistik, keine sichere Zählung
           von Personen.</p>
         <p>Daneben werden aggregierte Aufrufe von Vorlagendetailseiten,
@@ -83,14 +86,19 @@
           sie unter <code>coloring-pages-visitor-v1</code> im <code>localStorage</code>
           Ihres Browsers. Die Kennung bleibt dort bestehen, bis Sie diese
           Browserdaten löschen.</p>
-        <p>Bei „Gefällt mir“ wird die Kennung als SHA-256-Hash an den
-          Cloudflare Worker übergeben und für die Zuordnung der Bewertung
-          zu einer Vorlage in Cloudflare D1 gespeichert. Beim Entfernen der
-          Bewertung wird der zugehörige Eintrag gelöscht.
-          Beim Drucken wird eine Druckaktion gezählt; damit wird
-          <strong>nicht</strong> nachgewiesen, dass Papier tatsächlich ausgedruckt wurde.
-          Eine Rate-Limit-Funktion kann die Besucherkennung zur
-          Begrenzung wiederholter Aktionen verwenden.</p>
+        <p>Beim Abruf des Bewertungsstatus wird eine bereits vorhandene
+          Besucherkennung als URL-Parameter <code>visitor_id</code> an den
+          Cloudflare Worker übermittelt. Bei einer „Gefällt mir“-Aktion und
+          beim Drucken wird die Kennung im Anfragekörper an den Worker
+          gesendet. Die Kennung wird dabei nicht bereits im Browser gehasht.
+          Erst der Worker bildet für die Speicherung einer Bewertung einen
+          SHA-256-Hash. In Cloudflare D1 wird für die Bewertung dieser Hash
+          zusammen mit der Vorlagenkennung gespeichert. Beim Entfernen der
+          Bewertung wird der zugehörige Eintrag gelöscht.</p>
+        <p>Beim Drucken wird eine Druckaktion gezählt; damit wird
+          <strong>nicht</strong> nachgewiesen, dass Papier tatsächlich ausgedruckt
+          wurde. Eine Rate-Limit-Funktion kann die übermittelte Besucherkennung
+          zur Begrenzung wiederholter Aktionen verwenden.</p>
         <p>Die datenschutzrechtliche Einordnung der Speicherung und des
           Auslesens dieser Kennung nach § 25 TDDDG sowie die
           konkrete Aufbewahrungsdauer verbliebener Hash-Daten müssen
@@ -130,7 +138,9 @@
           Zukunft widerrufen. Wenden Sie sich hierfür an
           <a href="mailto:andris@rozkalns.net">andris@rozkalns.net</a>.
           Außerdem können Sie Beschwerde bei einer Datenschutzaufsichtsbehörde
-          einlegen (Art. 77 DSGVO).</p>
+          einlegen (Art. 77 DSGVO), beispielsweise bei der
+          <a href="https://www.ldi.nrw.de/">Landesbeauftragten für Datenschutz
+          und Informationsfreiheit Nordrhein-Westfalen (LDI NRW)</a>.</p>
       </section>
     </div>
   </main>

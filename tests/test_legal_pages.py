@@ -32,6 +32,18 @@ class LegalPageSourceTests(unittest.TestCase):
                 self.assertIn('class="legal-footer"', s)
                 self.assertNotIn("<script", s)
 
+    def test_privacy_notice_describes_raw_identifier_transmission(self):
+        privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
+        frontend = (ROOT / "js/stats.js").read_text(encoding="utf-8")
+        worker = (ROOT / "cloudflare/stats-worker.js").read_text(encoding="utf-8")
+        self.assertIn('URL-Parameter <code>visitor_id</code>', privacy)
+        self.assertIn('nicht bereits im Browser gehasht', privacy)
+        self.assertIn('pseudonymisierte Nutzungsstatistik', privacy)
+        self.assertIn('query.set("visitor_id", visitorId)', frontend)
+        self.assertIn('const visitorHash = await sha256(visitorId);', worker)
+        self.assertIn('Landesbeauftragten für Datenschutz', privacy)
+        self.assertNotIn('als SHA-256-Hash an den', privacy)
+
     def test_public_pages_link_both_legal_pages(self):
         for name in PUBLIC_PAGES:
             with self.subTest(name=name):
