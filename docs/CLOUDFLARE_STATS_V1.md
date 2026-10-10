@@ -14,18 +14,21 @@ A print count means **print intent** (the user pressed the print action), not pr
 - One same-origin Cloudflare Worker owns `/api/stats/*`.
 - One D1 database owns the small engagement state plus short-lived day-scoped visitor HMACs.
 - The Raspberry Pi application remains static and does not host an analytics database or API.
-- The browser creates a first-party random visitor ID only when the user first likes or prints. D1 stores only its SHA-256 hash for likes.
+- The browser creates a first-party persistent random visitor ID only upon first Like. Print does not create or read it. D1 stores the SHA-256 hash for Likes; Print counts are aggregate.
 - Public page loads call the Stats Worker once; the Worker uses Cloudflare's request IP only transiently to derive an HMAC from UTC day + public hostname + IP. Raw IP addresses are never written to D1 or returned by the API.
-- An optional Workers Rate Limiting binding uses the random engagement visitor ID rather than IP address.
+- When enabled, the Workers Rate Limiting binding uses the first-party ID for Likes and a UTC-day-scoped HMAC derived from connecting IP and host for Print. This HMAC remains pseudonymous, shared IPs can group unrelated users, and the binding retention is unverified.
 
 ## API
-- `GET /api/stats/rankings?limit=6`
-- `GET /api/stats/page?page_id=<id>&visitor_id=<optional>`
-- `POST /api/stats/print` with `{"page_id":"...","visitor_id":"..."}`
-- `POST /api/stats/like` with the same body; toggles the browser's like
-- `POST /api/stats/visit` with an empty body; records one day-scoped host visitor HMAC
+- `GET /api/stats/rankings?limit=6` — aggregate Popular/Trending counts.
+- `POST /api/stats/page` with `{"page_id":"...","visitor_id":"<optional-existing-id>"}` — read-only page/Like status; the new browser sends the ID only in a JSON body, not a URL.
+- `GET /api/stats/page?page_id=<id>&visitor_id=<optional>` — legacy read-only endpoint kept for older cached browsers; IDs in old URLs may remain observable in logs.
+- `POST /api/stats/print` with `{"page_id":"...","campaign":"<optional-allowlisted>"}` — ID-free print intent; old clients sending an additional visitor_id remain accepted by the updated Worker.
+- `POST /api/stats/like` with `{"page_id":"...","visitor_id":"..."}` — reversible Like using a persistent browser ID.
+- `POST /api/stats/visit` with an empty JSON body or an allowlisted campaign/stage — day-scoped visitor HMAC.
+- `POST /api/stats/view` with a valid page_id — aggregate page view.
+- `GET /api/stats/overview`, `GET /api/stats/traffic?days=7|30`, `GET /api/stats/campaigns?days=7|30` — aggregate read endpoints.
 
-Write endpoints require same-origin browser traffic. D1 uniqueness on `(page_id, visitor_hash)` prevents a browser from storing multiple likes for one page.
+All POST requests are checked for same-origin request metadata, including the new read-only POST page-status endpoint. The legacy GET page-status route remains enabled for compatibility. D1 uniqueness on (page_id, visitor_hash) constrains Likes; it is not an expiry policy.
 
 ## Ranking contract
 - Popular: `page_stats.print_count DESC`.
@@ -33,8 +36,30 @@ Write endpoints require same-origin browser traffic. D1 uniqueness on `(page_id,
 - Likes are displayed as an independent signal and are not mixed into either ranking.
 - The frontend maps returned page IDs against live `catalog.json`; unknown IDs are not rendered.
 
+## Worker-first compatibility gate for PR #158 (2026-10-10)
+
+**Source/review only — no Cloudflare deploy, D1 mutation, application merge, or LIVE authority.** A Worker version represents uploaded code/config/bindings; only an active Worker deployment determines which version serves requests, possibly using a percentage-based split.
+
+| Worker version serving | Browser client | Source-level compatibility |
+| --- | --- | --- |
+| Old GET-page / ID-required-print Worker | Old cached frontend | Compatible |
+| New GET+POST-page / ID-free-print Worker | Old cached frontend | Compatible, legacy GET and legacy Print body retained |
+| Old Worker | New POST-page / ID-free-print frontend | **Incompatible:** POST page responds 404, ID-free Print responds 400 |
+| New Worker | New frontend | Source-compatible, pending actual binding/route and deployment validation |
+
+**Future separately authorized release sequence:**
+
+1. Read-only preflight against the exact reviewed Worker source blob, existing active deployment version and traffic percentages, route, PUBLIC_ORIGIN, D1 schema/binding, day-HMAC key presence/validity metadata and optional RATE_LIMITER binding (never output key material or credentials). Source does not attest these LIVE values.
+2. Obtain a fresh exact-version owner Cloudflare authorization. Activate the reviewed Worker using the approved existing Wrangler/operator path **before** any application merge. Check the active deployment routes **100% of relevant traffic** to the approved Worker version, not merely that Wrangler uploaded it. A D1 schema migration is NOT required by the current source changes.
+3. Within separately permitted non-mutating public API verification, test legacy GET /api/stats/page?page_id=synthetic and new POST /api/stats/page with a synthetically valid page_id and empty visitor_id; these methods read D1 but do not create Likes/Prints. Cross-origin/invalid POST probes must not disclose private data. Do NOT use production POST /print or /like for read-only smoke: they mutate counters/rows.
+4. Resolve the separate privacy and legal release blockers. Only then request an exact PR HEAD owner MERGE. App code/asset changes can trigger bounded auto-LIVE; follow existing health/ready and browser network/Like/print verification gates without unauthorized retry, rollback, or cleanup.
+
+**Offline contract validation:** The PR's Python unittest invokes `node --test tests/worker_api_contract.mjs`. This executes the actual Worker `fetch()` with isolated stub D1 and Rate Limiter, and executes actual browser `js/stats.js` in a VM. Tests cover new POST page, cached legacy GET, ID-free and legacy Print, invalid/origin/limiter failures, and avoiding a browser ID on Print. They **cannot** verify deployed Cloudflare versions, contracts, retention or real D1 data.
+
+Official docs: https://developers.cloudflare.com/workers/testing/ ; https://developers.cloudflare.com/workers/versions-and-deployments/ ; https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/
+
 ## Cloudflare owner gate
-Repository source does **not** create or mutate Cloudflare resources. Activation requires separate explicit owner authorization:
+Repository source does **not** create or mutate Cloudflare resources. The following list describes **initial setup** only; PR #158 requires separate exact Worker-version activation under the Worker-first gate above, not creation of a second D1 database. Initial activation requires explicit owner authorization:
 1. create/bind one D1 database and apply `cloudflare/stats-schema.sql`;
 2. deploy `cloudflare/stats-worker.js`;
 3. bind the Worker to `/api/stats/*` on `coloring.rozkalns.net`;
@@ -117,7 +142,7 @@ recipient identity.
 - `POST /api/stats/visit` may include the allowlisted `campaign` plus
   `stage=landing|catalog`.
 - Existing `view` and `print` writes may include the same allowlisted campaign;
-  their existing page-view/print behavior is unchanged.
+  their aggregate counters remain compatible. The new Print payload does not include a durable browser visitor ID.
 - `/stats.html` displays the four Dortmund pilot counters and remains tolerant if
   the campaign endpoint has not yet been activated.
 
