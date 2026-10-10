@@ -64,12 +64,12 @@ a { color: inherit; }
 .brand-paw i:nth-child(3) { width: 8px; height: 11px; left: 13px; top: 3px; }
 .brand-paw i:nth-child(4) { width: 8px; height: 11px; left: 23px; top: 5px; background: #ff8a65; }
 .brand-paw i:nth-child(5) { width: 8px; height: 11px; left: 30px; top: 13px; background: var(--orange); transform: rotate(24deg); }
-.brand-bilder b { font-weight: 800; }
-.brand-bilder b:nth-child(1) { color: #ff825c; }
-.brand-bilder b:nth-child(2) { color: #ff8a65; }
-.brand-bilder b:nth-child(3), .brand-bilder b:nth-child(4) { color: var(--orange); }
-.brand-bilder b:nth-child(5) { color: var(--green); }
-.brand-bilder b:nth-child(6) { color: #8bcfb1; }
+.brand-wiese b { font-weight: 800; }
+.brand-wiese b:nth-child(1) { color: #ff825c; }
+.brand-wiese b:nth-child(2) { color: #ff8a65; }
+.brand-wiese b:nth-child(3) { color: var(--orange); }
+.brand-wiese b:nth-child(4) { color: var(--green); }
+.brand-wiese b:nth-child(5) { color: #8bcfb1; }
 
 .desktop-nav { display: flex; align-items: stretch; gap: 36px; justify-self: center; height: 70px; }
 .desktop-nav a {
