@@ -1,11 +1,11 @@
-"""Keep the German wordmark consistent across HTML pages and small screens."""
+"""Keep the Ausmalwiese wordmark consistent across HTML pages and small screens."""
 import re
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGES = ("index.html", "detail.html", "kita.html", "stats.html", "traffic.html")
-LETTERS = '<span class="brand-bilder"><b>b</b><b>i</b><b>l</b><b>d</b><b>e</b><b>r</b></span>'
+LETTERS = '<span class="brand-wiese"><b>w</b><b>i</b><b>e</b><b>s</b><b>e</b></span>'
 
 
 class BrandWordmarkTests(unittest.TestCase):
@@ -20,13 +20,15 @@ class BrandWordmarkTests(unittest.TestCase):
                 self.assertIn('<span>Ausmal</span>', markup)
                 self.assertIn(LETTERS, markup)
                 self.assertNotIn("Coloring", markup)
-                self.assertEqual(html.count('class="brand-bilder"'), 1)
+                self.assertIn('aria-label="Ausmalwiese', brand.group(0))
+                self.assertEqual(html.count('class="brand-wiese"'), 1)
 
     def test_brand_styles_and_responsive_admin_header(self):
         styles = (ROOT / "css/app.css").read_text(encoding="utf-8")
         self.assertIn('.brand-word { display: inline-flex; align-items: baseline; }', styles)
-        self.assertIn('.brand-bilder b:nth-child(6)', styles)
+        self.assertIn('.brand-wiese b:nth-child(5)', styles)
         self.assertNotIn('.brand-pages', styles)
+        self.assertNotIn('.brand-bilder', styles)
         self.assertIn('.stats-page .brand { font-size: clamp(18px, 4.7vw, 24px); }', styles)
 
 
