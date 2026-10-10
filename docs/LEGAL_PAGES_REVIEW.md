@@ -7,12 +7,12 @@ Source only; no GSC, Cloudflare, RPi5, deployed Worker or production data change
 
 - Display name: **Andris Rožkalns** (owner approval, 2026-10-09).
 - Contact email: `andris@rozkalns.net`.
-- **Do not publish residential/home address.** A suitable non-residential, legally serviceable address has not been supplied.
+- Postal address: owner explicitly approved inclusion of their residential postal address in both public legal-page drafts on 2026-10-10, superseding the earlier do-not-publish choice. The full address is held in the legal HTML, not repeated in this checklist.
 - Naming/domain and Kita marketing are intentionally deferred.
 
 ## Blocking checks before Ready / MERGE
 
-1. **DDG § 5**: determine whether provider-notice duty applies and, if so, provide an appropriate `ladungsfähige Anschrift` not exposing the home address. The `impressum.html` draft deliberately states that the postal address is missing; do not merge this incomplete draft.
+1. **DDG § 5**: the owner-approved postal address is now present in `impressum.html` and `datenschutz.html`. Before release, confirm whether the provider-notice duty applies and that the address is actually suitable for legal service (`ladungsfähige Anschrift`); the HTML address alone is not legal sign-off.
 2. **GDPR Art. 13**: validate Cloudflare DPA/third-country transfer information, recipients, log-storage periods and operator-contact details against active production agreements and settings (not merely GitHub).
 3. **TDDDG § 25**: determine whether writing/reading `localStorage["coloring-pages-visitor-v1"]` for Likes / print tracking requires prior consent. Avoid asserting an exemption without evidence; if required, implement consent or minimize the feature before release.
 4. Review whether remote **Google Fonts** should be replaced with self-hosted, properly licensed font files and check external requests. The HTML source currently requests `fonts.googleapis.com` and `fonts.gstatic.com`.
