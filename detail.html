@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=optional" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=980da974ada4f717">
+  <link rel="stylesheet" href="css/app.css?v=kofi-header-v1">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -25,10 +25,17 @@
         <a href="index.html#kategorien">Kategorien</a>
         <a href="index.html#ueber-uns">Über uns</a>
       </nav>
-      <a class="header-search" href="index.html#hero" aria-label="Zur Suche"><span aria-hidden="true"></span></a>
-      <button class="menu-button" type="button" aria-expanded="false" aria-controls="mobile-nav">
-        <span class="sr-only">Menü öffnen</span><span class="menu-lines" aria-hidden="true"></span>
-      </button>
+      <div class="header-actions">
+        <button class="header-support" type="button" disabled
+                aria-label="Projekt unterstützen – Ko-fi bald verfügbar" title="Ko-fi bald verfügbar">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+          <span class="header-support-label">Unterstützen</span>
+        </button>
+        <a class="header-search" href="index.html#hero" aria-label="Zur Suche"><span aria-hidden="true"></span></a>
+        <button class="menu-button" type="button" aria-expanded="false" aria-controls="mobile-nav">
+          <span class="sr-only">Menü öffnen</span><span class="menu-lines" aria-hidden="true"></span>
+        </button>
+      </div>
     </div>
     <nav id="mobile-nav" class="mobile-nav container" aria-label="Mobile Navigation" hidden>
       <a href="index.html">Startseite</a><a href="index.html#kategorien">Kategorien</a><a href="index.html#ueber-uns">Über uns</a>
