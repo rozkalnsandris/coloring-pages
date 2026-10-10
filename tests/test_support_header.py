@@ -1,4 +1,5 @@
 """Informational support CTA has no payment destination."""
+import hashlib
 import unittest
 from pathlib import Path
 
@@ -32,9 +33,12 @@ class SupportHeaderTests(unittest.TestCase):
                 self.assertNotIn(payment, html)
 
     def test_css_versions(self):
-        for name in ("index.html", "detail.html", "print.html", "kita.html", "stats.html", "traffic.html"):
-            html = (ROOT / name).read_text(encoding="utf-8")
-            self.assertIn('href="css/app.css?v=5e9842ed2f6c1edc"', html)
+        css_version = hashlib.sha256((ROOT / "css/app.css").read_bytes()).hexdigest()[:16]
+        for name in ("index.html", "detail.html", "print.html", "kita.html",
+                     "stats.html", "traffic.html", "impressum.html", "datenschutz.html"):
+            with self.subTest(page=name):
+                html = (ROOT / name).read_text(encoding="utf-8")
+                self.assertIn(f'href="css/app.css?v={css_version}"', html)
 
 
 if __name__ == "__main__":
