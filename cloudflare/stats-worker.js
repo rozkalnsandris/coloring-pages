@@ -400,9 +400,20 @@ async function recordView(env, request) {
 }
 
 async function pageStats(env, request) {
-  const url = new URL(request.url);
-  const pageId = url.searchParams.get("page_id") || "";
-  const visitorId = url.searchParams.get("visitor_id") || "";
+  let pageId = "";
+  let visitorId = "";
+  if (request.method === "POST") {
+    if (!allowedWriteOrigin(request,env)) return json({error:"forbidden"},403);
+    const body = await request.json().catch(()=>null);
+    if (!body || typeof body !== "object") return json({error:"invalid request"},400);
+    pageId = body.page_id || "";
+    visitorId = body.visitor_id || "";
+  } else {
+    // Support cached older clients. New clients keep Like IDs out of URLs.
+    const url = new URL(request.url);
+    pageId = url.searchParams.get("page_id") || "";
+    visitorId = url.searchParams.get("visitor_id") || "";
+  }
   if (!validPageId(pageId)) return json({error:"invalid page_id"},400);
   if (visitorId && !validVisitorId(visitorId)) return json({error:"invalid visitor_id"},400);
   const stats = await env.DB.prepare("SELECT print_count, like_count FROM page_stats WHERE page_id = ?").bind(pageId).first();
@@ -416,8 +427,16 @@ async function pageStats(env, request) {
 async function recordPrint(env, request) {
   if (!allowedWriteOrigin(request,env)) return json({error:"forbidden"},403);
   const body = await parseBody(request);
-  if (!body || !validVisitorId(body.visitor_id)) return json({error:"invalid request"},400);
-  if (!(await rateLimit(env,body.visitor_id,"print"))) return json({error:"rate_limited"},429);
+  if (!body) return json({error:"invalid request"},400);
+  // Print intent is not associated with a persistent browser identifier.
+  // A day-scoped HMAC is used only for rate limiting, not stored in D1.
+  const secret = String(env.VISITOR_HMAC_KEY || "");
+  const ip = request.headers.get("CF-Connecting-IP") || "";
+  if (secret.length < 32 || !ip) return json({error:"print_tracking_unavailable"},503);
+  const day = new Date().toISOString().slice(0,10);
+  const host = new URL(env.PUBLIC_ORIGIN || DEFAULT_ORIGIN).hostname;
+  const dailyKey = await hmacSha256(secret,`${day}\nprint\n${host}\n${ip}`);
+  if (!(await rateLimit(env,dailyKey,"print"))) return json({error:"rate_limited"},429);
   const statements = [
     env.DB.prepare(
       `INSERT INTO page_stats (page_id, print_count, updated_at)
@@ -457,7 +476,7 @@ export default {
     if (request.method==="GET" && path==="/api/stats/overview") return overviewStats(env);
     if (request.method==="GET" && path==="/api/stats/campaigns") return campaignStats(env,request);
     if (request.method==="GET" && path==="/api/stats/traffic") return trafficStats(env,request);
-    if (request.method==="GET" && path==="/api/stats/page") return pageStats(env,request);
+    if ((request.method==="GET" || request.method==="POST") && path==="/api/stats/page") return pageStats(env,request);
     if (request.method==="POST" && path==="/api/stats/visit") return recordVisitor(env,request);
     if (request.method==="POST" && path==="/api/stats/view") return recordView(env,request);
     if (request.method==="POST" && path==="/api/stats/print") return recordPrint(env,request);
