@@ -29,6 +29,11 @@ class PrintBrandingTests(unittest.TestCase):
         self.assertIn('withQr ? "Einfach scannen!" : "auf ausmalwiese.de"', js)
         self.assertIn("buildPrintBrandFooter(qrReady)", js)
         self.assertIn("object-fit: contain", block)
+        self.assertIn(".print-sheet.is-landscape.has-landscape-ink-fit .print-artwork {", block)
+        self.assertIn("transform-origin: top left;", block)
+        self.assertIn("scale(var(--print-ink-scale))", block)
+        self.assertIn("fitLandscapeInkBounds(", js)
+        self.assertIn('if (orientation === "landscape") applyLandscapeInkFit', js)
         self.assertIn("margin-left: -4px;", block)
         self.assertIn("https://ausmalwiese.de/q", js)
         footer = block.split("  .print-branding {", 1)[1].split("  }", 1)[0]

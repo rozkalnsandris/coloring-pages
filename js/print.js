@@ -126,6 +126,60 @@ function renderImageToCanvas(image) {
   return canvas;
 }
 
+
+// Preserve native A4 pixels: fit the visible drawing, not its white page,
+// into the existing print area above the 22mm branding and 2mm gap.
+function visibleInkBounds(canvas) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx || typeof ctx.getImageData !== "function") return null;
+  const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  let left = canvas.width, top = canvas.height, right = -1, bottom = -1;
+  for (let y = 0; y < canvas.height; y++) {
+    for (let x = 0; x < canvas.width; x++) {
+      const i = (y * canvas.width + x) * 4;
+      if (pixels[i] >= 250 && pixels[i + 1] >= 250 && pixels[i + 2] >= 250) continue;
+      left = Math.min(left, x);
+      right = Math.max(right, x);
+      top = Math.min(top, y);
+      bottom = Math.max(bottom, y);
+    }
+  }
+  return right >= left ? { left, top, right, bottom } : null;
+}
+
+function fitLandscapeInkBounds(bounds, width, height) {
+  if (!bounds || width !== 3508 || height !== 2480) return null;
+  const mmX = 297 / width, mmY = 210 / height;
+  const inkWidth = (bounds.right - bounds.left + 1) * mmX;
+  const inkHeight = (bounds.bottom - bounds.top + 1) * mmY;
+  if (inkWidth <= 0 || inkHeight <= 0) return null;
+  // 15mm page sides/top, 39mm footer clearance, plus a 2mm ink guard.
+  const scale = Math.min(1, 263 / inkWidth, 152 / inkHeight);
+  const centerX = (bounds.left + bounds.right + 1) * mmX / 2;
+  const centerY = (bounds.top + bounds.bottom + 1) * mmY / 2;
+  return {
+    scale,
+    offsetX: 148.5 - centerX * scale,
+    offsetY: 93 - centerY * scale,
+  };
+}
+
+function applyLandscapeInkFit(sheet, canvas) {
+  if (canvas.width !== 3508 || canvas.height !== 2480) return;
+  try {
+    const placement = fitLandscapeInkBounds(
+      visibleInkBounds(canvas), canvas.width, canvas.height,
+    );
+    if (!placement) return;
+    sheet.style.setProperty("--print-ink-x", placement.offsetX.toFixed(4) + "mm");
+    sheet.style.setProperty("--print-ink-y", placement.offsetY.toFixed(4) + "mm");
+    sheet.style.setProperty("--print-ink-scale", placement.scale.toFixed(6));
+    sheet.classList.add("has-landscape-ink-fit");
+  } catch {
+    // Security/readback failure: keep the existing safe contain layout.
+  }
+}
+
 async function renderPrintImages(imageUrls) {
   if (!printPages) throw new Error("print pages container unavailable");
   const images = await Promise.all(imageUrls.map((url) => loadImage(url)));
@@ -148,7 +202,9 @@ async function renderPrintImages(imageUrls) {
     sheet.classList.add(qrReady ? "has-brand-qr" : "has-text-footer");
     const artwork = document.createElement("div");
     artwork.className = "print-artwork";
-    artwork.append(renderImageToCanvas(image));
+    const canvas = renderImageToCanvas(image);
+    artwork.append(canvas);
+    if (orientation === "landscape") applyLandscapeInkFit(sheet, canvas);
     sheet.append(artwork, buildPrintBrandFooter(qrReady));
     return sheet;
   });
