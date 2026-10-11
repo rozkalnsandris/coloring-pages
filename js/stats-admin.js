@@ -15,6 +15,8 @@
     totalLikes: document.querySelector("[data-stats-total-likes]"),
     recentPrints: document.querySelector("[data-stats-recent-prints]"),
     publishedPages: document.querySelector("[data-stats-published-pages]"),
+    qrTotal: document.querySelector("[data-stats-qr-total]"),
+    qrRecent: document.querySelector("[data-stats-qr-recent]"),
     kitaLanding: document.querySelector("[data-stats-kita-landing]"),
     kitaCatalog: document.querySelector("[data-stats-kita-catalog]"),
     kitaDetail: document.querySelector("[data-stats-kita-detail]"),
@@ -212,6 +214,11 @@
       els.totalLikes.textContent = formatNumber(overview.totals?.like_count);
       els.recentPrints.textContent = formatNumber(overview.totals?.recent_prints);
       els.publishedPages.textContent = formatNumber(rows.length);
+      // Older Stats Workers omit these keys until the owner-gated D1 + Worker rollout.
+      els.qrTotal.textContent = typeof overview.totals?.qr_scan_count === "number"
+        ? formatNumber(overview.totals.qr_scan_count) : "–";
+      els.qrRecent.textContent = typeof overview.totals?.recent_qr_scans === "number"
+        ? formatNumber(overview.totals.recent_qr_scans) : "–";
 
       const kita = Array.isArray(campaignData?.campaigns)
         ? campaignData.campaigns.find((item) => item.campaign === "dortmund-01")

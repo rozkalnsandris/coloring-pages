@@ -6,6 +6,9 @@ const ANALYTICS_RANGE_DAYS = new Set([7, 30]);
 const CAMPAIGN_IDS = new Set(["dortmund-01"]);
 const CAMPAIGN_STAGES = new Set(["landing", "catalog"]);
 const CAMPAIGN_EVENTS = new Set(["landing", "catalog", "detail", "print"]);
+// One shared QR URL for all printed sheets. No page/user identifiers or open redirects.
+const PRINT_QR_HOST = "ausmalwiese.de";
+const PRINT_QR_DESTINATION = "https://coloring.rozkalns.net/";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -17,6 +20,41 @@ function json(data, status = 200) {
     },
   });
 }
+function printQrRedirect() {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      "location": PRINT_QR_DESTINATION,
+      "cache-control": "no-store, max-age=0",
+      "referrer-policy": "no-referrer",
+      "x-robots-tag": "noindex, nofollow",
+      "x-content-type-options": "nosniff",
+    },
+  });
+}
+
+function qrPrefetchOrVerifiedBot(request) {
+  const purpose = [request.headers.get("purpose"), request.headers.get("sec-purpose"),
+    request.headers.get("x-moz")].filter(Boolean).join(" ");
+  return /\bprefetch\b/i.test(purpose) || request.cf?.botManagement?.verifiedBot === true;
+}
+
+async function printQrVisit(env, request) {
+  // Let a person reach home even if analytics is temporarily unavailable.
+  if (!qrPrefetchOrVerifiedBot(request)) {
+    try {
+      await env.DB.prepare(
+        `INSERT INTO daily_print_qr_scans (day, scan_count)
+         VALUES (date('now'), 1)
+         ON CONFLICT(day) DO UPDATE SET scan_count=scan_count+1`
+      ).run();
+    } catch {
+      // Count unavailable; don't block the QR link or leak database details.
+    }
+  }
+  return printQrRedirect();
+}
+
 function validPageId(value) { return typeof value === "string" && PAGE_ID_RE.test(value); }
 function validVisitorId(value) { return typeof value === "string" && VISITOR_ID_RE.test(value); }
 function validCampaign(value) { return typeof value === "string" && CAMPAIGN_IDS.has(value); }
@@ -144,6 +182,12 @@ async function overviewStats(env) {
     pageMap.set(pageId, current);
   }
 
+  const qrTotals = await env.DB.prepare(
+    `SELECT COALESCE(SUM(scan_count), 0) AS qr_scan_count,
+            COALESCE(SUM(CASE WHEN day >= date('now', '-6 days')
+                         THEN scan_count ELSE 0 END), 0) AS recent_qr_scans
+     FROM daily_print_qr_scans`
+  ).first();
   const pages = [...pageMap.values()].sort((a, b) =>
     b.view_count - a.view_count
     || b.print_count - a.print_count
@@ -154,6 +198,8 @@ async function overviewStats(env) {
       print_count: Number(totals?.print_count || 0),
       like_count: Number(totals?.like_count || 0),
       tracked_pages: pages.length,
+      qr_scan_count: Number(qrTotals?.qr_scan_count || 0),
+      recent_qr_scans: Number(qrTotals?.recent_qr_scans || 0),
       recent_prints: pages.reduce((sum, row) => sum + row.recent_prints, 0),
       view_count: pages.reduce((sum, row) => sum + row.view_count, 0),
       recent_views: pages.reduce((sum, row) => sum + row.recent_views, 0),
@@ -452,7 +498,13 @@ async function toggleLike(env, request) {
 }
 export default {
   async fetch(request, env) {
-    const path = new URL(request.url).pathname;
+    const url = new URL(request.url);
+    const path = url.pathname;
+    if (path === "/q" && url.hostname === PRINT_QR_HOST) {
+      if (request.method === "GET") return printQrVisit(env, request);
+      if (request.method === "HEAD") return printQrRedirect();
+      return new Response(null, {status:405, headers:{"allow":"GET, HEAD","cache-control":"no-store"}});
+    }
     if (request.method==="GET" && path==="/api/stats/rankings") return rankings(env,request);
     if (request.method==="GET" && path==="/api/stats/overview") return overviewStats(env);
     if (request.method==="GET" && path==="/api/stats/campaigns") return campaignStats(env,request);

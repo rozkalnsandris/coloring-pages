@@ -126,3 +126,15 @@ is intentionally not joined to campaign events, so returning use across days rem
 unmeasured. Applying the additive D1 schema and deploying the matching Worker remain a
 separate Cloudflare owner-gated activation; an application-image deployment alone does
 not activate these counters.
+
+## Shared printed QR link visits (#180)
+
+The approved print-footer SVG encodes exactly `https://ausmalwiese.de/q` on **every** A4 page. Its fixed QR is not per-activity or per-visitor. The existing `PRINT_QR_ROUTE_VERIFIED = false` in `js/print.js` remains unchanged until the separate owner-gated route activation has been verified. During that period, the browser print footer remains text-only, so no unverified QR gets printed.
+
+The same Stats Worker can accept `GET /q` **only** when the request hostname is `ausmalwiese.de`; the Cloudflare route must be explicitly provisioned for precisely `ausmalwiese.de/q`, alongside the existing `coloring.rozkalns.net/api/stats/*`. Its 302 points to the fixed home `https://coloring.rozkalns.net/`, without accepting a destination parameter. HEAD, prefetch and verified-bot requests do not increment the counter. Response and browser caches must not cache the redirect. A D1 write failure does not prevent visitors reaching home.
+
+The additive `daily_print_qr_scans` table holds **only aggregate day and request count**. It never stores IP addresses, cookies, visitor IDs, page IDs, User-Agent strings or QR-specific identifiers. These metrics count successful GET requests to the QR link, **not unique people or guaranteed physical scans**; scanner previews, unverified bots and repeat navigations can affect the count. The read-only `GET /api/stats/overview` adds `totals.qr_scan_count` and `totals.recent_qr_scans` (UTC today + prior six days). The English `/stats.html` dashboard displays both; an older Worker returns no such keys, shown as `–` rather than a misleading zero.
+
+**Owner gates / activation order:** source PR CI and exact-head MERGE do **not** grant Cloudflare authority. A separate owner approval must first apply the additive D1 schema (before deploying the new Worker so `/overview` remains healthy), deploy `cloudflare/stats-worker.js`, and register precisely the `ausmalwiese.de/q` route with its existing verified D1 bindings and zone authority. This is **not** permission for DNS, tunnel, Access, unrelated routes, secrets or settings mutation. Validate origin hostname, 302 target, no-cache headers, HEAD without counting and GET aggregate increment without PII. Only after independent LIVE acceptance and a physical A4 scan test may a second exact-head PR switch the print QR flag true; that print.js merge uses the existing bounded application auto-LIVE flow.
+
+Official references: [Cloudflare Worker redirects](https://developers.cloudflare.com/workers/examples/redirect/), [D1 prepared statements](https://developers.cloudflare.com/d1/worker-api/prepared-statements/), [MDN URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams).
