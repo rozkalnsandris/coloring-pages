@@ -137,12 +137,16 @@
           übertragen. Der Cloudflare Worker speichert in D1
           einen SHA-256-Hash der Kennung zusammen mit der
           Vorlagenkennung. Er kann die Kennung auch für begrenzende
-          Sicherheitsprüfungen verwenden. Frühere Versionen der
+          Sicherheitsprüfungen über den Cloudflare Rate Limiter
+          verwenden, sofern die entsprechende Bindung aktiv ist.
+          Die tatsächliche Konfiguration muss gesondert geprüft werden.
+          Frühere Versionen der
           Website konnten die Kennung als GET-URL-Parameter versenden;
           die Umstellung beseitigt keine bereits vorhandenen
           technischen Zugriffsprotokolle oder Sicherungskopien.
-          Ohne Like-Einwilligung werden keine neuen personalisierten
-          Likes übertragen; die allgemeinen Like-Zahlen bleiben sichtbar.</p>
+          Ohne Einwilligung für „Gefällt mir“ werden keine neuen
+          personalisierten Likes übertragen; die allgemeinen
+          Like-Zahlen bleiben sichtbar.</p>
         <p>Nur bei Zustimmung zur Druckstatistik wird beim Klick
           auf „A4 drucken“ die Browserkennung im Körper einer
           HTTPS-POST-Anfrage übermittelt und gegebenenfalls für
