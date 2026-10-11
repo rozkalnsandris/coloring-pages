@@ -13,7 +13,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from PIL import Image, ImageOps, UnidentifiedImageError
+from PIL import Image, ImageDraw, ImageFont, ImageOps, UnidentifiedImageError
 
 ID_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 A4_WIDTH_MM = 210
@@ -192,6 +192,41 @@ def resized_copy(image: Image.Image, max_width: int) -> Image.Image:
     return copy
 
 
+# Preview-only baked watermark for new publications. Source and print are untouched.
+PREVIEW_WATERMARK_TEXT = "ausmalwiese.de"
+PREVIEW_WATERMARK_OPACITY = 0.13
+PREVIEW_WATERMARK_ANGLE = 28
+PREVIEW_WATERMARK_WIDTH_RATIO = 0.46
+
+
+def watermark_preview(image: Image.Image) -> Image.Image:
+    """Return a watermarked preview copy without changing the supplied raster."""
+    width, height = image.size
+    target_width = round(width * PREVIEW_WATERMARK_WIDTH_RATIO)
+    text = PREVIEW_WATERMARK_TEXT
+    measure = ImageDraw.Draw(Image.new("L", (1, 1)))
+    low, high = 4, max(8, width // 2)
+    while low < high:
+        middle = (low + high + 1) // 2
+        font = ImageFont.load_default(size=middle)
+        if measure.textbbox((0, 0), text, font=font)[2] <= target_width:
+            low = middle
+        else:
+            high = middle - 1
+
+    mask = Image.new("L", (width, height), 0)
+    ImageDraw.Draw(mask).text(
+        (width // 2, height // 2),
+        text, font=ImageFont.load_default(size=low), fill=255, anchor="mm",
+    )
+    mask = mask.rotate(PREVIEW_WATERMARK_ANGLE, resample=Image.Resampling.BICUBIC)
+    overlay = Image.new("RGBA", image.size, (16, 40, 77, 0))
+    overlay.putalpha(mask.point(lambda value: round(value * PREVIEW_WATERMARK_OPACITY)))
+    result = image.convert("RGBA")
+    result.alpha_composite(overlay)
+    return result
+
+
 def build_print_image(image: Image.Image) -> Image.Image:
     """Create an original-size opaque RGB print image for white paper."""
     rgba = image.convert("RGBA")
@@ -228,7 +263,7 @@ def build_derivatives(images: list[Image.Image], target: Path) -> None:
 
     page_count = len(images)
     for index, image in enumerate(images, start=1):
-        preview = resized_copy(image, PREVIEW_MAX_WIDTH)
+        preview = watermark_preview(resized_copy(image, PREVIEW_MAX_WIDTH))
         preview.save(
             target / preview_filename(index, page_count),
             format="WEBP",

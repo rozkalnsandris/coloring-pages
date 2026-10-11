@@ -71,11 +71,13 @@ One accepted source creates:
 originals/<id>/source.png    private canonical master
 public/media/<id>/
 ├── thumb.webp               max width 400 px, lossless
-├── preview.webp             max width 1000 px, lossless
+├── preview.webp             max width 1000 px, lossless; diagonal Ausmalwiese watermark (new imports)
 └── print.png                color-preserving original-size derivative
 ```
 
 The exact approved source PNG bytes are not copied into the public media directory. The public `print.png` keeps the source dimensions and visual colors without grayscale or black-line conversion. The importer composites transparency onto white paper, writes the public print derivative as opaque RGB, and preserves valid source DPI metadata when present; therefore a canonical Chat print master keeps its approximately 300 DPI metadata in the public print PNG. The browser uses that same PNG for A4 printing and direct download without recoloring it.
+
+New imports bake a discreet diagonal attribution watermark **only** into preview derivative pixels, never into `thumb.webp`, `print.png` or the private source. Preview-only source behavior and the immutable historical migration gate are described in [Preview watermark v1](PREVIEW_WATERMARK_V1.md). Existing published previews are not rewritten by this source change.
 
 ## Stable IDs
 

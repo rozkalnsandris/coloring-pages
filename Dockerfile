@@ -19,6 +19,7 @@ RUN chmod 0555 /usr/local/bin/coloring-pages-import /usr/local/bin/coloring-page
     && python3 -c 'import json; p="/usr/local/share/coloring-pages/existing-derivative-regeneration-v1.json"; d=json.load(open(p, encoding="utf-8")); assert d["schema"] == "rozkalns.coloring-pages.existing-derivative-regeneration.v1"; assert d["issue"] == 74' \
     && python3 -c 'import json; p="/usr/local/share/coloring-pages/legacy-print-scale-migration-v1.json"; d=json.load(open(p, encoding="utf-8")); assert d["schema"] == "rozkalns.coloring-pages.legacy-print-scale-migration.v1"; assert len(d["targets"]) == 16' \
     && python3 -c 'import json; p="/usr/local/share/coloring-pages/legacy-print-safe-margin-migration-v1.json"; d=json.load(open(p, encoding="utf-8")); assert d["schema"] == "rozkalns.coloring-pages.legacy-print-safe-margin-migration.v1"; assert len(d["targets"]) == 59; assert d["target_standard"]["artwork_safe_margin_px"] == 177' \
+    && python3 -c 'from PIL import ImageFont; ImageFont.load_default(size=24)' \
     && python3 -c 'import importlib.machinery, importlib.util; p="/usr/local/bin/coloring-pages-print-master"; l=importlib.machinery.SourceFileLoader("cp_print_master", p); s=importlib.util.spec_from_loader(l.name, l); m=importlib.util.module_from_spec(s); l.exec_module(m); assert m.TARGET_SIZE == (2480, 3508); assert m.OUTER_WHITE_BORDER == 1; assert m.PRINT_SAFE_MARGIN_PX == 177'
 USER 101
 
