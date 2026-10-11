@@ -192,16 +192,16 @@ class ImportPageTests(unittest.TestCase):
 
     def test_color_source_stays_color_in_preview_and_print(self):
         image = Image.new("RGB", (900, 1350), color="white")
-        image.putpixel((450, 675), (255, 32, 64))
+        image.putpixel((40, 40), (255, 32, 64))
         image.save(self.source, format="PNG")
 
         importer.import_page(self.source, self.content, self.metadata())
 
         media = self.content / "public/media/fire-pup-001"
         with Image.open(media / "preview.webp") as preview:
-            self.assertEqual(preview.convert("RGB").getpixel((450, 675)), (255, 32, 64))
+            self.assertEqual(preview.convert("RGB").getpixel((40, 40)), (255, 32, 64))
         with Image.open(media / "print.png") as print_image:
-            self.assertEqual(print_image.getpixel((450, 675)), (255, 32, 64))
+            self.assertEqual(print_image.getpixel((40, 40)), (255, 32, 64))
 
     def test_importer_has_no_fixed_2480_by_3508_upscale(self):
         source = MODULE_PATH.read_text(encoding="utf-8")

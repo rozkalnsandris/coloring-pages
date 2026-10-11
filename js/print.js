@@ -2,8 +2,14 @@ const printPages = document.querySelector("[data-print-pages]");
 const printPlaceholder = document.querySelector("[data-print-placeholder]");
 const printButton = document.querySelector("[data-print-button]");
 const printStatus = document.querySelector("[data-print-status]");
+const printBack = document.querySelector("[data-print-back]");
 const printParams = new URLSearchParams(window.location.search);
 const embeddedPrint = printParams.get("embedded") === "1";
+const returnId = printParams.get("id");
+if (printBack && returnId) {
+  printBack.href = `detail.html?id=${encodeURIComponent(returnId)}`;
+  printBack.textContent = "← Zur Malvorlage";
+}
 
 const A4_PAGE_WIDTH_MM = 210;
 const A4_PAGE_HEIGHT_MM = 297;
@@ -51,6 +57,40 @@ function a4CanvasSize(width, height) {
   return { width: Math.ceil(height * a4Ratio), height };
 }
 
+// /q is not verified LIVE. Activation requires a separately reviewed source change
+// after explicit DNS/redirect approval and independent public URL verification.
+const PRINT_QR_ROUTE_VERIFIED = false;
+const PRINT_QR_ASSET = "assets/ausmalwiese-qr-dots.svg";
+
+function buildPrintBrandFooter(withQr) {
+  const footer = document.createElement("footer");
+  footer.className = `print-branding ${withQr ? "has-qr" : "text-only"}`;
+  footer.setAttribute("aria-label", "Ausmalwiese – Malspaß zum Ausdrucken");
+  // Match the site's existing CSS-based colored paw and wordmark exactly.
+  footer.innerHTML = `
+    <div class="print-brand-identity">
+      <span class="brand-paw print-brand-paw" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i>
+      </span>
+      <div class="print-brand-copy">
+        <span class="brand-word print-brand-word"><span>Ausmal</span><span class="brand-wiese"><b>w</b><b>i</b><b>e</b><b>s</b><b>e</b></span></span>
+        <span class="print-brand-url">ausmalwiese.de</span>
+      </div>
+    </div>
+    <div class="print-brand-prompt">Noch mehr Ausmalbilder?<strong>Einfach scannen!</strong></div>
+  `;
+  if (withQr) {
+    const image = document.createElement("img");
+    image.className = "print-brand-qr";
+    image.src = PRINT_QR_ASSET;
+    image.alt = "QR-Code: https://ausmalwiese.de/q";
+    image.width = 76;
+    image.height = 76;
+    footer.append(image);
+  }
+  return footer;
+}
+
 function loadImage(url) {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -89,6 +129,10 @@ function renderImageToCanvas(image) {
 async function renderPrintImages(imageUrls) {
   if (!printPages) throw new Error("print pages container unavailable");
   const images = await Promise.all(imageUrls.map((url) => loadImage(url)));
+  // Never print a broken/unverified QR. Asset failure degrades to text-only.
+  const qrReady = PRINT_QR_ROUTE_VERIFIED
+    ? await loadImage(PRINT_QR_ASSET).then(() => true, () => false)
+    : false;
 
   const sheets = images.map((image, index) => {
     if (!image.naturalWidth || !image.naturalHeight) {
@@ -101,7 +145,11 @@ async function renderPrintImages(imageUrls) {
       "aria-label",
       `A4-Druckseite ${index + 1} von ${images.length}`,
     );
-    sheet.append(renderImageToCanvas(image));
+    sheet.classList.add(qrReady ? "has-brand-qr" : "has-text-footer");
+    const artwork = document.createElement("div");
+    artwork.className = "print-artwork";
+    artwork.append(renderImageToCanvas(image));
+    sheet.append(artwork, buildPrintBrandFooter(qrReady));
     return sheet;
   });
 
@@ -130,7 +178,7 @@ async function loadPrintPage() {
 
     if (!entry || imageUrls.length === 0) throw new Error("entry unavailable");
 
-    document.title = `${entry.title} drucken | Coloring Pages`;
+    document.title = `${entry.title} drucken | Ausmalwiese`;
     await renderPrintImages(imageUrls);
 
     if (printStatus) {

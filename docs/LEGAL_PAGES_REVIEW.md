@@ -6,7 +6,7 @@ Source only; no GSC, Cloudflare, RPi5, deployed Worker or production data change
 ## Source-only brand correction — 2026-10-11
 
 - The legal HTML pages now use the already-approved Ausmalwiese wordmark and name, matching the current public app UI. The operator's previously approved postal/contact details and the substantive draft legal claims are unchanged.
-- This correction does **not** reconcile the divergent application branch against current `main`; the draft still needs a scope-safe source reconciliation that preserves the newer A4/Like/preview work before any release decision.
+- The subsequent conflict-only reconciliation merged `coloring-pages/main` `ab86a6eca6ae6dc8d32bf15ed43698fb0cf5537b` into the draft while retaining the already shipped print branding, browse-first UX, SVG Like heart, A4 guidance, and preview watermark. Both HTML entries and locally served fonts remain draft-only. The PR is **NOT RELEASE READY** and **NO LIVE changes** are implied.
 - **RELEASE BLOCKED:** DDG §5 operator classification/serviceable address, DSGVO Art. 13 lawful bases/recipients/retention/transfers, TDDDG §25 Like storage, and deployed Worker/Rate Limiter contract and version evidence are still unresolved. The Worker must be explicitly deployed and read-only verified for the updated frontend POST/page and ID-free Print API before any app merge; no API mutations or LIVE/secret authority is granted here.
 - Official references: https://www.gesetze-im-internet.de/ddg/__5.html ; https://eur-lex.europa.eu/eli/reg/2016/679/ ; https://www.gesetze-im-internet.de/ttdsg/__25.html ; https://developers.cloudflare.com/workers/versions-and-deployments/ ; https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/ .
 

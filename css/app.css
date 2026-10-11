@@ -630,6 +630,7 @@ a { color: inherit; }
   color: var(--muted);
   text-align: center;
 }
+.print-help { margin: 12px auto 20px; max-width: 720px; color: var(--muted); font-size: 14px; line-height: 1.5; text-align: center; }
 .print-status {
   margin: 12px 0 0;
   color: var(--muted);
@@ -668,6 +669,7 @@ a { color: inherit; }
   }
 
   .print-toolbar,
+  .print-help,
   .print-status,
   .print-placeholder {
     display: none !important;
@@ -702,10 +704,85 @@ a { color: inherit; }
 }
 
 
+/* #168 – print-only Ausmalwiese branding. Original PNG bytes are never edited.
+   The QR mode remains inactive until the shared /q redirect is independently verified. */
+@media print {
+  .print-sheet { position: relative; display: block; background: #fff; }
+  .print-artwork { position: absolute; inset: 0; }
+  .print-sheet.has-brand-qr .print-artwork {
+    /* A4 page, 15mm external insets, 22mm footer plus 2mm art separation. */
+    top: 15mm;
+    right: 15mm;
+    bottom: 39mm;
+    left: 15mm;
+  }
+  .print-artwork canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .print-branding {
+    position: absolute;
+    left: 15mm;
+    right: 15mm;
+    bottom: 15mm;
+    height: 22mm;
+    display: flex;
+    align-items: center;
+    gap: 4mm;
+    color: #10284d;
+    background: #fff;
+    font-family: var(--font-body);
+    print-color-adjust: exact;
+  }
+  .print-brand-identity {
+    display: flex;
+    align-items: center;
+    gap: 1.8mm;
+    min-width: 0;
+    white-space: nowrap;
+  }
+  .print-brand-paw {
+    /* The first colored dot begins at the 15mm content line, not 1mm later. */
+    margin-left: -4px;
+    margin-right: 4px;
+  }
+  .print-brand-copy { display: flex; flex-direction: column; gap: 0.2mm; }
+  .print-brand-word {
+    font: 800 13pt/1 var(--font-display);
+    color: #10284d;
+    white-space: nowrap;
+  }
+  .print-brand-url { font: 800 8.5pt/1.12 var(--font-body); }
+  .print-brand-prompt {
+    margin-left: auto;
+    padding-left: 4mm;
+    border-left: 1px solid #ccd6e1;
+    font: 700 9pt/1.2 var(--font-body);
+    white-space: nowrap;
+  }
+  .print-brand-prompt strong { display: block; font-weight: 800; }
+  .print-branding.has-qr { padding-right: 24mm; }
+  .print-brand-qr {
+    position: absolute;
+    top: 2mm;
+    right: 0;
+    width: 20mm;
+    height: 20mm;
+    object-fit: contain;
+  }
+  .print-branding.text-only {
+    /* Safe fallback: no dead QR, and no artwork reflow when /q is unverified. */
+    bottom: 3mm;
+    height: 10mm;
+  }
+  .print-branding.text-only .print-brand-prompt { display: none; }
+}
+
 /* Cloudflare-backed engagement rankings */
 .ranking-pages { padding: 30px 0 34px; }
 .ranking-discover { background: #f7faff; }
-.ranking-discover + .categories { padding-top: 24px; }
 .ranking-heading { align-items: flex-end; margin-bottom: 18px; }
 .ranking-heading-copy { min-width: 0; }
 .ranking-eyebrow {
@@ -760,11 +837,12 @@ a { color: inherit; }
 .detail-actions .action-like:hover:not(:disabled) { border-color:#d85977; background:#fff0f4; }
 .detail-actions .action-like.is-liked { border-color:#d85977; background:#fff0f4; color:#a52f4c; }
 .detail-actions .action-like:disabled { cursor:default; opacity:.6; }
-.like-heart { color:#d85977; font-size:29px; line-height:1; }
+.like-heart { width:29px; height:29px; color:#d85977; fill:transparent; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; transition:fill 150ms ease; }
+.detail-actions .action-like.is-liked .like-heart { fill:currentColor; }
+@media (prefers-reduced-motion: reduce) { .like-heart { transition:none; } }
 .like-count { min-width:34px; padding:4px 9px; border-radius:999px; background:#fff; color:#a52f4c; text-align:center; font-size:13px; }
 @media (max-width:720px) {
   .ranking-pages { padding: 24px 0 28px; }
-  .ranking-discover + .categories { padding-top: 20px; }
   .ranking-heading { display: block; }
   .ranking-heading h2 { white-space: normal; }
   .ranking-heading p { font-size: 13px; }
@@ -909,7 +987,6 @@ a { color: inherit; }
   .stats-search input, .stats-sort-label select { width: 100%; }
   .stats-sort-label select { display: block; }
 }
-
 
 /* Legal pages and unobtrusive site-wide legal footer. */
 .legal-footer {
