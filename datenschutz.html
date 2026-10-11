@@ -88,94 +88,141 @@
           Speicher- und Löschfristen sind noch zu bestätigen.</p>
       </section>
 
-            <section aria-labelledby="privacy-engagement">
+      <section aria-labelledby="privacy-engagement">
         <h2 id="privacy-engagement">4. Einwilligung, „Gefällt mir“ und Druckstatistik</h2>
         <p>Für die optionalen Funktionen „Gefällt mir“ und Druckstatistik ist
           eine <strong>freiwillige, zweckbezogene Einwilligung</strong> vorgesehen.
-          Beim ersten Besuch wird dazu eine schmale Leiste am unteren
-          Bildschirmrand angezeigt. Sie können „Alle ablehnen“,
-          „Einstellungen“ oder „Alle akzeptieren“ wählen. In den
-          Einstellungen lassen sich die Wiedererkennung von Bewertungen
-          und die Druckstatistik <strong>getrennt</strong> auswählen; ohne
-          ausdrückliche Zustimmung ist keine der beiden Optionen aktiviert.
-          „Alle akzeptieren“ aktiviert beide, „Alle ablehnen“ keine der
-          beiden Funktionen. Die Auswahl betrifft nur diese
-          kennungsbasierten Zusatzfunktionen und schaltet die in
-          Abschnitt 3 beschriebenen separaten Besuchs- und
-          Seitenaufrufstatistiken nicht ab.</p>
-        <p>Die getroffene Entscheidung wird unter
+          Beim ersten Besuch erscheint eine schmale Leiste mit
+          „Alle ablehnen“, „Einstellungen“ und „Alle akzeptieren“.
+          In den Einstellungen können Sie die Wiedererkennung Ihrer Likes
+          und die Druckstatistik <strong>getrennt</strong> aktivieren oder
+          ablehnen. Es gibt keine vorausgewählten Zustimmungen.
+          Auch nach einer Ablehnung bleiben die Malvorlagen, der
+          PNG-Download und das A4-Drucken nutzbar. Die Entscheidung betrifft
+          diese kennungsbasierten Zusatzfunktionen; die in Abschnitt 3
+          beschriebenen gesonderten Besuchs- und Seitenaufrufstatistiken
+          sowie erforderliche Sicherheitsverarbeitung werden dadurch
+          nicht abgeschaltet.</p>
+        <p>Ihre Auswahl wird unter
           <code>coloring-pages-consent-v1</code> im
-          <code>localStorage</code> des Browsers vorgemerkt. Der Eintrag
-          umfasst eine Version, die jeweilige Zustimmung oder Ablehnung
-          für „Gefällt mir“ und Druckstatistik sowie den Zeitpunkt der
-          Entscheidung; er enthält keine Besucherkennung. Die
-          Speicherung dient dem Merken Ihrer Datenschutzauswahl.
-          Ihre genaue rechtliche Einordnung nach § 25 TDDDG,
-          der erforderliche Einwilligungsnachweis und der Umgang
-          mit Browsern ohne funktionsfähigen Speicher werden vor der
-          Freigabe abschließend geprüft.</p>
-        <p>Eine dauerhafte zufällige Kennung unter
-          <code>coloring-pages-visitor-v1</code> wird nur dann erstmals
-          erstellt oder gelesen, wenn Sie der betreffenden Funktion
-          zugestimmt haben und diese nutzen. Bereits vorhandene
-          Kennungen aus der früheren Website-Version werden ohne
-          erneute ausdrückliche Zustimmung nicht weiterverwendet;
-          bei der ersten neuen Entscheidung wird eine solche alte
-          Kennung ohne vorheriges Auslesen entfernt. Eine erlaubte
-          Kennung bleibt ansonsten bis zur Löschung der Browserdaten
-          oder bis zum Widerruf beider Zustimmungen im Browser.</p>
-        <p>Bei Zustimmung zur „Gefällt mir“-Funktion wird die
-          Kennung zur Wiedererkennung Ihrer Bewertungen verwendet.
-          Zur Anzeige Ihres bisherigen Bewertungsstatus kann sie als
-          <code>visitor_id</code> in einem URL-Parameter einer
-          HTTPS-GET-Anfrage an den Cloudflare Worker übertragen werden;
-          dabei kann sie in technischen Zugriffsprotokollen erscheinen.
-          Bei einer Bewertung wird die Kennung im Körper einer
-          HTTPS-POST-Anfrage gesendet. Der Worker speichert einen
-          SHA-256-Hash der Kennung zusammen mit der Vorlagenkennung
-          in Cloudflare D1. Ein aktives „Gefällt mir“ kann durch
-          erneutes Anklicken entfernt werden. Ohne Einwilligung werden
-          nur allgemeine Bewertungszahlen ohne Ihre Kennung angezeigt;
-          eine personenbezogene Bewertung wird dann nicht gesendet.</p>
-        <p>Nur wenn Sie der Druckstatistik zugestimmt haben, wird beim
-          Klick auf „A4 drucken“ die Kennung im Körper einer
-          HTTPS-POST-Anfrage an den Cloudflare Worker übermittelt.
-          Die Kennung kann zur Begrenzung wiederholter Aktionen
-          an den Cloudflare Rate Limiter weitergegeben werden.
-          In der aggregierten D1-Druckstatistik wird sie nicht als
-          Druckkennung gespeichert. Erfasst werden
-          <strong>Druckabsichten, keine bestätigten Ausdrucke</strong>.
-          Ohne diese Einwilligung können Sie Vorlagen weiterhin
-          ansehen, herunterladen und auf A4 drucken; eine neue
-          Druckaktion wird dann nicht in dieser Statistik gezählt.
-          Bestehende ältere Gesamtzahlen bleiben erhalten und
-          umfassen auch vor Einführung der Einwilligungsfunktion
-          erhobene Druckabsichten.</p>
-        <p>Ihre Einwilligungen können Sie auf der
-          <a href="index.html">Startseite</a> und den
-          Vorlagenseiten über „Datenschutzeinstellungen“ jederzeit
-          einzeln ändern oder widerrufen. Danach wird die Kennung
-          für den widerrufenen Zweck nicht mehr gelesen oder
-          übertragen. Nach Widerruf beider Einwilligungen wird die
-          Browserkennung lokal entfernt. Dies löscht
-          <strong>nicht automatisch</strong> bereits in D1
-          vorhandene Hashwerte, aggregierte Zähler oder
-          Server- und Cloudflare-Protokolle. Für Löschanfragen können
-          Sie die Kontaktdaten in Abschnitt 1 verwenden.
-          Der Widerruf berührt die Rechtmäßigkeit der bis dahin
-          erfolgten Verarbeitung nicht.</p>
-        <p>Für das Speichern oder Auslesen einer solchen Kennung
-          ist grundsätzlich § 25 Abs. 1 TDDDG maßgeblich;
-          die Verarbeitung auf Grundlage der Einwilligung
-          nach Art. 6 Abs. 1 lit. a DSGVO ist für diese
-          optionalen Kennungszwecke vorgesehen. Welche konkreten
-          Protokolle und Empfänger beteiligt sind, wie lange
-          D1-Bewertungs-Hashes, Rate-Limiter-Daten und
-          Zugriffsprotokolle gespeichert werden und wie die
-          Löschung nach Widerruf umgesetzt werden kann,
-          muss vor Veröffentlichung noch abschließend
-          geklärt werden. Eine lokale Löschung allein
-          belegt keine vollständige serverseitige Löschung.</p>
+          <code>localStorage</code> des Browsers gespeichert. Dieser
+          Datensatz enthält die Version, die beiden Entscheidungen und
+          den Entscheidungszeitpunkt, aber keine Besucherkennung. Ob diese
+          Speicherung von § 25 Abs. 2 TDDDG erfasst ist und wie eine
+          Einwilligung gemäß Art. 7 Abs. 1 DSGVO nachgewiesen wird,
+          muss vor der Freigabe abschließend bewertet werden.</p>
+        <p>Die getrennte zufällige Browserkennung
+          <code>coloring-pages-visitor-v1</code> wird nur nach Ihrer
+          entsprechenden Einwilligung gelesen oder erstmals erzeugt.
+          Neu erzeugte Kennungen basieren auf kryptografisch sicheren
+          Zufallswerten. Ältere Browserkennungen werden beim ersten
+          neuen Datenschutzauswahlvorgang ohne vorheriges Auslesen
+          entfernt; eine bereits früher gespeicherte Bewertung in D1
+          wird dadurch allein nicht gelöscht. Bei fortbestehender
+          Einwilligung für „Gefällt mir“ bleibt eine aktive Kennung
+          grundsätzlich für die Wiedererkennung über mehrere Besuche
+          erhalten; ein pauschaler automatischer Ablauf nach zwölf
+          Monaten ist nicht vorgesehen. Beim Widerruf der Like-Einwilligung
+          wird die bisherige Browserkennung lokal entfernt, auch wenn
+          die Druckstatistik weiterhin erlaubt bleibt. Eine neue
+          Kennung kann für die separat erlaubte Druckstatistik bei
+          einer späteren Druckaktion erstellt werden.</p>
+        <p>Wenn Sie „Gefällt mir“ zugestimmt haben, kann die Kennung
+          für die Anzeige Ihres bisherigen Like-Status im
+          <strong>JSON-Körper einer HTTPS-POST-Anfrage</strong>
+          an <code>/api/stats/page</code> übermittelt werden.
+          Öffentliche Like- und Druckzahlen werden ohne Ihre Kennung
+          mittels GET abgerufen. Für eine Like- oder Unlike-Aktion
+          wird die Kennung ebenfalls in einem HTTPS-POST-Körper
+          übertragen. Der Cloudflare Worker speichert in D1
+          einen SHA-256-Hash der Kennung zusammen mit der
+          Vorlagenkennung. Er kann die Kennung auch für begrenzende
+          Sicherheitsprüfungen verwenden. Frühere Versionen der
+          Website konnten die Kennung als GET-URL-Parameter versenden;
+          die Umstellung beseitigt keine bereits vorhandenen
+          technischen Zugriffsprotokolle oder Sicherungskopien.
+          Ohne Like-Einwilligung werden keine neuen personalisierten
+          Likes übertragen; die allgemeinen Like-Zahlen bleiben sichtbar.</p>
+        <p>Nur bei Zustimmung zur Druckstatistik wird beim Klick
+          auf „A4 drucken“ die Browserkennung im Körper einer
+          HTTPS-POST-Anfrage übermittelt und gegebenenfalls für
+          die Begrenzung wiederholter Anfragen verwendet. D1
+          speichert hierfür aggregierte Druckzahlen, nicht die
+          Browserkennung als einzelne Druckkennung. Gezählt werden
+          <strong>Druckabsichten, nicht nachgewiesene Ausdrucke</strong>.
+          Ohne Zustimmung bleibt das Drucken verfügbar, aber die
+          betreffende Druckaktion wird nicht zusätzlich gezählt.
+          Die vorhandenen Gesamtzahlen enthalten auch historische
+          Ereignisse aus der Zeit vor dieser Einwilligungsregelung.</p>
+        <p>Über „Datenschutzeinstellungen“ auf der
+          <a href="index.html">Startseite</a> und den Vorlagenseiten
+          können Sie Ihre Einwilligungen jederzeit ändern oder
+          widerrufen. Der Widerruf wirkt für die künftige
+          Verarbeitung sofort, auch wenn eine Löschanfrage technisch
+          scheitert. Wenn Sie eine zuvor erteilte
+          Like-Einwilligung über „Alle ablehnen“ oder die
+          Einstellungen zurücknehmen, versucht die Website zugleich,
+          Ihre gespeicherten Likes zu löschen, sofern eine für
+          diesen Vorgang ausreichend gesicherte aktuelle Kennung
+          verfügbar ist. Hierzu wird die Kennung
+          <strong>ausschließlich für die angeforderte Löschung</strong>
+          im Körper einer HTTPS-POST-Anfrage an
+          <code>/api/stats/erase-likes</code> übertragen.
+          Die gesonderte Schaltfläche „Meine gespeicherten Likes
+          löschen“ bietet denselben Vorgang an.
+          Ein bestätigter Erfolg bezieht sich auf die zur
+          Browserkennung gehörenden Like-Einträge in D1;
+          die zugehörigen Like-Zähler werden entsprechend angepasst.
+          Alle anderen Likes, historische aggregierte Druckzahlen
+          und reguläre Druckfunktionen bleiben erhalten.</p>
+        <p>Bei älteren, nicht ausreichend gesicherten oder
+          nicht mehr vorhandenen Kennungen sowie bei einer
+          Netz-, Begrenzungs- oder Datenbankstörung kann die
+          Löschung <strong>nicht bestätigt</strong> werden.
+          Die Website zeigt dies an; sie setzt die
+          Like-Einwilligung nicht automatisch erneut und wiederholt
+          den Löschaufruf nicht heimlich. Für Auskunfts- und
+          Löschanfragen können Sie den Kontakt aus Abschnitt 1
+          nutzen. <strong>Bitte senden Sie keine Browserkennung,
+          Zugangsdaten oder Ausweiskopien per E-Mail.</strong>
+          Eine individuelle Prüfung kann erforderlich sein;
+          sie soll sich auf die zur Anfrage erforderlichen
+          Informationen beschränken. Wenn eine Zuordnung
+          tatsächlich nicht möglich ist, gelten die gesetzlichen
+          Voraussetzungen aus Art. 11 und 12 DSGVO.
+          Eine lokale Entfernung der Browserkennung ist für sich
+          genommen kein Nachweis einer serverseitigen Löschung.</p>
+        <p>Um zu verhindern, dass eine bereits gelöschte
+          Browserkennung durch verspätete oder wiederholte
+          Anfragen erneut Likes anlegt, sieht der
+          Quellstand einen gesonderten pseudonymen
+          <strong>Sperreintrag</strong> in Cloudflare D1 vor
+          (<code>like_erasure_blocks</code>).
+          Dieser enthält den Hash der gesperrten Kennung,
+          nicht die ursprüngliche Kennung oder eine Liste
+          Ihrer besuchten Malvorlagen. Die derzeitige
+          Sperrlogik sieht keine zeitliche Aufhebung vor.
+          <strong>Dieser Sperreintrag ist nicht automatisch
+          anonym.</strong> Seine eigenständige Rechtsgrundlage,
+          Erforderlichkeit, Speicherkriterien sowie der Umgang
+          mit D1-Wiederherstellungsdaten und Protokollen
+          sind vor einer Veröffentlichung noch festzulegen.
+          Das Löschen der Like-Einträge bedeutet nicht, dass
+          dieser Sperreintrag oder sämtliche technischen
+          Sicherungskopien sofort entfernt werden.</p>
+        <p>Für das Speichern und Auslesen der Kennung ist
+          grundsätzlich § 25 TDDDG zu beachten; für die
+          optionalen kennungsbasierten Vorgänge kommt die
+          Einwilligung nach Art. 6 Abs. 1 lit. a DSGVO
+          als Rechtsgrundlage in Betracht. Der Widerruf
+          berührt die Rechtmäßigkeit der zuvor auf Grundlage
+          der Einwilligung erfolgten Verarbeitung nicht.
+          Die Rechtsgrundlagen für Sperreinträge, separate
+          Besuchszählung und Sicherheitsverarbeitung sowie
+          konkrete Empfänger, mögliche Drittlandübermittlungen
+          und Aufbewahrungsfristen beziehungsweise
+          Speicherkriterien müssen anhand der tatsächlichen
+          Betriebsdaten noch verbindlich geprüft werden.</p>
       </section>
       <section aria-labelledby="privacy-fonts">
         <h2 id="privacy-fonts">5. Schriftarten</h2>
@@ -208,7 +255,9 @@
           Druckstatistik können Sie jederzeit über
           „Datenschutzeinstellungen“ auf der
           <a href="index.html">Startseite</a> für die Zukunft
-          widerrufen. Für weitere Fragen oder Löschanfragen
+          widerrufen. Wenn eine individuelle Prüfung erforderlich ist,
+          senden Sie bitte keine Browserkennung oder Ausweiskopien
+          per E-Mail. Für weitere Fragen oder Löschanfragen
           schreiben Sie an
           <a href="mailto:andris@rozkalns.net">andris@rozkalns.net</a>.
           Außerdem können Sie Beschwerde bei einer Datenschutzaufsichtsbehörde
