@@ -32,6 +32,17 @@ class LegalPageSourceTests(unittest.TestCase):
                 self.assertIn('class="legal-footer"', s)
                 self.assertNotIn("<script", s)
 
+    def test_legal_pages_use_current_ausmalwiese_wordmark(self):
+        for name in ("impressum.html", "datenschutz.html"):
+            with self.subTest(page=name):
+                html = (ROOT / name).read_text(encoding="utf-8")
+                self.assertIn('aria-label="Ausmalwiese Startseite"', html)
+                self.assertIn('<span>Ausmal</span>', html)
+                self.assertIn('<span class="brand-wiese"><b>w</b><b>i</b><b>e</b><b>s</b><b>e</b></span>', html)
+                self.assertIn("Ausmalwiese", html)
+                self.assertNotIn("Coloring Pages", html)
+                self.assertNotIn("brand-pages", html)
+
     def test_privacy_minimization_matches_worker_and_browser(self):
         privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
         frontend = (ROOT / "js/stats.js").read_text(encoding="utf-8")

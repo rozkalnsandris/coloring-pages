@@ -3,6 +3,14 @@
 Scope: German `impressum.html`, `datenschutz.html`, legal footer links and static nginx image packaging; owner-approved source-only privacy minimization, local fonts, tests and legal draft wording. No merge or LIVE.
 Source only; no GSC, Cloudflare, RPi5, deployed Worker or production data changes.
 
+## Source-only brand correction — 2026-10-11
+
+- The legal HTML pages now use the already-approved Ausmalwiese wordmark and name, matching the current public app UI. The operator's previously approved postal/contact details and the substantive draft legal claims are unchanged.
+- This correction does **not** reconcile the divergent application branch against current `main`; the draft still needs a scope-safe source reconciliation that preserves the newer A4/Like/preview work before any release decision.
+- **RELEASE BLOCKED:** DDG §5 operator classification/serviceable address, DSGVO Art. 13 lawful bases/recipients/retention/transfers, TDDDG §25 Like storage, and deployed Worker/Rate Limiter contract and version evidence are still unresolved. The Worker must be explicitly deployed and read-only verified for the updated frontend POST/page and ID-free Print API before any app merge; no API mutations or LIVE/secret authority is granted here.
+- Official references: https://www.gesetze-im-internet.de/ddg/__5.html ; https://eur-lex.europa.eu/eli/reg/2016/679/ ; https://www.gesetze-im-internet.de/ttdsg/__25.html ; https://developers.cloudflare.com/workers/versions-and-deployments/ ; https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/ .
+
+
 ## Source-only privacy and font update — 2026-10-10
 
 **Draft branch only; NOT LIVE; NOT RELEASE READY.**
@@ -30,7 +38,7 @@ References: https://developers.cloudflare.com/workers/testing/ ; https://develop
 - Display name: **Andris Rožkalns** (owner approval, 2026-10-09).
 - Contact email: `andris@rozkalns.net`.
 - Postal address: owner explicitly approved inclusion of their residential postal address in both public legal-page drafts on 2026-10-10, superseding the earlier do-not-publish choice. The full address is held in the legal HTML, not repeated in this checklist.
-- Naming/domain and Kita marketing are intentionally deferred.
+- The Ausmalwiese website brand is already approved and visible; the domain cutover and Kita marketing remain deferred.
 
 ## Blocking checks before Ready / MERGE
 
