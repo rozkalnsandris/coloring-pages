@@ -40,7 +40,7 @@ class KitaTests(unittest.TestCase):
             path, version = url.split('?v=')
             self.assertTrue((ROOT / path).is_file())
             if path == 'js/stats.js':
-                self.assertEqual(version, 'privacy-v1')
+                self.assertEqual(version, 'kita-campaign-v1')
             elif path == 'css/fonts.css':
                 self.assertEqual(version, 'privacy-ofl-v1')
             else:

@@ -43,23 +43,21 @@ class LegalPageSourceTests(unittest.TestCase):
                 self.assertNotIn("Coloring Pages", html)
                 self.assertNotIn("brand-pages", html)
 
-    def test_privacy_minimization_matches_worker_and_browser(self):
+    def test_privacy_draft_matches_existing_stats_contract(self):
         privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
         frontend = (ROOT / "js/stats.js").read_text(encoding="utf-8")
         worker = (ROOT / "cloudflare/stats-worker.js").read_text(encoding="utf-8")
-        self.assertIn("Körper einer HTTPS-POST-Anfrage", privacy)
         self.assertIn("pseudonymisierte Nutzungsstatistik", privacy)
-        self.assertNotIn('query.set("visitor_id", visitorId)', frontend)
-        self.assertIn('return requestJson("/page", {', frontend)
-        self.assertIn('body: JSON.stringify({page_id: pageId, visitor_id: visitorId})', frontend)
-        self.assertIn('(request.method==="GET" || request.method==="POST") && path==="/api/stats/page"', worker)
-        self.assertIn('const visitorHash = await sha256(visitorId);', worker)
+        self.assertIn("URL-Parameter", privacy)
+        self.assertIn('query.set("visitor_id", visitorId)', frontend)
+        self.assertIn('return requestJson(`/page?${query}`);', frontend)
+        self.assertIn('request.method==="GET" && path==="/api/stats/page"', worker)
+        self.assertIn("const visitorHash = await sha256(visitorId);", worker)
         print_source = frontend.split("function trackPrint(pageId) {", 1)[1].split("window.ColoringStats =", 1)[0]
-        self.assertNotIn("getVisitorId", print_source)
-        self.assertNotIn("visitor_id", print_source)
-        self.assertIn('rateLimit(env,dailyKey,"print")', worker)
+        self.assertIn("getVisitorId(true)", print_source)
+        self.assertIn("visitor_id: visitorId", print_source)
+        self.assertIn('rateLimit(env,body.visitor_id,"print")', worker)
         self.assertIn("Landesbeauftragten für Datenschutz", privacy)
-
     def test_self_hosted_woff2_and_licenses(self):
         import base64
         import re
@@ -82,7 +80,7 @@ class LegalPageSourceTests(unittest.TestCase):
             self.assertNotIn("fonts.gstatic.com", html)
         for name in PUBLIC_PAGES:
             html = (ROOT / name).read_text(encoding="utf-8")
-            self.assertIn("js/stats.js?v=privacy-v1", html)
+            self.assertIn("js/stats.js?v=kita-campaign-v1", html)
 
     def test_public_pages_link_both_legal_pages(self):
         for name in PUBLIC_PAGES:

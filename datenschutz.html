@@ -82,39 +82,35 @@
 
       <section aria-labelledby="privacy-engagement">
         <h2 id="privacy-engagement">4. „Gefällt mir“ und Druckaktionen</h2>
-        <p>Wenn Sie erstmals eine Vorlage mit „Gefällt mir“ markieren,
+        <p>Wenn Sie erstmals „Gefällt mir“ oder die Druckfunktion verwenden,
           erzeugt die Website eine zufällige Besucherkennung und speichert
           sie unter <code>coloring-pages-visitor-v1</code> im
-          <code>localStorage</code> Ihres Browsers. Diese Kennung bleibt
-          dort bestehen, bis Sie diese Browserdaten löschen. Beim bloßen
-          Ansehen oder Drucken wird keine neue Kennung angelegt.</p>
-        <p>Beim Abruf des Bewertungsstatus sowie bei „Gefällt mir“-Aktionen
-          wird eine vorhandene Kennung im Körper einer HTTPS-POST-Anfrage
-          an den Cloudflare Worker übermittelt, nicht als URL-Parameter.
-          Die Kennung wird nicht zuvor im Browser gehasht; erst der Worker
-          bildet für eine Bewertung einen SHA-256-Hash. Zusammen mit der
-          Vorlagenkennung wird dieser in Cloudflare D1 gespeichert.
-          Beim Entfernen der Bewertung wird der Eintrag gelöscht.
-          Ältere, zwischengespeicherte Website-Versionen können die
-          Kennung übergangsweise noch als URL-Parameter übermitteln.</p>
+          <code>localStorage</code> Ihres Browsers. Beim bloßen Betrachten
+          wird keine neue Kennung angelegt. Sie bleibt gespeichert, bis
+          Sie die Browserdaten löschen.</p>
+        <p>Für die Anzeige des Bewertungsstatus kann die bestehende Kennung
+          als <code>visitor_id</code> im URL-Parameter einer
+          HTTPS-GET-Anfrage an den Cloudflare Worker übermittelt werden.
+          Dadurch kann sie in technischen Zugriffsprotokollen erscheinen.
+          Bei „Gefällt mir“-Aktionen wird sie im Körper einer
+          HTTPS-POST-Anfrage übertragen. Erst der Worker bildet für
+          eine Bewertung einen SHA-256-Hash, der zusammen mit der
+          Vorlagenkennung in Cloudflare D1 gespeichert wird.
+          Das Entfernen einer Bewertung löscht den entsprechenden Eintrag.</p>
         <p>Beim Auslösen der Druckfunktion wird eine Druckabsicht gezählt,
-          nicht ein tatsächlicher Ausdruck auf Papier. Die dauerhafte
-          Besucherkennung wird dabei nicht übertragen. Für eine
-          Begrenzung wiederholter Druckereignisse kann der Worker aus
-          der Verbindungs-IP-Adresse, dem UTC-Tag und dem Hostnamen
-          mittels eines geheimen Schlüssels einen tagesbezogenen
-          HMAC-Wert berechnen und an einen Rate Limiter übergeben.
-          Diese Druckkennung wird nicht in der Cloudflare-D1-Druckstatistik
-          gespeichert. Über die gesonderte Verarbeitung und
-          Aufbewahrungsdauer des Rate Limiters liegen noch keine
-          bestätigten Angaben vor. Die Druckfunktion selbst hängt
-          nicht vom Erfolg dieser Statistik ab.</p>
-        <p>Die rechtliche Beurteilung der Like-Kennung nach § 25 TDDDG,
-          die Rechtsgrundlagen für diese Vorgänge sowie die konkrete
-          Aufbewahrungsdauer verbliebener Hash-Daten müssen vor
-          Veröffentlichung nochmals geprüft werden.</p>
+          kein tatsächlich erfolgter Ausdruck. Dabei übermittelt die
+          Website ebenfalls die dauerhafte Besucherkennung im Körper
+          der Anfrage an den Cloudflare Worker. Die Kennung kann für
+          die Begrenzung wiederholter Bewertungs- und Druckaktionen
+          an den Cloudflare Rate Limiter weitergegeben werden;
+          in der aggregierten D1-Druckstatistik wird sie nicht
+          als Druckkennung gespeichert. Die Aufbewahrungsdauer beim
+          Rate Limiter ist noch nicht bestätigt.</p>
+        <p>Die Erforderlichkeit beziehungsweise eine Einwilligung für
+          diese lokale Kennung nach § 25 TDDDG, die Rechtsgrundlagen
+          nach Art. 6 DSGVO und die tatsächlichen Aufbewahrungsfristen
+          müssen vor Veröffentlichung dieser Erklärung geprüft werden.</p>
       </section>
-
       <section aria-labelledby="privacy-fonts">
         <h2 id="privacy-fonts">5. Schriftarten</h2>
         <p>Wir verwenden die Schriftarten Baloo 2 und Nunito unter
