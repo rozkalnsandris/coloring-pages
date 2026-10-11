@@ -30,8 +30,10 @@
 }
 .privacy-banner button:hover { background: #f2f6fb; }
 .privacy-banner button[data-consent-accept],
+.privacy-banner button[data-consent-deny],
 .privacy-banner button[data-consent-save] { color: white; border-color: #1f6198; background: #1f6198; }
 .privacy-banner button[data-consent-accept]:hover,
+.privacy-banner button[data-consent-deny]:hover,
 .privacy-banner button[data-consent-save]:hover { background: #17517f; }
 .privacy-banner :focus-visible, .privacy-footer :focus-visible {
   outline: 3px solid #e49a37;

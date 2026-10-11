@@ -86,7 +86,7 @@ const likeButton = {
   addEventListener(name,cb){handlers[name]=cb},
 };
 let getCalls=0, likeCalls=0;
-const window = {ColoringStats:{
+const window = {ColoringConsent:{allows:()=>true,openSettings(){}},ColoringStats:{
   getPage: async () => {
     getCalls++;
     if (getCalls <= (f.initialFailures || 0)) throw new Error('status api unavailable');

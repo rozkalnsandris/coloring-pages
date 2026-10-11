@@ -10,8 +10,8 @@ class ConsentBannerSourceTests(unittest.TestCase):
     def test_pages_load_consent_before_stats(self):
         for page in ("index.html", "detail.html", "kita.html"):
             html = self.read(page)
-            self.assertIn('css/consent.css?v=consent-182', html)
-            self.assertLess(html.index("js/consent.js?v=consent-182"),
+            self.assertIn('css/consent.css?v=199486ea95f10006', html)
+            self.assertLess(html.index("js/consent.js?v=e76899e8108089ed"),
                             html.index("js/stats.js?v=kita-campaign-v1"))
 
     def test_banner_is_fixed_and_non_blocking(self):

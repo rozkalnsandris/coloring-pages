@@ -92,7 +92,7 @@
       if (!record.like && !record.print) localStorage.removeItem(ID_KEY);
     } catch {
       // No permission is activated if storage cannot record it.
-      choice = previous;
+      choice = null; // fail closed even after a partially written/revoked record
       error.textContent = "Deine Auswahl konnte nicht gespeichert werden. Bitte versuche es erneut.";
       error.hidden = false;
       return;

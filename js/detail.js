@@ -228,7 +228,7 @@ async function hydrateLikeState(pageId) {
   try {
     if (!window.ColoringStats?.getPage) throw new Error("Like status unavailable");
     const data=await window.ColoringStats.getPage(pageId);
-    renderLikeState(data);
+    renderLikeState({...data, liked: window.ColoringConsent?.allows?.("like") === true && data?.liked});
     likeButton.disabled=false;
     likeButton.classList.remove("is-disabled");
   } catch {
@@ -272,9 +272,11 @@ likeButton?.addEventListener("click",async()=>{
   }
 });
 
-document.addEventListener("coloring-consent-changed", () => {
-  if (loadedEntryId) hydrateLikeState(loadedEntryId);
-});
+if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
+  document.addEventListener("coloring-consent-changed", () => {
+    if (loadedEntryId) hydrateLikeState(loadedEntryId);
+  });
+}
 
 function markMissingDetailNoindex() {
   // Only confirmed absent IDs are excluded; a failed catalog fetch is not proof.
