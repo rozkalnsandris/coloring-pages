@@ -47,6 +47,23 @@ Official references: https://developers.cloudflare.com/workers/platform/limits/ 
 
 ---
 
+## Owner privacy direction — 2026-10-11 (future separate work, not deployed)
+
+**Confirmed decision:** `NO-PERSISTENT-PRINT-ID + KEEP-PRINT-COUNTER + SEPARATE-LIKE-REVIEW + FREE-ONLY`. This is an architectural/product requirement, **not evidence that the change has shipped**. This Draft PR remains **legal pages and local fonts only**; `js/stats.js`, `cloudflare/stats-worker.js`, the D1 schema, the deployed Worker, and LIVE must not change as part of this PR.
+
+- Print activation must **not create, read, or transmit** the existing permanent browser `localStorage["coloring-pages-visitor-v1"]` identity. Printing must still work even when stats API is unavailable; the counter means print intent, not verified paper output.
+- Keep an aggregate D1 page/print counter through a new ID-free `POST /api/stats/print` contract. The current Worker requires `visitor_id`, so deleting only the browser `getVisitorId(true)` call would produce HTTP 400 and **would not meet the requirement**.
+- In a **separate, explicitly scoped source work item**, update the Worker to accept print intent without `visitor_id` and preserve effective abuse limits on Workers Free. Prefer a short-lived day-scoped keyed HMAC of connection IP/hostname for the optional Rate Limiter, evaluated only in the Worker and **not stored in D1 print rows**; do not claim the HMAC is anonymous, and verify the Rate Limiter's privacy/retention properties. Do not substitute a fresh random ID for every Print and falsely claim it still limits repeat requests.
+- Separate offline contract tests must cover an ID-free Print event increment, invalid page IDs, repeated print throttling when the binding is present, fallback when the binding is absent, old-client compatibility during transition, and zero new `localStorage` read/write on the Print path. No live POST Print/Like tests without specific content/stats mutation authority.
+- **Release order for that future work:** approved source Worker change → separate owner-authorized Worker deployment/verification → independently authorized frontend update (merge/auto-LIVE only when its own gates permit). Do not pair an incompatible frontend with the existing Worker. No approval for any of those releases is implied by this decision.
+- **Like is explicitly out of scope**: keep current Like behavior unchanged pending a separate TDDDG §25 / GDPR Art. 6 lawful-basis review, including the persistent ID and GET URL leakage. Do not silently disable Likes or assert that current Like storage is consent-exempt.
+- **Free-only:** no paid Cloudflare upgrade, new paid vendor, RPi5 host mutation or D1 migration follows from this decision. Workers Free and D1 Free limits and Rate Limiting bindings require preflight verification for the future source work.
+- Until that separate implementation is independently deployed and verified, `datenschutz.html` must describe the **current** Like/Print identifier behavior as it does now. After an authorized rollout, update it to match verified LIVE behavior; this decision alone does not establish GDPR/TDDDG compliance.
+
+Official references: https://www.gesetze-im-internet.de/ttdsg/__25.html ; https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/ ; https://developers.cloudflare.com/workers/platform/limits/ ; https://developers.cloudflare.com/d1/platform/pricing/ .
+
+---
+
 ## Release blockers — owner/legal review required
 
 1. **DDG § 5:** On 2026-10-11 the owner explicitly confirmed that official legal correspondence and registered letters can be received at the postal address already shown in `impressum.html`. This is an owner attestation, not an independent legal-service assessment. Verify the provider classification, any additional mandatory details, and final `ladungsfähige Anschrift` suitability before release.
