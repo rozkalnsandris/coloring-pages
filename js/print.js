@@ -77,7 +77,7 @@ function buildPrintBrandFooter(withQr) {
         <span class="print-brand-url">ausmalwiese.de</span>
       </div>
     </div>
-    <div class="print-brand-prompt">Noch mehr Ausmalbilder?<strong>Einfach scannen!</strong></div>
+    <div class="print-brand-prompt">Noch mehr Ausmalbilder?<strong>${withQr ? "Einfach scannen!" : "auf ausmalwiese.de"}</strong></div>
   `;
   if (withQr) {
     const image = document.createElement("img");

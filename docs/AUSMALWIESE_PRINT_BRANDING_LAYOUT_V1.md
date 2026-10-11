@@ -1,6 +1,6 @@
 # Ausmalwiese browser-print footer — issue #168
 
-Status: **owner-approved B-DOTS print layout, source PR pending review**. Activation of the shared `/q` route is **separately owner-gated**. Related preview watermark: #169, out of scope.
+Status: **owner-approved B-DOTS print layout**. This #175 source-only follow-up aligns the text-only fallback with the same physical footer rectangle. Activation of the shared `/q` route remains **separately owner-gated**. Related preview watermark: #169, out of scope.
 
 ## Approved appearance and exact physical coordinates
 
@@ -28,7 +28,7 @@ The print rendering may make the drawing physically smaller (especially on lands
 - Branding exists only in `js/print.js` / print-specific CSS; it is not added to `preview.webp` or `thumb.webp`.
 - `@page` keeps named portrait/landscape A4 pages with `margin: 0`; actual printers may impose their own scaling/nonborderless insets despite this. Do not claim physical size proof from unit tests alone.
 - Footer uses the same HTML/CSS wordmark and paw palette as `index.html`, no new logo or external QR-generation service. The embedded SVG contains a single shared `https://ausmalwiese.de/q`, QR version 3 with Q error correction and a four-module quiet zone on all sides, standard square finder patterns, round body modules.
-- **Fail-closed activation:** `PRINT_QR_ROUTE_VERIFIED = false` until independent authorized setup and LIVE verification of the stable `/q` redirect; only the unobtrusive text-only logo footer is enabled. This also avoids shrinking art before the QR can be used. A QR image load error falls back to text-only without blocking print.
+- **Fail-closed activation:** `PRINT_QR_ROUTE_VERIFIED = false` until independent authorized setup and LIVE verification of the stable `/q` redirect. Both modes now reserve the same exact A4 artwork/footer geometry, including 15 mm bottom margin; without QR the footer shows the visible website call-to-action `Noch mehr Ausmalbilder? auf ausmalwiese.de` rather than instructing users to scan an invisible QR. A QR image load error falls back to text-only without blocking print.
 - QR route, domain/DNS, redirect, scan analytics, and RPi5/Drive/content changes are explicitly out of this source PR's authority.
 
 ## Verification checklist and unproven conditions

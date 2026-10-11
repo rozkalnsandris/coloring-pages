@@ -20,7 +20,13 @@ class PrintBrandingTests(unittest.TestCase):
             "bottom: 39mm;", "top: 15mm;",
         ):
             self.assertIn(invariant, block)
+        self.assertIn(".print-sheet .print-artwork {", block)
+        self.assertNotIn(".print-sheet.has-brand-qr .print-artwork", block)
+        self.assertNotIn("bottom: 3mm;", block)
+        self.assertNotIn("height: 10mm;", block)
+        self.assertNotIn(".print-branding.text-only .print-brand-prompt", block)
         self.assertIn("PRINT_QR_ROUTE_VERIFIED = false", js)
+        self.assertIn('withQr ? "Einfach scannen!" : "auf ausmalwiese.de"', js)
         self.assertIn("buildPrintBrandFooter(qrReady)", js)
         self.assertIn("object-fit: contain", block)
         self.assertIn("margin-left: -4px;", block)
@@ -84,6 +90,7 @@ context.run(["portrait","landscape"]).then(()=>{
  if(!sheets.every(s=>s.className.includes("has-text-footer")))throw Error("route gating fallback");
  if(!sheets.every(s=>s.children[0].className==="print-artwork"))throw Error("artwork wrapper");
  if(!sheets.every(s=>s.children[1].className.includes("text-only")))throw Error("text-only fallback");
+ if(!sheets.every(s=>s.children[1].innerHTML.includes("auf ausmalwiese.de")))throw Error("visible honest fallback CTA");
  if(!sheets.every(s=>!s.children[1].children.some(x=>x.tag==="img")))throw Error("unverified QR displayed");
  if(canvases.length!==2 || canvases[0].width!==2480 || canvases[0].height!==3508 || canvases[1].width!==3508 || canvases[1].height!==2480)throw Error("canonical pixel geometry");
  console.log("PASS");
