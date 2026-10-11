@@ -206,6 +206,59 @@ Official guidance: [Cloudflare D1 batch](https://developers.cloudflare.com/d1/wo
 
 ---
 
+## Decision: legacy ID rights handling and ordinary Like withdrawal — design only (2026-10-11)
+
+**Authority:** owner authorized `RESOLVE=LEGACY-ID-ERASURE+ORDINARY-WITHDRAWAL-COMPLIANCE SOURCE-ONLY NO-MERGE NO-LIVE` for #182 at exact PR #183 HEAD `886e6441fcdea27c5b0258c9ca7f9f6419a10390`. This records a recommended solution and acceptance gates, **not approval to implement a new action or release the current code**. No existing D1 row, browser ID, Cloudflare setting or deployed Worker has been changed by this design. Do **not** age-purge any active Like or visitor ID merely after 12 months; the owner rejected that rule. Data subject withdrawal/erasure and a separately justified end of purpose remain exceptions to "keep active Likes".
+
+### 1. Ordinary withdrawal: the deletion action must not be optional
+
+**Policy conclusion:** With consent as the legal basis for personalized Likes, turning **Like** from ON to OFF normally also requires disposing of its associated D1 Like hashes unless a different genuinely applicable legal basis or GDPR Art. 17(3) exception is established. The existing separate `Meine gespeicherten Likes löschen` button is not enough: a user who unchecks Like, presses `Auswahl speichern`, or clicks `Alle ablehnen` currently stops tracking locally but can leave D1 Like rows. The frontend **must not claim that local removal equals server deletion**.
+
+**Recommended minimal UX/source sequence for a later separately authorized implementation:**
+
+1. Keep the slim three-button first-visit banner and two independent checkboxes. For **returning consented** Like users, settings must explain clearly *before the click* that `Alle ablehnen` or switching off Like also requests removal of their personalized stored Likes, so visible Like totals may decrease. Show the same explanation by the explicit `Meine gespeicherten Likes löschen` action. A single, comparably easy withdrawal gesture must work; **do not make withdrawal contingent on extra mandatory confirmation, a successful network request or a completed deletion**.
+2. A click is explicit **user-initiated withdrawal/erasure** (selected erasure design A), not permission to transmit an ID on first-visit refusal, page load, Print-only withdrawal or passive navigation. If, and only if, Like was validly enabled and the browser currently possesses a **v2 high-entropy** proof, prepare a deletion-only proof under that existing permission as part of the clearly explained click. Immediately persist Like=false, end personalized Like requests and preserve independent Print choice. Send **one** purpose-limited `POST /api/stats/erase-likes` with the proof in JSON body, no GET URL/cookie/analytics/log, and no hidden retries. The proof is used only to perform deletion, not to restore Like tracking.
+3. After confirmed D1 success, report Like deletion and retire the old shared optional ID; if Print still has consent, mint a *new* secure ID only on a later Print use (do not lose its consent). No other users' Likes, historical Print counts or printable content may be changed.
+4. If offline, D1 fails, there is an ambiguous timeout or proof is unavailable, **withdrawal still takes effect immediately**, but communicate `Einwilligung widerrufen; Löschung nicht bestätigt` and a clearly accessible rights-request route. Do not show a success receipt, automatically re-enable Like, read the revoked ID for analytics or silently retry. Determine an explicit user-directed recovery path; avoid indefinite hidden retention of an erasure credential after withdrawal. The separate valid-rights-request process remains required if the browser key was already removed.
+5. If both purposes are refused initially, or Like was never ON, do not access the visitor ID, do not send an erase request, and do not create a credential merely to erase nonexistent new-person Likes. Ordinary A4 printing and aggregate Like counters remain visible without consent.
+6. **Race handling:** serialize the local erase transition in the current tab, handle `storage` revocation from other tabs and do not allow in-flight Like UI success to override revoked state. The existing one-day D1 `like_erasure_blocks` SQL barrier handles delayed Like writes *inside the barrier*, but **does not guarantee that a leaked old v2 token can never post a Like again after one day**. Before release either prove a durable replay/revocation mechanism with legally bounded storage, or explicitly redesign the credential protocol. A one-day guard must not be misrepresented as permanent erasure security.
+
+**Important owner boundary:** previous design A permits **explicit user-initiated erasure POST**, not silent ID transfer on every denial. A properly labelled normal Like withdrawal by a previously consented user can be designed as such an explicit action; this documentation is **not** authorization to change the existing `Alle ablehnen` or `Auswahl speichern` handlers. Reconfirm the reviewed German wording and the legal/security assumptions before any source implementation.
+
+### 2. Legacy and orphaned Like IDs: no unsafe bulk-delete shortcut
+
+Existing older browser identifiers can include a secure `crypto.randomUUID()` UUID **or** the weak date/`Math.random()` fallback from the earlier client. Older IDs were also submitted through `GET /api/stats/page?visitor_id=...`, which could expose them in logs. Therefore the mere shape of a UUID **cannot retroactively establish exclusive ownership**; the current `erase-likes` endpoint must keep rejecting all non-v2 IDs. Neither reusing an old ID as a powerful bearer deletion token nor blindly upgrading it to v2 is a secure fix.
+
+**Legacy policy for now:**
+
+- **Known, validly consented legacy ID still present in the browser:** preserve ordinary Likes until withdrawal, but do not create an irreversible automated all-Likes erase route using only the weak/leakable token. A user must be given an accessible individual rights-request/contact flow with a proportionate review of what evidence actually connects the requester to the pseudonymous record. A prior single-page Unlike is not a substitute for full erasure where required. No raw legacy ID should be requested through email, URL, screenshots, public issue or generic support logs.
+- **Old ID discarded at first new consent decision, browser reset, or lost device:** current source discards the pre-opt-in ID without reading it, so an orphaned `sha256(visitor_id)` D1 row cannot later be associated with a particular visitor from ordinary client state. Never silently read an unconsented ID, reconstruct it from logs, guess hashes or delete other users' rows. Document the limits of matching and maintain an effective DSAR route where a requester can provide genuinely sufficient additional information; use GDPR **Art. 11** correctly, rather than claiming that all orphaned hashes were anonymized or erased.
+- **Controller/legal retention review:** inherited, unlinked but still pseudonymous Like rows require a documented purpose, lawful basis and proportionate deletion or de-identification strategy. The owner's ban on **automatic age-based purges of *active, authorized* Likes** does not automatically justify keeping orphaned or invalidly consented rows forever. No legacy bulk D1 mutation is allowed under this design.
+- **No forced paid infrastructure:** do not install an authentication service or collect IDs/passports solely to support Likes. If the legacy population cannot safely support one-click erasure, keep the source Draft and disclose the limitation rather than lowering deletion authorization checks.
+- **Do not silently switch lawful bases:** a withdrawal of consent is not an invitation to invent a new legitimate-interest basis afterwards. Validate the intended deletion processing, provider logs, D1 Time Travel and user notice separately.
+
+### 3. Tests and exact release gates
+
+| Scenario | Later source/CI acceptance |
+| --- | --- |
+| New visitor clicks `Alle ablehnen` | Zero Like ID reads or transmission; browsing, PNG and A4 print remain available |
+| Returning v2 Like user turns Like OFF and saves | One clearly disclosed user-directed erase POST; Like stops **before** network completion; Print consent independently preserved |
+| Returning v2 Like user clicks `Alle ablehnen` | Equivalent withdrawal and erase attempt, no second modal needed to withdraw, no automatic retry |
+| Existing user requests `Meine gespeicherten Likes löschen` | Same single erasure pipeline; remove only the user's D1 hashes; counts updated once |
+| Print-only consent withdrawal | No Like ID read/erasure without a previously approved Like purpose |
+| Weak/non-v2 legacy ID, even UUIDv4, requests bulk erasure | No automatic destructive operation; accessible rights-request review; no false success |
+| Browser ID missing or previously discarded | No reconstruction, no new pseudo-ID for erasure, explain verification limits under Art. 11 |
+| Erase response timeout/D1 or rate-limit failure | Consent OFF immediately; erasure reported unconfirmed, with workable rights/recovery route |
+| Two tabs and Like write racing erasure | No resurrected Like within reviewed server-side protocol; ensure protection **beyond one day** if old token remains replayable |
+| Other visitor Likes, aggregate Prints, historical data | Not deleted by this individual erasure; no Like age purge |
+| Migration and public release | Source/offline tests alone insufficient; distinct preflight/migration/Worker release authorization and coordinated PR #158 privacy review required |
+
+**Remaining decisions, not facts:** prove whether v2 credentials can still be replayed after the temporary D1 block expires, choose a proportionate legacy/orphaned-row lifecycle, and approve the one-click withdrawal/erase wording and endpoint behavior under GDPR/§25 TDDDG. These remain **release blockers**. Do not change `js/consent.js`, `js/stats.js`, `cloudflare/stats-worker.js`, D1 schema or PR #158 under this design-only authority. The next owner gate is an **exact-head, source-only implementation + tests approval** if the reviewed design is accepted; afterward obtain exact-head CI/review and independent legal/release/LIVE approvals.
+
+Official guidance verified 2026-10-11: [GDPR Arts. 5, 7, 11, 13, 17 (EUR-Lex)](https://eur-lex.europa.eu/eli/reg/2016/679/oj); [European Commission consent and withdrawal](https://commission.europa.eu/law/law-topic/data-protection/information-business-and-organisations/legal-grounds-processing-data_en); [EDPB data subject rights](https://www.edpb.europa.eu/topics/key-gdpr-concepts/data-subject-rights_en); [Cloudflare D1 transactional batch](https://developers.cloudflare.com/d1/worker-api/d1-database/).
+
+---
+
 ## Release gates and sources
 
 - Legal review: TDDDG §25 strict necessity vs specific informed consent; GDPR Articles 6, 7 and 13, plus Article 8 if actually offering information society services directly to children; minimize retention and verify data subjects' rights. Review the Cloudflare logs, D1 Like-row retention and cross-border processing against operating facts. Existing Self-Serve DPA incorporation is documented in PR #158 but is **not** legal sign-off.
