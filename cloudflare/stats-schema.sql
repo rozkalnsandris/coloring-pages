@@ -58,3 +58,9 @@ CREATE TABLE IF NOT EXISTS daily_campaign_events (
 );
 CREATE INDEX IF NOT EXISTS idx_daily_campaign_events_day
 ON daily_campaign_events(campaign, day, event, event_count DESC);
+
+-- Aggregate QR link arrivals from printed sheets. No per-person or per-page data.
+CREATE TABLE IF NOT EXISTS daily_print_qr_scans (
+  day TEXT PRIMARY KEY,
+  scan_count INTEGER NOT NULL DEFAULT 0 CHECK (scan_count >= 0)
+);
