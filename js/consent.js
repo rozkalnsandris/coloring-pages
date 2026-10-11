@@ -39,7 +39,9 @@
       '<label><input type="checkbox" data-consent-like> Gefällt mir auf späteren Besuchen wiedererkennen</label>',
       '<label><input type="checkbox" data-consent-print> Druckabsichten mit Browserkennung zählen</label>',
       '<p>Ohne Zustimmung bleibt A4-Drucken möglich. Gezählte Druckaktionen sind keine bestätigten Ausdrucke.</p>',
+      '<p>Beim Widerruf der Like-Einwilligung kannst du die Löschung deiner gespeicherten Likes gesondert anfordern.</p>',
       '<div class="privacy-options-actions">',
+        '<button type="button" data-consent-erase hidden>Meine gespeicherten Likes löschen</button>',
         '<button type="button" data-consent-save>Auswahl speichern</button>',
         '<button type="button" data-consent-cancel>Zurück</button>',
       '</div>',
@@ -52,7 +54,12 @@
   const reopen = document.createElement("button");
   reopen.type = "button";
   reopen.textContent = "Datenschutzeinstellungen";
-  footer.append(reopen);
+  const erasureFeedback = document.createElement("span");
+  erasureFeedback.className = "privacy-erasure-feedback";
+  erasureFeedback.setAttribute("role", "status");
+  erasureFeedback.setAttribute("aria-live", "polite");
+  erasureFeedback.hidden = true;
+  footer.append(reopen, erasureFeedback);
   document.body.append(banner, footer);
 
   const options = banner.querySelector("[data-consent-options]");
@@ -60,6 +67,8 @@
   const print = banner.querySelector("[data-consent-print]");
   const error = banner.querySelector("[data-consent-error]");
   const settings = banner.querySelector("[data-consent-settings]");
+  const eraseButton = banner.querySelector("[data-consent-erase]");
+  let erasing = false;
   let lastFocus = null;
 
   function show(advanced = false) {
@@ -69,6 +78,7 @@
     options.hidden = !advanced;
     like.checked = Boolean(choice?.like);
     print.checked = Boolean(choice?.print);
+    eraseButton.hidden = !choice?.like || erasing;
     error.hidden = true;
     (advanced ? like : settings).focus();
   }
@@ -95,13 +105,51 @@
       choice = null; // fail closed even after a partially written/revoked record
       error.textContent = "Deine Auswahl konnte nicht gespeichert werden. Bitte versuche es erneut.";
       error.hidden = false;
-      return;
+      return false;
     }
     hide();
     document.dispatchEvent(new CustomEvent("coloring-consent-changed", {
       detail: { like: choice.like, print: choice.print }
     }));
+    return true;
   }
+
+  function eraseStatus(message) {
+    erasureFeedback.textContent = message;
+    erasureFeedback.hidden = false;
+  }
+
+  // Only a dedicated user action may send the deletion credential.
+  async function requestLikeErasure() {
+    if (erasing || !choice?.like) return;
+    if (!window.confirm("Deine gespeicherten Likes werden gelöscht. Das kann die sichtbaren Like-Zahlen verringern. Einverstanden?")) return;
+    erasing = true;
+    eraseButton.disabled = true;
+    const proof = window.ColoringStats?.getErasureProof?.() || "";
+    // Withdraw first. No more Like reads/posts, even if D1 or the network fails.
+    if (!save({like: false, print: Boolean(choice.print)})) {
+      eraseButton.disabled = false;
+      erasing = false;
+      return;
+    }
+    reopen.focus();
+    if (!proof) {
+      eraseStatus("Einwilligung widerrufen; Löschung nicht bestätigt. Bei älteren Kennungen oder fehlendem Nachweis: andris@rozkalns.net");
+      erasing = false;
+      return;
+    }
+    try {
+      const result = await window.ColoringStats.eraseLikesWithProof(proof);
+      if (result?.ok !== true) throw new Error("unconfirmed deletion");
+      eraseStatus("Deine gespeicherten Likes wurden für diese Browserkennung gelöscht.");
+    } catch {
+      eraseStatus("Einwilligung widerrufen; Löschung nicht bestätigt. Bitte wende dich an andris@rozkalns.net.");
+    } finally {
+      erasing = false;
+    }
+  }
+
+  eraseButton.addEventListener("click", requestLikeErasure);
 
   banner.querySelector("[data-consent-deny]").addEventListener("click", () =>
     save({like:false, print:false}));

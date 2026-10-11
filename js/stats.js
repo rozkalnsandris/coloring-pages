@@ -13,7 +13,11 @@
     try {
       let value = localStorage.getItem(VISITOR_KEY);
       if (!value && create) {
-        value = globalThis.crypto?.randomUUID?.() || `v-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        // 256-bit random browser credential. No predictable fallback.
+        const random = new Uint8Array(32);
+        if (typeof globalThis.crypto?.getRandomValues !== "function") return "";
+        globalThis.crypto.getRandomValues(random);
+        value = "v2-" + Array.from(random, b => b.toString(16).padStart(2, "0")).join("");
         localStorage.setItem(VISITOR_KEY, value);
       }
       return value || "";
@@ -59,7 +63,10 @@
   async function getPage(pageId) {
     const visitorId = getVisitorId(false);
     const query = new URLSearchParams({page_id: pageId});
-    if (visitorId) query.set("visitor_id", visitorId);
+    if (visitorId) return requestJson("/page", {
+      method: "POST",
+      body: JSON.stringify({page_id: pageId, visitor_id: visitorId}),
+    });
     return requestJson(`/page?${query}`);
   }
 
@@ -70,6 +77,20 @@
     return requestJson("/like", {
       method: "POST",
       body: JSON.stringify({page_id: pageId, visitor_id: visitorId}),
+    });
+  }
+
+  // Only called during a separately confirmed, user-requested erase operation.
+  function getErasureProof() {
+    const id = getVisitorId(false, "like");
+    return /^v2-[0-9a-f]{64}$/.test(id) ? id : "";
+  }
+
+  async function eraseLikesWithProof(visitorId) {
+    if (!/^v2-[0-9a-f]{64}$/.test(visitorId)) throw new Error("erasure proof unavailable");
+    return requestJson("/erase-likes", {
+      method: "POST",
+      body: JSON.stringify({visitor_id: visitorId}),
     });
   }
 
@@ -131,7 +152,7 @@
     }).catch(() => {});
   }
 
-  window.ColoringStats = {getRankings, getOverview, getTraffic, getCampaigns, getPage, toggleLike, trackVisit, trackView, trackPrint};
+  window.ColoringStats = {getRankings, getOverview, getTraffic, getCampaigns, getPage, toggleLike, getErasureProof, eraseLikesWithProof, trackVisit, trackView, trackPrint};
 
   const homePath = location.pathname === "/" || location.pathname === "/index.html";
   const detailPath = location.pathname === "/detail.html";

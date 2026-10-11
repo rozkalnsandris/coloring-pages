@@ -178,6 +178,20 @@ Official sources reviewed 2026-10-11:
 
 ---
 
+## Source security implementation — guarded Draft, 2026-10-11
+
+Owner-authorized source-only erasure flow is now implemented as a **Draft**, not a released GDPR-compliant service:
+- Browser IDs freshly created with Web Crypto 256-bit randomness use `v2-` + 64 lowercase hex characters. There is **no `Math.random` fallback**. Existing consented legacy IDs remain usable for ordinary Like/Print to avoid destroying active Like records; they are **not** accepted by the irreversible erasure endpoint, and an explicit individual rights process is still required for them.
+- Personalized Like status uses **POST /api/stats/page** with `visitor_id` in a JSON body instead of GET query; GET with `visitor_id` is rejected. The unchanged anonymous GET still reports aggregate counts. Historic GET logs/backups may retain older IDs; source changes cannot erase them.
+- The dedicated user-confirmed `Meine gespeicherten Likes löschen` control captures only an eligible v2 proof while Like consent is valid, disables Like processing locally **before the request**, and sends one `POST /api/stats/erase-likes` with explicit JSON content. The Worker requires exact Origin and `sec-fetch-site=same-origin`, strict v2 credential shape and bounded request size, plus an available rate limiter. One bound SQL deletion deletes only rows for the hashed v2 ID; existing triggers maintain public Like counts. No automatic age-based purge or Print-counter change.
+- Failure, no proof, old ID or unconfirmed D1 response are **not represented as successful erasure**. Withdrawal must remain immediate, and the UI displays the privacy contact for a separate request. There is no automatic network retry or any silent deletion request triggered by ordinary consent withdrawal.
+- **Remaining release blockers:** old/leaked IDs and pre-banner Like hashes lack an automated erasure proof; existing user consent withdrawal by toggling off Like does not itself initiate server deletion; cross-tab/in-flight Like writes may race an erasure request without a durable server-side tombstone. Adding such a tombstone would require separately scoped D1 schema/migration and coordinated Worker deployment, not supplied by this command. Review whether this feature may be released under GDPR Articles 7 and 17, add secure handling of those cases, verify real worker runtime/settings, and update PR #158 legal copy before authorizing any merge/LIVE.
+- The production Worker, D1, RPi5 and Cloudflare were **not changed**. Source CI cannot prove deployment or legal compliance.
+
+References: [Cloudflare D1 prepared statements](https://developers.cloudflare.com/d1/worker-api/prepared-statements/), [D1 result metadata](https://developers.cloudflare.com/d1/worker-api/return-object/), [MDN Crypto.getRandomValues](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues), [GDPR](https://eur-lex.europa.eu/eli/reg/2016/679/oj).
+
+---
+
 ## Release gates and sources
 
 - Legal review: TDDDG §25 strict necessity vs specific informed consent; GDPR Articles 6, 7 and 13, plus Article 8 if actually offering information society services directly to children; minimize retention and verify data subjects' rights. Review the Cloudflare logs, D1 Like-row retention and cross-border processing against operating facts. Existing Self-Serve DPA incorporation is documented in PR #158 but is **not** legal sign-off.

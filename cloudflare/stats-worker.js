@@ -57,6 +57,7 @@ async function printQrVisit(env, request) {
 
 function validPageId(value) { return typeof value === "string" && PAGE_ID_RE.test(value); }
 function validVisitorId(value) { return typeof value === "string" && VISITOR_ID_RE.test(value); }
+function validErasureProof(value) { return typeof value === "string" && /^v2-[0-9a-f]{64}$/.test(value); }
 function validCampaign(value) { return typeof value === "string" && CAMPAIGN_IDS.has(value); }
 
 async function sha256(value) {
@@ -447,8 +448,16 @@ async function recordView(env, request) {
 
 async function pageStats(env, request) {
   const url = new URL(request.url);
-  const pageId = url.searchParams.get("page_id") || "";
-  const visitorId = url.searchParams.get("visitor_id") || "";
+  // Personalized state is POST-only, avoiding visitor IDs in GET URLs/logs.
+  const posted = request.method === "POST";
+  if (posted && (!allowedWriteOrigin(request,env) ||
+       request.headers.get("content-type")?.split(";")[0] !== "application/json")) {
+    return json({error:"forbidden"},403);
+  }
+  const body = posted ? await request.json().catch(()=>null) : null;
+  const pageId = posted ? body?.page_id : (url.searchParams.get("page_id") || "");
+  const visitorId = posted ? body?.visitor_id : "";
+  if (!posted && url.searchParams.has("visitor_id")) return json({error:"use POST for personalized state"},400);
   if (!validPageId(pageId)) return json({error:"invalid page_id"},400);
   if (visitorId && !validVisitorId(visitorId)) return json({error:"invalid visitor_id"},400);
   const stats = await env.DB.prepare("SELECT print_count, like_count FROM page_stats WHERE page_id = ?").bind(pageId).first();
@@ -481,6 +490,34 @@ async function recordPrint(env, request) {
   await env.DB.batch(statements);
   return json({ok:true},201);
 }
+async function eraseLikes(env, request) {
+  // Only a separately confirmed, user-invoked deletion request may carry a
+  // high-entropy v2 browser credential. Never accept a leaked/weak legacy ID.
+  if (request.headers.get("origin") !== (env.PUBLIC_ORIGIN || DEFAULT_ORIGIN)
+      || request.headers.get("sec-fetch-site") !== "same-origin") {
+    return json({error:"forbidden"},403);
+  }
+  if (request.headers.get("content-type")?.split(";")[0] !== "application/json")
+    return json({error:"unsupported_media_type"},415);
+  const length = Number(request.headers.get("content-length") || "0");
+  if (!Number.isFinite(length) || length > 256) return json({error:"too_large"},413);
+  const raw = await request.text();
+  if (raw.length > 256) return json({error:"too_large"},413);
+  let body;
+  try { body = JSON.parse(raw); } catch { return json({error:"invalid_request"},400); }
+  if (!body || Array.isArray(body) || typeof body !== "object"
+      || Object.keys(body).length !== 1 || !validErasureProof(body.visitor_id)) {
+    return json({error:"invalid_request"},400);
+  }
+  if (!env.RATE_LIMITER) return json({error:"erasure_unavailable"},503);
+  if (!(await rateLimit(env,body.visitor_id,"erase"))) return json({error:"rate_limited"},429);
+  const hash = await sha256(body.visitor_id);
+  const result = await env.DB.prepare("DELETE FROM likes WHERE visitor_hash = ?").bind(hash).run();
+  // Trigger-driven Like count adjustment happens in the same SQLite statement.
+  if (!result || result.success !== true) return json({error:"erasure_unconfirmed"},503);
+  return json({ok:true});
+}
+
 async function toggleLike(env, request) {
   if (!allowedWriteOrigin(request,env)) return json({error:"forbidden"},403);
   const body = await parseBody(request);
@@ -510,10 +547,12 @@ export default {
     if (request.method==="GET" && path==="/api/stats/campaigns") return campaignStats(env,request);
     if (request.method==="GET" && path==="/api/stats/traffic") return trafficStats(env,request);
     if (request.method==="GET" && path==="/api/stats/page") return pageStats(env,request);
+    if (request.method==="POST" && path==="/api/stats/page") return pageStats(env,request);
     if (request.method==="POST" && path==="/api/stats/visit") return recordVisitor(env,request);
     if (request.method==="POST" && path==="/api/stats/view") return recordView(env,request);
     if (request.method==="POST" && path==="/api/stats/print") return recordPrint(env,request);
     if (request.method==="POST" && path==="/api/stats/like") return toggleLike(env,request);
+    if (request.method==="POST" && path==="/api/stats/erase-likes") return eraseLikes(env,request);
     return json({error:"not_found"},404);
   },
 };
