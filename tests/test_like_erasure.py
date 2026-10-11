@@ -116,6 +116,6 @@ class LikeErasureTests(unittest.TestCase):
         self.assertNotIn('Math.random()',stats)
         self.assertIn('if (visitorId) return requestJson("/page"',stats)
         self.assertNotIn('query.set("visitor_id"',stats)
-        self.assertIn('getErasureProof()',consent)
+        self.assertIn('window.ColoringStats?.getErasureProof?.()',consent)
         self.assertIn('window.confirm(',consent)
         self.assertIn('Einwilligung widerrufen; Löschung nicht bestätigt',consent)
