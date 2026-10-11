@@ -3,13 +3,47 @@
 Status: SOURCE IMPLEMENTATION DRAFT — not legally signed off, merged or LIVE.
 Scope: [issue #182](https://github.com/rozkalnsandris/coloring-pages/issues/182). Independent legal-page Draft: [PR #158](https://github.com/rozkalnsandris/coloring-pages/pull/158).
 
-## Decision required before implementation
+## Current decision: suppression A + legacy rights (2026-10-11)
+
+**Status: design/legal assessment only, NOT LEGAL SIGN-OFF or release approval.** Owner selected **SUPPRESSION=A**. Keep the existing simple consent banner and high-entropy v2 identifier design; do not add accounts, a new service, Cron, an automatic age-based Like purge or a second credential protocol. No Worker, SQL, consent UI, PR #158, D1 or LIVE change is authorized by this decision. Earlier alternatives below are historical context.
+
+### Suppression A — narrowly scoped Article 6(1)(f) assessment
+
+- **Data and purpose:** After a confirmed user-requested Like erasure, the Draft Worker stores only \`SHA-256(old v2 visitor_id)\` in \`like_erasure_blocks\`, and checks it before inserting another Like. No raw identifier, page list, IP address, user profile or print history is stored *in this table*. The hash is **pseudonymous personal data**, not anonymous data. It is for preventing erased Likes from being recreated by stale/replayed credentials **only**; never for analytics or tracking.
+- **Legitimate interest — plausible, not established:** Respect the visitor's deletion instruction and maintain the integrity of the Like system against replay. If used, this must be a **separate, prospective, transparent Art. 6(1)(f) purpose**, assessed and disclosed before processing. It does not retroactively justify retaining withdrawn Like rows.
+- **Necessity — conditional:** The present v2 credential has **no server-enforced expiry**. A 24-hour/12-month suppression TTL could then permit reuse of an erased credential later. Under this existing contract, a single hash-only denial row is less intrusive than storing raw identifiers, creating accounts or maintaining usage logs. A bounded credential protocol is an alternative but needs separately approved engineering and still requires legal review. This tradeoff does not by itself prove that unlimited retention is necessary.
+- **Balancing and safeguards:** A random 256-bit credential makes hash reversal impractical if the credential remains secret; table minimisation and a single equality lookup reduce impact. Against this: a lasting linkable hash survives withdrawal, copied browser credentials remain a security risk, and the family/child audience demands particular care. Restrict access, disclose the separate purpose and rights, avoid logging IDs, and assess the actual Cloudflare retention/recovery and security settings. The balance **is not yet signed off**.
+- **Retention rule for legal review:** Keep the suppression row **only for as long as its erased credential could still be accepted by the server**, subject to a defensible necessity/balancing decision and rights handling. Review this criterion at least annually and when the acceptance protocol changes; this is a **manual policy review, not a 12-month deletion timer**. If all old credentials can demonstrably no longer be accepted, separately review the row for deletion with explicit owner approval. The current SQL \`blocked_until='9999-12-31 23:59:59'\` is a technical non-expiring guard, **not** a proven lawful retention deadline; it must not be described to users as legal permission to retain hashes forever.
+- **Decision gate:** Option A remains **NOT RELEASE READY** until the owner/legal reviewer records a defensible Art. 6(1)(f) legitimate-interest/necessity/balancing finding, Art. 13 wording, Art. 21 objection handling and the retention review criterion. If that cannot be supported, do not shorten the guard silently; keep the Draft blocked and separately assess a server-expiring credential alternative. Never age-delete still-authorised active Likes merely for this assessment.
+
+### Legacy or lost browser ID — minimal DSAR procedure
+
+1. **Receive:** Keep the existing \`Datenschutzanfrage (ohne Browserkennung)\` email contact; record only the request date, requested right, reply status and the minimum correspondence required. Do **not** ask for raw browser identifiers, passwords, identification photos, browser screenshots or sensitive logs by ordinary email.
+2. **Assess:** A UUID-shaped legacy key, knowledge of a liked page, or an old GET URL is **not reliable ownership proof**: older identifiers may have been weak or exposed. Use only proportionate reliable evidence already available or voluntarily supplied securely. Do not re-read rejected legacy IDs, mine logs to identify visitors, invent a new account system or blanket-delete other people's Likes.
+3. **Resolve:** If a specific row can be reliably linked and erasure is required, seek separate exact-target **D1/owner authority**, delete only matching rows and verify the outcome before saying "erased." If no safe match is possible, explain the Art. 11/12 identification limitation and what genuinely sufficient additional information, if any, could enable action; never claim the row was anonymized, deleted or that an email alone proves ownership. Assess orphaned/old rows' legal basis and lifecycle separately from active consented Likes.
+4. **Reply:** Respond without undue delay, normally **within one month**; any lawful extension or inability to comply must be communicated with reasons and rights information within that period. Keep case notes limited and review their own retention. D1 Time Travel, backups and provider logs are not automatically erased by a row deletion and need verified disclosure/handling. No automatic retries or production writes follow from this design.
+
+**Short German wording for later PR #158 legal review — NOT published:**
+
+> Nach der Löschung Ihrer gespeicherten Likes kann ein Hashwert Ihrer früheren Browserkennung ausschließlich gespeichert bleiben, um eine erneute Speicherung mit dieser gesperrten Kennung zu verhindern. Rechtsgrundlage und Speicherdauer werden vor der Veröffentlichung geprüft; die Kennung wird hierfür nicht für Statistiken verwendet. Bei älteren oder verlorenen Browserkennungen ist eine sichere Zuordnung nicht immer möglich. Bitte kontaktieren Sie uns über den Datenschutzkontakt, ohne Ihre Browserkennung per E-Mail zu senden. Eine Löschung bestätigen wir nur, wenn sie tatsächlich erfolgt ist.
+
+**Remaining scope gate:** PR #183 and paired legal Draft PR #158 remain unmerged. The separate D1 migration must be reviewed and owner-authorized **before** any Worker activation; browser/runtime/data-flow checks and legal sign-off are still outstanding. This authorization is source/design-only and grants **no** MERGE, Cloudflare/D1/RPi5 or LIVE action.
+
+Official references:
+- [GDPR Arts. 5(1)(e), 6(1)(f), 11–13, 17, 21](https://eur-lex.europa.eu/eli/reg/2016/679/oj).
+- [EDPB Guidelines 1/2024 on legitimate interests — version for public consultation](https://www.edpb.europa.eu/public-consultations/guidelines-12024-on-processing-of-personal-data-based-on-article-61f-gdpr_en).
+- [EDPB practical guidance on rights requests and response times](https://www.edpb.europa.eu/sme/be-compliant/respect-individuals-rights_en).
+- [Cloudflare D1 Time Travel and backups](https://developers.cloudflare.com/d1/reference/time-travel/).
+
+---
+
+## Original design context (historical; superseded by current decision above)
 
 Keep both Like/unlike and Print-intent counters, and keep a persistent browser visitor ID **only with valid purpose-specific permission**. Browsing, downloading and actual A4 printing must remain available without permission.
 
 The current Cloudflare Worker **requires** a visitor_id on POST /api/stats/print. Therefore counting every Print action without consent is **not** supported by the existing API:
 
-- **A — recommended minimal source design:** Count only Print intents from visitors who explicitly opted in to persistent Print statistics. Preserve all historical totals and Like/Print UI. Do not submit a Print event without consent. Admin must label the metric as "consented print intents" (not all prints). No Worker/D1 mutation required. **Owner acceptance of undercount is not yet recorded.**
+- **A — recommended minimal source design:** Count only Print intents from visitors who explicitly opted in to persistent Print statistics. Preserve all historical totals and Like/Print UI. Do not submit a Print event without consent. Admin must label the metric as "consented print intents" (not all prints). No Worker/D1 mutation required. **Historical note: owner subsequently accepted consented-only Print counting.**
 - **B — separate backend proposal:** Count nonconsenting Print intents through a reviewed ID-free endpoint and bounded anti-abuse controls. Requires separate privacy/security assessment, source/API/tests scope, and owner authorization for any Worker/D1/LIVE changes. Do not treat an "anonymous" HTTP request as automatically free of IP/logging/privacy implications.
 
 **Owner instruction on 2026-10-11:** implement the very slim fixed bottom-of-screen first-visit banner, 12–13px text, three comparable actions (Alle ablehnen, Einstellungen, Alle akzeptieren), and independent Like/Print opt-ins. The owner accepted the immediately preceding description that refused Print telemetry is not counted. Thus implementation selects option A: consented-only future Print intents, with historical totals preserved. The limitation remains explicit. No API/Worker/D1 changes.
