@@ -168,13 +168,26 @@ The thumbnail always comes from page 1. The catalogue keeps top-level `preview` 
 
 The browser print document creates one A4 print sheet per `pages[]` item. Each sheet infers orientation from its print PNG and selects a named `@page` rule for A4 portrait or A4 landscape; CSS Fragmentation uses `break-after: page` between sheets. Mixed-orientation multi-page activities therefore remain printable through one normal browser/system `window.print()` flow without introducing a PDF viewer.
 
-## Landscape browser print fit
+## Browser A4 print fit — portrait and landscape
 
-Canonical A4 landscape masters stay as immutable 3508×2480 300 DPI PNGs. The
-print view measures visible non-white ink and centers the unchanged canvas in
-the existing 15 mm side/top, 39 mm bottom artwork-safe rectangle (with 2 mm
-extra contour clearance). Scaling is capped at the native A4 physical size;
-the print footer/QR remains unchanged. This avoids double-shrinking the
-already-white-bordered A4 master when reserving a footer. If image readback is
-blocked or geometry is legacy, retain the original safe contain behavior.
-Portrait print and downloadable originals remain unchanged.
+Canonical A4 portrait (2480×3508) and landscape (3508×2480) print PNGs
+remain byte-identical and unwatermarked. At browser print time, the view
+reads visible non-white ink bounds once per canonical canvas and repositions
+the unchanged A4 raster at **no more than its native physical scale**, instead
+of fitting its full pre-padded white page into another reduced rectangle.
+
+For either orientation, visible contours are centered inside the A4 artwork
+region: at least 15 mm paper clearance on the left, right and top, an
+additional 2 mm ink guard, and 39 mm footer clearance at the bottom (22 mm
+footer + 2 mm gap + 15 mm paper margin, plus 2 mm ink guard). A fitted
+artwork area is therefore 176×239 mm portrait or 263×152 mm landscape.
+The branding, QR position and 20×20 mm QR size do not change. The scale is
+never above 1; artwork may shrink only when necessary to keep those bounds
+clear. The source raster, original PNG download, DPI, colors and media URLs
+remain untouched. For legacy rasters, a blank canvas or blocked pixel
+readback, the previous safe `object-fit: contain` fallback remains.
+
+Browser A4 output should use the matching named `@page` orientation, with
+paper A4, print scaling 100% / actual size and no extra browser headers or
+margins, subject to the physical printer's unprintable region. Test both
+orientations and multi-page activities before merge.
