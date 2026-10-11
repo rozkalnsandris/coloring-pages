@@ -140,10 +140,14 @@
           Sicherheitsprüfungen über den Cloudflare Rate Limiter
           verwenden, sofern die entsprechende Bindung aktiv ist.
           Die tatsächliche Konfiguration muss gesondert geprüft werden.
-          Frühere Versionen der
-          Website konnten die Kennung als GET-URL-Parameter versenden;
-          die Umstellung beseitigt keine bereits vorhandenen
-          technischen Zugriffsprotokolle oder Sicherungskopien.
+          Die neue Website-Fassung nutzt für den persönlichen Like-Status
+          POST statt einer Kennung in der URL. Der Worker akzeptiert
+          vorübergehend auch alte GET-Anfragen mit URL-Parameter von
+          zwischengespeicherten Website-Fassungen. Solche Anfragen
+          können weiterhin in technischen Protokollen erscheinen;
+          die Umstellung löscht keine früheren Protokolle oder
+          Sicherungskopien. Wann die alte GET-Variante abgeschaltet
+          wird, ist noch nicht festgelegt.
           Ohne Einwilligung für „Gefällt mir“ werden keine neuen
           personalisierten Likes übertragen; die allgemeinen
           Like-Zahlen bleiben sichtbar.</p>
@@ -189,6 +193,10 @@
           Löschanfragen können Sie den Kontakt aus Abschnitt 1
           nutzen. <strong>Bitte senden Sie keine Browserkennung,
           Zugangsdaten oder Ausweiskopien per E-Mail.</strong>
+          Anfragen zu Ihren Datenschutzrechten beantworten wir
+          grundsätzlich innerhalb eines Monats. Bei besonderer
+          Komplexität kann die Frist nach rechtzeitiger Mitteilung
+          um zwei weitere Monate verlängert werden.
           Eine individuelle Prüfung kann erforderlich sein;
           sie soll sich auf die zur Anfrage erforderlichen
           Informationen beschränken. Wenn eine Zuordnung
@@ -196,6 +204,20 @@
           Voraussetzungen aus Art. 11 und 12 DSGVO.
           Eine lokale Entfernung der Browserkennung ist für sich
           genommen kein Nachweis einer serverseitigen Löschung.</p>
+        <p>Wenn die Löschung nach dem Widerruf nicht bestätigt wurde
+          und eine ausreichend gesicherte Kennung vorliegt, kann
+          vorübergehend ein ausschließlich zur Löschung bestimmter
+          Nachweis im <code>localStorage</code> unter
+          <code>coloring-pages-erasure-pending-v1</code> liegen.
+          Er enthält die alte Browserkennung und einen Ablaufzeitpunkt
+          von höchstens 24 Stunden; er dient weder Likes noch der
+          Druckstatistik. „Löschung erneut versuchen“ übermittelt
+          diesen Nachweis nur nach einem erneuten bewussten Klick.
+          Es gibt keinen automatischen erneuten Löschversuch.
+          Nach bestätigter Löschung wird der Nachweis entfernt;
+          nach Ablauf wird er beim nächsten Lesen gelöscht.
+          Fehlt der Nachweis oder schlägt der Versuch fehl, ist die
+          Löschung in D1 weiterhin nicht bestätigt.</p>
         <p>Um zu verhindern, dass eine bereits gelöschte
           Browserkennung durch verspätete oder wiederholte
           Anfragen erneut Likes anlegt, sieht der
@@ -204,13 +226,21 @@
           (<code>like_erasure_blocks</code>).
           Dieser enthält den Hash der gesperrten Kennung,
           nicht die ursprüngliche Kennung oder eine Liste
-          Ihrer besuchten Malvorlagen. Die derzeitige
-          Sperrlogik sieht keine zeitliche Aufhebung vor.
+          Ihrer besuchten Malvorlagen. Solange eine gelöschte Kennung technisch weiterhin
+          akzeptiert werden könnte, soll der Sperreintrag ihre
+          Wiederverwendung verhindern. Der Quellstand sieht dafür
+          keine automatische Löschfrist vor; daraus folgt aber
+          keine gesetzliche Erlaubnis zu unbefristeter Speicherung.
           <strong>Dieser Sperreintrag ist nicht automatisch
-          anonym.</strong> Seine eigenständige Rechtsgrundlage,
-          Erforderlichkeit, Speicherkriterien sowie der Umgang
-          mit D1-Wiederherstellungsdaten und Protokollen
-          sind vor einer Veröffentlichung noch festzulegen.
+          anonym.</strong> Als mögliche eigenständige Rechtsgrundlage für die
+          Wiederverwendungssperre kommt Art. 6 Abs. 1 lit. f DSGVO
+          erst nach Prüfung der Erforderlichkeit und Abwägung der
+          Interessen und Betroffenenrechte in Betracht. Die
+          Aufbewahrung soll nur erfolgen, solange die Sperre
+          technisch notwendig und rechtlich gerechtfertigt ist.
+          Konkrete Speicherkriterien, Überprüfung, Widerspruchs-
+          und Löschrechte sowie der Umgang mit D1-Wiederherstellungsdaten
+          und Protokollen sind vor Veröffentlichung noch festzulegen.
           Das Löschen der Like-Einträge bedeutet nicht, dass
           dieser Sperreintrag oder sämtliche technischen
           Sicherungskopien sofort entfernt werden.</p>
