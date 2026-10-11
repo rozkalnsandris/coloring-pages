@@ -11,14 +11,14 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class PrintQrStatsTests(unittest.TestCase):
-    def test_static_shared_qr_stays_fail_closed_until_route_verification(self):
+    def test_static_shared_qr_activated_after_route_and_physical_scan(self):
         svg = ET.fromstring((ROOT / "assets/ausmalwiese-qr-dots.svg").read_text())
         ns = {"s": "http://www.w3.org/2000/svg"}
         self.assertIn("https://ausmalwiese.de/q", svg.findtext("s:title", namespaces=ns))
         self.assertEqual((svg.get("width"), svg.get("height")), ("20mm", "20mm"))
         self.assertEqual(svg.get("viewBox"), "0 0 37 37")
         js = (ROOT / "js/print.js").read_text()
-        self.assertIn("PRINT_QR_ROUTE_VERIFIED = false", js)
+        self.assertIn("PRINT_QR_ROUTE_VERIFIED = true", js)
         self.assertIn('const PRINT_QR_ASSET = "assets/ausmalwiese-qr-dots.svg"', js)
         self.assertIn("buildPrintBrandFooter(qrReady)", js)
         self.assertNotIn("ausmalwiese-qr-dots", (ROOT / "tools/coloring-pages-import").read_text())
