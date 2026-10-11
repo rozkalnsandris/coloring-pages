@@ -57,10 +57,10 @@ function a4CanvasSize(width, height) {
   return { width: Math.ceil(height * a4Ratio), height };
 }
 
-// /q is not verified LIVE. Activation requires a separately reviewed source change
-// after explicit DNS/redirect approval and independent public URL verification.
-const PRINT_QR_ROUTE_VERIFIED = false;
-const PRINT_QR_ASSET = "assets/ausmalwiese-qr-dots.svg";
+// /q redirect and aggregate D1 count verified LIVE; owner confirmed a physical
+// 20 mm A4 QR scan (2026-10-11). Keep the asset-load text-only fallback.
+const PRINT_QR_ROUTE_VERIFIED = true;
+const PRINT_QR_ASSET = "assets/ausmalwiese-qr-dots.svg?v=75b511627ba4d760";
 
 function buildPrintBrandFooter(withQr) {
   const footer = document.createElement("footer");

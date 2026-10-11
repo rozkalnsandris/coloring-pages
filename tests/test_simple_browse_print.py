@@ -50,7 +50,7 @@ class SimpleBrowsePrintTests(unittest.TestCase):
         self.assertIn('data-print-back', html)
         self.assertIn('printBack.href = `detail.html?id=', js)
         self.assertIn('.print-help,', css[css.index('@media print {'):])
-        self.assertIn('PRINT_QR_ROUTE_VERIFIED = false', js)
+        self.assertIn('PRINT_QR_ROUTE_VERIFIED = true', js)
 
     def test_changed_static_assets_have_exact_hash_versions(self):
         css = (ROOT / "css/app.css").read_bytes()
