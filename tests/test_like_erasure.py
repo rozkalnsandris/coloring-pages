@@ -183,7 +183,7 @@ class LikeErasureTests(unittest.TestCase):
         self.assertIn('changeConsent({like:like.checked, print:print.checked})',consent)
         self.assertIn('const revokeLike = !storageFault && previous?.like === true && !next.like;',consent)
         self.assertIn('const proof = revokeLike ?',consent)
-        self.assertIn('if (!revokeLike) return;',consent)
+        self.assertIn('if (!revokeLike) { refreshRetry(); return; }',consent)
         self.assertIn("'9999-12-31 23:59:59'",worker)
         self.assertNotIn("DELETE FROM like_erasure_blocks WHERE blocked_until",worker)
         self.assertIn('Datenschutzanfrage (ohne Browserkennung)',consent)
