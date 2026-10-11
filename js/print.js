@@ -2,8 +2,14 @@ const printPages = document.querySelector("[data-print-pages]");
 const printPlaceholder = document.querySelector("[data-print-placeholder]");
 const printButton = document.querySelector("[data-print-button]");
 const printStatus = document.querySelector("[data-print-status]");
+const printBack = document.querySelector("[data-print-back]");
 const printParams = new URLSearchParams(window.location.search);
 const embeddedPrint = printParams.get("embedded") === "1";
+const returnId = printParams.get("id");
+if (printBack && returnId) {
+  printBack.href = `detail.html?id=${encodeURIComponent(returnId)}`;
+  printBack.textContent = "← Zur Malvorlage";
+}
 
 const A4_PAGE_WIDTH_MM = 210;
 const A4_PAGE_HEIGHT_MM = 297;

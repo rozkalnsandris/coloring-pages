@@ -630,6 +630,7 @@ a { color: inherit; }
   color: var(--muted);
   text-align: center;
 }
+.print-help { margin: 12px auto 20px; max-width: 720px; color: var(--muted); font-size: 14px; line-height: 1.5; text-align: center; }
 .print-status {
   margin: 12px 0 0;
   color: var(--muted);
@@ -668,6 +669,7 @@ a { color: inherit; }
   }
 
   .print-toolbar,
+  .print-help,
   .print-status,
   .print-placeholder {
     display: none !important;
@@ -781,7 +783,6 @@ a { color: inherit; }
 /* Cloudflare-backed engagement rankings */
 .ranking-pages { padding: 30px 0 34px; }
 .ranking-discover { background: #f7faff; }
-.ranking-discover + .categories { padding-top: 24px; }
 .ranking-heading { align-items: flex-end; margin-bottom: 18px; }
 .ranking-heading-copy { min-width: 0; }
 .ranking-eyebrow {
@@ -836,11 +837,12 @@ a { color: inherit; }
 .detail-actions .action-like:hover:not(:disabled) { border-color:#d85977; background:#fff0f4; }
 .detail-actions .action-like.is-liked { border-color:#d85977; background:#fff0f4; color:#a52f4c; }
 .detail-actions .action-like:disabled { cursor:default; opacity:.6; }
-.like-heart { color:#d85977; font-size:29px; line-height:1; }
+.like-heart { width:29px; height:29px; color:#d85977; fill:transparent; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; transition:fill 150ms ease; }
+.detail-actions .action-like.is-liked .like-heart { fill:currentColor; }
+@media (prefers-reduced-motion: reduce) { .like-heart { transition:none; } }
 .like-count { min-width:34px; padding:4px 9px; border-radius:999px; background:#fff; color:#a52f4c; text-align:center; font-size:13px; }
 @media (max-width:720px) {
   .ranking-pages { padding: 24px 0 28px; }
-  .ranking-discover + .categories { padding-top: 20px; }
   .ranking-heading { display: block; }
   .ranking-heading h2 { white-space: normal; }
   .ranking-heading p { font-size: 13px; }

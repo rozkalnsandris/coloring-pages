@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[1]
 def read(path: str)->str:
     return (ROOT/path).read_text(encoding="utf-8")
 class HomeRankingLayoutTests(unittest.TestCase):
-    def test_home_keeps_large_hero_and_moves_discovery_before_categories(self):
+    def test_home_keeps_large_hero_and_shows_browse_before_discovery(self):
         html = read("index.html")
         css = read("css/app.css")
         js = read("js/app.js")
@@ -15,10 +15,10 @@ class HomeRankingLayoutTests(unittest.TestCase):
         categories = html.index('id="kategorien"')
         newest = html.index('id="neu"')
         about = html.index('id="ueber-uns"')
-        self.assertLess(hero, discover)
-        self.assertLess(discover, categories)
+        self.assertLess(hero, categories)
         self.assertLess(categories, newest)
-        self.assertLess(newest, about)
+        self.assertLess(newest, discover)
+        self.assertLess(discover, about)
         self.assertIn('class="hero-art"', html)
         self.assertIn('data-search-form', html)
 

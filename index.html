@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=optional" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=4422cbe4880728f4">
+  <link rel="stylesheet" href="css/app.css?v=6330587eb92359cb">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -85,31 +85,6 @@
           <input id="site-search" name="q" type="search" placeholder="Malvorlagen suchen ..." autocomplete="off">
           <button type="submit">Suchen</button>
         </form>
-      </div>
-    </section>
-
-    <section id="entdecken" class="ranking-pages ranking-discover" data-ranking-root aria-labelledby="discover-title" aria-busy="true">
-      <div class="container">
-        <div class="section-heading ranking-heading">
-          <div class="ranking-heading-copy">
-            <span class="ranking-eyebrow">Entdecken</span>
-            <h2 id="discover-title">Malvorlagen entdecken</h2>
-            <p data-ranking-description>In den letzten 7 Tagen besonders oft gedruckt.</p>
-          </div>
-          <div class="ranking-tabs" role="tablist" aria-label="Malvorlagen-Rangliste">
-            <button id="ranking-tab-trending" class="ranking-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="ranking-panel-trending" tabindex="0" data-ranking-tab="trending" disabled>🔥 Im Trend</button>
-            <button id="ranking-tab-popular" class="ranking-tab" type="button" role="tab" aria-selected="false" aria-controls="ranking-panel-popular" tabindex="-1" data-ranking-tab="popular" disabled>⭐ Am beliebtesten</button>
-          </div>
-        </div>
-
-        <div id="ranking-panel-trending" class="ranking-panel" role="tabpanel" aria-labelledby="ranking-tab-trending" data-ranking-section="trending">
-          <p class="ranking-status" data-ranking-status role="status">Ranglisten werden geladen …</p>
-          <div class="gallery ranking-gallery" data-ranking-gallery="trending"></div>
-        </div>
-
-        <div id="ranking-panel-popular" class="ranking-panel" role="tabpanel" aria-labelledby="ranking-tab-popular" data-ranking-section="popular" hidden>
-          <div class="gallery ranking-gallery" data-ranking-gallery="popular"></div>
-        </div>
       </div>
     </section>
 
@@ -199,6 +174,31 @@
 
         <p class="result-count sr-only" aria-live="polite" data-result-count>6 Malvorlagen</p>
         <p class="empty-state" data-empty-state role="status" aria-live="polite" hidden>Keine passenden Malvorlagen gefunden.</p>
+      </div>
+    </section>
+
+    <section id="entdecken" class="ranking-pages ranking-discover" data-ranking-root aria-labelledby="discover-title" aria-busy="true">
+      <div class="container">
+        <div class="section-heading ranking-heading">
+          <div class="ranking-heading-copy">
+            <span class="ranking-eyebrow">Entdecken</span>
+            <h2 id="discover-title">Malvorlagen entdecken</h2>
+            <p data-ranking-description>In den letzten 7 Tagen besonders oft gedruckt.</p>
+          </div>
+          <div class="ranking-tabs" role="tablist" aria-label="Malvorlagen-Rangliste">
+            <button id="ranking-tab-trending" class="ranking-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="ranking-panel-trending" tabindex="0" data-ranking-tab="trending" disabled>🔥 Im Trend</button>
+            <button id="ranking-tab-popular" class="ranking-tab" type="button" role="tab" aria-selected="false" aria-controls="ranking-panel-popular" tabindex="-1" data-ranking-tab="popular" disabled>⭐ Am beliebtesten</button>
+          </div>
+        </div>
+
+        <div id="ranking-panel-trending" class="ranking-panel" role="tabpanel" aria-labelledby="ranking-tab-trending" data-ranking-section="trending">
+          <p class="ranking-status" data-ranking-status role="status">Ranglisten werden geladen …</p>
+          <div class="gallery ranking-gallery" data-ranking-gallery="trending"></div>
+        </div>
+
+        <div id="ranking-panel-popular" class="ranking-panel" role="tabpanel" aria-labelledby="ranking-tab-popular" data-ranking-section="popular" hidden>
+          <div class="gallery ranking-gallery" data-ranking-gallery="popular"></div>
+        </div>
       </div>
     </section>
 
