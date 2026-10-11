@@ -167,3 +167,14 @@ public/media/<id>/print-2.png
 The thumbnail always comes from page 1. The catalogue keeps top-level `preview` and `print` pointing to page 1 for backward compatibility and adds an ordered `pages` array for multi-page-aware clients. The importer accepts at most 12 pages per activity and validates every page before publication.
 
 The browser print document creates one A4 print sheet per `pages[]` item. Each sheet infers orientation from its print PNG and selects a named `@page` rule for A4 portrait or A4 landscape; CSS Fragmentation uses `break-after: page` between sheets. Mixed-orientation multi-page activities therefore remain printable through one normal browser/system `window.print()` flow without introducing a PDF viewer.
+
+## Landscape browser print fit
+
+Canonical A4 landscape masters stay as immutable 3508×2480 300 DPI PNGs. The
+print view measures visible non-white ink and centers the unchanged canvas in
+the existing 15 mm side/top, 39 mm bottom artwork-safe rectangle (with 2 mm
+extra contour clearance). Scaling is capped at the native A4 physical size;
+the print footer/QR remains unchanged. This avoids double-shrinking the
+already-white-bordered A4 master when reserving a footer. If image readback is
+blocked or geometry is legacy, retain the original safe contain behavior.
+Portrait print and downloadable originals remain unchanged.

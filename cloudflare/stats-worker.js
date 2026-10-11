@@ -448,7 +448,9 @@ async function recordView(env, request) {
 
 async function pageStats(env, request) {
   const url = new URL(request.url);
-  // Personalized state is POST-only, avoiding visitor IDs in GET URLs/logs.
+  // New clients use POST. Transitional read-only GET accepts an existing old
+  // client's visitor_id until a separately reviewed API sunset. GET URLs can
+  // still appear in legacy access logs; never generate such URLs in new JS.
   const posted = request.method === "POST";
   if (posted && (!allowedWriteOrigin(request,env) ||
        request.headers.get("content-type")?.split(";")[0] !== "application/json")) {
@@ -456,8 +458,11 @@ async function pageStats(env, request) {
   }
   const body = posted ? await request.json().catch(()=>null) : null;
   const pageId = posted ? body?.page_id : (url.searchParams.get("page_id") || "");
-  const visitorId = posted ? body?.visitor_id : "";
-  if (!posted && url.searchParams.has("visitor_id")) return json({error:"use POST for personalized state"},400);
+  const visitorId = posted ? body?.visitor_id : (url.searchParams.get("visitor_id") || "");
+  // Reject obvious cross-site browser requests to the legacy personalized GET.
+  // Older same-origin clients may omit Fetch Metadata headers.
+  if (!posted && visitorId && request.headers.get("sec-fetch-site") === "cross-site")
+    return json({error:"forbidden"},403);
   if (!validPageId(pageId)) return json({error:"invalid page_id"},400);
   if (visitorId && !validVisitorId(visitorId)) return json({error:"invalid visitor_id"},400);
   const stats = await env.DB.prepare("SELECT print_count, like_count FROM page_stats WHERE page_id = ?").bind(pageId).first();

@@ -722,6 +722,16 @@ a { color: inherit; }
     height: 100%;
     object-fit: contain;
   }
+  /* Ink-aware fit restores near-native A4 landscape size without editing pixels.
+     Fallback pages and all portrait sheets keep the original contain inset. */
+  .print-sheet.is-landscape.has-landscape-ink-fit .print-artwork {
+    inset: 0;
+  }
+  .print-sheet.is-landscape.has-landscape-ink-fit .print-artwork canvas {
+    transform-origin: top left;
+    transform: translate(var(--print-ink-x), var(--print-ink-y))
+      scale(var(--print-ink-scale));
+  }
   .print-branding {
     position: absolute;
     left: 15mm;

@@ -11,7 +11,7 @@ class ConsentBannerSourceTests(unittest.TestCase):
         for page in ("index.html", "detail.html", "kita.html"):
             html = self.read(page)
             self.assertIn('css/consent.css?v=199486ea95f10006', html)
-            self.assertLess(html.index("js/consent.js?v=b50d313468a18a8b"),
+            self.assertLess(html.index("js/consent.js?v=d32e7dcda867ea2e"),
                             html.index("js/stats.js?v=kita-campaign-v1"))
 
     def test_banner_is_fixed_and_non_blocking(self):
@@ -28,6 +28,10 @@ class ConsentBannerSourceTests(unittest.TestCase):
         self.assertIn("data-consent-print", js)
         self.assertNotIn("getItem(ID_KEY)", js)
         self.assertIn("removeItem(ID_KEY)", js)
+        self.assertIn("Löschung erneut versuchen", js)
+        self.assertIn("coloring-pages-erasure-pending-v1", js)
+        self.assertIn("const RECOVERY_MS = 24 * 60 * 60 * 1000;", js)
+        self.assertIn("retryErasureButton.addEventListener", js)
 
     def test_stats_fail_closed_for_both_purposes(self):
         js = self.read("js/stats.js")

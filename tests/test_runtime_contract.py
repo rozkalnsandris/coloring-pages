@@ -244,7 +244,14 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn("const offsetY = Math.floor", print_js)
         self.assertNotIn("printCanvas.width = image.naturalWidth;", print_js)
         self.assertNotIn("printCanvas.height = image.naturalHeight;", print_js)
-        self.assertNotIn("getImageData", print_js)
+        # Ink bounds may be inspected once, read-only, to safely position
+        # canonical A4 landscape artwork; pixel recoloring remains prohibited.
+        self.assertIn("function visibleInkBounds(canvas)", print_js)
+        self.assertIn(
+            "const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;",
+            print_js,
+        )
+        self.assertEqual(print_js.count("getImageData("), 1)
         self.assertNotIn("putImageData", print_js)
         self.assertIn("context.drawImage(", print_js)
         self.assertIn('document.querySelector("[data-print-pages]")', print_js)
