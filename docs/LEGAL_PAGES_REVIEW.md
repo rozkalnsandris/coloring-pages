@@ -32,6 +32,21 @@ Sources: [Docker `json-file` rotation](https://docs.docker.com/engine/logging/dr
 
 ---
 
+## Free-tier operation — owner choice, 2026-10-11
+
+- The owner reports that the Cloudflare Workers subscription was switched back to **Workers Free**. This is owner-reported configuration, not verified Billing/Subscriptions evidence. No new paid service or external vendor is required by the current stats source. Do not assume prior paid-plan entitlement remains in force.
+- **Workers Free:** 100,000 requests/day **shared by the account**, CPU limit 10 ms/request. Cloudflare returns error 1027 at the daily request cap; dynamic engagement/analytics can temporarily fail, while the independently self-hosted PNG/site content does not depend on that Worker. Observe actual CPU and request usage in the Cloudflare dashboard; no future traffic/cost guarantee is implied.
+- **D1 on Workers Free:** 5 million rows read/day, 100,000 rows written/day, 5 GB stored across the account, and a 500 MB single-database maximum. Once daily read/write limits are reached, D1 rejects queries until reset. The existing D1 likes, visits, rankings, daily counters and campaign tables are available on Free within those quotas; do not attempt automatic plan upgrades or charged overages.
+- **Cloudflare Web Analytics** is free. Cloudflare's GraphQL Analytics `httpRequestsAdaptiveGroups` is documented as available on all plans, subject to account/zone query quotas and dataset settings. Thus the traffic dashboard needs **no paid Analytics upgrade**, but requires an eligible API token and current zone-level availability; these account settings remain unverified.
+- **Workers Logs Free** currently documents 200,000 log events/day and 3-day retention **if enabled**. The Worker observability/sampling/export configuration was not independently checked, and Workers Logs limits do not establish D1, WAF, Logpush, or RPi5 data lifetimes. Docker origin logging is size-rotated (3 × 10 MB), not day-expiring.
+- **Rate limiting:** source treats the Worker `RATE_LIMITER` binding as optional. Its absence is a weaker anti-abuse posture, not an equivalent substitute. Cloudflare documents Free-plan WAF Rate Limiting rules as an available no-extra-charge alternative, but adding/replacing security rules, bindings or Worker code is a separate authorized Cloudflare operation; none occurs here.
+- **Free-first fallback:** if quotas become a problem, first reduce unnecessary Stats API requests and database row scans within a separately scoped source PR; keep the static RPi5 gallery/print independent of telemetry. Only if essential engagement cannot fit Free quotas, evaluate a small self-hosted RPi5 database/API under an explicit separate architecture/security/host owner gate; do not silently enable paid services or migrate existing D1 data.
+- **No release clearance:** switching billing tier does **not** resolve GDPR Art. 6/13 lawful bases, TDDDG §25 storage consent/necessity, the Cloudflare contract/DPA, processor/transfer facts, D1 retention policy, or real account log settings. The legal pages remain a Draft and **NOT RELEASE READY**.
+
+Official references: https://developers.cloudflare.com/workers/platform/limits/ ; https://developers.cloudflare.com/d1/platform/pricing/ ; https://developers.cloudflare.com/d1/platform/limits/ ; https://developers.cloudflare.com/workers/observability/logs/workers-logs/ ; https://developers.cloudflare.com/analytics/graphql-api/features/discovery/settings/ ; https://developers.cloudflare.com/web-analytics/about/ ; https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/
+
+---
+
 ## Release blockers — owner/legal review required
 
 1. **DDG § 5:** On 2026-10-11 the owner explicitly confirmed that official legal correspondence and registered letters can be received at the postal address already shown in `impressum.html`. This is an owner attestation, not an independent legal-service assessment. Verify the provider classification, any additional mandatory details, and final `ladungsfähige Anschrift` suitability before release.

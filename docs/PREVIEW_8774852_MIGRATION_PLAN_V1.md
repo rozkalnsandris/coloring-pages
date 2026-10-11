@@ -45,3 +45,39 @@ The immediate output of this PR is only the versioned contract, documentation, a
 
 Related: `docs/PREVIEW_WATERMARK_V1.md`, `tools/coloring-pages-import`, `tools/coloring-pages-regenerate-derivatives`, and [Pillow Image documentation](https://pillow.readthedocs.io/en/stable/reference/Image.html).
 
+
+
+## Frozen candidate proof and safe executor — proposed, not authorized
+
+A one-time owner-authorized read-only Docker run on 2026-10-11 produced a new
+`1000×1414` lossless WebP from the private source, with an 801-pixel watermark
+footprint. The following identity is **measured**, not an estimate:
+
+- SHA-256: `e8722a8a3947d3d6561171b19822768487d04e38ca35f5e7e793f7cb817d4564`
+- Size: `150976` bytes
+- New filename: `preview-e8722a8a3947d3d6561171b19822768487d04e38ca35f5e7e793f7cb817d4564.webp`
+
+The source-only host executor `tools/coloring-pages-preview-8774852-migrate`
+uses **only the existing single source page and the exact immutable image**.
+Host Python requires no Pillow. It owns two explicit modes: `--check` generates
+the expected bytes in memory without publication; `--apply` requires a
+**separate, exact owner LIVE authorization**. Do not call either mode without
+the applicable authority for Docker runtime access and content mutation.
+
+The executor uses Docker `-i` for stdin, `--pull=never`, a read-only source
+bind, a read-only root filesystem, no network and no extra capabilities.
+The Docker process returns the WebP through stdout only. After checking the
+source, all old derivatives, every catalogue entry, the shared writer lock,
+exact candidate hash and absent destination, a future authorized apply would
+exclusively create **one new preview**, fsync, then atomically switch **only**
+this catalogue record's preview URL. It leaves original, thumb, print and old
+preview files unchanged, and fails closed without retries or rollback.
+
+This source merge is not the LIVE authorization and does not install the
+executor or deploy an application image. The next gate after CI/merge is
+an owner decision on an exact RPi5 checkout SHA, the expected installed image,
+the existing catalogue hash and the permitted once-only content mutation.
+
+References: [Docker bind mounts](https://docs.docker.com/engine/storage/bind-mounts/),
+[MDN immutable caching](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching)
+and [Python os.open/os.replace/fsync](https://docs.python.org/3/library/os.html).
