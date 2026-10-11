@@ -1,0 +1,234 @@
+#!/usr/bin/env python3
+"""Exact one-page #169 migration. Source-only until separately authorized LIVE."""
+from __future__ import annotations
+
+import argparse
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import pwd
+import re
+import stat
+import subprocess
+import sys
+from typing import Callable
+
+ROOT = Path("/srv/coloring-pages-content")
+CONTRACT = Path(__file__).resolve().parents[1] / "deploy/preview-8774852-migration-plan-v1.json"
+ID = "8774852"
+TEMP_NAME = ".catalog.8774852.preview169.tmp"
+IMAGE = "ghcr.io/rozkalnsandris/coloring-pages@sha256:2a80b56c20c37f4a530059c3e438c6627fd962786e6590dd914e59e86a837ba8"
+
+# Executed by stdin (-i) in the pinned, read-only importer image. stdout is binary WebP.
+RENDER_CODE = r"""
+import hashlib, importlib.machinery, importlib.util, io, sys
+from pathlib import Path
+from PIL import Image, ImageChops
+src = Path('/tmp/source.png')
+assert hashlib.sha256(src.read_bytes()).hexdigest() == 'be2eea2e56760a21eb35c425b100cea1ce69efe3a9820550078d7660b3bec7b1'
+loader = importlib.machinery.SourceFileLoader('cp_preview169', '/usr/local/bin/coloring-pages-import')
+spec = importlib.util.spec_from_loader(loader.name, loader)
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+source = mod.open_validated_source(src)
+assert source.size == (2480, 3508)
+clean = mod.resized_copy(source, mod.PREVIEW_MAX_WIDTH)
+branded = mod.watermark_preview(clean)
+assert (mod.PREVIEW_WATERMARK_TEXT, mod.PREVIEW_WATERMARK_WIDTH_RATIO,
+        mod.PREVIEW_WATERMARK_OPACITY, mod.PREVIEW_WATERMARK_ANGLE) == ('ausmalwiese.de', 0.90, 0.13, 28)
+bounds = ImageChops.difference(branded.convert('RGB'), clean.convert('RGB')).getbbox()
+assert bounds is not None and bounds[2] - bounds[0] >= round(clean.width * 0.75)
+assert branded.size == (1000, 1414)
+buf = io.BytesIO()
+branded.save(buf, format='WEBP', lossless=True, quality=100, method=6)
+sys.stdout.buffer.write(buf.getvalue())
+"""
+
+
+class MigrationError(RuntimeError):
+    pass
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise MigrationError(message)
+
+
+def sha(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def is_regular(path: Path) -> bool:
+    return path.is_file() and not path.is_symlink()
+
+
+def contract_check(c: dict) -> None:
+    require(c.get("schema") == "rozkalns.coloring-pages.single-preview-migration-plan.v1", "schema")
+    require((c.get("issue"), c.get("page_id"), c.get("scope")) ==
+            (169, ID, "preview-only-single-existing-activity"), "page scope")
+    require(c.get("status") == "SOURCE_PLAN_ONLY_NOT_LIVE_AUTHORIZED", "source status")
+    require(c["baseline"]["content_root"] == str(ROOT), "root contract")
+    require(c["baseline"]["shared_lock"] == "state/drive-ingest/.lock", "lock contract")
+    require(c["producer"]["runtime_image"] == IMAGE, "image contract")
+    require(c["producer"]["importer_blob_sha"] ==
+            "6d95f40112dc0ffae51e29af8508c305cf680f3e", "importer identity")
+    candidate = c["candidate"]
+    expected_sha = "e8722a8a3947d3d6561171b19822768487d04e38ca35f5e7e793f7cb817d4564"
+    require(candidate["candidate_sha256"] == expected_sha and
+            candidate["candidate_size_bytes"] == 150976 and
+            candidate["candidate_filename"] == "preview-" + expected_sha + ".webp" and
+            candidate["candidate_public_url"] == "/media/" + ID + "/" + candidate["candidate_filename"] and
+            candidate["width"] == 1000 and candidate["height"] == 1414 and
+            candidate["watermark_visible_width"] == 801, "candidate identity")
+    require(c["catalog_switch"]["only_field"] == "preview", "preview only")
+    require(c["catalog_switch"]["preserve_exact_fields"] ==
+            ["age", "category", "character", "difficulty", "id", "language", "print", "thumb", "title"],
+            "catalog preservation")
+    require(all(c["safeguards"].values()), "safety policy")
+
+
+def preflight(root: Path, c: dict) -> tuple[list[dict], Path, Path]:
+    require(root.is_dir() and not root.is_symlink(), "content root")
+    for rel in ("originals", "originals/" + ID, "public", "public/media",
+                "public/media/" + ID, "state", "state/drive-ingest"):
+        p = root / rel
+        require(p.is_dir() and not p.is_symlink(), "unsafe directory: " + rel)
+    b = c["baseline"]
+    paths = [b["catalog"], b["source"], *b["current"].values()]
+    for item in paths:
+        rel = item["path"]
+        file = root / rel
+        require(is_regular(file), "unsafe or missing: " + rel)
+        if "size_bytes" in item:
+            require(file.stat().st_size == item["size_bytes"], "size drift: " + rel)
+        require(sha(file.read_bytes()) == item["sha256"], "hash drift: " + rel)
+    catalog_path = root / b["catalog"]["path"]
+    catalog = json.loads(catalog_path.read_bytes())
+    require(isinstance(catalog, list) and len(catalog) == b["catalog"]["entry_count"], "catalog length")
+    matches = [i for i, item in enumerate(catalog)
+               if isinstance(item, dict) and item.get("id") == ID]
+    require(len(matches) == 1 and catalog[matches[0]] == b["catalog"]["entry"], "catalog entry drift")
+    require("pages" not in catalog[matches[0]], "multi-page not allowed")
+    source_path = root / b["source"]["path"]
+    with source_path.open("rb") as handle:
+        prefix = handle.read(24)
+    require(prefix[:8] == b"\x89PNG\r\n\x1a\n" and
+            (int.from_bytes(prefix[16:20], "big"), int.from_bytes(prefix[20:24], "big")) ==
+            (b["source"]["width"], b["source"]["height"]), "source geometry")
+    dest = root / "public/media" / ID / c["candidate"]["candidate_filename"]
+    require(not os.path.lexists(dest), "candidate URL already exists")
+    temp = catalog_path.parent / TEMP_NAME
+    require(not os.path.lexists(temp), "catalog temporary target already exists")
+    return catalog, dest, temp
+
+
+def docker_render(source_path: Path) -> bytes:
+    args = [
+        "/usr/bin/docker", "run", "-i", "--rm", "--pull=never", "--network=none",
+        "--read-only", "--cap-drop=ALL", "--security-opt=no-new-privileges",
+        "--user=101:101", "--pids-limit=128", "--memory=512m", "--cpus=1",
+        "--mount=type=bind,src=" + str(source_path) + ",dst=/tmp/source.png,readonly",
+        "--entrypoint=/usr/bin/python3", IMAGE, "-B", "-",
+    ]
+    result = subprocess.run(args, input=RENDER_CODE.encode("utf-8"),
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            check=False, timeout=90)
+    require(result.returncode == 0, "pinned Docker renderer failed")
+    return result.stdout
+
+
+def verify_render(data: bytes, c: dict) -> None:
+    candidate = c["candidate"]
+    require(len(data) == candidate["candidate_size_bytes"], "candidate byte size drift")
+    require(sha(data) == candidate["candidate_sha256"], "candidate sha256 drift")
+    require(data[:4] == b"RIFF" and data[8:12] == b"WEBP", "candidate not WebP")
+
+
+def sync_dir(directory: Path) -> None:
+    fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def create_exclusive(path: Path, payload: bytes) -> None:
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o644)
+    with os.fdopen(fd, "wb", buffering=0) as out:
+        os.fchmod(out.fileno(), 0o644)
+        out.write(payload)
+        os.fsync(out.fileno())
+
+
+def execute(root: Path, contract: dict, *, apply: bool,
+            renderer: Callable[[Path], bytes] = docker_render) -> dict:
+    contract_check(contract)
+    lock = root / contract["baseline"]["shared_lock"]
+    require(is_regular(lock), "shared lock missing or unsafe")
+    with lock.open("rb") as handle:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise MigrationError("another content writer holds the lock") from exc
+        catalog, dest, temp = preflight(root, contract)
+        body = renderer(root / contract["baseline"]["source"]["path"])
+        verify_render(body, contract)
+        # Hash every original file again, after Docker and before first write.
+        catalog, dest, temp = preflight(root, contract)
+        index = next(i for i, row in enumerate(catalog) if row["id"] == ID)
+        new_catalog = [dict(row) for row in catalog]
+        new_catalog[index]["preview"] = contract["candidate"]["candidate_public_url"]
+        require(all(new_catalog[i] == catalog[i] for i in range(len(catalog)) if i != index),
+                "unrelated catalog mutation")
+        require(all(new_catalog[index][k] == catalog[index][k]
+                    for k in catalog[index] if k != "preview"), "non-preview mutation")
+        result = {"id": ID, "candidate_sha256": sha(body),
+                  "candidate_size_bytes": len(body),
+                  "candidate_public_url": new_catalog[index]["preview"]}
+        if not apply:
+            return result
+
+        # First persistent mutation. On any subsequent error: STOP. No recovery path.
+        create_exclusive(dest, body)
+        sync_dir(dest.parent)
+        catalog_path = root / contract["baseline"]["catalog"]["path"]
+        final_bytes = (json.dumps(new_catalog, ensure_ascii=False, indent=2) + "\n").encode()
+        create_exclusive(temp, final_bytes)
+        os.replace(temp, catalog_path)
+        sync_dir(catalog_path.parent)
+
+        require(sha(dest.read_bytes()) == contract["candidate"]["candidate_sha256"],
+                "published preview verification")
+        require(catalog_path.read_bytes() == final_bytes, "catalog verification")
+        b = contract["baseline"]
+        for info in [b["source"], *b["current"].values()]:
+            require(sha((root / info["path"]).read_bytes()) == info["sha256"],
+                    "protected original mutated")
+        result["catalog_sha256"] = sha(final_bytes)
+        return result
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--check", action="store_true")
+    mode.add_argument("--apply", action="store_true")
+    args = parser.parse_args()
+    try:
+        require(os.geteuid() != 0 and pwd.getpwuid(os.geteuid()).pw_name == "andris",
+                "must run as non-root owner andris")
+        contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
+        result = execute(ROOT, contract, apply=args.apply)
+        print("PREVIEW_8774852_" + ("APPLY" if args.apply else "CHECK") + "=PASS")
+        print(json.dumps(result, sort_keys=True, separators=(",", ":")))
+        return 0
+    except Exception as exc:
+        # Never retry or clean up an incomplete publication.
+        print("PREVIEW_8774852=STOP error=" + type(exc).__name__, file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
