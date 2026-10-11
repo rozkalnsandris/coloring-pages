@@ -29,10 +29,15 @@ class PreviewWatermarkTests(unittest.TestCase):
                 self.assertEqual(preview.tobytes(), clean.tobytes())
                 self.assertEqual(original.getpixel((40, 40)), original_pixel)
                 self.assertEqual(branded.size, preview.size)
-                self.assertIsNotNone(
-                    ImageChops.difference(
-                        branded.convert("RGB"), clean.convert("RGB"),
-                    ).getbbox()
+                watermark_extent = ImageChops.difference(
+                    branded.convert("RGB"), clean.convert("RGB"),
+                ).getbbox()
+                self.assertIsNotNone(watermark_extent)
+                # Large diagonal attribution spans most of the preview width
+                # in both portrait and landscape; it is baked into pixels.
+                self.assertGreaterEqual(
+                    watermark_extent[2] - watermark_extent[0],
+                    round(preview.width * 0.75),
                 )
                 self.assertEqual(
                     branded.convert("RGB").getpixel((3, 3)),
@@ -41,7 +46,7 @@ class PreviewWatermarkTests(unittest.TestCase):
                 self.assertEqual(importer.PREVIEW_WATERMARK_TEXT, "ausmalwiese.de")
                 self.assertAlmostEqual(importer.PREVIEW_WATERMARK_OPACITY, 0.13)
                 self.assertEqual(importer.PREVIEW_WATERMARK_ANGLE, 28)
-                self.assertAlmostEqual(importer.PREVIEW_WATERMARK_WIDTH_RATIO, 0.46)
+                self.assertAlmostEqual(importer.PREVIEW_WATERMARK_WIDTH_RATIO, 0.90)
 
     def test_lossless_webp_has_baked_visible_pixels(self):
         with tempfile.TemporaryDirectory() as td:

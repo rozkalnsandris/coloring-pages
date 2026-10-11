@@ -196,7 +196,7 @@ def resized_copy(image: Image.Image, max_width: int) -> Image.Image:
 PREVIEW_WATERMARK_TEXT = "ausmalwiese.de"
 PREVIEW_WATERMARK_OPACITY = 0.13
 PREVIEW_WATERMARK_ANGLE = 28
-PREVIEW_WATERMARK_WIDTH_RATIO = 0.46
+PREVIEW_WATERMARK_WIDTH_RATIO = 0.90
 
 
 def watermark_preview(image: Image.Image) -> Image.Image:

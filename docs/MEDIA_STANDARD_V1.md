@@ -131,52 +131,11 @@ Issue #74 applies this rule to the already-regenerated `farben-zuordnen-001` byt
 
 The correction helper and its exact contract are embedded in the application image, but changes to those helper/contract paths do not independently trigger SIMPLE-DEPLOY. Releasing a reviewed helper revision therefore uses an existing approved application-image input such as a meaningful `Dockerfile` change; the SIMPLE-DEPLOY path allowlist is not broadened for one-off correction tooling.
 
-## Historical legacy print-scale migration
+## Retired one-time A4 print migrations
 
-A bounded one-off migration may upgrade already-published historical **public print derivatives** that still use pre-A4 raster geometry without rewriting private source artwork or any existing immutable media.
+The frozen historical print-scale and 15 mm safe-margin migration programs have been retired from the current application image. Their exact-baseline source contracts and tests remain available in Git history for audit, but must not be treated as tools for ordinary publication or reusable LIVE authority.
 
-Canonical source contract:
-
-`deploy/legacy-print-scale-migration-v1.json`
-
-Migration helper:
-
-`tools/coloring-pages-migrate-legacy-print-scale`
-
-The migration is deliberately narrower than a normal re-import. It explicitly calls the shared print-master helper with the historical 1 px fit mode, preserving the already-reviewed migration output semantics instead of adopting the new 15 mm publication margin; validation still requires the complete outer ring to be exact `#FFFFFF`.
-
-The migration is deliberately narrower than a normal re-import:
-
-- only the exact source page IDs, source filenames, source SHA-256 values and byte sizes frozen in the reviewed contract are eligible;
-- each source is processed through the same deterministic `coloring-pages-print-master` preparation logic used by current publication;
-- the generated print must validate as exact `2480×3508`, RGB/no alpha, approximately 300 DPI and exact-white outer border;
-- the private `originals/<id>/source*.png` bytes remain unchanged;
-- the existing public print PNG remains unchanged;
-- the new print is written once under a full-SHA-256 content-addressed `*-a4-<sha256>.png` filename;
-- thumbnails and previews remain unchanged;
-- catalog order and unrelated records are preserved;
-- only the target print URL changes (and for multi-page page 1, the compatible top-level `print` field changes with `pages[0].print`);
-- no delete or overwrite is allowed.
-
-The helper has two phases. `--plan` performs no production write: it regenerates every candidate in memory, validates the outputs, freezes the source/current-print/new-print identities and emits one canonical `PLAN_SHA256`. `--apply --expected-plan-sha256 <sha>` is allowed only after a fresh owner LIVE authorization bound to that exact plan. Apply runs under the shared content lock, re-computes the same plan, writes all new immutable print files exclusively and atomically switches the catalog only after every new file has been written. After the first persistent write, any error is a STOP with no automatic retry, rollback, cleanup or alternate mutation path.
-
-## Existing print-standard migration
-
-A read-only LIVE audit on 2026-10-06 found one current print page already satisfying the complete current print contract. This follow-up freezes 59 other print pages across 54 activities for bounded migration to the same standard.
-
-Canonical source contract:
-
-`deploy/legacy-print-safe-margin-migration-v1.json`
-
-Migration helper:
-
-`tools/coloring-pages-migrate-legacy-print-safe-margin`
-
-The migration regenerates each frozen target from its immutable private source identity, not from the current public derivative. It uses the same canonical print-master preparation as current publication: portrait or landscape A4, approximately 300 DPI, RGB/no alpha, exact-white border and a complete 15 mm (`177 px`) exact-white artwork-safe band. This avoids compounding the earlier one-pixel migration resampling.
-
-The migration preserves private sources, existing public media files, thumbnails, previews, catalogue order and unrelated entries. Every replacement print is written once under a full-SHA-256 content-addressed `*-a4-safe-<sha256>.png` filename; only the selected catalogue print field(s) switch after all new files exist.
-
-The read-only `--plan` phase validates all 59 frozen outputs and current baselines and emits one canonical `PLAN_SHA256`. `--apply --expected-plan-sha256 <sha>` requires a fresh owner LIVE authorization bound to that exact plan, runs under the shared content lock, and is fail-closed: after the first persistent write there is no automatic retry, rollback, cleanup or alternate mutation path.
+All new pages use the current deterministic `coloring-pages-print-master` and `coloring-pages-import` path. Any future correction to already-published media needs a separately reviewed exact baseline and immutable full-SHA-256 content-addressed URLs; private originals and existing public media bytes must never be overwritten in place. See **Existing derivative correction** above.
 
 ## Multi-page activities
 

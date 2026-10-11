@@ -709,8 +709,8 @@ a { color: inherit; }
 @media print {
   .print-sheet { position: relative; display: block; background: #fff; }
   .print-artwork { position: absolute; inset: 0; }
-  .print-sheet.has-brand-qr .print-artwork {
-    /* A4 page, 15mm external insets, 22mm footer plus 2mm art separation. */
+  .print-sheet .print-artwork {
+    /* Always reserve 15mm sides and a 22mm footer plus 2mm gap, with or without QR. */
     top: 15mm;
     right: 15mm;
     bottom: 39mm;
@@ -735,6 +735,7 @@ a { color: inherit; }
     background: #fff;
     font-family: var(--font-body);
     print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
   .print-brand-identity {
     display: flex;
@@ -750,11 +751,11 @@ a { color: inherit; }
   }
   .print-brand-copy { display: flex; flex-direction: column; gap: 0.2mm; }
   .print-brand-word {
-    font: 800 13pt/1 var(--font-display);
+    font: 800 16pt/1 var(--font-display);
     color: #10284d;
     white-space: nowrap;
   }
-  .print-brand-url { font: 800 8.5pt/1.12 var(--font-body); }
+  .print-brand-url { font: 800 9pt/1.12 var(--font-body); }
   .print-brand-prompt {
     margin-left: auto;
     padding-left: 4mm;
@@ -772,12 +773,8 @@ a { color: inherit; }
     height: 20mm;
     object-fit: contain;
   }
-  .print-branding.text-only {
-    /* Safe fallback: no dead QR, and no artwork reflow when /q is unverified. */
-    bottom: 3mm;
-    height: 10mm;
-  }
-  .print-branding.text-only .print-brand-prompt { display: none; }
+  /* Both modes keep the identical 15mm bottom inset and 22mm footer height.
+     No QR is rendered before the shared /q route is independently verified. */
 }
 
 /* Cloudflare-backed engagement rankings */

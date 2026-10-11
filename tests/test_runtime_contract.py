@@ -277,14 +277,6 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn("page: a4-portrait", css)
         self.assertIn("page: a4-landscape", css)
 
-    def test_legacy_print_scale_keeps_historical_one_pixel_fit(self):
-        migration = (
-            ROOT / "tools/coloring-pages-migrate-legacy-print-scale"
-        ).read_text(encoding="utf-8")
-        self.assertIn(
-            "artwork_margin_px=print_master.OUTER_WHITE_BORDER",
-            migration,
-        )
 
     def test_home_catalog_renders_twenty_items_per_batch(self):
         index = (ROOT / "index.html").read_text(encoding="utf-8")
