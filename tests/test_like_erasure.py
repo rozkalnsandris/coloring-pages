@@ -25,7 +25,8 @@ const db = {
       : sql === 'DELETE FROM likes WHERE visitor_hash = ?' ? 'erase'
       : sql.startsWith('DELETE FROM like_erasure_blocks') ? 'cleanup' : '';
     if (!op) throw Error('unscoped SQL');
-    return {bind(...args) { return {op,args}; }};
+    // A static prepared statement is valid in D1.batch() without bind().
+    return {op,args:[],bind(...args) { return {op,args}; }};
   },
   async batch(statements) {
     writes++;
