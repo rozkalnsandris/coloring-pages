@@ -101,6 +101,72 @@ Official references (reviewed 2026-10-11):
 
 ---
 
+## Like erasure and withdrawal flow — design-only, owner gate open (2026-10-11)
+
+**Authority and product constraint:** The owner authorized *design* for issue #182 with "ERASURE-FLOW KEEP-LIKES-NO-AGE-PURGE SOURCE-ONLY NO-MERGE NO-LIVE". The preceding decision to keep active Likes and the browser ID without age-based deletion stands. **No implementation, API addition, Worker/D1 operation, consent change, bulk delete, merge or LIVE action is authorized by this document.**
+
+### Verified implementation gap
+
+- The existing Worker accepts \`POST /api/stats/like\` with both \`page_id\` and \`visitor_id\`, and deletes **one matching Like for one page** when a user toggles it off. It has **no all-Likes erasure API**.
+- D1 \`likes\` rows have \`(page_id,visitor_hash)\` keys, and the existing \`likes_after_delete\` trigger decrements corresponding public \`page_stats.like_count\`. \`DELETE FROM likes WHERE visitor_hash = ?\` is the natural candidate for a verified, targeted all-pages deletion; assess in isolated SQLite tests, including multiple rows, idempotence, triggers, and untouched Print counters.
+- Worker \`allowedWriteOrigin()\` already filters some cross-origin requests, and \`rateLimit()\` exists, but neither alone establishes ownership of a visitor ID. \`getPage()\` currently sends raw \`visitor_id\` as a GET query parameter when the Like purpose is consented, increasing its possible visibility in request logs. \`js/stats.js\` currently has a **non-cryptographic \`Math.random()\` fallback** when \`crypto.randomUUID()\` is missing; that fallback is not suitable as the proof for an irreversible deletion endpoint.
+- \`js/consent.js\` currently removes the local ID immediately after both purposes are rejected or withdrawn, without contacting D1. The issue's **existing no-ID-transmission-on-withdrawal** constraint is preserved until the owner explicitly decides whether a scoped *user-directed erasure request* is an authorized exception. No backend deletion can be inferred from a local ID removal.
+- The legacy pre-opt-in ID is discarded on a first choice without being read; any older D1 Like rows associated with it can be orphaned. No silent attempt to read those IDs, reconstruct identity or bulk-delete them is permitted.
+
+### Minimal proposed UX
+
+The small full-width consent strip stays unchanged. Inside its existing \`Datenschutzeinstellungen\` panel, add a clearly separate, optional action labelled **"Meine gespeicherten Likes löschen"** with a precise confirmation step. It should explain that this removes **only the user's own existing Likes**, changes the corresponding visible Like counts, cannot be undone automatically, and does **not** delete anyone else's Likes, historical Print counts, page content or media.
+
+The purpose-specific Like/Print toggles remain independent. An ordinary \`Gefällt mir\` click still toggles a single page. With Like permission active, users never have their Likes automatically removed just because 12 months passed. Download, public aggregate counts, and A4 printing remain available without Like or Print permission.
+
+**Legal constraint:** GDPR Article 7(3) makes withdrawal easy; Article 17(1)(b) and EDPB Guidelines 05/2020 paragraph 119 generally require erasure of data held only on the withdrawn consent unless a valid independent retention basis applies. Therefore **"withdraw Like consent but indefinitely leave identifiable Like hashes in D1" is not a release-ready final workflow**. A separate optional delete button cannot replace any erasure actually required on withdrawal. A new legal basis must never be silently substituted after withdrawal.
+
+### Candidate flow and unresolved authority boundary
+
+**Candidate A (recommended for separate owner/security approval): one visibly user-initiated operation combining withdrawal and erasure.** If Like was consented and a visitor ID exists, take a single deletion-only proof *at the user's explicit request*, stop further Like operations immediately, and issue **one** HTTPS \`POST /api/stats/erase-likes\` with the proof in a JSON body (never a URL/query/cookie). On confirmed server success, keep any separately consented Print permission; remove the local ID only if neither purpose remains. Unrelated historical Print counters and active Likes of other visitors stay unchanged. Explain to the user *before* the click that the ID is sent solely to fulfill their erasure request, not for tracking.
+
+**Important:** Sending the deletion proof in or around the withdrawal operation **would be a specific exception to the currently frozen no-ID-transmission-on-withdrawal design**. Explicit owner acceptance and security/legal review must precede a code change; this DESIGN authorization does **not** grant that exception. A privacy/erasure-specific data transfer is legally distinguishable from new Like tracking but still needs a documented legal basis, clear disclosure and data minimization.
+
+**Failure semantics:** Withdrawal must take effect immediately even if the network or D1 is unavailable; the website must never falsely report server-side erasure, nor re-enable Like telemetry without a new affirmative choice. On timeout or ambiguous Worker outcome, show **"Einwilligung widerrufen; Löschung nicht bestätigt"** and a clear next user-controlled recovery/DSAR path; do not claim that deleting the browser ID is enough. The exact minimum erasure-proof lifetime, preservation after failed requests, handling browser reload/offline, and permitted manual user-triggered resubmission must be designed before implementation. No indefinite or covert identifier retention merely for a hypothetical future request.
+
+**Candidate B (retains current no-ID-transmission restriction):** Allow immediate local withdrawal with no network request, but **do not call it completed server erasure**. The controller would need an effective separate deletion/verification mechanism for identifiable D1 rows, including the case where the browser no longer has the ID. Until that mechanism and Art. 17 handling are justified, **do not release** the consent-enabled Like feature. Do not solve this by quietly purging all users' Likes.
+
+### Candidate Worker contract (not implemented)
+
+- \`POST /api/stats/erase-likes\`, explicit deletion intent, same public origin, limited JSON body with visitor proof; no required \`page_id\` because erasure spans all the requesting browser ID's pages. Use a **separate validated parser**, not the existing \`parseBody()\` (which requires \`page_id\`). Never allow a caller-supplied SQL hash, page selection wildcard, arbitrary visitor list or mass-delete flag.
+- Confirm truly **unpredictable** browser IDs (secure Web Crypto; no \`Math.random\` fallback), and mitigate leakage caused by the existing personalized GET query. Until this is resolved, possession of a raw ID should not be treated as a strong authenticated authorization to erase another user's rows. Assess scoped signed deletion proof or other minimal trustworthy design without paid Cloudflare services.
+- Check real Origin/site policy and request abuse controls, \`no-store\` responses, no sensitive IDs in GET URLs, analytics, request logs or error text. Apply the same hashed visitor lookup used for Like matching; only delete matches for the proven caller, not the full \`likes\` table. Account for replay and concurrent Like requests.
+- Database candidate: one bound parameterized \`DELETE FROM likes WHERE visitor_hash = ?\` after server-side hashing, letting existing delete triggers maintain page counts. Do not independently subtract counts a second time. Verify D1/SQLite transaction semantics, trigger behavior, error handling and response/receipt correctness with isolated tests. Never modify \`daily_prints\`, \`page_stats.print_count\`, \`daily_visitors\` or other accounts' Likes.
+- A successful erasure receipt must be returned **only after the D1 write is confirmed**. A second same-visitor deletion with zero matched rows may be idempotently successful. Errors or interrupted operations must not generate success assertions. Record no unnecessary visitor-level deletion audit trail.
+- \`GDPR Art. 11\`: When the controller genuinely cannot identify the person from the existing data, it is not obliged to collect additional identification solely for rights requests; it should communicate this where possible and act when the requester supplies sufficient information. A lost local ID is **not** grounds to pretend the D1 hash was deleted.
+- Existing D1 Time Travel recovery, Worker/security logs and any retained extracts/backups must be addressed separately; \`DELETE\` success is not a statement that all physical copies have already expired.
+
+### Required acceptance matrix for a later implementation
+
+| Scenario | Expected privacy-safe behavior |
+| --- | --- |
+| Like consented, active Likes, no withdrawal | Keep ID/rows across visits; **no automatic age purge**, counts unchanged. |
+| User unlikes one page | Only its own row deleted; corresponding count decreases once. |
+| User explicitly requests all-Likes erasure | Only verified own rows deleted, with clear confirmation; other users and Print statistics intact. |
+| Like withdrawn; Print still granted | No future Like identifier use; Print may continue under its separate permission, and only own Like rows are within erasure scope. |
+| Like+Print both withdrawn | Neither purpose continues; local ID handling and D1 erasure must follow an owner-approved, legally sound sequencing plan. |
+| Anonymous first visit / denied Like consent | No ID lookup or deletion endpoint call, no blocked A4 printing. |
+| Network timeout / D1 failure / rate limit | Immediate withdrawal possible; show deletion *not confirmed*, user recovery path, no false receipt or silent retries. |
+| GET URL containing legacy ID / weak legacy ID / hostile request | No arbitrary account deletion; reject or require an independently secure verification design. |
+| Two concurrent deletes / earlier in-flight Like | No double decrement or Like recreation after confirmed final erasure; deterministic checks. |
+| Lost legacy ID / user asks for deletion | Explain verifiable Art. 11 limits and available lawful rights process; do not claim deletion happened. |
+
+**Exact next gate:** Owner chooses **A** (authorize the narrowly scoped user-directed erasure proof on withdrawal, with explicit security and fail-closed design) or **B** (keep the existing no-ID-transmission boundary and require another verifiable rights mechanism). *No worker source or production mutation follows automatically from this design note.* Legal Draft PR #158 remains separately gated; its privacy notice must describe whichever flow is actually reviewed and implemented before coordinated release.
+
+Official sources reviewed 2026-10-11:
+- [GDPR Articles 7, 11, 17 — EUR-Lex](https://eur-lex.europa.eu/eli/reg/2016/679/oj).
+- [European Commission — Consent and withdrawal](https://commission.europa.eu/law/law-topic/data-protection/information-business-and-organisations/legal-grounds-processing-data_en).
+- [EDPB Guidelines 05/2020, especially section 5.3 and paragraph 119](https://www.edpb.europa.eu/documents/guideline/guidelines-052020-on-consent-under-regulation-2016679_en).
+- [Cloudflare D1 Worker binding, parameterized statements and batch transaction semantics](https://developers.cloudflare.com/d1/worker-api/d1-database/).
+- [Cloudflare D1 SQL and SQLite compatibility](https://developers.cloudflare.com/d1/sql-api/sql-statements/).
+
+---
+
 ## Release gates and sources
 
 - Legal review: TDDDG §25 strict necessity vs specific informed consent; GDPR Articles 6, 7 and 13, plus Article 8 if actually offering information society services directly to children; minimize retention and verify data subjects' rights. Review the Cloudflare logs, D1 Like-row retention and cross-border processing against operating facts. Existing Self-Serve DPA incorporation is documented in PR #158 but is **not** legal sign-off.
