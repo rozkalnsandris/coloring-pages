@@ -1,0 +1,105 @@
+{
+  "schema": "rozkalns.coloring-pages.single-preview-migration-plan.v1",
+  "status": "SOURCE_PLAN_ONLY_NOT_LIVE_AUTHORIZED",
+  "issue": 169,
+  "page_id": "8774852",
+  "scope": "preview-only-single-existing-activity",
+  "producer": {
+    "repository": "rozkalnsandris/coloring-pages",
+    "source_revision": "337f78988064536250a6094a01563233d81891ff",
+    "importer_blob_sha": "6d95f40112dc0ffae51e29af8508c305cf680f3e",
+    "importer_path": "tools/coloring-pages-import",
+    "runtime_image": "ghcr.io/rozkalnsandris/coloring-pages@sha256:2a80b56c20c37f4a530059c3e438c6627fd962786e6590dd914e59e86a837ba8"
+  },
+  "baseline": {
+    "content_root": "/srv/coloring-pages-content",
+    "catalog": {
+      "path": "public/catalog.json",
+      "sha256": "1eff2cd32be795ce92f1785731d60b11055b1ed662cdfea2463158a5531b9b49",
+      "entry_count": 201,
+      "entry": {
+        "age": "3-6",
+        "category": "tiere",
+        "character": "",
+        "difficulty": "easy",
+        "id": "8774852",
+        "language": "de",
+        "preview": "/media/8774852/preview.webp",
+        "print": "/media/8774852/print.png",
+        "thumb": "/media/8774852/thumb.webp",
+        "title": "Hund zum Ausmalen"
+      }
+    },
+    "source": {
+      "path": "originals/8774852/source.png",
+      "sha256": "be2eea2e56760a21eb35c425b100cea1ce69efe3a9820550078d7660b3bec7b1",
+      "size_bytes": 1032144,
+      "width": 2480,
+      "height": 3508
+    },
+    "current": {
+      "preview": {
+        "path": "public/media/8774852/preview.webp",
+        "sha256": "9455e016fee1382214050b48678202c62dcb17c5ea86b3122b8086a41e7aece4",
+        "size_bytes": 144450
+      },
+      "thumb": {
+        "path": "public/media/8774852/thumb.webp",
+        "sha256": "3a2d6977281bdb477237575b02200f6008bb5e3ef6edc95a7ce4dea5dc3181af",
+        "size_bytes": 30158
+      },
+      "print": {
+        "path": "public/media/8774852/print.png",
+        "sha256": "be2eea2e56760a21eb35c425b100cea1ce69efe3a9820550078d7660b3bec7b1",
+        "size_bytes": 1032144
+      }
+    },
+    "shared_lock": "state/drive-ingest/.lock"
+  },
+  "candidate": {
+    "source": "private-approved-source-not-existing-preview",
+    "renderer": "resized_copy(source,PREVIEW_MAX_WIDTH) -> watermark_preview -> WEBP",
+    "format": "WEBP",
+    "lossless": true,
+    "quality": 100,
+    "method": 6,
+    "max_width": 1000,
+    "watermark_text": "ausmalwiese.de",
+    "watermark_width_ratio": 0.9,
+    "watermark_opacity": 0.13,
+    "watermark_angle_degrees": 28,
+    "filename_template": "preview-<full-64-hex-sha256>.webp",
+    "candidate_sha256": null,
+    "candidate_size_bytes": null,
+    "candidate_filename": null,
+    "candidate_public_url": null
+  },
+  "catalog_switch": {
+    "only_field": "preview",
+    "url_prefix": "/media/8774852/",
+    "preserve_exact_fields": [
+      "age",
+      "category",
+      "character",
+      "difficulty",
+      "id",
+      "language",
+      "print",
+      "thumb",
+      "title"
+    ],
+    "require_exact_catalog_bytes_baseline": true,
+    "require_unique_page_id": true
+  },
+  "safeguards": {
+    "published_files_immutable": true,
+    "exclusive_new_target_creation": true,
+    "forbid_symlinks": true,
+    "preserve_source_thumb_print_exact_bytes": true,
+    "shared_writer_lock_required": true,
+    "atomic_catalog_switch": true,
+    "read_only_candidate_proof_before_live_authorization": true,
+    "no_drive_upload_or_import": true,
+    "no_retry_rollback_cleanup": true
+  }
+}
