@@ -212,8 +212,6 @@ function renderLikeState(data) {
   const liked=Boolean(data?.liked);
   likeButton.classList.toggle("is-liked",liked);
   likeButton.setAttribute("aria-pressed",String(liked));
-  const heart=likeButton.querySelector(".like-heart");
-  if (heart) heart.textContent=liked ? "♥" : "♡";
   if (likeLabel) likeLabel.textContent="Gefällt mir";
   if (likeCount) likeCount.textContent=String(Number(data?.like_count||0));
 }
@@ -308,7 +306,7 @@ async function loadDetail() {
     const categoryLabel = DETAIL_CATEGORY_LABELS[entry.category] || entry.category;
     const difficultyLabel = DETAIL_DIFFICULTY_LABELS[entry.difficulty] || entry.difficulty;
 
-    document.title = `${entry.title} | Coloring Pages`;
+    document.title = `${entry.title} | Ausmalwiese`;
     addVerifiedDetailCanonical(entry.id);
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
