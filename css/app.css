@@ -759,7 +759,7 @@ a { color: inherit; }
   .print-brand-prompt {
     margin-left: auto;
     padding-left: 4mm;
-    border-left: 1px solid #000000;
+    border-left: 1px solid #ccd6e1;
     color: #000000;
     font: 700 9pt/1.2 var(--font-body);
     white-space: nowrap;

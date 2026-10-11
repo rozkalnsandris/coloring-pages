@@ -36,7 +36,7 @@ class PrintBrandingTests(unittest.TestCase):
         prompt = block.split("  .print-brand-prompt {", 1)[1].split("  }", 1)[0]
         self.assertIn("color: #10284d;", footer)  # unchanged logo/URL color
         self.assertIn("color: #10284d;", wordmark)
-        self.assertIn("border-left: 1px solid #000000;", prompt)
+        self.assertIn("border-left: 1px solid #ccd6e1;", prompt)
         self.assertIn("color: #000000;", prompt)
         self.assertNotIn("ausmalwiese-qr-dots", (ROOT / "js/detail.js").read_text())
         self.assertNotIn("ausmalwiese-qr-dots", (ROOT / "tools/coloring-pages-import").read_text())
