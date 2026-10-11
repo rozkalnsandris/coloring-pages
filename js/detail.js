@@ -246,13 +246,22 @@ likeRetryButton?.addEventListener("click", () => {
 });
 likeButton?.addEventListener("click",async()=>{
   if (!loadedEntryId || likeButton.disabled || !window.ColoringStats?.toggleLike) return;
+  if (window.ColoringConsent?.allows?.("like") !== true) {
+    window.ColoringConsent?.openSettings?.();
+    if (likeStatus) {
+      likeStatus.textContent = "Bitte erlaube die Gefällt-mir-Funktion in den Datenschutzeinstellungen.";
+      likeStatus.hidden = false;
+    }
+    return;
+  }
   if (likeStatus) {
     likeStatus.textContent = "";
     likeStatus.hidden = true;
   }
   likeButton.disabled=true;
   try {
-    renderLikeState(await window.ColoringStats.toggleLike(loadedEntryId));
+    const data = await window.ColoringStats.toggleLike(loadedEntryId);
+    if (window.ColoringConsent?.allows?.("like") === true) renderLikeState(data);
   } catch {
     if (likeStatus) {
       likeStatus.textContent = "Gefällt mir konnte nicht gespeichert werden. Bitte versuche es erneut.";
@@ -261,6 +270,10 @@ likeButton?.addEventListener("click",async()=>{
   } finally {
     likeButton.disabled=false;
   }
+});
+
+document.addEventListener("coloring-consent-changed", () => {
+  if (loadedEntryId) hydrateLikeState(loadedEntryId);
 });
 
 function markMissingDetailNoindex() {

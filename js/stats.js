@@ -8,7 +8,8 @@
     return CAMPAIGN_IDS.has(value) ? value : "";
   }
 
-  function getVisitorId(create = false) {
+  function getVisitorId(create = false, purpose = "like") {
+    if (window.ColoringConsent?.allows?.(purpose) !== true) return "";
     try {
       let value = localStorage.getItem(VISITOR_KEY);
       if (!value && create) {
@@ -63,7 +64,9 @@
   }
 
   async function toggleLike(pageId) {
+    if (window.ColoringConsent?.allows?.("like") !== true) throw new Error("like consent required");
     const visitorId = getVisitorId(true);
+    if (!visitorId) throw new Error("visitor ID unavailable");
     return requestJson("/like", {
       method: "POST",
       body: JSON.stringify({page_id: pageId, visitor_id: visitorId}),
@@ -106,7 +109,9 @@
   }
 
   function trackPrint(pageId) {
-    const visitorId = getVisitorId(true);
+    if (window.ColoringConsent?.allows?.("print") !== true) return;
+    const visitorId = getVisitorId(true, "print");
+    if (!visitorId) return;
     const payload = {page_id: pageId, visitor_id: visitorId};
     const campaign = currentCampaign();
     if (campaign) payload.campaign = campaign;
