@@ -705,7 +705,7 @@ a { color: inherit; }
 
 
 /* #168 – print-only Ausmalwiese branding. Original PNG bytes are never edited.
-   The QR mode remains inactive until the shared /q redirect is independently verified. */
+   The QR mode is enabled only after the shared /q redirect was verified. */
 @media print {
   .print-sheet { position: relative; display: block; background: #fff; }
   .print-artwork { position: absolute; inset: 0; }
@@ -760,6 +760,7 @@ a { color: inherit; }
     margin-left: auto;
     padding-left: 4mm;
     border-left: 1px solid #ccd6e1;
+    color: #000000;
     font: 700 9pt/1.2 var(--font-body);
     white-space: nowrap;
   }

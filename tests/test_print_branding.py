@@ -25,12 +25,19 @@ class PrintBrandingTests(unittest.TestCase):
         self.assertNotIn("bottom: 3mm;", block)
         self.assertNotIn("height: 10mm;", block)
         self.assertNotIn(".print-branding.text-only .print-brand-prompt", block)
-        self.assertIn("PRINT_QR_ROUTE_VERIFIED = false", js)
+        self.assertIn("PRINT_QR_ROUTE_VERIFIED = true", js)
         self.assertIn('withQr ? "Einfach scannen!" : "auf ausmalwiese.de"', js)
         self.assertIn("buildPrintBrandFooter(qrReady)", js)
         self.assertIn("object-fit: contain", block)
         self.assertIn("margin-left: -4px;", block)
         self.assertIn("https://ausmalwiese.de/q", js)
+        footer = block.split("  .print-branding {", 1)[1].split("  }", 1)[0]
+        wordmark = block.split("  .print-brand-word {", 1)[1].split("  }", 1)[0]
+        prompt = block.split("  .print-brand-prompt {", 1)[1].split("  }", 1)[0]
+        self.assertIn("color: #10284d;", footer)  # unchanged logo/URL color
+        self.assertIn("color: #10284d;", wordmark)
+        self.assertIn("border-left: 1px solid #ccd6e1;", prompt)
+        self.assertIn("color: #000000;", prompt)
         self.assertNotIn("ausmalwiese-qr-dots", (ROOT / "js/detail.js").read_text())
         self.assertNotIn("ausmalwiese-qr-dots", (ROOT / "tools/coloring-pages-import").read_text())
 
@@ -41,6 +48,8 @@ class PrintBrandingTests(unittest.TestCase):
         self.assertEqual(root.attrib["height"], "20mm")
         ns = {"s": "http://www.w3.org/2000/svg"}
         self.assertIn("https://ausmalwiese.de/q", root.findtext("s:title", namespaces=ns))
+        self.assertEqual(root.find("s:g", ns).attrib.get("fill"), "#000000")
+        self.assertEqual(root.find("s:rect", ns).attrib.get("fill"), "#fff")
         circles = root.findall(".//s:circle", ns)
         self.assertGreater(len(circles), 100)
         for circle in circles:
@@ -78,21 +87,28 @@ function makeElement(tag) {
   return e;
 }
 const document={querySelector:(s)=>q[s]||null,createElement:makeElement};
-class ImageMock {set src(url){this.naturalWidth=url==="landscape"?3508:2480;this.naturalHeight=url==="landscape"?2480:3508;queueMicrotask(()=>this.onload())}};
+let qrLoadFails=false;
+class ImageMock {set src(url){this.naturalWidth=url==="landscape"?3508:2480;this.naturalHeight=url==="landscape"?2480:3508;queueMicrotask(()=>url.startsWith("assets/ausmalwiese-qr-dots.svg?v=")&&qrLoadFails?this.onerror():this.onload())}};
 const window={location:{search:""},parent:null,addEventListener(){},print(){},origin:"https://example.org"};
 window.parent=window;
 const context={document,window,Image:ImageMock,URLSearchParams};
 vm.runInNewContext(source+"\nglobalThis.run = renderPrintImages;",context);
-context.run(["portrait","landscape"]).then(()=>{
+context.run(["portrait","landscape"]).then(async()=>{
  const sheets=pages.children;
  if(sheets.length!==2)throw Error("multi-page count");
  if(!sheets[0].className.includes("is-portrait") || !sheets[1].className.includes("is-landscape")) throw Error("orientation");
- if(!sheets.every(s=>s.className.includes("has-text-footer")))throw Error("route gating fallback");
+ if(!sheets.every(s=>s.className.includes("has-brand-qr")))throw Error("QR-enabled sheet class");
  if(!sheets.every(s=>s.children[0].className==="print-artwork"))throw Error("artwork wrapper");
- if(!sheets.every(s=>s.children[1].className.includes("text-only")))throw Error("text-only fallback");
- if(!sheets.every(s=>s.children[1].innerHTML.includes("auf ausmalwiese.de")))throw Error("visible honest fallback CTA");
- if(!sheets.every(s=>!s.children[1].children.some(x=>x.tag==="img")))throw Error("unverified QR displayed");
+ if(!sheets.every(s=>s.children[1].className.includes("has-qr")))throw Error("QR-enabled footer");
+ if(!sheets.every(s=>s.children[1].innerHTML.includes("Einfach scannen!")))throw Error("QR scan CTA");
+ if(!sheets.every(s=>s.children[1].children.some(x=>x.tag==="img"&&x.src.startsWith("assets/ausmalwiese-qr-dots.svg?v="))))throw Error("shared QR SVG missing");
  if(canvases.length!==2 || canvases[0].width!==2480 || canvases[0].height!==3508 || canvases[1].width!==3508 || canvases[1].height!==2480)throw Error("canonical pixel geometry");
+ qrLoadFails=true;
+ await context.run(["portrait","landscape"]);
+ if(!pages.children.every(s=>s.className.includes("has-text-footer")))throw Error("QR asset failure sheet fallback");
+ if(!pages.children.every(s=>s.children[1].className.includes("text-only")))throw Error("QR asset failure footer fallback");
+ if(!pages.children.every(s=>s.children[1].innerHTML.includes("auf ausmalwiese.de")))throw Error("honest fallback CTA");
+ if(!pages.children.every(s=>!s.children[1].children.some(x=>x.tag==="img")))throw Error("QR visible after asset failure");
  console.log("PASS");
 }).catch(e=>{console.error(e);process.exitCode=1});
 """
