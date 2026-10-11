@@ -1,4 +1,5 @@
 """Shared printed QR visits: aggregate, host-locked, source-only activation."""
+import hashlib
 import sqlite3
 import json
 import shutil
@@ -19,7 +20,11 @@ class PrintQrStatsTests(unittest.TestCase):
         self.assertEqual(svg.get("viewBox"), "0 0 37 37")
         js = (ROOT / "js/print.js").read_text()
         self.assertIn("PRINT_QR_ROUTE_VERIFIED = true", js)
-        self.assertIn('const PRINT_QR_ASSET = "assets/ausmalwiese-qr-dots.svg"', js)
+        asset = (ROOT / "assets/ausmalwiese-qr-dots.svg").read_bytes()
+        version = hashlib.sha256(asset).hexdigest()[:16]
+        self.assertIn(
+            f'const PRINT_QR_ASSET = "assets/ausmalwiese-qr-dots.svg?v={version}"', js
+        )
         self.assertIn("buildPrintBrandFooter(qrReady)", js)
         self.assertNotIn("ausmalwiese-qr-dots", (ROOT / "tools/coloring-pages-import").read_text())
         self.assertNotIn("assets/ausmalwiese-qr-dots.svg", (ROOT / "js/detail.js").read_text())

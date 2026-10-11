@@ -60,7 +60,7 @@ function a4CanvasSize(width, height) {
 // /q redirect and aggregate D1 count verified LIVE; owner confirmed a physical
 // 20 mm A4 QR scan (2026-10-11). Keep the asset-load text-only fallback.
 const PRINT_QR_ROUTE_VERIFIED = true;
-const PRINT_QR_ASSET = "assets/ausmalwiese-qr-dots.svg";
+const PRINT_QR_ASSET = "assets/ausmalwiese-qr-dots.svg?v=75b511627ba4d760";
 
 function buildPrintBrandFooter(withQr) {
   const footer = document.createElement("footer");
