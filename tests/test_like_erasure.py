@@ -21,16 +21,19 @@ let hashes = [victimHash, victimHash, otherHash];
 let writes = 0, limits = 0;
 const db = {
   prepare(sql) {
-    if (sql !== 'DELETE FROM likes WHERE visitor_hash = ?') throw Error('unscoped SQL');
-    return {bind(hash) {
-      return {async run() {
-        writes++;
-        if (fixture.dbError) throw Error('D1 unavailable');
-        if (fixture.dbFailure) return {success:false};
-        hashes = hashes.filter(x => x !== hash);
-        return {success:true,meta:{changes:2}};
-      }};
-    }};
+    const op = sql.startsWith('INSERT INTO like_erasure_blocks(') ? 'guard'
+      : sql === 'DELETE FROM likes WHERE visitor_hash = ?' ? 'erase'
+      : sql.startsWith('DELETE FROM like_erasure_blocks') ? 'cleanup' : '';
+    if (!op) throw Error('unscoped SQL');
+    return {bind(...args) { return {op,args}; }};
+  },
+  async batch(statements) {
+    writes++;
+    if (fixture.dbError) throw Error('D1 unavailable');
+    if (fixture.dbFailure) return statements.map(() => ({success:false}));
+    if (statements.map(s => s.op).join(',') !== 'guard,erase,cleanup') throw Error('wrong order');
+    hashes = hashes.filter(x => x !== statements[0].args[0]);
+    return statements.map(() => ({success:true,meta:{changes:1}}));
   },
 };
 const ctx = {URL, Response, Request, TextEncoder, crypto:webcrypto};
@@ -104,12 +107,59 @@ class LikeErasureTests(unittest.TestCase):
             self.assertEqual(db.execute(
                 "SELECT like_count FROM page_stats WHERE page_id='p1'").fetchone(),(1,))
 
+
+    def test_erasure_barrier_blocks_late_like_and_preserves_other_counts(self):
+        schema=(ROOT/"cloudflare/stats-schema.sql").read_text(encoding="utf-8")
+        migration=(ROOT/"cloudflare/migrations/like-erasure-blocks.sql").read_text(encoding="utf-8")
+        guard="""INSERT INTO like_erasure_blocks(visitor_hash,blocked_until)
+                  VALUES (?,datetime('now','+1 day'))
+                  ON CONFLICT(visitor_hash) DO UPDATE SET blocked_until=excluded.blocked_until"""
+        add="""INSERT INTO likes(page_id,visitor_hash)
+               SELECT ?, ? WHERE NOT EXISTS (
+                 SELECT 1 FROM like_erasure_blocks
+                 WHERE visitor_hash = ? AND blocked_until > datetime('now'))
+               ON CONFLICT(page_id,visitor_hash) DO NOTHING"""
+        with sqlite3.connect(":memory:") as db:
+            db.executescript(schema)
+            db.executescript(migration)
+            user=hashlib.sha256(b"v2-user").hexdigest()
+            other=hashlib.sha256(b"v2-other").hexdigest()
+            db.executemany("INSERT INTO likes(page_id,visitor_hash) VALUES (?,?)",
+                [("p1",user),("p2",user),("p1",other)])
+            db.execute("UPDATE page_stats SET print_count=7 WHERE page_id='p1'")
+            # An in-flight Like committed before erase is removed.
+            db.execute(add,("p3",user,user))
+            with db:
+                db.execute(guard,(user,))
+                db.execute("DELETE FROM likes WHERE visitor_hash = ?",(user,))
+            # A request arriving after the erasure transaction cannot restore it.
+            db.execute(add,("p4",user,user))
+            self.assertEqual(db.execute(
+                "SELECT COUNT(*) FROM likes WHERE visitor_hash = ?",(user,)).fetchone()[0],0)
+            self.assertEqual(db.execute(
+                "SELECT like_count,print_count FROM page_stats WHERE page_id='p1'").fetchone(),(1,7))
+            self.assertEqual(db.execute(
+                "SELECT like_count FROM page_stats WHERE page_id='p2'").fetchone(),(0,))
+            db.execute(add,("p1",other,other))
+            self.assertEqual(db.execute(
+                "SELECT like_count FROM page_stats WHERE page_id='p1'").fetchone(),(1,))
+            # Guard expiry does not delete any Likes based on their age.
+            db.execute("UPDATE like_erasure_blocks SET blocked_until=datetime('now','-1 minute') WHERE visitor_hash=?",(user,))
+            db.execute(add,("p5",user,user))
+            self.assertEqual(db.execute(
+                "SELECT like_count FROM page_stats WHERE page_id='p5'").fetchone(),(1,))
+
     def test_source_uses_post_only_and_secure_new_tokens(self):
         worker=(ROOT/"cloudflare/stats-worker.js").read_text(encoding="utf-8")
         stats=(ROOT/"js/stats.js").read_text(encoding="utf-8")
         consent=(ROOT/"js/consent.js").read_text(encoding="utf-8")
         self.assertIn('POST" && path==="/api/stats/erase-likes"',worker)
         self.assertIn('DELETE FROM likes WHERE visitor_hash = ?',worker)
+        self.assertIn('INSERT INTO like_erasure_blocks(visitor_hash,blocked_until)',worker)
+        self.assertIn('await env.DB.batch([',worker)
+        self.assertIn('ON CONFLICT(page_id,visitor_hash) DO NOTHING',worker)
+        self.assertIn('window.addEventListener("storage"',consent)
+        self.assertIn('read()?.[purpose] === true',consent)
         self.assertIn('request.headers.get("origin")',worker)
         self.assertIn('sec-fetch-site',worker)
         self.assertIn('globalThis.crypto.getRandomValues',stats)

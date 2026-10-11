@@ -192,6 +192,20 @@ References: [Cloudflare D1 prepared statements](https://developers.cloudflare.co
 
 ---
 
+## Security hardening: cross-tab withdrawal and D1 race barrier (2026-10-11)
+
+- Under owner-authorized **source-only** scope, the client checks the current consent decision on each Like/Print operation and follows cross-tab `storage` changes. An old open tab cannot simply rely on a stale in-memory permission.
+- Erasure D1 `batch` atomically creates a **one-day temporary write barrier**, deletes Likes for only the requesting v2 hash and opportunistically cleans expired barriers. Like creation is a single conditional SQL insert that checks that barrier in the **same statement**, preventing a delayed in-flight Like write from restoring erased rows. Existing Like triggers maintain counts; Print totals and other Likes remain intact, with no age-based Like deletion.
+- `cloudflare/migrations/like-erasure-blocks.sql` is an **unapplied migration** for existing D1; schema source also includes it for fresh databases. Worker requires it **before activation**. LIVE migration, Worker deploy and runtime verification are **not authorized**.
+- Guard expiry is only a logical one-day write-block window. Cleanup is opportunistic: there is no demonstrated guaranteed physical purge or configured scheduled cleanup. Appropriate actual retention and GDPR Art. 7/17 processing remain legal/release gates.
+- After confirmed user-requested erasure, the browser removes its old shared ID without reading it under withdrawn Like consent. Separately consented Print can generate a fresh ID. If the Worker returns an error, no erasure is claimed.
+- Weak/legacy IDs remain **ineligible for irreversible automated deletion**: possession cannot be treated as cryptographically strong proof. The site offers the privacy contact for manual rights review; inherited D1 hashes and lost-ID recovery need separate legal assessment. No blanket deletion, database reset or automatic age-based Like purge.
+- Outstanding before Ready: normal Like-checkbox withdrawal currently does not request backend erasure, and older credentials/manual erasure still require a legally adequate rights path. The exact LIVE D1 schema/Worker sequencing, cookie/Cloudflare processing facts, and legal Draft PR #158 review also remain mandatory. Tests are source/offline only.
+
+Official guidance: [Cloudflare D1 batch](https://developers.cloudflare.com/d1/worker-api/d1-database/); [OWASP CSRF](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html); [Web Crypto](https://developer.mozilla.org/en-US/docs/Web/API/Crypto); [GDPR](https://eur-lex.europa.eu/eli/reg/2016/679/oj).
+
+---
+
 ## Release gates and sources
 
 - Legal review: TDDDG §25 strict necessity vs specific informed consent; GDPR Articles 6, 7 and 13, plus Article 8 if actually offering information society services directly to children; minimize retention and verify data subjects' rights. Review the Cloudflare logs, D1 Like-row retention and cross-border processing against operating facts. Existing Self-Serve DPA incorporation is documented in PR #158 but is **not** legal sign-off.

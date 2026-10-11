@@ -511,10 +511,20 @@ async function eraseLikes(env, request) {
   }
   if (!env.RATE_LIMITER) return json({error:"erasure_unavailable"},503);
   if (!(await rateLimit(env,body.visitor_id,"erase"))) return json({error:"rate_limited"},429);
+
   const hash = await sha256(body.visitor_id);
-  const result = await env.DB.prepare("DELETE FROM likes WHERE visitor_hash = ?").bind(hash).run();
-  // Trigger-driven Like count adjustment happens in the same SQLite statement.
-  if (!result || result.success !== true) return json({error:"erasure_unconfirmed"},503);
+  // D1 batch is a transaction: create a short-lived write barrier before
+  // erasing rows, so delayed Like POSTs cannot recreate them.
+  const results = await env.DB.batch([
+    env.DB.prepare(
+      "INSERT INTO like_erasure_blocks(visitor_hash,blocked_until) VALUES (?,datetime('now','+1 day')) " +
+      "ON CONFLICT(visitor_hash) DO UPDATE SET blocked_until=excluded.blocked_until"
+    ).bind(hash),
+    env.DB.prepare("DELETE FROM likes WHERE visitor_hash = ?").bind(hash),
+    env.DB.prepare("DELETE FROM like_erasure_blocks WHERE blocked_until <= datetime('now')"),
+  ]);
+  if (!Array.isArray(results) || results.length !== 3 ||
+      results.some(result => result?.success !== true)) return json({error:"erasure_unconfirmed"},503);
   return json({ok:true});
 }
 
@@ -528,10 +538,25 @@ async function toggleLike(env, request) {
   if (existing) {
     await env.DB.prepare("DELETE FROM likes WHERE page_id = ? AND visitor_hash = ?").bind(body.page_id,visitorHash).run();
   } else {
-    await env.DB.prepare("INSERT OR IGNORE INTO likes (page_id, visitor_hash) VALUES (?, ?)").bind(body.page_id,visitorHash).run();
+    // Atomic conditional insert, never a SELECT followed by unguarded INSERT.
+    const insert = await env.DB.prepare(
+      "INSERT INTO likes (page_id,visitor_hash) SELECT ?, ? WHERE NOT EXISTS (" +
+      "SELECT 1 FROM like_erasure_blocks WHERE visitor_hash = ? " +
+      "AND blocked_until > datetime('now')) " +
+      "ON CONFLICT(page_id,visitor_hash) DO NOTHING"
+    ).bind(body.page_id,visitorHash,visitorHash).run();
+    if (insert?.success !== true) return json({error:"like_unconfirmed"},503);
+    if (insert.meta?.changes === 0) {
+      const guard = await env.DB.prepare(
+        "SELECT 1 AS blocked FROM like_erasure_blocks WHERE visitor_hash = ? " +
+        "AND blocked_until > datetime('now')"
+      ).bind(visitorHash).first();
+      if (guard) return json({error:"erased_identifier"},409);
+    }
   }
   const stats = await env.DB.prepare("SELECT like_count, print_count FROM page_stats WHERE page_id = ?").bind(body.page_id).first();
-  return json({page_id:body.page_id,liked:!existing,like_count:Number(stats?.like_count||0),print_count:Number(stats?.print_count||0)});
+  const persisted = await env.DB.prepare("SELECT 1 AS liked FROM likes WHERE page_id = ? AND visitor_hash = ?").bind(body.page_id,visitorHash).first();
+  return json({page_id:body.page_id,liked:Boolean(persisted),like_count:Number(stats?.like_count||0),print_count:Number(stats?.print_count||0)});
 }
 export default {
   async fetch(request, env) {

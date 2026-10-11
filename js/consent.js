@@ -16,8 +16,9 @@
     return null;
   };
   let choice = read();
+  // Fresh preference each time; cross-tab withdrawal fails closed.
   const allows = (purpose) => (purpose === "like" || purpose === "print") &&
-    choice !== null && choice[purpose] === true;
+    read()?.[purpose] === true;
 
   const banner = document.createElement("section");
   banner.className = "privacy-banner";
@@ -121,7 +122,7 @@
 
   // Only a dedicated user action may send the deletion credential.
   async function requestLikeErasure() {
-    if (erasing || !choice?.like) return;
+    if (erasing || !allows("like")) return;
     if (!window.confirm("Deine gespeicherten Likes werden gelöscht. Das kann die sichtbaren Like-Zahlen verringern. Einverstanden?")) return;
     erasing = true;
     eraseButton.disabled = true;
@@ -141,6 +142,11 @@
     try {
       const result = await window.ColoringStats.eraseLikesWithProof(proof);
       if (result?.ok !== true) throw new Error("unconfirmed deletion");
+      // Invalidate the erased shared ID; separately allowed Print can mint a
+      // fresh cryptographic ID later. Never read the revoked Like ID here.
+      if (!allows("like")) {
+        try { localStorage.removeItem(ID_KEY); } catch {}
+      }
       eraseStatus("Deine gespeicherten Likes wurden für diese Browserkennung gelöscht.");
     } catch {
       eraseStatus("Einwilligung widerrufen; Löschung nicht bestätigt. Bitte wende dich an andris@rozkalns.net.");
@@ -172,5 +178,20 @@
   }
   document.addEventListener("coloring-consent-changed", () => {
     footer.hidden = false;
+  });
+  window.addEventListener("storage", (event) => {
+    if (event.key !== KEY && event.key !== null) return;
+    choice = read();
+    if (!choice) {
+      banner.hidden = false;
+      document.body.classList.add("has-privacy-banner");
+      footer.hidden = true;
+    } else {
+      hide();
+      footer.hidden = false;
+    }
+    document.dispatchEvent(new CustomEvent("coloring-consent-changed", {
+      detail: {like: Boolean(choice?.like), print: Boolean(choice?.print)}
+    }));
   });
 })();
