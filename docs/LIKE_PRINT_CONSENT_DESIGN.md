@@ -274,6 +274,75 @@ Official sources: [Cloudflare D1 `batch()`](https://developers.cloudflare.com/d1
 
 ---
 
+## Bounded resolution proposal for revocation, legacy DSAR, erasure authorization and PR #158 — 2026-10-11
+
+**Owner scope:** \`AUTHORIZE DESIGN coloring-pages #182 PR=183 HEAD=e26bd72525cb91a65a419a62620572c4e2cc0933 RESOLVE=REVOCATION-RETENTION+LEGACY-DSAR+ERASURE-AUTH+PR158-LEGAL-ALIGNMENT SOURCE-ONLY NO-MERGE NO-LIVE\`. This is a **reviewed design proposal and release-gate inventory**, not an owner-approved data-retention legal basis or a permission to edit executable source, the independent legal PR #158, D1 or LIVE. It supersedes earlier claims that the issue is already fully security/legal resolved.
+
+### 1. Revocation: necessary suppression is a distinct processing purpose
+
+**Keep the owner's product rule:** no automatic age purge of *active* Likes, no arbitrary 12-month Like-ID deletion, and no suppression of ordinary A4 printing or aggregate Like counts. Separately, if a Like is withdrawn and the browser's v2 credential is retired, the server must not let the *same credential* recreate Likes by replay.
+
+The current Worker places the same \`SHA-256(visitor_id)\` in \`like_erasure_blocks\` with \`blocked_until='9999-12-31 23:59:59'\`. Its atomic D1 \`batch()\` writes this hash and deletes all the matching \`likes\`; conditional Like INSERT checks the block. **This is indefinite pseudonymous storage, not a proven GDPR-compliant retention period.** Source CI tests only SQL behavior. The earlier one-day guard did not provide security after expiry. The permanent-looking sentinel is **not** a justified retention decision.
+
+**Proposed smallest implementation path, legal approval required before Ready:**
+
+- Treat the hash-only entry as an **erased-credential suppression record** with the sole purpose of preventing recreation following a verified user's erasure. Store no page ID, raw ID, IP, request path, visitor behavior log or additional tracking attributes in that table. Do not reuse the suppression record for analytics, profiling or counting.
+- Write a short **documented necessity/balancing assessment** for a possible GDPR Art. 6(1)(f) legitimate-interest legal basis for preventing replay; assess reasonable alternatives, legitimate expectations, risks and user rights. This is a *candidate*, not legal approval or an automatic fallback legal basis for keeping Like rows after withdrawal. Record Art. 13 retention **criteria** (e.g. suppression only while the old credential could be accepted) and review/erasure strategy, not an invented "forever under GDPR" assertion.
+- **Safety tradeoff to resolve:** an ID accepted forever and a promise to block it forever imply a persistently queryable revocation mechanism. A fixed tombstone TTL alone permits replay after that TTL. If unbounded hashed suppression is not legally defensible, select a separate, **bounded-lifetime credential protocol** with a server-enforced expiry/renewal and matching bounded revocation lifetime. Such a protocol must preserve user-approved cross-visit Likes without re-enabling old credentials, and requires separate design, code, schema and legal authority. Never quietly reduce security by purging suppression hashes without expiring the credentials too.
+- Replace the misleading \`blocked_until=9999\` label with an explicit schema meaning (\`revoked_at\` plus reviewed retention criteria) **only in a separately authorized code/migration change**; do not treat the present schema as a production policy. Specify eventual erasure of the suppression hash if no further replay prevention/legal retention is needed, including related D1 Time Travel/provider backups.
+- **Open owner/legal gate:** choose explicitly between (A) minimal hash-only revocation list **with a defensible documented basis/criteria** or (B) bounded-lifetime server-verifiable credential design. Neither choice is automatically authorized by this design review. No destructive cleanup and no expiry of active Like rows.
+
+### 2. Legacy and DSAR — proportional, genuine verification
+
+- A legacy value may be a random UUID *or* a weaker \`Date.now()/Math.random()\` token. It may also have appeared in historical GET \`visitor_id\` query strings. The ability to supply its raw value or know the pages liked **alone does not reliably prove control**. Never accept legacy IDs in the bulk \`erase-likes\` endpoint merely after a format conversion; that could let a copied or guessed token delete someone else's Likes.
+- Provide a **plain German privacy request path** already linked from the consent footer: \`Datenschutzanfrage (ohne Browserkennung)\`. Explain what the user wishes to erase, ask for no credentials, IDs, identification-document photographs, screenshots, or sensitive logs by ordinary email. A support reply should offer **only the minimum necessary verification** after assessing the case and the evidence available; keep the message and retention/process scoped to the DSAR, not reuse it for visitor tracking.
+- If there is **sufficient reliable evidence** to link a person to a row, decide the lawful, narrowly targeted D1 deletion with owner-gated operator authority and verify it; do not assert that a support email itself automatically deletes rows. If a formerly held ID is irretrievably lost and reliable identification is impossible, document the controller's assessment under **GDPR Art. 11(1)–(2), 12(2), 12(6)**, inform the requester as far as possible, and do not collect extra identity data solely to meet a requirement that genuinely does not need identification. Art. 11 is **not a blanket exception** to storage limitation or Art. 13 transparency.
+- Unlinked pre-consent or abandoned Like hashes require an independent necessity/lawful-basis/lifecycle review; owner instruction **"no age purge of active, authorized Likes" does not authorize perpetual orphaned or improperly consented records**. No indiscriminate database purge or stealth hash matching from logs.
+- If the real rights mechanism cannot identify older records even when the browser still holds a legacy ID, mark **NOT READY** and disclose the limitation precisely. Do not call the email contact alone a demonstrated complete erasure mechanism.
+
+### 3. Erasure security/authorization boundary
+
+- Selected **ERASURE-A** sends one explicit, purpose-limited \`POST /api/stats/erase-likes\` with **v2 256-bit browser proof** in the JSON body after an informed Like withdrawal or dedicated erasure action. The client stops processing immediately, even on network failure; it does **not** send a new ID on initial denial. Other user's Likes and Print history stay unchanged.
+- This is **bearer-like capability possession, not proof of a human's real-world identity**. The high-entropy ID and same-origin/fetch-metadata checks mitigate guessing and browser cross-site requests but **cannot protect an ID already copied through device compromise/XSS/extension misuse**. Explicitly document this residual risk and require TLS, no ID in URL/referrer/logs, CSP/XSS review, no caching of sensitive responses, request-size validation and rate limits. Prevent adding legacy IDs or arbitrary caller-supplied \`visitor_hash\` to the endpoint.
+- No silent retry after an uncertain request: avoid a false "erased" receipt or recreating a Like with a stale ID. Cross-tab storage and in-flight request behavior need integration coverage. Database \`batch\` is atomic for the tombstone + targeted delete, **but offline CI does not prove the effective LIVE Worker route, D1 schema migration, account limits or bound Rate Limiter**.
+- Because the user previously chose *no automatic age-based deletion*, **do not conflate the need to erase withdrawn Likes with a time-based purge of remaining, actively authorized Likes**. Local withdrawal must remain easier than opt-in, and no additional required modal blocks withdrawal.
+
+### 4. Exact PR #158 legal alignment (proposal, NOT applied in that PR)
+
+The current legal Draft HEAD \`06a3d9ce90ebc82cc68fbfb5f64d2601afb897ae\` is textually **out of date** relative to PR #183. A separate exact-head authorization is required to modify the legal branch, and the final German page must reflect **verified deployed behavior**. Minimum controlled changes to \`datenschutz.html\`:
+
+1. **Section 4 Like status:** replace the statement that \`visitor_id\` may be transmitted as an HTTPS **GET URL parameter** with an explicit **HTTPS POST JSON body** description when a personalized Like state is requested. Anonymous public totals still use GET without the ID. Do not assert that historical logs are cleaned by the change.
+2. **Section 4 Like withdrawal:** replace \`nicht automatisch bereits in D1 vorhandene Hashwerte\` blanket language with accurate conditional language: *for previously consented, valid v2 Like IDs*, ordinary Like withdrawal sends an explicit erasure request; a confirmed server response means matching Like rows were deleted and per-page Like totals adjusted. On missing/legacy ID, rate-limit/network/D1 error, deletion is **not confirmed** and a proportionate rights-request route is available. Withdrawal stops further Like use immediately regardless of erase success.
+3. **Describe separate suppression hashes truthfully:** D1 \`like_erasure_blocks\` persists a hash after confirmed erasure to block replay, under a separately disclosed purpose/lawful basis/retention criterion *only after legal choice*. Do **not** call it "fully deleted all personal data" or claim that the hash is anonymous. Disclose how related D1 recovery history, Cloudflare/security logs, and existing consent records are handled with verified facts.
+4. **Legacy/Art. 11:** describe the limited, safely verified manual rights route for old/lost IDs without inviting IDs/passwords or identification photos in ordinary email. Avoid falsely promising deletion of records the controller cannot identify.
+5. **Source & LIVE coordination:** PR #183 consent footer currently points to \`datenschutz.html\`, which only PR #158 provides. Both Drafts have CI PASS, **not legal sign-off**. Do not merge them separately, and do not deploy a Worker requiring \`like_erasure_blocks\` before a separately approved exact D1 migration. The current main has moved, so refresh/reconcile both PR bases before any merge gate. \`impressum.html\` and unrelated legal sections are outside this design scope.
+
+**Suggested controlled German explanation (draft text; not a published declaration):**
+
+> Wenn Sie Ihre Einwilligung für „Gefällt mir“ widerrufen, verwenden wir Ihre Browserkennung für diesen Zweck nicht weiter. Bei einer ausreichend gesicherten, aktuellen Kennung versuchen wir zugleich, die zugehörigen gespeicherten Likes per HTTPS-POST zu löschen. Die Löschung ist erst nach erfolgreicher Bestätigung durch den Server abgeschlossen. Bei älteren oder nicht mehr verfügbaren Kennungen sowie technischen Fehlern ist die Löschung nicht bestätigt; hierfür steht Ihnen unser Datenschutzkontakt zur Verfügung. Zur Verhinderung einer erneuten Speicherung mit einer bereits gelöschten Kennung kann ein gesonderter pseudonymer Sperrvermerk erforderlich sein; dessen Rechtsgrundlage und Speicherkriterien werden vor Veröffentlichung festgelegt.
+
+This text intentionally **does not** state that actual LIVE currently performs the erasure or that the necessary lawful retention choice has already been signed off. It must be reviewed and adjusted to the behavior actually released.
+
+### Acceptance before Ready
+
+- [x] Review identified contradictions and preserves active Likes/no automatic age purge.
+- [x] Define legacy/DSAR security constraints and a conditional legal alignment text for PR #158.
+- [ ] Obtain explicit legal/policy determination for **suppression-list basis, proportionality and lifecycle** versus a bounded-lifetime credential alternative; no silent indefinite hash retention.
+- [ ] Verify a workable verified erasure route for legacy/lost IDs (including candid Art. 11 limits), or keep the feature Draft and describe limitations.
+- [ ] Complete security review of bearer proof, XSS/Origin, replay, stale-tabs, logs, ambiguous network outcomes; distinguish source-level tests from LIVE evidence.
+- [ ] Separately authorize and implement PR #158's exact-head legal text after final reviewed source decisions; neither Draft may ship alone.
+- [ ] Before any release, coordinate exact-head CI/reviews, current \`main\`, legal sign-off, separately authorized D1 migration **before** Worker activation, and LIVE verification. **This source-design authorization grants none of these LIVE actions.**
+
+Sources checked 2026-10-11:
+- [GDPR Arts. 5, 6, 7, 11, 12, 13, 17](https://eur-lex.europa.eu/eli/reg/2016/679/oj)
+- [EDPB — Data subject rights](https://www.edpb.europa.eu/sme/be-compliant/respect-individuals-rights_en)
+- [EDPB — Consent Guidelines 05/2020](https://www.edpb.europa.eu/documents/guideline/guidelines-052020-on-consent-under-regulation-2016679_en)
+- [DSK — Orientierungshilfe Digitale Dienste](https://www.datenschutzkonferenz-online.de/media/oh/OH_Digitale_Dienste.pdf)
+- [Cloudflare D1 \`batch()\` SQL transaction semantics](https://developers.cloudflare.com/d1/worker-api/d1-database/)
+- [Cloudflare D1 Time Travel and backups](https://developers.cloudflare.com/d1/reference/time-travel/)
+
+---
+
 ## Release gates and sources
 
 - Legal review: TDDDG §25 strict necessity vs specific informed consent; GDPR Articles 6, 7 and 13, plus Article 8 if actually offering information society services directly to children; minimize retention and verify data subjects' rights. Review the Cloudflare logs, D1 Like-row retention and cross-border processing against operating facts. Existing Self-Serve DPA incorporation is documented in PR #158 but is **not** legal sign-off.
