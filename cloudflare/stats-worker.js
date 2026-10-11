@@ -513,17 +513,17 @@ async function eraseLikes(env, request) {
   if (!(await rateLimit(env,body.visitor_id,"erase"))) return json({error:"rate_limited"},429);
 
   const hash = await sha256(body.visitor_id);
-  // D1 batch is a transaction: create a short-lived write barrier before
-  // erasing rows, so delayed Like POSTs cannot recreate them.
+  // One atomic D1 transaction permanently rejects reuse of this *erased*
+  // credential, even if a stale tab sends a Like long after a day has passed.
+  // The minimal pseudonymous revocation hash requires separate retention review.
   const results = await env.DB.batch([
     env.DB.prepare(
-      "INSERT INTO like_erasure_blocks(visitor_hash,blocked_until) VALUES (?,datetime('now','+1 day')) " +
+      "INSERT INTO like_erasure_blocks(visitor_hash,blocked_until) VALUES (?, '9999-12-31 23:59:59') " +
       "ON CONFLICT(visitor_hash) DO UPDATE SET blocked_until=excluded.blocked_until"
     ).bind(hash),
     env.DB.prepare("DELETE FROM likes WHERE visitor_hash = ?").bind(hash),
-    env.DB.prepare("DELETE FROM like_erasure_blocks WHERE blocked_until <= datetime('now')"),
   ]);
-  if (!Array.isArray(results) || results.length !== 3 ||
+  if (!Array.isArray(results) || results.length !== 2 ||
       results.some(result => result?.success !== true)) return json({error:"erasure_unconfirmed"},503);
   return json({ok:true});
 }

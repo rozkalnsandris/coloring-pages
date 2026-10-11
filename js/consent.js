@@ -16,8 +16,10 @@
     return null;
   };
   let choice = read();
+  let storageFault = false;
   // Fresh preference each time; cross-tab withdrawal fails closed.
-  const allows = (purpose) => (purpose === "like" || purpose === "print") &&
+  const allows = (purpose) => !storageFault &&
+    (purpose === "like" || purpose === "print") &&
     read()?.[purpose] === true;
 
   const banner = document.createElement("section");
@@ -40,7 +42,7 @@
       '<label><input type="checkbox" data-consent-like> Gefällt mir auf späteren Besuchen wiedererkennen</label>',
       '<label><input type="checkbox" data-consent-print> Druckabsichten mit Browserkennung zählen</label>',
       '<p>Ohne Zustimmung bleibt A4-Drucken möglich. Gezählte Druckaktionen sind keine bestätigten Ausdrucke.</p>',
-      '<p>Beim Widerruf der Like-Einwilligung kannst du die Löschung deiner gespeicherten Likes gesondert anfordern.</p>',
+      '<p>Wenn du Gefällt mir abwählst oder Alle ablehnen wählst, versuchen wir, deine gespeicherten Likes zu löschen. Dadurch können Like-Zahlen sinken. Bei älteren Kennungen oder Fehlern helfen wir dir über den Datenschutzkontakt – sende keine Browserkennung per E-Mail.</p>',
       '<div class="privacy-options-actions">',
         '<button type="button" data-consent-erase hidden>Meine gespeicherten Likes löschen</button>',
         '<button type="button" data-consent-save>Auswahl speichern</button>',
@@ -60,7 +62,10 @@
   erasureFeedback.setAttribute("role", "status");
   erasureFeedback.setAttribute("aria-live", "polite");
   erasureFeedback.hidden = true;
-  footer.append(reopen, erasureFeedback);
+  const rights = document.createElement("a");
+  rights.href = "mailto:andris@rozkalns.net?subject=Ausmalwiese%20Datenschutz%20Loeschanfrage";
+  rights.textContent = "Datenschutzanfrage (ohne Browserkennung)";
+  footer.append(reopen, rights, erasureFeedback);
   document.body.append(banner, footer);
 
   const options = banner.querySelector("[data-consent-options]");
@@ -100,10 +105,12 @@
       };
       localStorage.setItem(KEY, JSON.stringify(record));
       choice = record;
+      storageFault = false;
       if (!record.like && !record.print) localStorage.removeItem(ID_KEY);
     } catch {
       // No permission is activated if storage cannot record it.
       choice = null; // fail closed even after a partially written/revoked record
+      storageFault = true;
       error.textContent = "Deine Auswahl konnte nicht gespeichert werden. Bitte versuche es erneut.";
       error.hidden = false;
       return false;
@@ -120,50 +127,49 @@
     erasureFeedback.hidden = false;
   }
 
-  // Only a dedicated user action may send the deletion credential.
-  async function requestLikeErasure() {
-    if (erasing || !allows("like")) return;
-    if (!window.confirm("Deine gespeicherten Likes werden gelöscht. Das kann die sichtbaren Like-Zahlen verringern. Einverstanden?")) return;
-    erasing = true;
-    eraseButton.disabled = true;
-    const proof = window.ColoringStats?.getErasureProof?.() || "";
-    // Withdraw first. No more Like reads/posts, even if D1 or the network fails.
-    if (!save({like: false, print: Boolean(choice.print)})) {
-      eraseButton.disabled = false;
-      erasing = false;
-      return;
-    }
-    reopen.focus();
+  // Ordinary Like withdrawal is itself a user-directed deletion request.
+  // First-visit rejection or Print-only withdrawal never accesses an ID.
+  async function changeConsent(next) {
+    const previous = read();
+    const revokeLike = !storageFault && previous?.like === true && !next.like;
+    const proof = revokeLike ? (window.ColoringStats?.getErasureProof?.() || "") : "";
+    if (!save(next)) return;
+    if (!revokeLike) return;
+    // Print opt-in remains separate. A future Print may create a new random ID.
+    try { localStorage.removeItem(ID_KEY); } catch {}
     if (!proof) {
-      eraseStatus("Einwilligung widerrufen; Löschung nicht bestätigt. Bei älteren Kennungen oder fehlendem Nachweis: andris@rozkalns.net");
-      erasing = false;
+      eraseStatus("Einwilligung widerrufen; Löschung nicht bestätigt. Bei älteren Kennungen oder fehlendem Nachweis kontaktiere den Datenschutzkontakt. Bitte keine Browserkennung senden.");
       return;
     }
+    eraseButton.disabled = true;
+    erasing = true;
     try {
       const result = await window.ColoringStats.eraseLikesWithProof(proof);
       if (result?.ok !== true) throw new Error("unconfirmed deletion");
-      // Invalidate the erased shared ID; separately allowed Print can mint a
-      // fresh cryptographic ID later. Never read the revoked Like ID here.
-      if (!allows("like")) {
-        try { localStorage.removeItem(ID_KEY); } catch {}
-      }
       eraseStatus("Deine gespeicherten Likes wurden für diese Browserkennung gelöscht.");
     } catch {
-      eraseStatus("Einwilligung widerrufen; Löschung nicht bestätigt. Bitte wende dich an andris@rozkalns.net.");
+      eraseStatus("Einwilligung widerrufen; Löschung nicht bestätigt. Bitte nutze den Datenschutzkontakt ohne Browserkennung.");
     } finally {
       erasing = false;
+      eraseButton.disabled = false;
     }
+  }
+
+  async function requestLikeErasure() {
+    if (erasing || !allows("like")) return;
+    if (!window.confirm("Deine gespeicherten Likes werden gelöscht. Das kann die sichtbaren Like-Zahlen verringern. Einverstanden?")) return;
+    await changeConsent({like:false, print:Boolean(read()?.print)});
   }
 
   eraseButton.addEventListener("click", requestLikeErasure);
 
   banner.querySelector("[data-consent-deny]").addEventListener("click", () =>
-    save({like:false, print:false}));
+    changeConsent({like:false, print:false}));
   banner.querySelector("[data-consent-accept]").addEventListener("click", () =>
-    save({like:true, print:true}));
+    changeConsent({like:true, print:true}));
   settings.addEventListener("click", () => show(true));
   banner.querySelector("[data-consent-save]").addEventListener("click", () =>
-    save({like:like.checked, print:print.checked}));
+    changeConsent({like:like.checked, print:print.checked}));
   banner.querySelector("[data-consent-cancel]").addEventListener("click", () => {
     if (choice) hide(); else show(false);
   });

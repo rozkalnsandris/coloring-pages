@@ -259,6 +259,21 @@ Official guidance verified 2026-10-11: [GDPR Arts. 5, 7, 11, 13, 17 (EUR-Lex)](h
 
 ---
 
+## Source design convergence — normal withdrawal and replay protection (2026-10-11)
+
+This section supersedes earlier one-day barrier/optional erasure discussion. Source work was explicitly authorized for #182; **no merge, Cloudflare Worker deploy, D1 migration, production deletion or RPi5 action**.
+
+- When **previously consented Like** is switched off through the ordinary **Alle ablehnen** or **Auswahl speichern** action, the client treats that explicit user gesture as the deletion request. It captures an eligible v2 proof while permission is still valid, **saves withdrawal immediately**, discards the old optional local ID (Print stays separately consented), and sends **one** purpose-scoped POST request. First-visit refusal, Print-only withdrawal or missing consent do not read/submit the ID. The separate explicit erase button still works, but is no longer a prerequisite for withdrawal.
+- A failed/ambiguous POST or legacy/non-v2/missing proof **does not claim erasure**. The UI offers a privacy contact with instruction **not to email the browser identifier**. Old potentially weak/leaked UUID and timestamp IDs are never accepted as sufficient irreversible delete proof; a rights review must assess individual requests and Art. 11 verification limits without demanding intrusive identification by default. Orphaned historic Like hashes still need a justified legal lifecycle.
+- Replay: replacing the former temporary one-day SQL guard with an **indefinite revocation record** (hash plus sentinel `blocked_until='9999-12-31 23:59:59'`), created in the **same D1 transaction as erasure**, prevents the already-erased visitor credential from adding new Likes later. The *unexpired* guard check is inside each SQL insertion, not a separate read. The browser uses a new cryptographically random ID for a later newly consented Like/Print.
+- **Privacy tradeoff / mandatory owner and legal review**: this retains a minimal pseudonymous revocation hash rather than guaranteeing deletion of every identifier-derived value. It can itself be personal data, so Article 5(1)(e), Article 6, Article 13 and Article 17 require an explicit proportionality/legal basis assessment and actual retention/deletion criteria; do **not** claim GDPR compliance or permanent lawful retention from CI. If indefinite tombstones are not justified, a different revocation/credential protocol is a release blocker. This does **not** age-purge any active Like.
+- Offline tests cover SQL guard, other-user Likes and Print aggregates, invalid/weak IDs, error acknowledgments, and source consent wiring. In-flight network, storage failures, cross-tab and real D1 schema/deploy ordering require further review. `cloudflare/migrations/like-erasure-blocks.sql` remains **unapplied**.
+- PR #158 German privacy wording must accurately describe the eventually implemented flow, D1, provider/log retention and data subject rights before any coordinated release. **PR #183 remains Draft/NOT READY** pending legal sign-off, security acceptance and separate LIVE authorization.
+
+Official sources: [Cloudflare D1 `batch()`](https://developers.cloudflare.com/d1/worker-api/d1-database/), [OWASP CSRF prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html), [GDPR Arts. 5, 7, 11, 13, 17](https://eur-lex.europa.eu/eli/reg/2016/679/oj).
+
+---
+
 ## Release gates and sources
 
 - Legal review: TDDDG §25 strict necessity vs specific informed consent; GDPR Articles 6, 7 and 13, plus Article 8 if actually offering information society services directly to children; minimize retention and verify data subjects' rights. Review the Cloudflare logs, D1 Like-row retention and cross-border processing against operating facts. Existing Self-Serve DPA incorporation is documented in PR #158 but is **not** legal sign-off.

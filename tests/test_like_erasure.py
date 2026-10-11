@@ -22,8 +22,7 @@ let writes = 0, limits = 0;
 const db = {
   prepare(sql) {
     const op = sql.startsWith('INSERT INTO like_erasure_blocks(') ? 'guard'
-      : sql === 'DELETE FROM likes WHERE visitor_hash = ?' ? 'erase'
-      : sql.startsWith('DELETE FROM like_erasure_blocks') ? 'cleanup' : '';
+      : sql === 'DELETE FROM likes WHERE visitor_hash = ?' ? 'erase' : '';
     if (!op) throw Error('unscoped SQL');
     // A static prepared statement is valid in D1.batch() without bind().
     return {op,args:[],bind(...args) { return {op,args}; }};
@@ -32,7 +31,7 @@ const db = {
     writes++;
     if (fixture.dbError) throw Error('D1 unavailable');
     if (fixture.dbFailure) return statements.map(() => ({success:false}));
-    if (statements.map(s => s.op).join(',') !== 'guard,erase,cleanup') throw Error('wrong order');
+    if (statements.map(s => s.op).join(',') !== 'guard,erase') throw Error('wrong order');
     hashes = hashes.filter(x => x !== statements[0].args[0]);
     return statements.map(() => ({success:true,meta:{changes:1}}));
   },
@@ -113,7 +112,7 @@ class LikeErasureTests(unittest.TestCase):
         schema=(ROOT/"cloudflare/stats-schema.sql").read_text(encoding="utf-8")
         migration=(ROOT/"cloudflare/migrations/like-erasure-blocks.sql").read_text(encoding="utf-8")
         guard="""INSERT INTO like_erasure_blocks(visitor_hash,blocked_until)
-                  VALUES (?,datetime('now','+1 day'))
+                  VALUES (?, '9999-12-31 23:59:59')
                   ON CONFLICT(visitor_hash) DO UPDATE SET blocked_until=excluded.blocked_until"""
         add="""INSERT INTO likes(page_id,visitor_hash)
                SELECT ?, ? WHERE NOT EXISTS (
@@ -144,9 +143,14 @@ class LikeErasureTests(unittest.TestCase):
             db.execute(add,("p1",other,other))
             self.assertEqual(db.execute(
                 "SELECT like_count FROM page_stats WHERE page_id='p1'").fetchone(),(1,))
-            # Guard expiry does not delete any Likes based on their age.
-            db.execute("UPDATE like_erasure_blocks SET blocked_until=datetime('now','-1 minute') WHERE visitor_hash=?",(user,))
+            # Even after a simulated year, the erased credential stays revoked.
+            db.execute("UPDATE like_erasure_blocks SET blocked_until='9999-12-31 23:59:59' WHERE visitor_hash=?",(user,))
             db.execute(add,("p5",user,user))
+            self.assertEqual(db.execute(
+                "SELECT COUNT(*) FROM likes WHERE visitor_hash = ?",(user,)).fetchone()[0],0)
+            # A newly consented user can still Like without an age purge.
+            fresh=hashlib.sha256(b"v2-fresh").hexdigest()
+            db.execute(add,("p5",fresh,fresh))
             self.assertEqual(db.execute(
                 "SELECT like_count FROM page_stats WHERE page_id='p5'").fetchone(),(1,))
 
@@ -169,4 +173,12 @@ class LikeErasureTests(unittest.TestCase):
         self.assertNotIn('query.set("visitor_id"',stats)
         self.assertIn('window.ColoringStats?.getErasureProof?.()',consent)
         self.assertIn('window.confirm(',consent)
+        self.assertIn('changeConsent({like:false, print:false})',consent)
+        self.assertIn('changeConsent({like:like.checked, print:print.checked})',consent)
+        self.assertIn('const revokeLike = !storageFault && previous?.like === true && !next.like;',consent)
+        self.assertIn('const proof = revokeLike ?',consent)
+        self.assertIn('if (!revokeLike) return;',consent)
+        self.assertIn("'9999-12-31 23:59:59'",worker)
+        self.assertNotIn("DELETE FROM like_erasure_blocks WHERE blocked_until",worker)
+        self.assertIn('Datenschutzanfrage (ohne Browserkennung)',consent)
         self.assertIn('Einwilligung widerrufen; Löschung nicht bestätigt',consent)
