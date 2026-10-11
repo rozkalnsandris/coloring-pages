@@ -409,3 +409,19 @@ Official references, reviewed 2026-10-11:
 - `js/detail.js`: Like asks for explicit settings when disabled; consent change refreshes Like status. Print continues into A4 print regardless of telemetry permission.
 - `stats.html` labels cumulative metrics as historical, with future counts consent-limited. The actual retention, consent evidence adequacy and deletion policies remain unresolved legal gates.
 - Only index/detail/kita pages currently load the banner. The legal pages in Draft PR #158 must be updated to describe the actual consent behavior and must be present before releasing this feature: until then the banner Datenschutz link would point to a page not yet published. This keeps PR #183 in Draft until legal coordination.
+
+---
+
+## Minimal A legal-basis check — START 2026-10-11
+
+**Decision: keep A as a source proposal, but NOT LEGALLY APPROVED / NOT RELEASE READY.** No automatic age purge of active consented Likes. Erasure after withdrawal must still work, and a reused erased v2 credential must not recreate Likes.
+
+- **Purpose / Art. 6(1)(f) candidate:** retain only the SHA-256 hash of an explicitly erased v2 credential to reject its replay; never use this record for analytics, Like counting or visitor profiles. This can be a legitimate anti-replay interest, **not** an established legal basis.
+- **Necessity:** without a replay block an unexpired bearer credential can create Like rows again. A shorter fixed hash TTL is unsafe while the Worker accepts the old credential indefinitely. Alternatives (server-enforced token expiry/rotation) add protocol complexity and need a separately approved design. Do not add them just to make the current release seem ready.
+- **Balance and retention:** hash is still potentially pseudonymous personal data. It carries limited fields and purpose but still affects deletion expectations and the right to object. Retain it **only while the corresponding credential remains technically accepted**, and reassess necessity, user rights, disclosure and actual deletion on a reviewed policy or protocol change. This criterion is **not** a verified finite deadline and must not be described as lawful indefinite storage. Independent legal review is required before Worker/D1 release.
+- **Legacy/DSAR:** never bulk-delete based only on a weak/previously URL-exposed ID. Keep the ordinary German privacy email route without asking for a raw browser ID, credentials or identity document by email. Acknowledge and assess each rights request; the standard response deadline is one month (possible extension with timely notice). Where row linkage is genuinely impossible, evaluate GDPR Art. 11/12 case by case and explain that erasure is unconfirmed, not complete.
+- **D1 backups:** deleting a live row does not imply immediate removal from Time Travel. Cloudflare documents a **7-day restore window on Workers Free**, **30 days on Workers Paid**, for supported D1 databases; verify the account/database before making a published claim. Do not run restores, migrations or cleanup here.
+
+**Remaining release gate:** legal sign-off of the suppression record's independent lawful basis, retention/objection/erasure policy and German Art. 13 wording; legacy-rights handling and paired PR #158 review; separate owner-authorized D1 migration before Worker activation. No legal conclusion, deployment or merge from this note.
+
+References: [European Commission — legal bases](https://commission.europa.eu/law/law-topic/data-protection/information-business-and-organisations/legal-grounds-processing-data_en); [EDPB — data subject rights and one-month response](https://www.edpb.europa.eu/sme/be-compliant/respect-individuals-rights_en); [EDPB Guidelines 1/2024 — Art. 6(1)(f), consultation version](https://www.edpb.europa.eu/public-consultations/guidelines-12024-on-processing-of-personal-data-based-on-article-61f-gdpr_en); [Cloudflare D1 Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/).
