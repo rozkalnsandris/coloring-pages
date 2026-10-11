@@ -69,10 +69,13 @@
     "watermark_opacity": 0.13,
     "watermark_angle_degrees": 28,
     "filename_template": "preview-<full-64-hex-sha256>.webp",
-    "candidate_sha256": null,
-    "candidate_size_bytes": null,
-    "candidate_filename": null,
-    "candidate_public_url": null
+    "candidate_sha256": "e8722a8a3947d3d6561171b19822768487d04e38ca35f5e7e793f7cb817d4564",
+    "candidate_size_bytes": 150976,
+    "candidate_filename": "preview-e8722a8a3947d3d6561171b19822768487d04e38ca35f5e7e793f7cb817d4564.webp",
+    "candidate_public_url": "/media/8774852/preview-e8722a8a3947d3d6561171b19822768487d04e38ca35f5e7e793f7cb817d4564.webp",
+    "width": 1000,
+    "height": 1414,
+    "watermark_visible_width": 801
   },
   "catalog_switch": {
     "only_field": "preview",

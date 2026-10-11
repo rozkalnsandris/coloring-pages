@@ -83,9 +83,17 @@ class PreviewMigrationPlanTests(unittest.TestCase):
         self.assertEqual((c["format"], c["lossless"], c["quality"], c["method"]),
                          ("WEBP", True, 100, 6))
         self.assertEqual(c["filename_template"], "preview-<full-64-hex-sha256>.webp")
-        for key in ("candidate_sha256", "candidate_size_bytes",
-                    "candidate_filename", "candidate_public_url"):
-            self.assertIsNone(c[key])
+        self.assertEqual(
+            c["candidate_sha256"],
+            "e8722a8a3947d3d6561171b19822768487d04e38ca35f5e7e793f7cb817d4564",
+        )
+        self.assertEqual(c["candidate_size_bytes"], 150976)
+        self.assertEqual((c["width"], c["height"], c["watermark_visible_width"]),
+                         (1000, 1414, 801))
+        self.assertEqual(
+            c["candidate_filename"], "preview-" + c["candidate_sha256"] + ".webp")
+        self.assertEqual(
+            c["candidate_public_url"], "/media/8774852/" + c["candidate_filename"])
 
     def test_only_preview_catalog_switch_and_no_mutation_authority(self):
         p = self.plan
