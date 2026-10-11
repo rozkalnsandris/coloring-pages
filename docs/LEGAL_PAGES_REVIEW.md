@@ -15,6 +15,23 @@
 - The separate visitor-counting Worker path produces daily IP-derived HMAC records (pseudonymous); deletion is triggered by successful future visits rather than scheduled expiry.
 - LIVE verification, real Cloudflare DPA/transfers, origin/edge logs, exact retention periods, and Rate Limiter behavior are not proven by source. Previous edge checks showed legacy GET 200 and new POST page-status 404.
 
+## Bounded runtime evidence — 2026-10-11 (read-only snapshot, not legal sign-off)
+
+**Evidence boundaries:** GitHub files describe source only; below, public-edge HTTP observations and a read-only RPi5 container-inspection snapshot describe what was observed on 2026-10-11. Neither proves future deployed behavior, private Cloudflare settings, contract acceptance, or lawful bases. No raw logs, secrets, D1 rows or customer contracts were read.
+
+- **RPi5/nginx/Docker:** Source `deploy/nginx.conf` uses `access_log /dev/stdout;`. The observed running container `coloring-pages-public-coloring-pages-1` used Docker logging driver `json-file`, with `max-size=10m` and `max-file=3`; the daemon default showed the same options. This provides size-triggered log rotation, **not a guaranteed retention period in days**, and does not establish the absence of other host/Cloudflare log stores. The inspection did not expose individual visitor log records.
+- **Public-edge snapshot:** An HTTP GET to `/` returned 200. `/impressum.html`, `/datenschutz.html` and `/css/fonts.css` returned 404, so the draft legal pages and local font stylesheet were not observed LIVE. Served home HTML still referenced Google Fonts and the existing `js/stats.js?v=kita-campaign-v1`. A read-only `GET /api/stats/page?page_id=0000000` returned 200; a synthetic `POST /api/stats/page` returned 404, consistent with the old Worker API. That POST was a non-mutating page-status check, not a print/like event.
+- **Cookie evidence boundary:** One home-page HTTP response had no `Set-Cookie` header. That does **not** demonstrate that the entire site, other routes, browser sessions or Cloudflare security challenges never set cookies. Cloudflare documents separate security cookies and their conditions.
+- **Source-side retention distinctions:** `cloudflare/stats-schema.sql` defines `likes` rows without automatic expiry. Source `cloudflare/stats-worker.js` deletes older `daily_visitors` HMAC rows on *successful* visit processing, not on an independent wall-clock schedule. A D1 database-wide retention or deletion guarantee cannot be inferred from either. The Rate Limiter's retention/state was not verified.
+- **Cloudflare Workers Logs product documentation:** published retention is 3 days (Workers Free) or 7 days (Workers Paid) for Workers Logs. Whether Workers Logs are enabled, which plan applies, and any sampling/export settings in this particular account are **unverified**. Those product limits must **not** be represented as the lifetime of origin logs, D1 rows, security data or all edge HTTP logs.
+- **Contracts and transfers:** publicly available Cloudflare DPA / Trust Hub material does not verify this account's accepted agreements, product-specific subprocessors, processing location, transfer safeguards or actual retention configurations. Keep all these facts pending account-specific review.
+
+**Still needed before legal sign-off:** verify actual Cloudflare account DPA/transfer settings, whether Workers Logs/Logpush are enabled, the origin and other Cloudflare log destinations and actual deletion practice, D1 Like retention/deletion policy, Rate Limiter retention, and the TDDDG § 25 consent or strict-necessity assessment. GDPR Art. 13 requires actual retention periods or the criteria used to determine them; size-based Docker rotation cannot be substituted for a fixed-day period.
+
+Sources: [Docker `json-file` rotation](https://docs.docker.com/engine/logging/drivers/json-file/); [Cloudflare Workers Logs limits](https://developers.cloudflare.com/workers/observability/logs/workers-logs/); [Cloudflare cookies](https://developers.cloudflare.com/fundamentals/reference/policies-compliances/cloudflare-cookies/); [GDPR Art. 13](https://eur-lex.europa.eu/eli/reg/2016/679/); [TDDDG § 25](https://www.gesetze-im-internet.de/ttdsg/__25.html).
+
+---
+
 ## Release blockers — owner/legal review required
 
 1. **DDG § 5:** On 2026-10-11 the owner explicitly confirmed that official legal correspondence and registered letters can be received at the postal address already shown in `impressum.html`. This is an owner attestation, not an independent legal-service assessment. Verify the provider classification, any additional mandatory details, and final `ladungsfähige Anschrift` suitability before release.
