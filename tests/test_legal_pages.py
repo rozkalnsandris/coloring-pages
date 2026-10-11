@@ -58,6 +58,20 @@ class LegalPageSourceTests(unittest.TestCase):
         self.assertIn("visitor_id: visitorId", print_source)
         self.assertIn('rateLimit(env,body.visitor_id,"print")', worker)
         self.assertIn("Landesbeauftragten für Datenschutz", privacy)
+    def test_consent_banner_legal_draft_is_explicitly_release_gated(self):
+        privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
+        report = (ROOT / "docs/LEGAL_PAGES_REVIEW.md").read_text(encoding="utf-8")
+        for expected in (
+            "coloring-pages-consent-v1", "coloring-pages-visitor-v1",
+            "Alle ablehnen", "Alle akzeptieren", "Datenschutzeinstellungen",
+            "Gefällt mir", "Druckstatistik", "URL-Parameter",
+            "nicht automatisch", "ohne Einwilligung", "Cloudflare Rate Limiter",
+        ):
+            self.assertIn(expected.lower(), privacy.lower())
+        self.assertIn("PR #183 consent banner alignment", report)
+        self.assertIn("Neither draft should be merged", report)
+        self.assertIn("NOT RELEASE READY", report)
+
     def test_self_hosted_woff2_and_licenses(self):
         import base64
         import re

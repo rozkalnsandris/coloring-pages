@@ -80,48 +80,102 @@
           Diese Tageswerte sind eine ungefähre Statistik, keine sichere Zählung
           von Personen.</p>
         <p>Daneben werden aggregierte Aufrufe von Vorlagendetailseiten,
-          Druckaktionen und gegebenenfalls Kampagnenereignisse erfasst.
+          bei entsprechender Einwilligung Druckaktionen und gegebenenfalls
+          Kampagnenereignisse erfasst.
           Kampagnenkennungen kennzeichnen gemeinsame Aktionen und keine
           einzelnen Kindergärten oder Personen. Die Rechtsgrundlagen
           dieser zusätzlichen Statistiken sowie die erforderlichen
           Speicher- und Löschfristen sind noch zu bestätigen.</p>
       </section>
 
-      <section aria-labelledby="privacy-engagement">
-        <h2 id="privacy-engagement">4. „Gefällt mir“ und Druckaktionen</h2>
-        <p>Wenn Sie erstmals „Gefällt mir“ oder die Druckfunktion verwenden,
-          erzeugt die Website eine zufällige Besucherkennung und speichert
-          sie unter <code>coloring-pages-visitor-v1</code> im
-          <code>localStorage</code> Ihres Browsers. Beim bloßen Betrachten
-          wird keine neue Kennung angelegt. Sie bleibt gespeichert, bis
-          Sie die Browserdaten löschen.</p>
-        <p>Für die Anzeige des Bewertungsstatus kann die bestehende Kennung
-          als <code>visitor_id</code> im URL-Parameter einer
-          HTTPS-GET-Anfrage an den Cloudflare Worker übermittelt werden.
-          Dadurch kann sie in technischen Zugriffsprotokollen erscheinen.
-          Bei „Gefällt mir“-Aktionen wird sie im Körper einer
-          HTTPS-POST-Anfrage übertragen. Erst der Worker bildet für
-          eine Bewertung einen SHA-256-Hash, der zusammen mit der
-          Vorlagenkennung in Cloudflare D1 gespeichert wird.
-          Das Entfernen einer Bewertung löscht den entsprechenden Eintrag.</p>
-        <p>Beim Auslösen der Druckfunktion wird eine Druckabsicht gezählt,
-          kein tatsächlich erfolgter Ausdruck. Dabei übermittelt die
-          Website ebenfalls die dauerhafte Besucherkennung im Körper
-          der Anfrage an den Cloudflare Worker. Die Kennung kann für
-          die Begrenzung wiederholter Bewertungs- und Druckaktionen
-          an den Cloudflare Rate Limiter weitergegeben werden;
-          in der aggregierten D1-Druckstatistik wird sie nicht
-          als Druckkennung gespeichert. Die Aufbewahrungsdauer beim
-          Rate Limiter ist noch nicht bestätigt.</p>
-        <p>Für das Speichern und Auslesen dieser Kennung ist nach
-          § 25 TDDDG grundsätzlich eine Einwilligung erforderlich.
-          Eine Ausnahme kommt insbesondere nur in Betracht, wenn dies
-          für einen ausdrücklich gewünschten digitalen Dienst
-          unbedingt erforderlich ist. Ob eine solche Ausnahme für
-          „Gefällt mir“ und Druckaktionen tatsächlich greift,
-          ist noch nicht nachgewiesen. Auch die Rechtsgrundlagen
-          nach Art. 6 DSGVO und die tatsächlichen Aufbewahrungsfristen
-          müssen vor Veröffentlichung geprüft werden.</p>
+            <section aria-labelledby="privacy-engagement">
+        <h2 id="privacy-engagement">4. Einwilligung, „Gefällt mir“ und Druckstatistik</h2>
+        <p>Für die optionalen Funktionen „Gefällt mir“ und Druckstatistik ist
+          eine <strong>freiwillige, zweckbezogene Einwilligung</strong> vorgesehen.
+          Beim ersten Besuch wird dazu eine schmale Leiste am unteren
+          Bildschirmrand angezeigt. Sie können „Alle ablehnen“,
+          „Einstellungen“ oder „Alle akzeptieren“ wählen. In den
+          Einstellungen lassen sich die Wiedererkennung von Bewertungen
+          und die Druckstatistik <strong>getrennt</strong> auswählen; ohne
+          ausdrückliche Zustimmung ist keine der beiden Optionen aktiviert.
+          „Alle akzeptieren“ aktiviert beide, „Alle ablehnen“ keine der
+          beiden Funktionen. Die Auswahl betrifft nur diese
+          kennungsbasierten Zusatzfunktionen und schaltet die in
+          Abschnitt 3 beschriebenen separaten Besuchs- und
+          Seitenaufrufstatistiken nicht ab.</p>
+        <p>Die getroffene Entscheidung wird unter
+          <code>coloring-pages-consent-v1</code> im
+          <code>localStorage</code> des Browsers vorgemerkt. Der Eintrag
+          umfasst eine Version, die jeweilige Zustimmung oder Ablehnung
+          für „Gefällt mir“ und Druckstatistik sowie den Zeitpunkt der
+          Entscheidung; er enthält keine Besucherkennung. Die
+          Speicherung dient dem Merken Ihrer Datenschutzauswahl.
+          Ihre genaue rechtliche Einordnung nach § 25 TDDDG,
+          der erforderliche Einwilligungsnachweis und der Umgang
+          mit Browsern ohne funktionsfähigen Speicher werden vor der
+          Freigabe abschließend geprüft.</p>
+        <p>Eine dauerhafte zufällige Kennung unter
+          <code>coloring-pages-visitor-v1</code> wird nur dann erstmals
+          erstellt oder gelesen, wenn Sie der betreffenden Funktion
+          zugestimmt haben und diese nutzen. Bereits vorhandene
+          Kennungen aus der früheren Website-Version werden ohne
+          erneute ausdrückliche Zustimmung nicht weiterverwendet;
+          bei der ersten neuen Entscheidung wird eine solche alte
+          Kennung ohne vorheriges Auslesen entfernt. Eine erlaubte
+          Kennung bleibt ansonsten bis zur Löschung der Browserdaten
+          oder bis zum Widerruf beider Zustimmungen im Browser.</p>
+        <p>Bei Zustimmung zur „Gefällt mir“-Funktion wird die
+          Kennung zur Wiedererkennung Ihrer Bewertungen verwendet.
+          Zur Anzeige Ihres bisherigen Bewertungsstatus kann sie als
+          <code>visitor_id</code> in einem URL-Parameter einer
+          HTTPS-GET-Anfrage an den Cloudflare Worker übertragen werden;
+          dabei kann sie in technischen Zugriffsprotokollen erscheinen.
+          Bei einer Bewertung wird die Kennung im Körper einer
+          HTTPS-POST-Anfrage gesendet. Der Worker speichert einen
+          SHA-256-Hash der Kennung zusammen mit der Vorlagenkennung
+          in Cloudflare D1. Ein aktives „Gefällt mir“ kann durch
+          erneutes Anklicken entfernt werden. Ohne Einwilligung werden
+          nur allgemeine Bewertungszahlen ohne Ihre Kennung angezeigt;
+          eine personenbezogene Bewertung wird dann nicht gesendet.</p>
+        <p>Nur wenn Sie der Druckstatistik zugestimmt haben, wird beim
+          Klick auf „A4 drucken“ die Kennung im Körper einer
+          HTTPS-POST-Anfrage an den Cloudflare Worker übermittelt.
+          Die Kennung kann zur Begrenzung wiederholter Aktionen
+          an den Cloudflare Rate Limiter weitergegeben werden.
+          In der aggregierten D1-Druckstatistik wird sie nicht als
+          Druckkennung gespeichert. Erfasst werden
+          <strong>Druckabsichten, keine bestätigten Ausdrucke</strong>.
+          Ohne diese Einwilligung können Sie Vorlagen weiterhin
+          ansehen, herunterladen und auf A4 drucken; eine neue
+          Druckaktion wird dann nicht in dieser Statistik gezählt.
+          Bestehende ältere Gesamtzahlen bleiben erhalten und
+          umfassen auch vor Einführung der Einwilligungsfunktion
+          erhobene Druckabsichten.</p>
+        <p>Ihre Einwilligungen können Sie auf der
+          <a href="index.html">Startseite</a> und den
+          Vorlagenseiten über „Datenschutzeinstellungen“ jederzeit
+          einzeln ändern oder widerrufen. Danach wird die Kennung
+          für den widerrufenen Zweck nicht mehr gelesen oder
+          übertragen. Nach Widerruf beider Einwilligungen wird die
+          Browserkennung lokal entfernt. Dies löscht
+          <strong>nicht automatisch</strong> bereits in D1
+          vorhandene Hashwerte, aggregierte Zähler oder
+          Server- und Cloudflare-Protokolle. Für Löschanfragen können
+          Sie die Kontaktdaten in Abschnitt 1 verwenden.
+          Der Widerruf berührt die Rechtmäßigkeit der bis dahin
+          erfolgten Verarbeitung nicht.</p>
+        <p>Für das Speichern oder Auslesen einer solchen Kennung
+          ist grundsätzlich § 25 Abs. 1 TDDDG maßgeblich;
+          die Verarbeitung auf Grundlage der Einwilligung
+          nach Art. 6 Abs. 1 lit. a DSGVO ist für diese
+          optionalen Kennungszwecke vorgesehen. Welche konkreten
+          Protokolle und Empfänger beteiligt sind, wie lange
+          D1-Bewertungs-Hashes, Rate-Limiter-Daten und
+          Zugriffsprotokolle gespeichert werden und wie die
+          Löschung nach Widerruf umgesetzt werden kann,
+          muss vor Veröffentlichung noch abschließend
+          geklärt werden. Eine lokale Löschung allein
+          belegt keine vollständige serverseitige Löschung.</p>
       </section>
       <section aria-labelledby="privacy-fonts">
         <h2 id="privacy-fonts">5. Schriftarten</h2>
@@ -150,8 +204,12 @@
           auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16),
           Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18),
           Datenübertragbarkeit (Art. 20) und Widerspruch (Art. 21).
-          Eine erteilte Einwilligung können Sie mit Wirkung für die
-          Zukunft widerrufen. Wenden Sie sich hierfür an
+          Eine erteilte Einwilligung für „Gefällt mir“ oder
+          Druckstatistik können Sie jederzeit über
+          „Datenschutzeinstellungen“ auf der
+          <a href="index.html">Startseite</a> für die Zukunft
+          widerrufen. Für weitere Fragen oder Löschanfragen
+          schreiben Sie an
           <a href="mailto:andris@rozkalns.net">andris@rozkalns.net</a>.
           Außerdem können Sie Beschwerde bei einer Datenschutzaufsichtsbehörde
           einlegen (Art. 77 DSGVO), beispielsweise bei der
