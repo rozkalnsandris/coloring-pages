@@ -19,9 +19,9 @@
 
 1. **DDG § 5:** confirm provider classification, identification duties, and that the owner-approved address is a suitable `ladungsfähige Anschrift`.
 2. **DSGVO Art. 13 and Art. 6:** confirm purposes, lawful bases, recipients/processors, Cloudflare agreements/transfers, retention periods or criteria, and data subject rights against actual production facts.
-3. **TDDDG § 25:** assess consent versus strictly-necessary exception for first-party Like/Print `localStorage` ID, plus GDPR legal basis; do not presume an exemption.
-4. **Fonts and LIVE:** validate the self-hosted Google Fonts replacement and public page behavior after separately authorized release. CI proves structure only, not legal compliance.
+3. **TDDDG § 25:** consent is the starting rule for storing or reading a first-party Like/Print `localStorage` ID; the exception for an explicitly requested service requires strict necessity. Neither the exception nor a consent mechanism is verified for the current site. Assess separately the GDPR Art. 6 lawful basis; do not presume an exemption.
+4. **Fonts and LIVE:** validate the self-hosted Google Fonts replacement and public page behavior after separately authorized release. Cloudflare Web Analytics' stated lack of cookies does not establish that separate Cloudflare security functions set no cookies. CI proves structure only, not legal compliance.
 
-References: https://www.gesetze-im-internet.de/ddg/__5.html ; https://www.gesetze-im-internet.de/ttdsg/__25.html ; https://eur-lex.europa.eu/eli/reg/2016/679/
+Official references (reviewed 2026-10-11): https://www.gesetze-im-internet.de/ddg/__5.html ; https://www.gesetze-im-internet.de/ttdsg/__25.html ; https://eur-lex.europa.eu/eli/reg/2016/679/ ; https://developers.cloudflare.com/web-analytics/about/ ; https://developers.cloudflare.com/fundamentals/reference/policies-compliances/cloudflare-cookies/
 
 **NOT RELEASE READY**. No owner MERGE, Worker deploy, D1 mutation, or LIVE authorization is granted by this source document.
