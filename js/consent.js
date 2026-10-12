@@ -18,7 +18,7 @@
   let choice = read();
   let storageFault = false;
   // Fresh preference each time; cross-tab withdrawal fails closed.
-  const allows = (purpose) => !storageFault &&
+  const allows = (purpose) => !storageFault && !erasing &&
     (purpose === "like" || purpose === "print") &&
     read()?.[purpose] === true;
 
@@ -151,17 +151,19 @@
     const changed = previous?.like !== Boolean(next.like) ||
       previous?.print !== Boolean(next.print);
     const revokeLike = !storageFault && previous?.like === true && !next.like;
+    // The old proof may be read only while its Like purpose is still enabled.
     const proof = revokeLike ? (window.ColoringStats?.getErasureProof?.() || "") : "";
     const priorV3 = changed ? (window.ColoringStats?.getCredentialForRotation?.() || "") : "";
-    if (!save(next)) return;
-    if (!changed) return;
-    window.ColoringStats?.cancelPendingCredential?.();
-    // Retire client access before making any asynchronous Worker request.
-    try { localStorage.removeItem(ID_KEY); } catch {}
-    if (!priorV3 && !next.like && !next.print && !revokeLike) return;
+    // Block purpose-based reads/writes BEFORE updating stored consent or firing
+    // the page's consent-changed event, which can trigger personalized hydration.
     erasing = true;
     eraseButton.disabled = true;
+    window.ColoringStats?.cancelPendingCredential?.();
     try {
+      if (!save(next)) return;
+      if (!changed) return;
+      try { localStorage.removeItem(ID_KEY); } catch {}
+      if (!priorV3 && !next.like && !next.print && !revokeLike) return;
       if (priorV3 || next.like || next.print) {
         if (!window.ColoringStats?.changeCredential) throw new Error("credential unavailable");
         const result = await window.ColoringStats.changeCredential(next,priorV3);
@@ -169,10 +171,10 @@
       }
       if (revokeLike) {
         if (priorV3) {
-          // Atomic rotation revoked old Like rights and erased matching rows.
+          // A single D1 transaction erased Likes and retired the old credential.
           eraseStatus("Löschung der aktuell gespeicherten Likes für diese Browserkennung bestätigt.");
         } else if (proof) {
-          // Legacy v2 is deletion-only, including when Print consent remains.
+          // Legacy v2 is deletion-only, even if Print remains opted in.
           const result = await window.ColoringStats.eraseLikesWithProof(proof);
           if (result?.ok !== true) throw new Error("legacy erasure unconfirmed");
           eraseStatus("Löschung der aktuell gespeicherten Likes für diese Browserkennung bestätigt.");
@@ -208,7 +210,7 @@
   });
   reopen.addEventListener("click", () => show(true));
 
-  window.ColoringConsent = { allows, openSettings: () => show(true) };
+  window.ColoringConsent = { allows, current: read, openSettings: () => show(true) };
   if (choice) hide(); else {
     banner.hidden = false;
     document.body.classList.add("has-privacy-banner");

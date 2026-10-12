@@ -35,8 +35,8 @@
         ...(priorId ? {prior_id:priorId} : {})}),
     });
     if (generation !== credentialGeneration
-        || window.ColoringConsent?.allows?.("like") !== !!next.like
-        || window.ColoringConsent?.allows?.("print") !== !!next.print)
+        || window.ColoringConsent?.current?.()?.like !== !!next.like
+        || window.ColoringConsent?.current?.()?.print !== !!next.print)
       throw new Error("consent changed during issuance");
     if (next.like || next.print) {
       if (!result.ok || !V3_RE.test(result.visitor_id)) throw new Error("credential unconfirmed");

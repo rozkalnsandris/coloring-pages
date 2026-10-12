@@ -32,3 +32,8 @@ class V3SecurityTests(unittest.TestCase):
         self.assertIn('ensureCredential("print")',js)
         self.assertIn('ensureCredential("like")',js)
         self.assertIn('getCredentialForRotation()',js)
+        self.assertIn('current?.()?.like',js)
+        self.assertIn('current?.()?.print',js)
+        consent=(ROOT/"js/consent.js").read_text()
+        self.assertIn("!storageFault && !erasing",consent)
+        self.assertLess(consent.index("erasing = true;\n    eraseButton.disabled"),consent.index("if (!save(next)) return"))
