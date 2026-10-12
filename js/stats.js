@@ -25,6 +25,19 @@
       return V3_RE.test(id) ? id : "";
     } catch { return ""; }
   }
+  // Classify only after an existing purpose-specific opt-in. Never send
+  // weak/legacy credentials to normal personalized endpoints.
+  function getLegacyCredentialKind() {
+    if (window.ColoringConsent?.allows?.("like") !== true
+        && window.ColoringConsent?.allows?.("print") !== true) return "";
+    try {
+      const id = localStorage.getItem(VISITOR_KEY) || "";
+      if (!id || V3_RE.test(id)) return "";
+      return /^v2-[0-9a-f]{64}$/.test(id) ? "v2" : "weak";
+    } catch {
+      return "unavailable";
+    }
+  }
   function cancelPendingCredential() { credentialGeneration++; }
   async function changeCredential(next, priorId = "") {
     const generation = credentialGeneration;
@@ -209,7 +222,7 @@
     })().catch(() => {});
   }
 
-  window.ColoringStats = {getRankings, getOverview, getTraffic, getCampaigns, getPage, toggleLike, getErasureProof, eraseLikesWithProof, getCredentialForRotation, cancelPendingCredential, changeCredential, trackVisit, trackView, trackPrint};
+  window.ColoringStats = {getRankings, getOverview, getTraffic, getCampaigns, getPage, toggleLike, getErasureProof, eraseLikesWithProof, getCredentialForRotation, getLegacyCredentialKind, cancelPendingCredential, changeCredential, trackVisit, trackView, trackPrint};
 
   const homePath = location.pathname === "/" || location.pathname === "/index.html";
   const detailPath = location.pathname === "/detail.html";

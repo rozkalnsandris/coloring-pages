@@ -75,6 +75,9 @@
   const settings = banner.querySelector("[data-consent-settings]");
   const eraseButton = banner.querySelector("[data-consent-erase]");
   let erasing = false;
+  // No automatic re-submission of an ambiguous legacy erasure attempt.
+  let legacyUpgradeEraseAttempted = false;
+  let legacyUpgradeEraseConfirmed = false;
   let lastFocus = null;
 
   function show(advanced = false) {
@@ -133,7 +136,7 @@
       if (!expiredId && storedId) {
         // Keep legacy v2 intact for an explicit, user-directed deletion.
         show(true);
-        error.textContent = "Die bisherige Browserkennung kann nicht für neue Likes oder Druckstatistik verwendet werden. Bitte ändere deine Auswahl in den Einstellungen.";
+        error.textContent = "Die bisherige Browserkennung kann nicht für neue Likes oder Druckstatistik verwendet werden. Bitte bestätige deine Auswahl erneut; alte Likes werden nicht automatisch übernommen.";
         error.hidden = false;
         return false;
       }
@@ -185,17 +188,54 @@
     const changed = previous?.like !== Boolean(next.like) ||
       previous?.print !== Boolean(next.print);
     const revokeLike = !storageFault && previous?.like === true && !next.like;
-    // The old proof may be read only while its Like purpose is still enabled.
-    const proof = revokeLike ? (window.ColoringStats?.getErasureProof?.() || "") : "";
-    const priorV3 = changed ? (window.ColoringStats?.getCredentialForRotation?.() || "") : "";
-    // Block purpose-based reads/writes BEFORE updating stored consent or firing
-    // the page's consent-changed event, which can trigger personalized hydration.
+    // Never inspect a visitor token on first visit or after refusal.
+    const legacyKind = previous && (previous.like || previous.print)
+      ? (window.ColoringStats?.getLegacyCredentialKind?.() || "")
+      : "";
+    const upgrade = (next.like || next.print)
+      && (legacyKind === "v2" || legacyKind === "weak");
+    const upgradeErase = upgrade && legacyKind === "v2"
+      && previous?.like === true && Boolean(next.like);
+    const weakLike = upgrade && legacyKind === "weak"
+      && previous?.like === true && Boolean(next.like);
+    // Capture the v2 deletion proof only while Like permission is still active.
+    const proof = (revokeLike || upgradeErase)
+      ? (window.ColoringStats?.getErasureProof?.() || "") : "";
+    const priorV3 = changed
+      ? (window.ColoringStats?.getCredentialForRotation?.() || "") : "";
+    if (legacyKind === "unavailable" && (next.like || next.print)) {
+      show(true);
+      error.textContent = "Die bisherige Browserkennung kann nicht sicher gelesen werden. Bitte prüfe die Browser-Speichereinstellungen.";
+      error.hidden = false;
+      return;
+    }
+    if (upgradeErase) {
+      if (!proof || (legacyUpgradeEraseAttempted && !legacyUpgradeEraseConfirmed)) {
+        show(true);
+        error.textContent = "Löschung nicht bestätigt. Bitte nutze den Datenschutzkontakt; die alte Kennung wird nicht automatisch erneut übertragen.";
+        error.hidden = false;
+        return;
+      }
+      if (!window.confirm("Beim Wechsel zu einer neuen Browserkennung können deine bisherigen Likes nicht übernommen werden. Sollen die alten Likes jetzt einmalig gelöscht und die neue Einwilligung gespeichert werden?")) return;
+    } else if (weakLike) {
+      if (!window.confirm("Die alte Browserkennung ist nicht sicher zuzuordnen. Eine Löschung früherer Likes kann nicht bestätigt werden. Trotzdem eine neue Kennung für die freiwilligen Funktionen anlegen?")) return;
+    }
+    // Block all purpose-based requests before any async legacy erasure or
+    // new consent event. Retain the old v2 proof until erasure is confirmed.
     erasing = true;
     eraseButton.disabled = true;
     window.ColoringStats?.cancelPendingCredential?.();
     try {
+      if (upgradeErase && !legacyUpgradeEraseConfirmed) {
+        legacyUpgradeEraseAttempted = true;
+        const result = await window.ColoringStats.eraseLikesWithProof(proof);
+        if (result?.ok !== true) throw new Error("legacy deletion unconfirmed");
+        legacyUpgradeEraseConfirmed = true;
+      }
+      if (upgradeErase && localStorage.getItem(ID_KEY) !== proof)
+        throw new Error("legacy credential changed in another tab");
       if (!save(next)) return;
-      if (!changed) return;
+      if (!changed && !upgrade) return;
       try { localStorage.removeItem(ID_KEY); } catch {}
       if (!priorV3 && !next.like && !next.print && !revokeLike) return;
       if (priorV3 || next.like || next.print) {
@@ -203,12 +243,16 @@
         const result = await window.ColoringStats.changeCredential(next,priorV3);
         if (result?.ok !== true) throw new Error("credential not confirmed");
       }
+      if (upgradeErase) {
+        eraseStatus("Löschung der bisherigen aktiven Likes für die alte Browserkennung bestätigt. Die neue Kennung übernimmt keine alten Likes.");
+      } else if (weakLike) {
+        eraseStatus("Löschung früherer Likes nicht bestätigt. Die alte Kennung konnte nicht zugeordnet werden; bitte nutze bei Bedarf den Datenschutzkontakt.");
+      }
       if (revokeLike) {
         if (priorV3) {
-          // A single D1 transaction erased Likes and retired the old credential.
           eraseStatus("Löschung der aktuell gespeicherten Likes für diese Browserkennung bestätigt.");
         } else if (proof) {
-          // Legacy v2 is deletion-only, even if Print remains opted in.
+          // Legacy v2 is deletion-only, including Like -> Print-only changes.
           const result = await window.ColoringStats.eraseLikesWithProof(proof);
           if (result?.ok !== true) throw new Error("legacy erasure unconfirmed");
           eraseStatus("Löschung der aktuell gespeicherten Likes für diese Browserkennung bestätigt.");
@@ -217,7 +261,13 @@
         }
       }
     } catch {
-      eraseStatus("Einwilligung geändert; Löschung oder Kennung nicht bestätigt. Bitte nutze den Datenschutzkontakt ohne Browserkennung.");
+      if (legacyUpgradeEraseConfirmed) {
+        eraseStatus("Alte Likes gelöscht; neue Browserkennung nicht bestätigt. Bitte überprüfe die Einstellungen.");
+      } else {
+        eraseStatus("Einwilligung nicht vollständig geändert; Löschung oder Kennung nicht bestätigt. Bitte nutze den Datenschutzkontakt ohne Browserkennung.");
+      }
+      error.textContent = "Der Wechsel konnte nicht bestätigt werden. Bitte nutze bei unsicherer Löschung den Datenschutzkontakt.";
+      error.hidden = false;
     } finally {
       erasing = false;
       eraseButton.disabled = false;
