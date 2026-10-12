@@ -722,12 +722,12 @@ a { color: inherit; }
     height: 100%;
     object-fit: contain;
   }
-  /* Ink-aware fit restores near-native A4 landscape size without editing pixels.
-     Fallback pages and all portrait sheets keep the original contain inset. */
-  .print-sheet.is-landscape.has-landscape-ink-fit .print-artwork {
+  /* Both A4 orientations preserve native pixels and center visible ink.
+     Legacy and unreadable canvases retain the safe contain fallback. */
+  .print-sheet.has-a4-ink-fit .print-artwork {
     inset: 0;
   }
-  .print-sheet.is-landscape.has-landscape-ink-fit .print-artwork canvas {
+  .print-sheet.has-a4-ink-fit .print-artwork canvas {
     transform-origin: top left;
     transform: translate(var(--print-ink-x), var(--print-ink-y))
       scale(var(--print-ink-scale));

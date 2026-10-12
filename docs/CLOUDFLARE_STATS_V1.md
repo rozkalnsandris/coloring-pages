@@ -138,3 +138,25 @@ The additive `daily_print_qr_scans` table holds **only aggregate day and request
 **Owner gates / activation order:** source PR CI and exact-head MERGE do **not** grant Cloudflare authority. A separate owner approval must first apply the additive D1 schema (before deploying the new Worker so `/overview` remains healthy), deploy `cloudflare/stats-worker.js`, and register precisely the `ausmalwiese.de/q` route with its existing verified D1 bindings and zone authority. This is **not** permission for DNS, tunnel, Access, unrelated routes, secrets or settings mutation. Validate origin hostname, 302 target, no-cache headers, HEAD without counting and GET aggregate increment without PII. Only after independent LIVE acceptance and a physical A4 scan test may a second exact-head PR switch the print QR flag true; that print.js merge uses the existing bounded application auto-LIVE flow.
 
 Official references: [Cloudflare Worker redirects](https://developers.cloudflare.com/workers/examples/redirect/), [D1 prepared statements](https://developers.cloudflare.com/d1/worker-api/prepared-statements/), [MDN URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams).
+
+
+## Multi-host Stats API source gate (#190)
+
+Read-only Cloudflare and public HTTP evidence on 2026-10-12 established:
+
+- Existing Worker route: `coloring.rozkalns.net/api/stats/*`; its GET rankings API returned 200 with six Popular and six Trending entries.
+- Existing independent QR route: `ausmalwiese.de/q` (preserve it unchanged).
+- No Stats API route exists on the new zone: GET `ausmalwiese.de/api/stats/rankings` and `www.ausmalwiese.de/api/stats/rankings` returned 404.
+
+The Worker source now explicitly allows browser **writes on each request's own exact HTTPS origin**, limited to `https://coloring.rozkalns.net`, `https://ausmalwiese.de` and `https://www.ausmalwiese.de`. An `Origin` header, when present, must equal that request's target origin; `Sec-Fetch-Site: cross-site` or `same-site` is rejected. One approved hostname never authorizes a cross-origin request to another approved hostname. Existing clients without Fetch Metadata headers retain the old compatibility behavior; the origin restriction does not replace rate limiting or application-level validation.
+
+The separate `PUBLIC_ORIGIN` binding remains `https://coloring.rozkalns.net` for pre-existing analytics/legacy host-scoped visitor bookkeeping. Do not change `PUBLIC_ORIGIN`, `CF_ANALYTICS_HOST`, D1, QR, or the existing legacy route as part of the source patch. Future multi-host unique-visitor reporting needs its own privacy/analytics review; it is not silently generalized here.
+
+**Separate explicit LIVE authorization is still required** to deploy the reviewed Worker source and add precisely these two routes in the existing `ausmalwiese.de` zone:
+
+- `ausmalwiese.de/api/stats/*` → `coloring-pages-stats-v1`.
+- `www.ausmalwiese.de/api/stats/*` → `coloring-pages-stats-v1`.
+
+No source commit or application auto-LIVE path creates those routes. Verify route coexistence, HTTPS GET rankings, same-origin Like/Print acceptance, rejection of cross-host/cross-site writes and QR 302 before declaring the issue fixed. This requires Cloudflare owner authorization; do not probe by making production engagement writes without separately scoped test authority.
+
+**Pair PR #183:** its proposed `eraseLikes` route directly compares `Origin` to the single `PUBLIC_ORIGIN`. Before deploying or merging that later privacy feature for the new domains, reconcile that separate erasure-specific check to the same strict per-target-host semantics under its own existing source/review authority. This issue does not edit #183, activate deletion, or bypass privacy consent.
