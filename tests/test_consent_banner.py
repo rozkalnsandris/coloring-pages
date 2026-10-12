@@ -28,10 +28,10 @@ class ConsentBannerSourceTests(unittest.TestCase):
         self.assertIn("data-consent-print", js)
         self.assertNotIn("getItem(ID_KEY)", js)
         self.assertIn("removeItem(ID_KEY)", js)
-        self.assertIn("Löschung erneut versuchen", js)
-        self.assertIn("coloring-pages-erasure-pending-v1", js)
-        self.assertIn("const RECOVERY_MS = 24 * 60 * 60 * 1000;", js)
-        self.assertIn("retryErasureButton.addEventListener", js)
+        self.assertIn("Löschung nicht bestätigt", js)
+        self.assertIn("await eraseProof(proof);", js)
+        self.assertNotIn("coloring-pages-erasure-pending-v1", js)
+        self.assertNotIn("retryPendingErasure", js)
 
     def test_stats_fail_closed_for_both_purposes(self):
         js = self.read("js/stats.js")

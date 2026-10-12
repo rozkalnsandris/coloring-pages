@@ -529,18 +529,10 @@ async function eraseLikes(env, request) {
   if (!(await rateLimit(env,body.visitor_id,"erase"))) return json({error:"rate_limited"},429);
 
   const hash = await sha256(body.visitor_id);
-  // One atomic D1 transaction permanently rejects reuse of this *erased*
-  // credential, even if a stale tab sends a Like long after a day has passed.
-  // The minimal pseudonymous revocation hash requires separate retention review.
-  const results = await env.DB.batch([
-    env.DB.prepare(
-      "INSERT INTO like_erasure_blocks(visitor_hash,blocked_until) VALUES (?, '9999-12-31 23:59:59') " +
-      "ON CONFLICT(visitor_hash) DO UPDATE SET blocked_until=excluded.blocked_until"
-    ).bind(hash),
-    env.DB.prepare("DELETE FROM likes WHERE visitor_hash = ?").bind(hash),
-  ]);
-  if (!Array.isArray(results) || results.length !== 2 ||
-      results.some(result => result?.success !== true)) return json({error:"erasure_unconfirmed"},503);
+  // A successful response confirms this deletion against the current D1 table
+  // only. An old credential reused by a stale client may create a new Like later.
+  const result = await env.DB.prepare("DELETE FROM likes WHERE visitor_hash = ?").bind(hash).run();
+  if (result?.success !== true) return json({error:"erasure_unconfirmed"},503);
   return json({ok:true});
 }
 
@@ -554,21 +546,11 @@ async function toggleLike(env, request) {
   if (existing) {
     await env.DB.prepare("DELETE FROM likes WHERE page_id = ? AND visitor_hash = ?").bind(body.page_id,visitorHash).run();
   } else {
-    // Atomic conditional insert, never a SELECT followed by unguarded INSERT.
     const insert = await env.DB.prepare(
-      "INSERT INTO likes (page_id,visitor_hash) SELECT ?, ? WHERE NOT EXISTS (" +
-      "SELECT 1 FROM like_erasure_blocks WHERE visitor_hash = ? " +
-      "AND blocked_until > datetime('now')) " +
-      "ON CONFLICT(page_id,visitor_hash) DO NOTHING"
-    ).bind(body.page_id,visitorHash,visitorHash).run();
+      "INSERT INTO likes (page_id, visitor_hash) VALUES (?, ?) " +
+      "ON CONFLICT(page_id, visitor_hash) DO NOTHING"
+    ).bind(body.page_id,visitorHash).run();
     if (insert?.success !== true) return json({error:"like_unconfirmed"},503);
-    if (insert.meta?.changes === 0) {
-      const guard = await env.DB.prepare(
-        "SELECT 1 AS blocked FROM like_erasure_blocks WHERE visitor_hash = ? " +
-        "AND blocked_until > datetime('now')"
-      ).bind(visitorHash).first();
-      if (guard) return json({error:"erased_identifier"},409);
-    }
   }
   const stats = await env.DB.prepare("SELECT like_count, print_count FROM page_stats WHERE page_id = ?").bind(body.page_id).first();
   const persisted = await env.DB.prepare("SELECT 1 AS liked FROM likes WHERE page_id = ? AND visitor_hash = ?").bind(body.page_id,visitorHash).first();

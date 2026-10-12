@@ -65,8 +65,3 @@ CREATE TABLE IF NOT EXISTS daily_print_qr_scans (
   scan_count INTEGER NOT NULL DEFAULT 0 CHECK (scan_count >= 0)
 );
 
--- Erasure write barrier. Separate approved migration before Worker activation.
-CREATE TABLE IF NOT EXISTS like_erasure_blocks (
-  visitor_hash TEXT PRIMARY KEY,
-  blocked_until TEXT NOT NULL
-);

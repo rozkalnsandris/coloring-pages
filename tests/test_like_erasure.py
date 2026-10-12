@@ -1,4 +1,4 @@
-"""Offline security and SQLite contract tests for draft erase-likes flow."""
+"""Regression tests for minimal one-statement D1 Like erasure and known replay limit."""
 import hashlib
 import json
 import shutil
@@ -8,209 +8,126 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-
 WORKER_HARNESS = r"""
 const vm = require('node:vm');
 const fs = require('node:fs');
-const {webcrypto, createHash} = require('node:crypto');
-const fixture = JSON.parse(process.argv[1]);
-const id = 'v2-' + 'a'.repeat(64);
-const victimHash = createHash('sha256').update(id).digest('hex');
-const otherHash = createHash('sha256').update('v2-' + 'b'.repeat(64)).digest('hex');
-let hashes = [victimHash, victimHash, otherHash];
-let writes = 0, limits = 0;
+const {webcrypto,createHash} = require('node:crypto');
+const f = JSON.parse(process.argv[1]);
+const id = 'v2-'+'a'.repeat(64);
+const hash = createHash('sha256').update(id).digest('hex');
+const other = createHash('sha256').update('v2-'+'b'.repeat(64)).digest('hex');
+let rows = [hash,hash,other], writes=0, limits=0;
 const db = {
-  prepare(sql) {
-    const op = sql.startsWith('INSERT INTO like_erasure_blocks(') ? 'guard'
-      : sql === 'DELETE FROM likes WHERE visitor_hash = ?' ? 'erase' : '';
-    if (!op) throw Error('unscoped SQL');
-    // A static prepared statement is valid in D1.batch() without bind().
-    return {op,args:[],bind(...args) { return {op,args}; }};
-  },
-  async batch(statements) {
-    writes++;
-    if (fixture.dbError) throw Error('D1 unavailable');
-    if (fixture.dbFailure) return statements.map(() => ({success:false}));
-    if (statements.map(s => s.op).join(',') !== 'guard,erase') throw Error('wrong order');
-    hashes = hashes.filter(x => x !== statements[0].args[0]);
-    return statements.map(() => ({success:true,meta:{changes:1}}));
-  },
+ prepare(sql) {
+   if(sql !== 'DELETE FROM likes WHERE visitor_hash = ?') throw Error('unexpected SQL');
+   return {bind(value){return {async run(){
+     writes++;
+     if(f.dbError)throw Error('D1 unavailable');
+     if(f.dbFailure)return {success:false};
+     rows=rows.filter(x=>x!==value);
+     return {success:true,meta:{changes:2}};
+   }}}};
+ }
 };
-const ctx = {URL, Response, Request, TextEncoder, crypto:webcrypto};
-const source = fs.readFileSync('cloudflare/stats-worker.js','utf8')
-  .replace('export default {', 'globalThis.testWorker = {');
-vm.runInNewContext(source,ctx);
-const headers = {'origin':fixture.origin ?? 'https://coloring.rozkalns.net',
- 'sec-fetch-site':fixture.site ?? 'same-origin',
- 'content-type':fixture.contentType ?? 'application/json'};
-const body = fixture.rawBody ?? JSON.stringify({visitor_id: fixture.id ?? id});
-const request = new Request((fixture.target ?? 'https://coloring.rozkalns.net') + '/api/stats/erase-likes',{
- method: fixture.method ?? 'POST',headers,
- ...(fixture.method === 'GET' ? {} : {body}),
+const context={URL,Request,Response,TextEncoder,crypto:webcrypto};
+vm.runInNewContext(fs.readFileSync('cloudflare/stats-worker.js','utf8')
+  .replace('export default {','globalThis.testWorker = {'),context);
+const target=f.target||'https://coloring.rozkalns.net';
+const headers={
+  origin:f.origin??'https://coloring.rozkalns.net',
+  'sec-fetch-site':f.site??'same-origin',
+  'content-type':f.contentType??'application/json'
+};
+const req = new Request(target+'/api/stats/erase-likes',{
+  method:'POST',headers,body:f.rawBody??JSON.stringify({visitor_id:f.id??id})
 });
-const env = {PUBLIC_ORIGIN:'https://coloring.rozkalns.net',DB:db,
- RATE_LIMITER:{limit:async ()=>{limits++;return {success:!fixture.limited}}}};
-ctx.testWorker.fetch(request,env).then(async res => {
- const text=await res.text(); const data=JSON.parse(text);
- console.log(JSON.stringify({status:res.status,data,writes,limits,hashes}));
-}).catch(e => console.log(JSON.stringify({error:true,writes,hashes})));
+const env={DB:db,RATE_LIMITER:{limit:async()=>{limits++;return {success:!f.limited}}}};
+context.testWorker.fetch(req,env).then(async res=>{
+ console.log(JSON.stringify({status:res.status,body:await res.json(),writes,limits,rows}));
+}).catch(()=>console.log(JSON.stringify({status:500,writes,limits,rows})));
 """
 
-class LikeErasureTests(unittest.TestCase):
+class MinimalErasureTests(unittest.TestCase):
     def run_worker(self, **fixture):
         if not shutil.which("node"):
             self.skipTest("node required")
-        completed = subprocess.run(["node", "-e", WORKER_HARNESS,
-            json.dumps(fixture)], cwd=ROOT, capture_output=True, text=True,
-            check=True)
-        return json.loads(completed.stdout.strip())
+        p=subprocess.run(["node","-e",WORKER_HARNESS,json.dumps(fixture)],
+            cwd=ROOT,capture_output=True,text=True,check=True)
+        return json.loads(p.stdout)
 
-    def test_success_is_scoped_and_no_other_user_is_deleted(self):
-        result = self.run_worker()
-        self.assertEqual(result["status"], 200)
-        self.assertEqual(result["data"], {"ok": True})
-        self.assertEqual(result["writes"], 1)
-        self.assertEqual(len(result["hashes"]), 1)
+    def test_deletes_only_this_credential_without_extra_tables(self):
+        out=self.run_worker()
+        self.assertEqual(out["status"],200)
+        self.assertEqual(out["body"],{"ok":True})
+        self.assertEqual(out["writes"],1)
+        self.assertEqual(len(out["rows"]),1)
 
-    def test_weak_legacy_or_wrong_origin_cannot_delete(self):
-        for payload in ({"id": "v-weak-123456"}, {"id": "example"},
-            {"origin":"https://evil.example"}, {"site":"cross-site"},
-            {"rawBody":'{"visitor_id":"v2-abc","other":true}'},
-            {"contentType":"text/plain"}, {"limited":True}):
-            with self.subTest(payload=payload):
-                out=self.run_worker(**payload)
-                self.assertNotEqual(out.get("status"), 200)
-                self.assertEqual(out["writes"], 0)
-                self.assertEqual(len(out["hashes"]), 3)
+    def test_invalid_credential_and_cross_origin_do_not_write(self):
+        for f in ({"id":"v-legacy"}, {"id":"example"}, {"origin":"https://evil.example"},
+                  {"site":"cross-site"}, {"site":"same-site"},
+                  {"rawBody":'{"visitor_id":"v2-abc","other":true}'},
+                  {"contentType":"text/plain"}, {"limited":True}):
+            with self.subTest(f=f):
+                x=self.run_worker(**f)
+                self.assertNotEqual(x["status"],200)
+                self.assertEqual(x["writes"],0)
+                self.assertEqual(len(x["rows"]),3)
 
-    def test_erasure_requires_exact_target_host_origin_and_fetch_metadata(self):
-        approved = (
-            "https://coloring.rozkalns.net",
-            "https://ausmalwiese.de",
-            "https://www.ausmalwiese.de",
-        )
-        for target in approved:
-            with self.subTest(target=target):
-                response = self.run_worker(target=target, origin=target, site="same-origin")
-                self.assertEqual(response["status"], 200)
-                self.assertEqual(response["writes"], 1)
-                for other in approved:
-                    if other != target:
-                        rejected = self.run_worker(target=target, origin=other, site="same-origin")
-                        self.assertEqual(rejected["status"], 403)
-                        self.assertEqual(rejected["writes"], 0)
-                for wrong in ("cross-site", "same-site"):
-                    rejected = self.run_worker(target=target, origin=target, site=wrong)
-                    self.assertEqual(rejected["status"], 403)
-                    self.assertEqual(rejected["writes"], 0)
-        for target in ("http://ausmalwiese.de", "https://preview.ausmalwiese.de"):
-            with self.subTest(target=target):
-                rejected = self.run_worker(target=target, origin=target, site="same-origin")
-                self.assertEqual(rejected["status"], 403)
-                self.assertEqual(rejected["writes"], 0)
+    def test_each_exact_public_host_only_accepts_matching_origin(self):
+        hosts=("https://coloring.rozkalns.net","https://ausmalwiese.de","https://www.ausmalwiese.de")
+        for host in hosts:
+            with self.subTest(host=host):
+                x=self.run_worker(target=host,origin=host)
+                self.assertEqual(x["status"],200)
+                for other in hosts:
+                    if other!=host:
+                        x=self.run_worker(target=host,origin=other)
+                        self.assertEqual(x["status"],403)
+                        self.assertEqual(x["writes"],0)
+        for host in ("http://ausmalwiese.de","https://preview.ausmalwiese.de"):
+            with self.subTest(host=host):
+                x=self.run_worker(target=host,origin=host)
+                self.assertEqual(x["status"],403)
+                self.assertEqual(x["writes"],0)
 
-    def test_failed_or_ambiguous_d1_cannot_acknowledge_erasure(self):
-        for test in ({"dbError": True}, {"dbFailure": True}):
-            with self.subTest(test=test):
-                out=self.run_worker(**test)
-                self.assertNotEqual(out.get("data"), {"ok": True})
+    def test_failed_or_uncertain_write_cannot_acknowledge_erasure(self):
+        for f in ({"dbError":True},{"dbFailure":True}):
+            with self.subTest(f=f):
+                x=self.run_worker(**f)
+                self.assertNotEqual(x.get("body"),{"ok":True})
+                self.assertEqual(x["writes"],1)
 
-    def test_schema_triggers_are_consistent_and_prints_untouched(self):
+    def test_d1_like_counters_remain_consistent_without_suppression_table(self):
         schema=(ROOT/"cloudflare/stats-schema.sql").read_text(encoding="utf-8")
+        self.assertNotIn("like_erasure_blocks",schema)
         with sqlite3.connect(":memory:") as db:
             db.executescript(schema)
-            user=hashlib.sha256(b"v2-user").hexdigest()
-            other=hashlib.sha256(b"v2-other").hexdigest()
+            h=hashlib.sha256(b"v2-a").hexdigest()
+            other=hashlib.sha256(b"v2-b").hexdigest()
             db.executemany("INSERT INTO likes(page_id,visitor_hash) VALUES (?,?)",
-                [("p1",user),("p2",user),("p1",other)])
+                [("p1",h),("p2",h),("p1",other)])
             db.execute("UPDATE page_stats SET print_count=7 WHERE page_id='p1'")
-            db.execute("DELETE FROM likes WHERE visitor_hash = ?", (user,))
-            self.assertEqual(db.execute(
-                "SELECT like_count,print_count FROM page_stats WHERE page_id='p1'").fetchone(),(1,7))
-            self.assertEqual(db.execute(
-                "SELECT like_count FROM page_stats WHERE page_id='p2'").fetchone(),(0,))
-            db.execute("DELETE FROM likes WHERE visitor_hash = ?", (user,))
-            self.assertEqual(db.execute(
-                "SELECT like_count FROM page_stats WHERE page_id='p1'").fetchone(),(1,))
+            db.execute("DELETE FROM likes WHERE visitor_hash=?",(h,))
+            self.assertEqual(db.execute("SELECT like_count,print_count FROM page_stats WHERE page_id='p1'").fetchone(),(1,7))
+            self.assertEqual(db.execute("SELECT like_count FROM page_stats WHERE page_id='p2'").fetchone(),(0,))
+            # Accepted residual risk: a still-valid old credential can re-insert a Like.
+            db.execute("INSERT INTO likes(page_id,visitor_hash) VALUES (?,?)",( "p1",h))
+            self.assertEqual(db.execute("SELECT like_count FROM page_stats WHERE page_id='p1'").fetchone(),(2,))
 
-
-    def test_erasure_barrier_blocks_late_like_and_preserves_other_counts(self):
-        schema=(ROOT/"cloudflare/stats-schema.sql").read_text(encoding="utf-8")
-        migration=(ROOT/"cloudflare/migrations/like-erasure-blocks.sql").read_text(encoding="utf-8")
-        guard="""INSERT INTO like_erasure_blocks(visitor_hash,blocked_until)
-                  VALUES (?, '9999-12-31 23:59:59')
-                  ON CONFLICT(visitor_hash) DO UPDATE SET blocked_until=excluded.blocked_until"""
-        add="""INSERT INTO likes(page_id,visitor_hash)
-               SELECT ?, ? WHERE NOT EXISTS (
-                 SELECT 1 FROM like_erasure_blocks
-                 WHERE visitor_hash = ? AND blocked_until > datetime('now'))
-               ON CONFLICT(page_id,visitor_hash) DO NOTHING"""
-        with sqlite3.connect(":memory:") as db:
-            db.executescript(schema)
-            db.executescript(migration)
-            user=hashlib.sha256(b"v2-user").hexdigest()
-            other=hashlib.sha256(b"v2-other").hexdigest()
-            db.executemany("INSERT INTO likes(page_id,visitor_hash) VALUES (?,?)",
-                [("p1",user),("p2",user),("p1",other)])
-            db.execute("UPDATE page_stats SET print_count=7 WHERE page_id='p1'")
-            # An in-flight Like committed before erase is removed.
-            db.execute(add,("p3",user,user))
-            with db:
-                db.execute(guard,(user,))
-                db.execute("DELETE FROM likes WHERE visitor_hash = ?",(user,))
-            # A request arriving after the erasure transaction cannot restore it.
-            db.execute(add,("p4",user,user))
-            self.assertEqual(db.execute(
-                "SELECT COUNT(*) FROM likes WHERE visitor_hash = ?",(user,)).fetchone()[0],0)
-            self.assertEqual(db.execute(
-                "SELECT like_count,print_count FROM page_stats WHERE page_id='p1'").fetchone(),(1,7))
-            self.assertEqual(db.execute(
-                "SELECT like_count FROM page_stats WHERE page_id='p2'").fetchone(),(0,))
-            db.execute(add,("p1",other,other))
-            self.assertEqual(db.execute(
-                "SELECT like_count FROM page_stats WHERE page_id='p1'").fetchone(),(1,))
-            # Even after a simulated year, the erased credential stays revoked.
-            db.execute("UPDATE like_erasure_blocks SET blocked_until='9999-12-31 23:59:59' WHERE visitor_hash=?",(user,))
-            db.execute(add,("p5",user,user))
-            self.assertEqual(db.execute(
-                "SELECT COUNT(*) FROM likes WHERE visitor_hash = ?",(user,)).fetchone()[0],0)
-            # A newly consented user can still Like without an age purge.
-            fresh=hashlib.sha256(b"v2-fresh").hexdigest()
-            db.execute(add,("p5",fresh,fresh))
-            self.assertEqual(db.execute(
-                "SELECT like_count FROM page_stats WHERE page_id='p5'").fetchone(),(1,))
-
-    def test_source_uses_post_only_and_secure_new_tokens(self):
+    def test_worker_source_has_no_guard_table_or_persistent_recovery_key(self):
         worker=(ROOT/"cloudflare/stats-worker.js").read_text(encoding="utf-8")
-        stats=(ROOT/"js/stats.js").read_text(encoding="utf-8")
         consent=(ROOT/"js/consent.js").read_text(encoding="utf-8")
+        stats=(ROOT/"js/stats.js").read_text(encoding="utf-8")
         self.assertIn('POST" && path==="/api/stats/erase-likes"',worker)
         self.assertIn('DELETE FROM likes WHERE visitor_hash = ?',worker)
-        self.assertIn('INSERT INTO like_erasure_blocks(visitor_hash,blocked_until)',worker)
-        self.assertIn('await env.DB.batch([',worker)
-        self.assertIn('ON CONFLICT(page_id,visitor_hash) DO NOTHING',worker)
-        self.assertIn('window.addEventListener("storage"',consent)
-        self.assertIn('read()?.[purpose] === true',consent)
-        self.assertIn('request.headers.get("origin")',worker)
-        self.assertIn('sec-fetch-site',worker)
-        self.assertIn('globalThis.crypto.getRandomValues',stats)
-        self.assertNotIn('Math.random()',stats)
+        self.assertNotIn("like_erasure_blocks",worker)
+        self.assertNotIn("blocked_until",worker)
+        self.assertNotIn("coloring-pages-erasure-pending-v1",consent)
+        self.assertNotIn("retryPendingErasure",consent)
+        self.assertIn("read()?.[purpose] === true",consent)
+        self.assertIn("await eraseProof(proof);",consent)
+        self.assertIn("window.ColoringStats?.getErasureProof?.()",consent)
+        self.assertIn("globalThis.crypto.getRandomValues",stats)
+        self.assertNotIn("Math.random()",stats)
         self.assertIn('if (visitorId) return requestJson("/page"',stats)
         self.assertNotIn('query.set("visitor_id"',stats)
-        self.assertIn('url.searchParams.get("visitor_id") || ""',worker)
-        self.assertIn('request.headers.get("sec-fetch-site") === "cross-site"',worker)
-        self.assertIn('const proof = revokeLike ?',consent)
-        self.assertIn('storePendingProof(proof)',consent)
-        self.assertIn('await eraseProof(proof);',consent)
-        self.assertIn('retryPendingErasure',consent)
-        self.assertIn('window.ColoringStats?.getErasureProof?.()',consent)
-        self.assertIn('window.confirm(',consent)
-        self.assertIn('changeConsent({like:false, print:false})',consent)
-        self.assertIn('changeConsent({like:like.checked, print:print.checked})',consent)
-        self.assertIn('const revokeLike = !storageFault && previous?.like === true && !next.like;',consent)
-        self.assertIn('const proof = revokeLike ?',consent)
-        self.assertIn('if (!revokeLike) { refreshRetry(); return; }',consent)
-        self.assertIn("'9999-12-31 23:59:59'",worker)
-        self.assertNotIn("DELETE FROM like_erasure_blocks WHERE blocked_until",worker)
-        self.assertIn('Datenschutzanfrage (ohne Browserkennung)',consent)
-        self.assertIn('Einwilligung widerrufen; Löschung nicht bestätigt',consent)
