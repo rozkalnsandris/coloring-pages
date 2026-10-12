@@ -11,6 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=optional" rel="stylesheet">
   <link rel="stylesheet" href="css/app.css?v=6b7ac31a9419c24f">
+  <link rel="stylesheet" href="css/surprise.css?v=dff1eae58bfc131f">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -79,12 +80,19 @@
           <img src="assets/hero-illustration.png" width="1408" height="736" fetchpriority="high" alt="Fröhlicher Rettungshund mit Rucksack in einer Berglandschaft neben einem Wegweiser">
         </div>
 
-        <form class="search" role="search" data-search-form>
+        <div class="hero-search-tools">
+          <form class="search" role="search" data-search-form>
           <label class="sr-only" for="site-search">Malvorlagen suchen</label>
           <span class="search-icon" aria-hidden="true"></span>
           <input id="site-search" name="q" type="search" placeholder="Malvorlagen suchen ..." autocomplete="off">
           <button type="submit">Suchen</button>
-        </form>
+          </form>
+          <div class="surprise-action">
+            <button class="surprise-button" type="button" data-surprise-button
+              aria-label="Zufällige Malvorlage öffnen" disabled>Überrasch mich!</button>
+            <p class="surprise-status" data-surprise-status role="status" hidden></p>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -236,6 +244,6 @@
   </main>
 
   <script src="js/stats.js?v=kita-campaign-v1" defer></script>
-  <script src="js/app.js?v=13ea80090209fd1a" defer></script>
+  <script src="js/app.js?v=446c7c313e4a91a5" defer></script>
 </body>
 </html>
