@@ -1,4 +1,5 @@
 """Font stability: zero remote font requests and one immediate stack on every page."""
+import hashlib
 import unittest
 from pathlib import Path
 
@@ -8,13 +9,14 @@ PAGES = ("index.html", "detail.html", "kita.html", "stats.html", "traffic.html",
 
 class FontDisplayContractTests(unittest.TestCase):
     def test_public_pages_use_single_local_system_font_policy(self):
+        expected_version = hashlib.sha256((ROOT / "css/stable-fonts.css").read_bytes()).hexdigest()[:16]
         for path in PAGES:
             with self.subTest(path=path):
                 html = (ROOT / path).read_text(encoding="utf-8")
                 self.assertNotIn("fonts.googleapis.com", html)
                 self.assertNotIn("fonts.gstatic.com", html)
                 self.assertNotIn("display=optional", html)
-                self.assertIn("css/stable-fonts.css?v=system-v1", html)
+                self.assertIn(f"css/stable-fonts.css?v={expected_version}", html)
                 self.assertLess(html.index("css/app.css?"), html.index("css/stable-fonts.css?"))
 
     def test_font_stack_is_immediate_and_stable(self):
