@@ -1,13 +1,31 @@
-/* One optional homepage action; layout stays movable for UI redesign #186. */
-.hero-search-tools { grid-area: search; align-self: start; min-width: 0; }
-.surprise-action { margin-top: 10px; }
-.surprise-button {
-  min-height: 44px; padding: 10px 18px; border: 1px solid var(--blue);
-  border-radius: 999px; background: #fff; color: var(--blue-deep);
-  font-weight: 800; cursor: pointer;
+/* Random selection is a secondary action within the hero search tools. */
+.hero-search-tools {
+  grid-area: search; align-self: start; display: flex; align-items: stretch;
+  gap: 10px; min-width: 0; margin-top: 20px;
 }
-.surprise-button:hover { background: #eaf3ff; }
+.hero-search-tools .search { flex: 1 1 auto; min-width: 0; width: auto; margin-top: 0; }
+.surprise-action { display: flex; flex: 0 0 auto; flex-direction: column; align-items: stretch; }
+.surprise-button {
+  min-height: 54px; padding: 10px 14px; border: 1px solid #dfe9f5;
+  border-radius: 999px; background: #f1f7ff; color: var(--blue-deep);
+  font: 800 14px/1.2 var(--font-body); white-space: nowrap;
+  box-shadow: 0 6px 15px rgb(28 77 130 / 7%); cursor: pointer;
+}
+.surprise-button::before { content: "✦"; margin-right: 6px; color: var(--blue); }
+.surprise-button:hover { background: #dfedff; border-color: #b9d5f8; }
 .surprise-button:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
 .surprise-button:disabled { opacity: .55; cursor: not-allowed; }
-.surprise-status { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
-@media (max-width: 720px) { .surprise-button { width: 100%; } }
+.surprise-status { margin: 8px 0 0; max-width: 240px; color: var(--muted); font-size: 13px; }
+@media (min-width: 721px) and (max-width: 900px) {
+  .hero-search-tools { margin-top: 0; }
+}
+@media (max-width: 720px) {
+  .hero-search-tools { display: block; margin-top: 0; }
+  .hero-search-tools .search { width: 100%; margin-top: 8px; }
+  .surprise-action { margin-top: 8px; align-items: flex-end; }
+  .surprise-button {
+    min-height: 44px; width: auto; padding: 8px 12px; border: 0;
+    background: transparent; box-shadow: none;
+  }
+  .surprise-status { max-width: 100%; text-align: right; }
+}
