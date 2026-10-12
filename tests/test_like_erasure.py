@@ -15,6 +15,7 @@ class V3ErasureTests(unittest.TestCase):
                 db.execute("INSERT INTO visitor_credentials(visitor_hash,like_allowed,print_allowed,notice_version,expires_at) VALUES (?,?,?,?,unixepoch()+86400)",(token,like,print_,1))
             db.executemany("INSERT INTO likes(page_id,visitor_hash) VALUES (?,?)",[("p1",old),("p2",old),("p1",other)])
             db.execute("UPDATE page_stats SET print_count=7 WHERE page_id='p1'")
+            db.commit()
             db.execute("BEGIN")
             db.execute("INSERT INTO visitor_credentials(visitor_hash,like_allowed,print_allowed,notice_version,expires_at) SELECT ?,0,1,1,unixepoch()+86400 FROM visitor_credentials WHERE visitor_hash=? AND expires_at>unixepoch()",(new,old))
             db.execute("DELETE FROM likes WHERE visitor_hash=? AND EXISTS(SELECT 1 FROM visitor_credentials WHERE visitor_hash=?)",(old,new))
