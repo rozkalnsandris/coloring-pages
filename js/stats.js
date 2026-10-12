@@ -9,7 +9,6 @@
   }
 
   const V3_RE = /^v3-[0-9a-f]{64}$/;
-  let pendingCredential = null;
   let credentialGeneration = 0;
   function getVisitorId(create = false, purpose = "like") {
     if (window.ColoringConsent?.allows?.(purpose) !== true) return "";
@@ -26,7 +25,7 @@
       return V3_RE.test(id) ? id : "";
     } catch { return ""; }
   }
-  function cancelPendingCredential() { credentialGeneration++; pendingCredential = null; }
+  function cancelPendingCredential() { credentialGeneration++; }
   async function changeCredential(next, priorId = "") {
     const generation = credentialGeneration;
     const result = await requestJson("/credential", {
@@ -49,14 +48,13 @@
     if (window.ColoringConsent?.allows?.(purpose) !== true) return "";
     const id = getVisitorId(false,purpose);
     if (id) return id;
-    if (!pendingCredential) {
-      pendingCredential = changeCredential({
-        like:window.ColoringConsent?.allows?.("like")===true,
-        print:window.ColoringConsent?.allows?.("print")===true
-      }).finally(()=>{pendingCredential=null});
-    }
-    await pendingCredential;
-    return getVisitorId(false,purpose);
+    // Never mint a replacement automatically from an old localStorage choice.
+    window.ColoringConsent?.requireFreshConsent?.();
+    return "";
+  }
+  function handleExpiredCredential(error, submittedId) {
+    if (error?.code === "credential_expired")
+      window.ColoringConsent?.requireFreshConsent?.(submittedId);
   }
 
   async function requestJson(path, options = {}) {
@@ -70,7 +68,16 @@
         ...(options.headers || {}),
       },
     });
-    if (!response.ok) throw new Error(`stats request failed: ${response.status}`);
+    if (!response.ok) {
+      // Only the server's explicit credential_expired response triggers renewal.
+      let code = "";
+      if (response.status === 403) {
+        try { code = (await response.json())?.error || ""; } catch {}
+      }
+      const error = new Error(`stats request failed: ${response.status}`);
+      error.code = code;
+      throw error;
+    }
     return response.json();
   }
 
@@ -96,10 +103,19 @@
   async function getPage(pageId) {
     const visitorId = getVisitorId(false);
     const query = new URLSearchParams({page_id: pageId});
-    if (visitorId) return requestJson("/page", {
-      method: "POST",
-      body: JSON.stringify({page_id: pageId, visitor_id: visitorId}),
-    });
+    if (visitorId) {
+      try {
+        return await requestJson("/page", {
+          method: "POST",
+          body: JSON.stringify({page_id: pageId, visitor_id: visitorId}),
+        });
+      } catch (error) {
+        if (error?.code !== "credential_expired") throw error;
+        handleExpiredCredential(error,visitorId);
+      }
+    } else if (window.ColoringConsent?.allows?.("like") === true) {
+      window.ColoringConsent?.requireFreshConsent?.();
+    }
     return requestJson(`/page?${query}`);
   }
 
@@ -107,10 +123,15 @@
     if (window.ColoringConsent?.allows?.("like") !== true) throw new Error("like consent required");
     const visitorId = await ensureCredential("like");
     if (!visitorId) throw new Error("visitor ID unavailable");
-    return requestJson("/like", {
-      method: "POST",
-      body: JSON.stringify({page_id: pageId, visitor_id: visitorId}),
-    });
+    try {
+      return await requestJson("/like", {
+        method: "POST",
+        body: JSON.stringify({page_id: pageId, visitor_id: visitorId}),
+      });
+    } catch (error) {
+      handleExpiredCredential(error,visitorId);
+      throw error;
+    }
   }
 
   // Read the retired v2 credential solely for user-directed Like erasure.
@@ -170,28 +191,22 @@
 
   function trackPrint(pageId) {
     if (window.ColoringConsent?.allows?.("print") !== true) return;
-    // Printing never waits for analytics. Only the consented telemetry is async.
+    // Telemetry may fail; never delay or prevent A4 printing.
     void (async () => {
-    const visitorId = await ensureCredential("print");
-    if (!visitorId) return;
-    const payload = {page_id: pageId, visitor_id: visitorId};
-    const campaign = currentCampaign();
-    if (campaign) payload.campaign = campaign;
-    const body = JSON.stringify(payload);
-    if (navigator.sendBeacon) {
+      const visitorId = await ensureCredential("print");
+      if (!visitorId) return;
+      const payload = {page_id:pageId,visitor_id:visitorId};
+      const campaign = currentCampaign();
+      if (campaign) payload.campaign = campaign;
       try {
-        const blob = new Blob([body], {type: "application/json"});
-        if (navigator.sendBeacon(`${API_BASE}/print`, blob)) return;
-      } catch {}
-    }
-    fetch(`${API_BASE}/print`, {
-      method: "POST",
-      credentials: "same-origin",
-      keepalive: true,
-      headers: {"Content-Type": "application/json"},
-      body,
-    }).catch(() => {});
-})().catch(() => {});
+        // A keepalive fetch can inspect credential_expired; sendBeacon cannot.
+        await requestJson("/print", {
+          method:"POST",keepalive:true,body:JSON.stringify(payload)
+        });
+      } catch (error) {
+        handleExpiredCredential(error,visitorId);
+      }
+    })().catch(() => {});
   }
 
   window.ColoringStats = {getRankings, getOverview, getTraffic, getCampaigns, getPage, toggleLike, getErasureProof, eraseLikesWithProof, getCredentialForRotation, cancelPendingCredential, changeCredential, trackVisit, trackView, trackPrint};

@@ -122,6 +122,40 @@
     return true;
   }
 
+  // Fail closed on confirmed expiry or a missing credential; never mint silently.
+  function requireFreshConsent(expiredId = "") {
+    const current = read();
+    if (erasing || !current || (!current.like && !current.print)) return false;
+    try {
+      const storedId = localStorage.getItem(ID_KEY) || "";
+      // A delayed response must not wipe a new credential issued in another tab.
+      if (expiredId && storedId !== expiredId) return false;
+      if (!expiredId && storedId) {
+        // Keep legacy v2 intact for an explicit, user-directed deletion.
+        show(true);
+        error.textContent = "Die bisherige Browserkennung kann nicht für neue Likes oder Druckstatistik verwendet werden. Bitte ändere deine Auswahl in den Einstellungen.";
+        error.hidden = false;
+        return false;
+      }
+      window.ColoringStats?.cancelPendingCredential?.();
+      localStorage.removeItem(KEY);
+      localStorage.removeItem(ID_KEY);
+      choice = null;
+      storageFault = false;
+    } catch {
+      choice = null;
+      storageFault = true;
+    }
+    show(false);
+    footer.hidden = true;
+    error.textContent = "Bitte stimme Likes und Druckstatistik erneut ausdrücklich zu. Ohne Einwilligung kannst du weiter drucken.";
+    error.hidden = false;
+    document.dispatchEvent(new CustomEvent("coloring-consent-changed", {
+      detail:{like:false,print:false}
+    }));
+    return true;
+  }
+
   function eraseStatus(message) {
     erasureFeedback.textContent = message;
     erasureFeedback.hidden = false;
@@ -187,6 +221,9 @@
     } finally {
       erasing = false;
       eraseButton.disabled = false;
+      document.dispatchEvent(new CustomEvent("coloring-consent-changed", {
+        detail:{like:allows("like"),print:allows("print")}
+      }));
     }
   }
 
@@ -210,7 +247,7 @@
   });
   reopen.addEventListener("click", () => show(true));
 
-  window.ColoringConsent = { allows, current: read, openSettings: () => show(true) };
+  window.ColoringConsent = { allows, current: read, openSettings: () => show(true), requireFreshConsent };
   if (choice) hide(); else {
     banner.hidden = false;
     document.body.classList.add("has-privacy-banner");
@@ -218,7 +255,7 @@
     // The footer re-open control is only needed once a decision exists.
   }
   document.addEventListener("coloring-consent-changed", () => {
-    footer.hidden = false;
+    footer.hidden = !read();
   });
   window.addEventListener("storage", (event) => {
     if (event.key !== KEY && event.key !== null) return;
