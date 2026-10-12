@@ -3,6 +3,68 @@
 Status: SOURCE IMPLEMENTATION DRAFT — not legally signed off, merged or LIVE.
 Scope: [issue #182](https://github.com/rozkalnsandris/coloring-pages/issues/182). Independent legal-page Draft: [PR #158](https://github.com/rozkalnsandris/coloring-pages/pull/158).
 
+## 2026-10-12 release-blocking design review: consent evidence, suppression, DSAR and legacy GET
+
+**Scope:** Reviewed together with legal-only Draft PR #158 at head `82b15a97d7f5c80c513583f42d71a8f6426e6acd`. This is a **source/documentation decision record, not legal sign-off or authority for a Worker deployment, D1 write, merge or browser tracking change**. The PR #183 behavior and existing user choice of **consented-only new Print intent counting** remain unchanged. Distinguish observed source behavior from requirements and future options.
+
+### 1. Demonstrability and a minimal consent-evidence decision
+
+**As implemented in Draft #183:** `coloring-pages-consent-v1` in browser `localStorage` contains `version=1`, two purpose-specific booleans and `decided_at`; `coloring-pages-visitor-v1` is read/generated only following the appropriate Like/Print opt-in. The frontend offers equal-prominence refusal/acceptance, independent settings and an easy withdrawal path. The record is **under the user's control** (may be deleted/edited) and is **not retained by this site's server or D1**. Existing test evidence proves source decision branches, not an individual visitor's historical affirmative action; there is no demonstrated immutable consent text version, account-side decision ledger or verified end-to-end consent evidence in this Draft.
+
+**Legal questions to decide before Ready:** GDPR Art. 7(1) requires the controller to be able to demonstrate consent where it relies on consent. EDPB Guidelines 05/2020 discuss demonstrability and the ability to withdraw. TDDDG §25(1) generally covers **both reading and writing** device information; any claimed §25(2) strict-necessity exception for the consent-choice record itself needs a *separate purpose-by-purpose* assessment. GDPR lawful bases for resulting D1/pseudonymous processing must also be documented independently. Neither statute automatically dictates a server-side consent database, and a local record alone is not an automatic compliance certificate.
+
+| Smallest design choice | Evidence and privacy trade-off | Gate |
+| --- | --- | --- |
+| **A — existing local-only choice + release evidence** | Keep explicit independent UI choices; retain reviewed banner/privacy-copy revision, text and version in source control; archive CI/browser validation for grant/deny/revoke, plus a dated controller decision. No additional visitor tracking. This establishes what the UI *could* capture, but may **not** meet individual proof under Art. 7(1); legal reviewer must explicitly assess residual risk. | No new runtime features; legal acceptance **not granted** by this document. |
+| **B — minimal server-side consent receipt** | Only if A is shown insufficient: separately design purpose, data fields, attribution mechanism, integrity, access, lifecycle/deletion and security of a pseudonymous grant/withdrawal receipt. Do not transmit raw visitor IDs solely to create proof; do not use proof for analytics. More processing and D1 work could itself create new GDPR obligations. | New owner-approved scoped source/security/privacy review, D1/API changes and separate LIVE gate; **not authorized here**. |
+
+**Minimum review packet independent of option:** exact German first-layer notice and purpose-specific details; version/hash of displayed copy and its linked policy; default no opt-in, keyboard/mobile screenshots, affirmative actions, denied state, storage-error and cross-tab revocation tests; whether the same notice actually runs on the deployed host; an operator decision explaining Art. 7(1), TDDDG §25 and Art. 13. Never log or send a raw ID to "prove" consent by default. No invented 12-month consent expiry or periodic re-consent schedule.
+
+### 2. Replay-suppression hash: retention alternatives, not a decided lawful basis
+
+**Current Draft A:** after confirmed erasure, the Worker inserts one SHA-256 hash of the erased high-entropy `v2-` bearer credential into `like_erasure_blocks`; `blocked_until='9999-12-31 23:59:59'` is a **technical permanent guard**, not a defensible actual legal expiry. Its purpose is only to stop a late replay from re-creating deleted Likes. Treat the hash as potentially linkable pseudonymous personal data; do not promise anonymity.
+
+- **A1 — current non-expiring credential + minimal hash-only block:** no automatic age deletion of active Likes, no analytics use of the block, strict separation/access, objection/erasure review and independent GDPR Art. 6(1)(f) three-part assessment (legitimate purpose, necessity against less intrusive alternatives, rights/interests balancing), with particular attention to children/family use. Document what *ends* technical necessity and who reviews that criterion. **Release blocker:** a criterion that might last forever is not sufficient evidence of a lawful retention period; decide proportionality before using this.
+- **A2 — future server-enforced credential lifetime/rotation:** allow a finite block lifetime only when *all* tokens eligible for replay are truly rejected by the server after a specified bound (including old cached clients, migration grace, clock/race conditions). Assess forced logout/re-consent UX and impacts to persistent Likes. Requires separate technical/security/legal owner authority; not implemented and **not** silently selected.
+- **Reject unsafe shortcut:** no guessed 24-hour/12-month block deletion while a credential can still be replayed; no blanket deletion of active consented Likes, database purge, weakening of the D1 atomic barrier or claim that a `SHA-256` hash escapes the GDPR.
+
+A1 is the existing engineering choice **under legal review**, not sign-off. Record a final human legal/owner decision or choose a separately authorized alternate protocol before Ready. D1 Time Travel may retain older row states even after live erasure: current Cloudflare docs describe a plan-dependent recovery window (7 days for Workers Free, 30 for Workers Paid on supported production databases). Do not assert this account's plan, database subsystem or actual erasure-from-backups without fresh evidence.
+
+### 3. Data-subject request (DSAR) operating procedure — no unverified deletion claims
+
+1. **Receive and acknowledge:** accept email via the listed privacy contact without requesting any identifier/credential, password, identification photo or sensitive screenshots in ordinary email. Open a minimal internal case: date received, requested right, scope, status, reply deadline and a non-sensitive action/decision record. Do not put credential hashes or direct identifiers in GitHub.
+2. **Classify:** Like opt-out with still-held valid `v2` proof can invoke the existing confirmed user-directed self-service path; unlike, browser removal and future consent stop are **not proof of deleting all provider records**. Other requests (access, erasure, objection, lost/legacy credential, IP/day HMAC, Cloudflare logs or backup questions) need individual assessment.
+3. **Verify proportionately:** a legacy UUID-shaped ID, page-title knowledge or URL previously containing `visitor_id` is **not sufficient ownership proof** to destroy arbitrary rows. Where reasonable identity doubts exist, seek only proportionate safe corroboration; never demand unnecessary identity documents. If a record cannot truly be linked without extra identifying data, consider GDPR Arts. 11 and 12 and communicate the limitation rather than silently refusing or bulk-deleting.
+4. **Act only under exact authority:** any manual D1 lookup/write/deletion, Cloudflare retention/config change or host-log access needs its own case-scoped owner authorization and minimum-necessary evidence. Confirm the actual database result and account for D1 Time Travel/logs before claiming a result. Respect outstanding legal obligations, legitimate objections, and preservation where applicable.
+5. **Reply in time:** generally respond **within one month of receipt**; where complex, inform the applicant with reasons within the initial month before a permitted extension of up to two more months. If not acting, state reasons and complaint/judicial options; record the outcome and review the case-file retention, not indefinite correspondence by default.
+
+**Suggested accurate user outcome labels (only once independently verified):** `Widerruf gespeichert; weitere Kennungsnutzung gestoppt`; `Löschung in der aktiven D1-Tabelle für diese Browserkennung bestätigt`; `Löschung noch nicht bestätigt`; `Eine sichere Zuordnung ist bisher nicht möglich`. Never claim a blank browser ID proves D1, edge logs and recovery history were purged.
+
+### 4. Legacy personalized GET sunset plan — staged and owner-gated
+
+The Draft Worker supports `POST /api/stats/page` for new consenting clients and anonymous `GET /api/stats/page?page_id=...`; it temporarily accepts older personalized `GET /api/stats/page?page_id=...&visitor_id=...` requests. Because the old ID appears in a URL, logs/caches may have previously recorded it. **Do not remove this route within this documentation-only scope** or assume old logs are automatically erased.
+
+1. **Prerequisites (not yet satisfied):** coordinated PR #158 and #183 legal/security acceptance, exact D1 migration before any new Worker activation, source+LIVE frontend/Worker version alignment, and regression verification of POST personalized + anonymous GET semantics on both Ausmalwiese hosts and legacy host.
+2. **Observed compatibility window:** after separately authorized publication, establish whether any *legacy personalized GET* requests still occur using aggregate counts/status only, where lawfully and technically available; do not fetch/log raw `visitor_id`, referrer strings or full URLs merely to count. If credible counts cannot be obtained, report the evidence gap rather than invent a sunset date.
+3. **Sunset decision:** choose a finite review date based on compatible cached-client exposure and evidenced risk, explicitly noting legal urgency of the identifier-in-URL path. Require a separate source PR, CI/reviews, explicit owner merge and exact Worker LIVE authorization to stop accepting `visitor_id` in GET. Keep **anonymous** `GET /page?page_id=...` and new POST behavior intact. The endpoint may reject personalized legacy GET without changing public aggregate counts.
+4. **Follow-up:** verify that frontend and Worker no longer generate/accept new personalized GET traffic, assess past logs/recovery copies separately and update Datenschutz text after verified activation. A sunset cannot retrospectively remove past exposure.
+
+### 5. Paired German disclosure alignment and release decisions
+
+Legal-only PR #158 may describe the **planned combined future** Like/Print/erasure behavior, but must not present it as currently LIVE or legally signed off. It should distinguish browser-local grant/withdrawal record and its demonstrability limitation; non-expiring technical erasure blocks and the unapproved Art. 6(1)(f) balancing; missing/lost-ID claims, D1 Time Travel; and the temporary personalized GET transition. Consent withdrawal **stops future use immediately** regardless of any unconfirmed deletion. The existing choice to count only **consented new Print intents** remains.
+
+**Do not turn this Draft into Ready** until a documented operator/legal reviewer approves or rejects the legitimate-interest balancing and retention rule, consent-proof sufficiency, published Art. 13 text, actual Cloudflare logging/transfer/retention facts, rights handling, and paired PR #158 scope alignment. Even after legal review, the separate D1 migration and Worker activation need fresh exact owner authority. This document authorizes no source-code behavior change, no merge, no D1 write and no LIVE action.
+
+**Official references checked 2026-10-12:**
+- [TDDDG §25](https://www.gesetze-im-internet.de/ttdsg/__25.html).
+- [GDPR Articles 5, 6, 7, 11–13, 17, 21](https://eur-lex.europa.eu/eli/reg/2016/679/oj).
+- [EDPB Guidelines 05/2020 (consent)](https://www.edpb.europa.eu/documents/guideline/guidelines-052020-on-consent-under-regulation-2016679_en).
+- [EDPB guidance on DSAR rights and response deadlines](https://www.edpb.europa.eu/sme/be-compliant/respect-individuals-rights_en).
+- [EDPB Guidelines 1/2024 Art. 6(1)(f) **public consultation version, not final sign-off**](https://www.edpb.europa.eu/public-consultations/guidelines-12024-on-processing-of-personal-data-based-on-article-61f-gdpr_en).
+- [Cloudflare D1 Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/).
+
+---
+
 ## Current decision: suppression A + legacy rights (2026-10-11)
 
 **Status: design/legal assessment only, NOT LEGAL SIGN-OFF or release approval.** Owner selected **SUPPRESSION=A**. Keep the existing simple consent banner and high-entropy v2 identifier design; do not add accounts, a new service, Cron, an automatic age-based Like purge or a second credential protocol. No Worker, SQL, consent UI, PR #158, D1 or LIVE change is authorized by this decision. Earlier alternatives below are historical context.
