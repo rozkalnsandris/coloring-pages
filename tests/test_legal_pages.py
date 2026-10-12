@@ -72,6 +72,27 @@ class LegalPageSourceTests(unittest.TestCase):
         self.assertIn("Neither draft should be merged", report)
         self.assertIn("NOT RELEASE READY", report)
 
+    def test_simplified_like_erasure_draft_disclosure(self):
+        privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
+        report = (ROOT / "docs/LEGAL_PAGES_REVIEW.md").read_text(encoding="utf-8")
+        for expected in (
+            "Löschung nicht", "zum Zeitpunkt der Anfrage",
+            "nicht dauerhaft gesperrt", "keine", "24-Stunden-Funktion",
+            "Datenschutzanfragen", "nach zwölf Monaten",
+        ):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, privacy)
+        for forbidden in (
+            "like_erasure_blocks", "coloring-pages-erasure-pending-v1",
+            "Löschung erneut versuchen", "blocked_until",
+        ):
+            with self.subTest(forbidden=forbidden):
+                self.assertNotIn(forbidden, privacy)
+        self.assertIn("one parameter-bound", report)
+        self.assertIn("does not introduce a D1 schema migration", report)
+        self.assertIn("NOT RELEASE READY", report)
+        self.assertIn("legacy", report.lower())
+
     def test_self_hosted_woff2_and_licenses(self):
         import base64
         import re

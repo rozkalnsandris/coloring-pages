@@ -191,11 +191,14 @@
           <code>/api/stats/erase-likes</code> übertragen.
           Die gesonderte Schaltfläche „Meine gespeicherten Likes
           löschen“ bietet denselben Vorgang an.
-          Ein bestätigter Erfolg bezieht sich auf die zur
-          Browserkennung gehörenden Like-Einträge in D1;
-          die zugehörigen Like-Zähler werden entsprechend angepasst.
-          Alle anderen Likes, historische aggregierte Druckzahlen
-          und reguläre Druckfunktionen bleiben erhalten.</p>
+          Die Bestätigung bedeutet nur, dass die zu dieser Browserkennung
+          gehörenden Likes zum Zeitpunkt der Anfrage aus der aktuellen
+          D1-Tabelle gelöscht wurden. Die Like-Zähler werden entsprechend
+          angepasst; andere Likes, historische aggregierte Druckzahlen
+          und reguläre Druckfunktionen bleiben erhalten. Bereits
+          zwischengespeicherte oder kopierte alte Kennungen können
+          nachträglich erneut Likes erzeugen, weil sie serverseitig
+          nicht dauerhaft gesperrt werden.</p>
         <p>Bei älteren, nicht ausreichend gesicherten oder
           nicht mehr vorhandenen Kennungen sowie bei einer
           Netz-, Begrenzungs- oder Datenbankstörung kann die
@@ -217,58 +220,27 @@
           Voraussetzungen aus Art. 11 und 12 DSGVO.
           Eine lokale Entfernung der Browserkennung ist für sich
           genommen kein Nachweis einer serverseitigen Löschung.</p>
-        <p>Wenn die Löschung nach dem Widerruf nicht bestätigt wurde
-          und eine ausreichend gesicherte Kennung vorliegt, kann
-          vorübergehend ein ausschließlich zur Löschung bestimmter
-          Nachweis im <code>localStorage</code> unter
-          <code>coloring-pages-erasure-pending-v1</code> liegen.
-          Er enthält die alte Browserkennung und einen Ablaufzeitpunkt
-          von höchstens 24 Stunden; er dient weder Likes noch der
-          Druckstatistik. „Löschung erneut versuchen“ übermittelt
-          diesen Nachweis nur nach einem erneuten bewussten Klick.
-          Es gibt keinen automatischen erneuten Löschversuch.
-          Nach bestätigter Löschung wird der Nachweis entfernt;
-          nach Ablauf wird er beim nächsten Lesen gelöscht.
-          Fehlt der Nachweis oder schlägt der Versuch fehl, ist die
-          Löschung in D1 weiterhin nicht bestätigt.</p>
-        <p>Um zu verhindern, dass eine bereits gelöschte
-          Browserkennung durch verspätete oder wiederholte
-          Anfragen erneut Likes anlegt, sieht der
-          Quellstand einen gesonderten pseudonymen
-          <strong>Sperreintrag</strong> in Cloudflare D1 vor
-          (<code>like_erasure_blocks</code>).
-          Dieser enthält den Hash der gesperrten Kennung,
-          nicht die ursprüngliche Kennung oder eine Liste
-          Ihrer besuchten Malvorlagen. Solange eine gelöschte Kennung technisch weiterhin
-          akzeptiert werden könnte, soll der Sperreintrag ihre
-          Wiederverwendung verhindern. Der Quellstand sieht dafür
-          keine automatische Löschfrist vor; daraus folgt aber
-          keine gesetzliche Erlaubnis zu unbefristeter Speicherung.
-          <strong>Dieser Sperreintrag ist nicht automatisch
-          anonym.</strong> Als mögliche eigenständige Rechtsgrundlage für die
-          Wiederverwendungssperre kommt Art. 6 Abs. 1 lit. f DSGVO
-          erst nach Prüfung der Erforderlichkeit und Abwägung der
-          Interessen und Betroffenenrechte in Betracht. Die
-          Aufbewahrung soll nur erfolgen, solange die Sperre
-          technisch notwendig und rechtlich gerechtfertigt ist.
-          Konkrete Speicherkriterien, Überprüfung, Widerspruchs-
-          und Löschrechte sowie der Umgang mit D1-Wiederherstellungsdaten
-          und Protokollen sind vor Veröffentlichung noch festzulegen.
-          Das Löschen der Like-Einträge bedeutet nicht, dass
-          dieser Sperreintrag oder sämtliche technischen
-          Sicherungskopien sofort entfernt werden.</p>
-        <p>Für den gesonderten Sperreintrag gibt es noch keine
-          rechtsverbindlich festgelegte konkrete Speicherdauer.
-          Im Quellstand ist die Sperre technisch ohne Ablauf angelegt,
-          weil die zugrunde liegende alte Browserkennung derzeit ohne
-          serverseitige Gültigkeitsfrist angenommen werden könnte.
-          Als Alternative muss geprüft werden, ob ein späteres
-          technisches Ablauf- und Erneuerungsverfahren kürzere
-          Speicherfristen sicher ermöglicht. Diese Alternative ist
-          nicht umgesetzt; weder die technische Sperre noch der
-          mögliche Interessenabwägungsgrund ist damit bereits
-          rechtlich freigegeben. Aktive, weiterhin erlaubte Likes
-          werden nicht pauschal nach zwölf Monaten gelöscht.</p>
+        <p>Nach einer Löschanfrage bewahrt diese Website keine
+          frühere Browserkennung als zusätzlichen
+          Wiederholungsnachweis auf. Es gibt weder eine automatische
+          Wiederholung noch die frühere 24-Stunden-Funktion für einen
+          erneuten Löschversuch. Wenn der Aufruf fehlschlägt oder die
+          Kennung nicht sicher zugeordnet werden kann, wird die
+          Löschung nicht als erfolgreich bestätigt; der Kontakt
+          aus Abschnitt 1 bleibt für Datenschutzanfragen verfügbar.</p>
+        <p>Der vereinfachte Quellstand verwendet keinen dauerhaften
+          Sperreintrag für bereits gelöschte Browserkennungen.
+          Eine alte Kennung kann bei einer späteren Anfrage erneut
+          zum Anlegen eines Likes verwendet werden, etwa aus einem
+          veralteten Browser-Tab oder einer zwischengespeicherten
+          Anfrage. Eine bestätigte Löschung umfasst daher die
+          aktuell zugeordneten Like-Einträge zum Zeitpunkt des
+          Löschaufrufs, nicht die endgültige Verhinderung aller
+          künftigen Einträge. Ob dieses Verfahren die gesetzlichen
+          Lösch- und Widerrufsanforderungen ausreichend erfüllt,
+          muss vor der Freischaltung geprüft werden. Bei weiterhin
+          erteilter Einwilligung werden aktive Likes nicht pauschal
+          nach zwölf Monaten gelöscht.</p>
         <p>Für das Speichern und Auslesen der Kennung ist
           grundsätzlich § 25 TDDDG zu beachten; für die
           optionalen kennungsbasierten Vorgänge kommt die
@@ -276,8 +248,8 @@
           als Rechtsgrundlage in Betracht. Der Widerruf
           berührt die Rechtmäßigkeit der zuvor auf Grundlage
           der Einwilligung erfolgten Verarbeitung nicht.
-          Die Rechtsgrundlagen für Sperreinträge, separate
-          Besuchszählung und Sicherheitsverarbeitung sowie
+          Die Rechtsgrundlagen für die separate Besuchszählung
+          und Sicherheitsverarbeitung sowie
           konkrete Empfänger, mögliche Drittlandübermittlungen
           und Aufbewahrungsfristen beziehungsweise
           Speicherkriterien müssen anhand der tatsächlichen
