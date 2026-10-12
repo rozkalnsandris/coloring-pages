@@ -166,16 +166,19 @@
         if (!window.ColoringStats?.changeCredential) throw new Error("credential unavailable");
         const result = await window.ColoringStats.changeCredential(next,priorV3);
         if (result?.ok !== true) throw new Error("credential not confirmed");
-        if (revokeLike) eraseStatus("Löschung der aktuell gespeicherten Likes für diese Browserkennung bestätigt.");
-      } else if (revokeLike && proof) {
-        // v2 is deletion-only. The Worker never accepts v2 for new Likes.
-        const result = await window.ColoringStats.eraseLikesWithProof(proof);
-        if (result?.ok !== true) throw new Error("legacy erasure unconfirmed");
-        eraseStatus("Löschung der aktuell gespeicherten Likes für diese Browserkennung bestätigt.");
-      } else if (revokeLike) throw new Error("legacy credential unavailable");
-      if (revokeLike && proof && !priorV3 && (next.like || next.print)) {
-        // Source transition cannot prove old v2 rows erased; manual DSAR remains.
-        eraseStatus("Löschung alter Likes nicht bestätigt. Bitte nutze den Datenschutzkontakt ohne Browserkennung.");
+      }
+      if (revokeLike) {
+        if (priorV3) {
+          // Atomic rotation revoked old Like rights and erased matching rows.
+          eraseStatus("Löschung der aktuell gespeicherten Likes für diese Browserkennung bestätigt.");
+        } else if (proof) {
+          // Legacy v2 is deletion-only, including when Print consent remains.
+          const result = await window.ColoringStats.eraseLikesWithProof(proof);
+          if (result?.ok !== true) throw new Error("legacy erasure unconfirmed");
+          eraseStatus("Löschung der aktuell gespeicherten Likes für diese Browserkennung bestätigt.");
+        } else {
+          throw new Error("legacy credential unavailable");
+        }
       }
     } catch {
       eraseStatus("Einwilligung geändert; Löschung oder Kennung nicht bestätigt. Bitte nutze den Datenschutzkontakt ohne Browserkennung.");
