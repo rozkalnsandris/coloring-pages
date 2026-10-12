@@ -1,5 +1,46 @@
 # German legal pages — DRAFT / NOT RELEASE READY
 
+## Coordinated source-only privacy wording review — 2026-10-12 (#182 / PR #183)
+
+**Status: review draft only.** The legal-page branch is paired with consent branch PR #183 (source head during this review: `68e739fec0a0ca206f97e65448d6687991a84211`). No owner/legal approval, cloud deployment, D1 migration, LIVE verification, merge or data-controller final Art. 6 determination follows from these text changes. Historical source descriptions elsewhere in this document remain dated evidence; the exact `main` / PR heads must be refreshed again before release.
+
+### Consent decisions and evidence (GDPR Art. 7(1), TDDDG §25)
+
+- Draft implementation writes only the versioned local `coloring-pages-consent-v1` record with purpose booleans and decision time. **No server-side individual consent receipt currently exists in this Draft.** The user can erase/alter browser storage; a timestamp is not by itself verified historical consent. UI/source version and CI evidence help document what was offered, but are not automatic individual proof.
+- Decide with the responsible reviewer whether this **local-only plus archived policy/source version** design can satisfy Art. 7(1) for this risk profile. If not, an attributable, proportionate record requires a *separate* engineering/privacy authority, fresh GDPR basis and retention plan; do not quietly add a D1 log or bind the browser identifier to consent evidence.
+- Review TDDDG §25 separately for *visitor ID storage/access* (explicit opt-in intended) and for *recording the consent choice itself*; a strict-necessity exemption for the latter is possible only after explaining why its use is essential to deliver the service that the user requested. There is no automatic exemption for all first-party `localStorage` writes. Keep per-purpose opt-in, equal prominence of `Alle ablehnen`/`Alle akzeptieren`, and simple withdrawal; a withdrawn Like grant is not restored because erasure fails.
+
+### Replay guard and active Likes (GDPR Arts. 5, 6, 13, 17, 21)
+
+- Do **not** confuse active consented Like records (no automatic 12-month purge was chosen) with the separate `like_erasure_blocks` rows for **previously erased credentials**. These are still potentially personal, pseudonymous hashes.
+- Draft `blocked_until='9999-12-31 23:59:59'` represents a security enforcement sentinel, not an approved data-retention period. Candidate Art. 6(1)(f) anti-replay rationale needs independently recorded purpose, necessity/alternatives, balancing (including the family/child context), the practical objection process, an auditable retention-review criterion and truthful Art. 13 disclosure. **No lawful-basis decision or finite retention has been signed off.**
+- Alternative: a *new, separately authorized* server-enforced credential expiration/rotation could justify a bounded suppression lifetime, but first prove that all old credentials stop authenticating at the corresponding endpoint. Do not merely age-delete replay guards or active Likes. The owner must choose whether the current non-expiring bearer design can lawfully ship at all.
+- Cloudflare D1 Time Travel may allow old data to be restored after deleting the live row; Cloudflare documents 7 days for eligible Workers Free databases and 30 days on Workers Paid, contingent on subsystem/plan. No current account/subsystem fact or full provider deletion is established by source.
+
+### DSAR handling and lost/legacy identifiers
+
+1. Receive requests by privacy contact **without requesting raw visitor IDs, tokens or ID scans via ordinary email**; record minimal case metadata and date received.
+2. Determine whether a safe, sufficiently reliable match exists. A historical UUID, liked-page claim or leaked `GET ...visitor_id=...` URL alone is not sufficient authority for destructive erasure. Apply GDPR Arts. 11–12 to genuine identification limitations case-by-case, not as an automatic rejection.
+3. Confirm the scope of any owner-authorized D1 deletion against live records before telling the person it succeeded; distinguish local ID removal, active D1 row erasure, suppression hash, provider logs and point-in-time recovery. Manual production writes require a fresh case-scoped authorization.
+4. Normally reply within **one month**. If an extension is lawfully necessary, inform the person within that month with reasons; where unable to act, explain why and available complaint/judicial remedies. Record responses and review case-file retention.
+5. User-facing wording must say **`Löschung nicht bestätigt`** when the operation fails or matching is impossible, and may say `aktuelle Like-Daten für diese Kennung gelöscht` only after actual verified success, never `alle Daten gelöscht`.
+
+### Transitional `GET ...visitor_id` and coupled deployment
+
+- PR #183 switches new clients to personalized `POST /api/stats/page`, preserves anonymous aggregate `GET /api/stats/page?page_id=...` and temporarily keeps **personalized GET with `visitor_id`** for older cached clients. This exposure is a remaining security/privacy risk; it must have a dated, owner-reviewed **sunset decision** based on safe aggregate compatibility evidence. Do not mine URL parameters or IP logs for proof of retirement.
+- Future removal requires a separate reviewed source+Worker activation sequence after new frontend compatibility and legal/D1 migration are accepted. Keep anonymous GET working. A sunset stops future acceptance, **not prior CDN/host log copies**.
+- PR #158 must not release alone: its Datenschutz text describes planned consent/erasure and expects the PR #183 Worker changes. Before any deployment coordinate updated CSS/HTML, the legal footer links, a separately approved D1 migration, exact Worker origin checks on `ausmalwiese.de` and `www.ausmalwiese.de`, CI, operator/legal review and discrete owner MERGE/LIVE gates. Do not infer merge or LIVE authority from successful CI.
+
+**Evidence/source references (reviewed 2026-10-12):**
+[TDDDG §25](https://www.gesetze-im-internet.de/ttdsg/__25.html);
+[GDPR](https://eur-lex.europa.eu/eli/reg/2016/679/oj);
+[EDPB consent Guidelines 05/2020](https://www.edpb.europa.eu/documents/guideline/guidelines-052020-on-consent-under-regulation-2016679_en);
+[EDPB DSAR practical guide](https://www.edpb.europa.eu/sme/be-compliant/respect-individuals-rights_en);
+[EDPB Guidelines 1/2024, only public consultation version](https://www.edpb.europa.eu/public-consultations/guidelines-12024-on-processing-of-personal-data-based-on-article-61f-gdpr_en);
+[Cloudflare D1 Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/).
+
+---
+
 ## Scope
 
 - Only `impressum.html`, `datenschutz.html`, the five site footers, existing styling, static Docker packaging, locally served Baloo 2/Nunito fonts (SIL OFL 1.1), and structural tests.
