@@ -1,4 +1,11 @@
 const DEFAULT_ORIGIN = "https://coloring.rozkalns.net";
+// Fixed public hostnames; do not accept a different hostname merely because
+// another allowed site supplied it as its Origin header.
+const STATS_WRITE_ORIGINS = new Set([
+  DEFAULT_ORIGIN,
+  "https://ausmalwiese.de",
+  "https://www.ausmalwiese.de",
+]);
 const PAGE_ID_RE = /^[a-z0-9][a-z0-9_-]{0,79}$/i;
 const VISITOR_ID_RE = /^[a-z0-9][a-z0-9._:-]{5,127}$/i;
 const ANALYTICS_API = "https://api.cloudflare.com/client/v4/graphql";
@@ -83,10 +90,13 @@ async function parseBody(request) {
   return body;
 }
 function allowedWriteOrigin(request, env) {
-  const expected = env.PUBLIC_ORIGIN || DEFAULT_ORIGIN;
+  // Check the actual request target as well as the browser-supplied Origin:
+  // the three public hosts share one Worker but are not same-origin with each other.
+  const targetOrigin = new URL(request.url).origin;
+  if (!STATS_WRITE_ORIGINS.has(targetOrigin)) return false;
   const origin = request.headers.get("origin");
   const fetchSite = request.headers.get("sec-fetch-site");
-  if (origin && origin !== expected) return false;
+  if (origin && origin !== targetOrigin) return false;
   return !fetchSite || fetchSite === "same-origin" || fetchSite === "none";
 }
 async function rateLimit(env, visitorId, action) {
@@ -498,7 +508,8 @@ async function recordPrint(env, request) {
 async function eraseLikes(env, request) {
   // Only a separately confirmed, user-invoked deletion request may carry a
   // high-entropy v2 browser credential. Never accept a leaked/weak legacy ID.
-  if (request.headers.get("origin") !== (env.PUBLIC_ORIGIN || DEFAULT_ORIGIN)
+  if (!allowedWriteOrigin(request, env)
+      || request.headers.get("origin") !== new URL(request.url).origin
       || request.headers.get("sec-fetch-site") !== "same-origin") {
     return json({error:"forbidden"},403);
   }
