@@ -69,7 +69,7 @@ class LegalPageSourceTests(unittest.TestCase):
         ):
             self.assertIn(expected.lower(), privacy.lower())
         self.assertIn("PR #183 consent banner alignment", report)
-        self.assertIn("Neither draft should be merged", report)
+        self.assertIn("Both PRs remain Draft", report)
         self.assertIn("NOT RELEASE READY", report)
 
     def test_simplified_like_erasure_draft_disclosure(self):
