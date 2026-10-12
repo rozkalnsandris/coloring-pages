@@ -11,8 +11,8 @@ class ConsentBannerSourceTests(unittest.TestCase):
         for page in ("index.html", "detail.html", "kita.html"):
             html = self.read(page)
             self.assertIn('css/consent.css?v=199486ea95f10006', html)
-            self.assertLess(html.index("js/consent.js?v=95beb7b7ed7b2b38"),
-                            html.index("js/stats.js?v=kita-campaign-v1"))
+            self.assertLess(html.index("js/consent.js?v=privacy-v3-182"),
+                            html.index("js/stats.js?v=privacy-v3-182"))
 
     def test_banner_is_fixed_and_non_blocking(self):
         css = self.read("css/consent.css")
@@ -29,7 +29,7 @@ class ConsentBannerSourceTests(unittest.TestCase):
         self.assertNotIn("getItem(ID_KEY)", js)
         self.assertIn("removeItem(ID_KEY)", js)
         self.assertIn("Löschung nicht bestätigt", js)
-        self.assertIn("await eraseProof(proof);", js)
+        self.assertIn("changeCredential(next,priorV3)", js)
         self.assertNotIn("coloring-pages-erasure-pending-v1", js)
         self.assertNotIn("retryPendingErasure", js)
 
@@ -38,7 +38,7 @@ class ConsentBannerSourceTests(unittest.TestCase):
         self.assertIn('allows?.(purpose) !== true', js)
         self.assertIn('allows?.("like") !== true', js)
         self.assertIn('allows?.("print") !== true', js)
-        self.assertIn('getVisitorId(true, "print")', js)
+        self.assertIn('ensureCredential("print")', js)
         self.assertIn('getVisitorId(false)', js)
         self.assertIn('if (visitorId) return requestJson("/page", {', js)
 

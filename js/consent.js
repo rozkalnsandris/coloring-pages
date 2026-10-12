@@ -148,19 +148,41 @@
   async function changeConsent(next) {
     if (erasing) return;
     const previous = read();
+    const changed = previous?.like !== Boolean(next.like) ||
+      previous?.print !== Boolean(next.print);
     const revokeLike = !storageFault && previous?.like === true && !next.like;
-    // Only a previously consented Like may read the identifier for erasure.
     const proof = revokeLike ? (window.ColoringStats?.getErasureProof?.() || "") : "";
+    const priorV3 = changed ? (window.ColoringStats?.getCredentialForRotation?.() || "") : "";
     if (!save(next)) return;
-    if (!revokeLike) return;
-    // Retire the credential even when Print remains permitted. A later Print
-    // may create a new v2 credential; no recovery proof is retained.
+    if (!changed) return;
+    window.ColoringStats?.cancelPendingCredential?.();
+    // Retire client access before making any asynchronous Worker request.
     try { localStorage.removeItem(ID_KEY); } catch {}
-    if (!proof) {
-      eraseStatus("Einwilligung widerrufen; Löschung nicht bestätigt. Bei älteren oder fehlenden Kennungen wende dich an den Datenschutzkontakt. Bitte keine Browserkennung senden.");
-      return;
+    if (!priorV3 && !next.like && !next.print && !revokeLike) return;
+    erasing = true;
+    eraseButton.disabled = true;
+    try {
+      if (priorV3 || next.like || next.print) {
+        if (!window.ColoringStats?.changeCredential) throw new Error("credential unavailable");
+        const result = await window.ColoringStats.changeCredential(next,priorV3);
+        if (result?.ok !== true) throw new Error("credential not confirmed");
+        if (revokeLike) eraseStatus("Löschung der aktuell gespeicherten Likes für diese Browserkennung bestätigt.");
+      } else if (revokeLike && proof) {
+        // v2 is deletion-only. The Worker never accepts v2 for new Likes.
+        const result = await window.ColoringStats.eraseLikesWithProof(proof);
+        if (result?.ok !== true) throw new Error("legacy erasure unconfirmed");
+        eraseStatus("Löschung der aktuell gespeicherten Likes für diese Browserkennung bestätigt.");
+      } else if (revokeLike) throw new Error("legacy credential unavailable");
+      if (revokeLike && proof && !priorV3 && (next.like || next.print)) {
+        // Source transition cannot prove old v2 rows erased; manual DSAR remains.
+        eraseStatus("Löschung alter Likes nicht bestätigt. Bitte nutze den Datenschutzkontakt ohne Browserkennung.");
+      }
+    } catch {
+      eraseStatus("Einwilligung geändert; Löschung oder Kennung nicht bestätigt. Bitte nutze den Datenschutzkontakt ohne Browserkennung.");
+    } finally {
+      erasing = false;
+      eraseButton.disabled = false;
     }
-    await eraseProof(proof);
   }
 
   async function requestLikeErasure() {

@@ -8,22 +8,55 @@
     return CAMPAIGN_IDS.has(value) ? value : "";
   }
 
+  const V3_RE = /^v3-[0-9a-f]{64}$/;
+  let pendingCredential = null;
+  let credentialGeneration = 0;
   function getVisitorId(create = false, purpose = "like") {
     if (window.ColoringConsent?.allows?.(purpose) !== true) return "";
     try {
-      let value = localStorage.getItem(VISITOR_KEY);
-      if (!value && create) {
-        // 256-bit random browser credential. No predictable fallback.
-        const random = new Uint8Array(32);
-        if (typeof globalThis.crypto?.getRandomValues !== "function") return "";
-        globalThis.crypto.getRandomValues(random);
-        value = "v2-" + Array.from(random, b => b.toString(16).padStart(2, "0")).join("");
-        localStorage.setItem(VISITOR_KEY, value);
-      }
-      return value || "";
-    } catch {
-      return "";
+      const id = localStorage.getItem(VISITOR_KEY) || "";
+      return V3_RE.test(id) ? id : ""; // never reuse legacy v1/v2 for writes
+    } catch { return ""; }
+  }
+  function getCredentialForRotation() {
+    if (window.ColoringConsent?.allows?.("like") !== true
+      && window.ColoringConsent?.allows?.("print") !== true) return "";
+    try {
+      const id = localStorage.getItem(VISITOR_KEY) || "";
+      return V3_RE.test(id) ? id : "";
+    } catch { return ""; }
+  }
+  function cancelPendingCredential() { credentialGeneration++; pendingCredential = null; }
+  async function changeCredential(next, priorId = "") {
+    const generation = credentialGeneration;
+    const result = await requestJson("/credential", {
+      method: "POST",
+      body: JSON.stringify({version:1,like:!!next.like,print:!!next.print,
+        ...(priorId ? {prior_id:priorId} : {})}),
+    });
+    if (generation !== credentialGeneration
+        || window.ColoringConsent?.allows?.("like") !== !!next.like
+        || window.ColoringConsent?.allows?.("print") !== !!next.print)
+      throw new Error("consent changed during issuance");
+    if (next.like || next.print) {
+      if (!result.ok || !V3_RE.test(result.visitor_id)) throw new Error("credential unconfirmed");
+      localStorage.setItem(VISITOR_KEY,result.visitor_id);
+    } else if (result.ok !== true) throw new Error("revocation unconfirmed");
+    document.dispatchEvent(new CustomEvent("coloring-consent-changed", {detail:next}));
+    return result;
+  }
+  async function ensureCredential(purpose) {
+    if (window.ColoringConsent?.allows?.(purpose) !== true) return "";
+    const id = getVisitorId(false,purpose);
+    if (id) return id;
+    if (!pendingCredential) {
+      pendingCredential = changeCredential({
+        like:window.ColoringConsent?.allows?.("like")===true,
+        print:window.ColoringConsent?.allows?.("print")===true
+      }).finally(()=>{pendingCredential=null});
     }
+    await pendingCredential;
+    return getVisitorId(false,purpose);
   }
 
   async function requestJson(path, options = {}) {
@@ -72,7 +105,7 @@
 
   async function toggleLike(pageId) {
     if (window.ColoringConsent?.allows?.("like") !== true) throw new Error("like consent required");
-    const visitorId = getVisitorId(true);
+    const visitorId = await ensureCredential("like");
     if (!visitorId) throw new Error("visitor ID unavailable");
     return requestJson("/like", {
       method: "POST",
@@ -131,7 +164,9 @@
 
   function trackPrint(pageId) {
     if (window.ColoringConsent?.allows?.("print") !== true) return;
-    const visitorId = getVisitorId(true, "print");
+    // Printing never waits for analytics. Only the consented telemetry is async.
+    void (async () => {
+    const visitorId = await ensureCredential("print");
     if (!visitorId) return;
     const payload = {page_id: pageId, visitor_id: visitorId};
     const campaign = currentCampaign();
@@ -150,9 +185,10 @@
       headers: {"Content-Type": "application/json"},
       body,
     }).catch(() => {});
+})().catch(() => {});
   }
 
-  window.ColoringStats = {getRankings, getOverview, getTraffic, getCampaigns, getPage, toggleLike, getErasureProof, eraseLikesWithProof, trackVisit, trackView, trackPrint};
+  window.ColoringStats = {getRankings, getOverview, getTraffic, getCampaigns, getPage, toggleLike, getErasureProof, eraseLikesWithProof, getCredentialForRotation, cancelPendingCredential, changeCredential, trackVisit, trackView, trackPrint};
 
   const homePath = location.pathname === "/" || location.pathname === "/index.html";
   const detailPath = location.pathname === "/detail.html";

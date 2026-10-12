@@ -72,9 +72,10 @@ def test_cloudflare_stats_contract_keeps_rpi5_out_of_state():
 def test_stats_frontend_uses_first_party_random_id_only_on_engagement():
     js=read("js/stats.js")
     assert 'getVisitorId(false)' in js
-    assert 'getVisitorId(true)' in js
+    assert 'ensureCredential("like")' in js
     assert 'localStorage.getItem(VISITOR_KEY)' in js
-    assert 'globalThis.crypto.getRandomValues(random)' in js
+    assert 'changeCredential(next, priorId = "")' in js
+    assert 'V3_RE.test(id)' in js
     assert 'Math.random()' not in js
 
 

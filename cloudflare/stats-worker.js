@@ -7,7 +7,9 @@ const STATS_WRITE_ORIGINS = new Set([
   "https://www.ausmalwiese.de",
 ]);
 const PAGE_ID_RE = /^[a-z0-9][a-z0-9_-]{0,79}$/i;
-const VISITOR_ID_RE = /^[a-z0-9][a-z0-9._:-]{5,127}$/i;
+const VISITOR_ID_RE = /^v3-[0-9a-f]{64}$/;
+const V2_ERASURE_RE = /^v2-[0-9a-f]{64}$/;
+// No legacy credential may write a Like/Print, even when cached JS sends it.
 const ANALYTICS_API = "https://api.cloudflare.com/client/v4/graphql";
 const ANALYTICS_RANGE_DAYS = new Set([7, 30]);
 const CAMPAIGN_IDS = new Set(["dortmund-01"]);
@@ -64,7 +66,7 @@ async function printQrVisit(env, request) {
 
 function validPageId(value) { return typeof value === "string" && PAGE_ID_RE.test(value); }
 function validVisitorId(value) { return typeof value === "string" && VISITOR_ID_RE.test(value); }
-function validErasureProof(value) { return typeof value === "string" && /^v2-[0-9a-f]{64}$/.test(value); }
+function validErasureProof(value) { return typeof value === "string" && V2_ERASURE_RE.test(value); }
 function validCampaign(value) { return typeof value === "string" && CAMPAIGN_IDS.has(value); }
 
 async function sha256(value) {
@@ -456,53 +458,152 @@ async function recordView(env, request) {
   return json({ok:true},201);
 }
 
+
+// A browser consent event is a claim, not independently proven parental consent.
+// Production must supply a controller-approved TTL; missing config fails closed.
+function consentTtl(env) {
+  const ttl = Number(env.CONSENT_TTL_SECONDS);
+  return Number.isSafeInteger(ttl) && ttl >= 3600 && ttl <= 31536000 ? ttl : 0;
+}
+function strictWrite(request) {
+  const target = new URL(request.url).origin;
+  return STATS_WRITE_ORIGINS.has(target)
+    && request.headers.get("origin") === target
+    && request.headers.get("sec-fetch-site") === "same-origin"
+    && request.headers.get("content-type")?.split(";")[0] === "application/json";
+}
+const credentialActiveSql = "visitor_hash = ? AND expires_at > unixepoch()";
+async function credential(env, request) {
+  if (!strictWrite(request)) return json({error:"forbidden"},403);
+  const length = Number(request.headers.get("content-length") || "0");
+  if (!Number.isFinite(length) || length > 512) return json({error:"too_large"},413);
+  const raw = await request.text();
+  if (raw.length > 512) return json({error:"too_large"},413);
+  let body;
+  try { body = JSON.parse(raw); } catch { return json({error:"invalid_request"},400); }
+  if (!body || typeof body !== "object" || Array.isArray(body)
+    || typeof body.like !== "boolean" || typeof body.print !== "boolean"
+    || body.version !== 1 || (body.prior_id !== undefined && !validVisitorId(body.prior_id))
+    || Object.keys(body).some(k=>!["like","print","version","prior_id"].includes(k))) {
+    return json({error:"invalid_request"},400);
+  }
+  const oldId = body.prior_id || "";
+  if (!oldId && !body.like && !body.print) return json({error:"invalid_request"},400);
+  if (!env.RATE_LIMITER) return json({error:"credential_unavailable"},503);
+  const ip = request.headers.get("CF-Connecting-IP");
+  if (!ip) return json({error:"credential_unavailable"},503);
+  if (!(await rateLimit(env,ip,"credential"))) return json({error:"rate_limited"},429);
+  const oldHash = oldId ? await sha256(oldId) : "";
+  if (!body.like && !body.print) {
+    const results = await env.DB.batch([
+      env.DB.prepare("DELETE FROM likes WHERE visitor_hash = ?").bind(oldHash),
+      env.DB.prepare("DELETE FROM visitor_credentials WHERE visitor_hash = ?").bind(oldHash),
+    ]);
+    if (results.some(r=>r?.success !== true)) return json({error:"revocation_unconfirmed"},503);
+    return json({ok:true,revoked:true});
+  }
+  const ttl = consentTtl(env);
+  if (!ttl) return json({error:"credential_config_unavailable"},503);
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  const id = "v3-" + [...bytes].map(b=>b.toString(16).padStart(2,"0")).join("");
+  const newHash = await sha256(id);
+  const flags = [Number(body.like),Number(body.print),body.version];
+  if (!oldId) {
+    const result = await env.DB.prepare(
+      `INSERT INTO visitor_credentials
+         (visitor_hash,like_allowed,print_allowed,notice_version,expires_at)
+         VALUES (?,?,?,?,unixepoch()+?)`
+    ).bind(newHash,...flags,ttl).run();
+    if (result?.success !== true || result?.meta?.changes !== 1)
+      return json({error:"issuance_unconfirmed"},503);
+  } else {
+    // Single D1 transaction: mint new scope, carry retained Likes, remove revoked
+    // Likes and the old credential. A missing/expired old token cannot mint.
+    const batch = await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO visitor_credentials
+         (visitor_hash,like_allowed,print_allowed,notice_version,expires_at)
+         SELECT ?,?,?,?,unixepoch()+? FROM visitor_credentials
+         WHERE visitor_hash=? AND expires_at>unixepoch()`
+      ).bind(newHash,...flags,ttl,oldHash),
+      env.DB.prepare(
+        `UPDATE likes SET visitor_hash=?
+         WHERE visitor_hash=? AND ?=1
+         AND EXISTS (SELECT 1 FROM visitor_credentials WHERE visitor_hash=?)`
+      ).bind(newHash,oldHash,Number(body.like),newHash),
+      env.DB.prepare(
+        `DELETE FROM likes WHERE visitor_hash=? AND ?=0
+         AND EXISTS (SELECT 1 FROM visitor_credentials WHERE visitor_hash=?)`
+      ).bind(oldHash,Number(body.like),newHash),
+      env.DB.prepare(
+        `DELETE FROM visitor_credentials WHERE visitor_hash=?
+         AND EXISTS (SELECT 1 FROM visitor_credentials WHERE visitor_hash=?)`
+      ).bind(oldHash,newHash),
+    ]);
+    if (batch.some(r=>r?.success!==true)) return json({error:"rotation_unconfirmed"},503);
+    if (batch[0]?.meta?.changes !== 1) return json({error:"expired_or_unknown_credential"},409);
+  }
+  return json({ok:true,visitor_id:id,version:3});
+}
+
 async function pageStats(env, request) {
   const url = new URL(request.url);
-  // New clients use POST. Transitional read-only GET accepts an existing old
-  // client's visitor_id until a separately reviewed API sunset. GET URLs can
-  // still appear in legacy access logs; never generate such URLs in new JS.
   const posted = request.method === "POST";
-  if (posted && (!allowedWriteOrigin(request,env) ||
-       request.headers.get("content-type")?.split(";")[0] !== "application/json")) {
-    return json({error:"forbidden"},403);
-  }
+  if (posted && !strictWrite(request)) return json({error:"forbidden"},403);
+  // Reject all personalized legacy GET URLs, including cached clients.
+  if (!posted && url.searchParams.has("visitor_id")) return json({error:"legacy_credential_forbidden"},403);
   const body = posted ? await request.json().catch(()=>null) : null;
   const pageId = posted ? body?.page_id : (url.searchParams.get("page_id") || "");
-  const visitorId = posted ? body?.visitor_id : (url.searchParams.get("visitor_id") || "");
-  // Reject obvious cross-site browser requests to the legacy personalized GET.
-  // Older same-origin clients may omit Fetch Metadata headers.
-  if (!posted && visitorId && request.headers.get("sec-fetch-site") === "cross-site")
-    return json({error:"forbidden"},403);
-  if (!validPageId(pageId)) return json({error:"invalid page_id"},400);
-  if (visitorId && !validVisitorId(visitorId)) return json({error:"invalid visitor_id"},400);
-  const stats = await env.DB.prepare("SELECT print_count, like_count FROM page_stats WHERE page_id = ?").bind(pageId).first();
+  if (!validPageId(pageId)) return json({error:"invalid_page_id"},400);
+  const id = posted ? body?.visitor_id : "";
+  if (posted && !validVisitorId(id)) return json({error:"credential_required"},403);
   let liked = false;
-  if (visitorId) {
-    const visitorHash = await sha256(visitorId);
-    liked = Boolean(await env.DB.prepare("SELECT 1 AS liked FROM likes WHERE page_id = ? AND visitor_hash = ?").bind(pageId,visitorHash).first());
+  if (posted) {
+    const hash = await sha256(id);
+    const row = await env.DB.prepare(
+      `SELECT (SELECT 1 FROM visitor_credentials
+        WHERE visitor_hash=? AND like_allowed=1 AND expires_at>unixepoch()) AS active,
+        (SELECT 1 FROM likes WHERE page_id=? AND visitor_hash=?) AS liked`
+    ).bind(hash,pageId,hash).first();
+    if (!row?.active) return json({error:"credential_expired"},403);
+    liked = Boolean(row.liked);
   }
+  const stats = await env.DB.prepare("SELECT print_count, like_count FROM page_stats WHERE page_id = ?").bind(pageId).first();
   return json({page_id:pageId,print_count:Number(stats?.print_count||0),like_count:Number(stats?.like_count||0),liked});
 }
 async function recordPrint(env, request) {
-  if (!allowedWriteOrigin(request,env)) return json({error:"forbidden"},403);
+  if (!strictWrite(request)) return json({error:"forbidden"},403);
   const body = await parseBody(request);
-  if (!body || !validVisitorId(body.visitor_id)) return json({error:"invalid request"},400);
+  if (!body || !validVisitorId(body.visitor_id)) return json({error:"credential_required"},403);
   if (!(await rateLimit(env,body.visitor_id,"print"))) return json({error:"rate_limited"},429);
+  const hash = await sha256(body.visitor_id);
+  // Each counter write checks active Print consent inside the SQL write.
+  // A prior JavaScript check would race with credential revocation.
   const statements = [
     env.DB.prepare(
-      `INSERT INTO page_stats (page_id, print_count, updated_at)
-       VALUES (?, 1, datetime('now'))
-       ON CONFLICT(page_id) DO UPDATE SET print_count=print_count+1, updated_at=datetime('now')`
-    ).bind(body.page_id),
+      `INSERT INTO page_stats(page_id,print_count,updated_at)
+       SELECT ?,1,datetime('now') FROM visitor_credentials
+       WHERE visitor_hash=? AND print_allowed=1 AND expires_at>unixepoch()
+       ON CONFLICT(page_id) DO UPDATE
+       SET print_count=print_count+1,updated_at=datetime('now')`
+    ).bind(body.page_id,hash),
     env.DB.prepare(
-      `INSERT INTO daily_prints (page_id, day, print_count)
-       VALUES (?, date('now'), 1)
-       ON CONFLICT(page_id, day) DO UPDATE SET print_count=print_count+1`
-    ).bind(body.page_id),
+      `INSERT INTO daily_prints(page_id,day,print_count)
+       SELECT ?,date('now'),1 FROM visitor_credentials
+       WHERE visitor_hash=? AND print_allowed=1 AND expires_at>unixepoch()
+       ON CONFLICT(page_id,day) DO UPDATE SET print_count=print_count+1`
+    ).bind(body.page_id,hash),
   ];
-  const campaign = campaignEventStatement(env,body.campaign,"print",body.page_id);
-  if (campaign) statements.push(campaign);
-  await env.DB.batch(statements);
+  if (validCampaign(body.campaign)) statements.push(env.DB.prepare(
+    `INSERT INTO daily_campaign_events(campaign,event,page_id,day,event_count)
+     SELECT ?,'print',?,date('now'),1 FROM visitor_credentials
+     WHERE visitor_hash=? AND print_allowed=1 AND expires_at>unixepoch()
+     ON CONFLICT(campaign,event,page_id,day) DO UPDATE SET event_count=event_count+1`
+  ).bind(body.campaign,body.page_id,hash));
+  const result = await env.DB.batch(statements);
+  if (result.some(r=>r?.success!==true)) return json({error:"print_unconfirmed"},503);
+  if (result[0]?.meta?.changes !== 1) return json({error:"credential_expired"},403);
   return json({ok:true},201);
 }
 async function eraseLikes(env, request) {
@@ -537,23 +638,37 @@ async function eraseLikes(env, request) {
 }
 
 async function toggleLike(env, request) {
-  if (!allowedWriteOrigin(request,env)) return json({error:"forbidden"},403);
+  if (!strictWrite(request)) return json({error:"forbidden"},403);
   const body = await parseBody(request);
-  if (!body || !validVisitorId(body.visitor_id)) return json({error:"invalid request"},400);
+  if (!body || !validVisitorId(body.visitor_id)) return json({error:"credential_required"},403);
   if (!(await rateLimit(env,body.visitor_id,"like"))) return json({error:"rate_limited"},429);
-  const visitorHash = await sha256(body.visitor_id);
-  const existing = await env.DB.prepare("SELECT 1 AS liked FROM likes WHERE page_id = ? AND visitor_hash = ?").bind(body.page_id,visitorHash).first();
-  if (existing) {
-    await env.DB.prepare("DELETE FROM likes WHERE page_id = ? AND visitor_hash = ?").bind(body.page_id,visitorHash).run();
+  const hash = await sha256(body.visitor_id);
+  const state = await env.DB.prepare(
+    `SELECT (SELECT 1 FROM visitor_credentials
+      WHERE visitor_hash=? AND like_allowed=1 AND expires_at>unixepoch()) AS active,
+     (SELECT 1 FROM likes WHERE page_id=? AND visitor_hash=?) AS liked`
+  ).bind(hash,body.page_id,hash).first();
+  if (!state?.active) return json({error:"credential_expired"},403);
+  if (state.liked) {
+    const removed = await env.DB.prepare("DELETE FROM likes WHERE page_id=? AND visitor_hash=?").bind(body.page_id,hash).run();
+    if (removed?.success !== true) return json({error:"like_unconfirmed"},503);
   } else {
-    const insert = await env.DB.prepare(
-      "INSERT INTO likes (page_id, visitor_hash) VALUES (?, ?) " +
-      "ON CONFLICT(page_id, visitor_hash) DO NOTHING"
-    ).bind(body.page_id,visitorHash).run();
-    if (insert?.success !== true) return json({error:"like_unconfirmed"},503);
+    // Critical: authorization and insertion are one SQL statement, not two
+    // interleaved requests. A revoked/expired token cannot recreate a Like.
+    const inserted = await env.DB.prepare(
+      `INSERT INTO likes(page_id,visitor_hash)
+       SELECT ?,visitor_hash FROM visitor_credentials
+       WHERE visitor_hash=? AND like_allowed=1 AND expires_at>unixepoch()
+       ON CONFLICT(page_id,visitor_hash) DO NOTHING`
+    ).bind(body.page_id,hash).run();
+    if (inserted?.success !== true) return json({error:"like_unconfirmed"},503);
   }
+  const stillActive = await env.DB.prepare(
+    "SELECT 1 AS active FROM visitor_credentials WHERE visitor_hash=? AND like_allowed=1 AND expires_at>unixepoch()"
+  ).bind(hash).first();
+  if (!stillActive) return json({error:"credential_expired"},403);
   const stats = await env.DB.prepare("SELECT like_count, print_count FROM page_stats WHERE page_id = ?").bind(body.page_id).first();
-  const persisted = await env.DB.prepare("SELECT 1 AS liked FROM likes WHERE page_id = ? AND visitor_hash = ?").bind(body.page_id,visitorHash).first();
+  const persisted = await env.DB.prepare("SELECT 1 AS liked FROM likes WHERE page_id = ? AND visitor_hash = ?").bind(body.page_id,hash).first();
   return json({page_id:body.page_id,liked:Boolean(persisted),like_count:Number(stats?.like_count||0),print_count:Number(stats?.print_count||0)});
 }
 export default {
@@ -576,6 +691,7 @@ export default {
     if (request.method==="POST" && path==="/api/stats/print") return recordPrint(env,request);
     if (request.method==="POST" && path==="/api/stats/like") return toggleLike(env,request);
     if (request.method==="POST" && path==="/api/stats/erase-likes") return eraseLikes(env,request);
+    if (request.method==="POST" && path==="/api/stats/credential") return credential(env,request);
     return json({error:"not_found"},404);
   },
 };
