@@ -9,6 +9,8 @@
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=c5d8c26a8a8349b2">
   <link rel="stylesheet" href="css/fonts.css?v=privacy-ofl-v1">
   <link rel="stylesheet" href="css/app.css?v=ffeaa3173737d6e3">
+  <link rel="stylesheet" href="css/surprise.css?v=dff1eae58bfc131f">
+  <link rel="stylesheet" href="css/mobile-first.css?v=mobile-search-first-186">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -68,21 +70,26 @@
             </span>
           </span></h1>
           <p class="hero-text">
-            Entdecke eine große Auswahl an liebevoll gestalteten Malvorlagen zum Ausdrucken –
-            für mehr Kreativität, Spielspaß und kleine Abenteuer im Alltag.
+            Kostenlose Malvorlagen finden, auswählen und auf A4 ausdrucken.
           </p>
         </div>
 
-        <div class="hero-art">
-          <img src="assets/hero-illustration.png" width="1408" height="736" fetchpriority="high" alt="Fröhlicher Rettungshund mit Rucksack in einer Berglandschaft neben einem Wegweiser">
-        </div>
-
-        <form class="search" role="search" data-search-form>
+        <div class="hero-search-tools">
+          <form class="search" role="search" data-search-form>
           <label class="sr-only" for="site-search">Malvorlagen suchen</label>
           <span class="search-icon" aria-hidden="true"></span>
           <input id="site-search" name="q" type="search" placeholder="Malvorlagen suchen ..." autocomplete="off">
           <button type="submit">Suchen</button>
-        </form>
+          </form>
+          <div class="surprise-action">
+            <button class="surprise-button" type="button" data-surprise-button
+              aria-label="Zufällige Malvorlage öffnen" disabled>Überrasch mich!</button>
+            <p class="surprise-status" data-surprise-status role="status" hidden></p>
+          </div>
+        </div>
+        <div class="hero-art">
+          <img src="assets/hero-illustration.png" width="1408" height="736" fetchpriority="high" alt="Fröhlicher Rettungshund mit Rucksack in einer Berglandschaft neben einem Wegweiser">
+        </div>
       </div>
     </section>
 
@@ -242,6 +249,6 @@
   </footer>
 
   <script src="js/stats.js?v=kita-campaign-v1" defer></script>
-  <script src="js/app.js?v=13ea80090209fd1a" defer></script>
+  <script src="js/app.js?v=446c7c313e4a91a5" defer></script>
 </body>
 </html>

@@ -2,6 +2,8 @@ const menuButton = document.querySelector(".menu-button");
 const mobileNav = document.querySelector("#mobile-nav");
 const searchForm = document.querySelector("[data-search-form]");
 const searchInput = document.querySelector("#site-search");
+const surpriseButton = document.querySelector("[data-surprise-button]");
+const surpriseStatus = document.querySelector("[data-surprise-status]");
 const headerSearch = document.querySelector("[data-header-search]");
 const gallery = document.querySelector("[data-gallery]");
 const categoryButtons = [...document.querySelectorAll("[data-filter]")];
@@ -43,6 +45,21 @@ let activeCategory = "";
 let catalogEntries = null;
 let visibleLimit = CATALOG_PAGE_SIZE;
 let catalogIssueText = "";
+
+function updateSurpriseButton(message = "") {
+  if (surpriseButton) surpriseButton.disabled = !Array.isArray(catalogEntries) || catalogEntries.length === 0;
+  if (surpriseStatus) {
+    surpriseStatus.textContent = message;
+    surpriseStatus.hidden = !message;
+  }
+}
+
+surpriseButton?.addEventListener("click", () => {
+  // Reuse the same published entries and detail URL contract as gallery cards.
+  if (!Array.isArray(catalogEntries) || !catalogEntries.length) return;
+  const selected = catalogEntries[Math.floor(Math.random() * catalogEntries.length)];
+  if (selected) window.location.assign(detailHref(selected.id));
+});
 
 // Keep both menus in sync on direct links, anchor navigation and browser Back/Forward.
 function updateNavigation(hash = window.location.hash) {
@@ -337,6 +354,7 @@ async function hydrateCatalog() {
     const entries = catalog.filter((entry) => entry && entry.id && entry.title && entry.thumb);
     catalogIssueText = entries.length ? "" : "Zurzeit sind keine Malvorlagen verfügbar.";
     catalogEntries = entries;
+    updateSurpriseButton(entries.length ? "" : "Zurzeit sind keine Malvorlagen für die Zufallsauswahl verfügbar.");
     visibleLimit = CATALOG_PAGE_SIZE;
     updateCatalogCounts(catalogEntries);
     renderCatalog();
@@ -346,6 +364,7 @@ async function hydrateCatalog() {
     // Never present demonstration cards as real published media on a failed load.
     catalogIssueText = "Die Malvorlagen konnten nicht geladen werden. Bitte versuche es später erneut.";
     catalogEntries = [];
+    updateSurpriseButton("Die Zufallsauswahl ist gerade nicht verfügbar.");
     visibleLimit = CATALOG_PAGE_SIZE;
     updateCatalogCounts(catalogEntries);
     renderCatalog();
