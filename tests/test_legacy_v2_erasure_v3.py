@@ -155,7 +155,7 @@ class LegacyErasureBrowserTests(unittest.TestCase):
 
     def test_refusal_without_like_consent_does_not_read_id(self):
         x=self.run_case("first")
-        self.assertEqual(x["idReads"],0)
+        self.assertEqual(x["reads"],0)
         self.assertEqual(x["proofBefore"],"")
         self.assertIsNone(x["visitor"])
         self.assertEqual(x["calls"],[])
