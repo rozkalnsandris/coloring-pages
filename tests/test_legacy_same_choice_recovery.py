@@ -239,7 +239,9 @@ class LegacySameChoiceTests(unittest.TestCase):
         x=self.scenario("many_proofs_capacity")
         req=[c for c in x["final"]["calls"] if c["path"].endswith("erase-likes")]
         self.assertEqual(len(req),32)
-        self.assertEqual(len(x["final"]["calls"]),32)
+        self.assertEqual([c["path"] for c in x["final"]["calls"]
+                          if not c["path"].startswith("/api/stats/page?")],
+                         ["/api/stats/erase-likes"] * 32)
         self.assertEqual(x["third"]["id"],"v2-"+format(33,"064x"))
         self.assertIn("Zu viele Löschanfragen",x["third"]["err"])
         self.assertTrue(x["third"]["visible"])
