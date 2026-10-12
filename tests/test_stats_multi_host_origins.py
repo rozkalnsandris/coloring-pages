@@ -73,7 +73,7 @@ check("https://unrelated.example", "https://unrelated.example", "same-origin", f
         self.assertIn('url.hostname === PRINT_QR_HOST', worker)
         self.assertIn("ausmalwiese.de/api/stats/*", docs)
         self.assertIn("www.ausmalwiese.de/api/stats/*", docs)
-        self.assertIn("separate explicit LIVE authorization", docs)
+        self.assertIn("separate explicit live authorization", docs.lower())
 
 
 if __name__ == "__main__":
