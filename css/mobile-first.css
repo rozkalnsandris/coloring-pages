@@ -11,12 +11,12 @@
   .hero-art img { max-height: 125px; }
   .categories { padding: 6px 0 14px; }
   .category-grid { gap: 8px; }
-  .category-card { min-height: 82px; padding: 9px 12px;
-    grid-template-rows: auto auto; row-gap: 3px; }
+  .category-card { min-height: 94px; padding: 9px 12px;
+    grid-template-rows: auto auto auto; row-gap: 2px; }
   .category-icon, .category-abc { grid-column: 1; grid-row: 1; font-size: 28px; line-height: 1; }
   .category-arrow { grid-column: 2; grid-row: 1; }
   .category-name { grid-column: 1 / -1; grid-row: 2; font-size: 14px; line-height: 1.2; }
-  .category-count { display: none; }
+  .category-count { grid-column: 1 / -1; grid-row: 3; display: block; font-size: 10px; }
   .category-card:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
   .new-pages { padding-top: 12px; }
 }
