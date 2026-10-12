@@ -15,8 +15,9 @@ class MobileFirstTests(unittest.TestCase):
     def test_mobile_layout_and_existing_journey(self):
         css=(ROOT/"css/mobile-first.css").read_text(encoding="utf-8")
         self.assertIn('grid-template-areas: "copy" "search" "art"',css)
-        self.assertIn('min-height: 82px',css)
+        self.assertIn('min-height: 94px',css)
         self.assertIn('focus-visible',css)
+        self.assertIn('grid-row: 3; display: block',css)
         self.assertIn('min-height: 44px',(ROOT/"css/surprise.css").read_text(encoding="utf-8"))
         js=(ROOT/"js/app.js").read_text(encoding="utf-8")
         self.assertIn('fetch("catalog.json", { cache: "no-store" })',js)
