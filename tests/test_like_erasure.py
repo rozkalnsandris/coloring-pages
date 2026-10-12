@@ -44,7 +44,7 @@ const headers = {'origin':fixture.origin ?? 'https://coloring.rozkalns.net',
  'sec-fetch-site':fixture.site ?? 'same-origin',
  'content-type':fixture.contentType ?? 'application/json'};
 const body = fixture.rawBody ?? JSON.stringify({visitor_id: fixture.id ?? id});
-const request = new Request('https://coloring.rozkalns.net/api/stats/erase-likes',{
+const request = new Request((fixture.target ?? 'https://coloring.rozkalns.net') + '/api/stats/erase-likes',{
  method: fixture.method ?? 'POST',headers,
  ...(fixture.method === 'GET' ? {} : {body}),
 });
@@ -82,6 +82,32 @@ class LikeErasureTests(unittest.TestCase):
                 self.assertNotEqual(out.get("status"), 200)
                 self.assertEqual(out["writes"], 0)
                 self.assertEqual(len(out["hashes"]), 3)
+
+    def test_erasure_requires_exact_target_host_origin_and_fetch_metadata(self):
+        approved = (
+            "https://coloring.rozkalns.net",
+            "https://ausmalwiese.de",
+            "https://www.ausmalwiese.de",
+        )
+        for target in approved:
+            with self.subTest(target=target):
+                response = self.run_worker(target=target, origin=target, site="same-origin")
+                self.assertEqual(response["status"], 200)
+                self.assertEqual(response["writes"], 1)
+                for other in approved:
+                    if other != target:
+                        rejected = self.run_worker(target=target, origin=other, site="same-origin")
+                        self.assertEqual(rejected["status"], 403)
+                        self.assertEqual(rejected["writes"], 0)
+                for wrong in ("cross-site", "same-site"):
+                    rejected = self.run_worker(target=target, origin=target, site=wrong)
+                    self.assertEqual(rejected["status"], 403)
+                    self.assertEqual(rejected["writes"], 0)
+        for target in ("http://ausmalwiese.de", "https://preview.ausmalwiese.de"):
+            with self.subTest(target=target):
+                rejected = self.run_worker(target=target, origin=target, site="same-origin")
+                self.assertEqual(rejected["status"], 403)
+                self.assertEqual(rejected["writes"], 0)
 
     def test_failed_or_ambiguous_d1_cannot_acknowledge_erasure(self):
         for test in ({"dbError": True}, {"dbFailure": True}):
