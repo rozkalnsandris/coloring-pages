@@ -11,8 +11,8 @@ class ConsentBannerSourceTests(unittest.TestCase):
         for page in ("index.html", "detail.html", "kita.html"):
             html = self.read(page)
             self.assertIn('css/consent.css?v=199486ea95f10006', html)
-            self.assertLess(html.index("js/consent.js?v=v3-renew-oct12"),
-                            html.index("js/stats.js?v=v3-expiry-oct12"))
+            self.assertLess(html.index("js/consent.js?v=1b9e265cf3c94bf3"),
+                            html.index("js/stats.js?v=ef34437385be5221"))
 
     def test_banner_is_fixed_and_non_blocking(self):
         css = self.read("css/consent.css")
@@ -26,7 +26,7 @@ class ConsentBannerSourceTests(unittest.TestCase):
             self.assertIn(label, js)
         self.assertIn("data-consent-like", js)
         self.assertIn("data-consent-print", js)
-        self.assertNotIn("getItem(ID_KEY)", js)
+        self.assertIn("if (erasing || !current || (!current.like && !current.print)) return false;", js)
         self.assertIn("removeItem(ID_KEY)", js)
         self.assertIn("Löschung nicht bestätigt", js)
         self.assertIn("changeCredential(next,priorV3)", js)
@@ -40,7 +40,8 @@ class ConsentBannerSourceTests(unittest.TestCase):
         self.assertIn('allows?.("print") !== true', js)
         self.assertIn('ensureCredential("print")', js)
         self.assertIn('getVisitorId(false)', js)
-        self.assertIn('if (visitorId) return requestJson("/page", {', js)
+        self.assertIn('if (visitorId) {', js)
+        self.assertIn('return await requestJson("/page", {', js)
 
     def test_print_remains_independent_from_consent(self):
         js = self.read("js/detail.js")

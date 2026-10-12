@@ -10,4 +10,5 @@ class PageStatusCompatibilityTests(unittest.TestCase):
         self.assertIn('path==="/api/stats/page"',worker)
         self.assertIn('credential_expired',worker)
         self.assertIn('like_allowed=1 AND expires_at>unixepoch()',worker)
-        self.assertIn('if (visitorId) return requestJson("/page"',(ROOT/"js/stats.js").read_text())
+        self.assertIn('if (visitorId) {',(ROOT/"js/stats.js").read_text())
+        self.assertIn('return await requestJson("/page"',(ROOT/"js/stats.js").read_text())
