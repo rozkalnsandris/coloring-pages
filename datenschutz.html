@@ -111,6 +111,15 @@
           Speicherung von § 25 Abs. 2 TDDDG erfasst ist und wie eine
           Einwilligung gemäß Art. 7 Abs. 1 DSGVO nachgewiesen wird,
           muss vor der Freigabe abschließend bewertet werden.</p>
+        <p>Diese lokal gespeicherte Entscheidung kann im Browser gelöscht oder
+          verändert werden. Wir führen für diese Funktionen derzeit kein
+          zentrales, personenbezogenes Einwilligungsprotokoll. Der lokale
+          Zeitstempel belegt deshalb nicht für sich allein, dass eine konkrete
+          Einwilligung wirksam erteilt wurde. Ob die Dokumentation der
+          angebotenen Textfassung und des Einwilligungsablaufs die
+          Nachweispflicht nach Art. 7 Abs. 1 DSGVO erfüllt, wird vor einer
+          Freischaltung geprüft; eine zusätzliche serverseitige Aufzeichnung
+          ist durch diese Erklärung nicht vorgesehen.</p>
         <p>Die getrennte zufällige Browserkennung
           <code>coloring-pages-visitor-v1</code> wird nur nach Ihrer
           entsprechenden Einwilligung gelesen oder erstmals erzeugt.
@@ -147,7 +156,11 @@
           können weiterhin in technischen Protokollen erscheinen;
           die Umstellung löscht keine früheren Protokolle oder
           Sicherungskopien. Wann die alte GET-Variante abgeschaltet
-          wird, ist noch nicht festgelegt.
+          wird, ist noch nicht festgelegt. Eine spätere Abschaltung
+          benötigt eine gesonderte technische Freigabe nach Prüfung,
+          ob ältere zwischengespeicherte Fassungen die
+          GET-Variante noch verwenden. Vorherige Protokoll- oder
+          Cache-Einträge werden dadurch nicht rückwirkend entfernt.
           Ohne Einwilligung für „Gefällt mir“ werden keine neuen
           personalisierten Likes übertragen; die allgemeinen
           Like-Zahlen bleiben sichtbar.</p>
@@ -244,6 +257,18 @@
           Das Löschen der Like-Einträge bedeutet nicht, dass
           dieser Sperreintrag oder sämtliche technischen
           Sicherungskopien sofort entfernt werden.</p>
+        <p>Für den gesonderten Sperreintrag gibt es noch keine
+          rechtsverbindlich festgelegte konkrete Speicherdauer.
+          Im Quellstand ist die Sperre technisch ohne Ablauf angelegt,
+          weil die zugrunde liegende alte Browserkennung derzeit ohne
+          serverseitige Gültigkeitsfrist angenommen werden könnte.
+          Als Alternative muss geprüft werden, ob ein späteres
+          technisches Ablauf- und Erneuerungsverfahren kürzere
+          Speicherfristen sicher ermöglicht. Diese Alternative ist
+          nicht umgesetzt; weder die technische Sperre noch der
+          mögliche Interessenabwägungsgrund ist damit bereits
+          rechtlich freigegeben. Aktive, weiterhin erlaubte Likes
+          werden nicht pauschal nach zwölf Monaten gelöscht.</p>
         <p>Für das Speichern und Auslesen der Kennung ist
           grundsätzlich § 25 TDDDG zu beachten; für die
           optionalen kennungsbasierten Vorgänge kommt die
