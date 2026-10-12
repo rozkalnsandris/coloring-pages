@@ -76,8 +76,9 @@
   const eraseButton = banner.querySelector("[data-consent-erase]");
   let erasing = false;
   // No automatic re-submission of an ambiguous legacy erasure attempt.
-  let legacyUpgradeEraseAttempted = false;
-  let legacyUpgradeEraseConfirmed = false;
+  // One in-memory result bound to the exact old v2 bearer proof.
+  // Never transfer confirmation or an ambiguous attempt to another proof.
+  let legacyUpgradeErase = null;
   let lastFocus = null;
 
   function show(advanced = false) {
@@ -210,7 +211,7 @@
       return;
     }
     if (upgradeErase) {
-      if (!proof || (legacyUpgradeEraseAttempted && !legacyUpgradeEraseConfirmed)) {
+      if (!proof || (legacyUpgradeErase?.proof === proof && legacyUpgradeErase.state === "attempted")) {
         show(true);
         error.textContent = "Löschung nicht bestätigt. Bitte nutze den Datenschutzkontakt; die alte Kennung wird nicht automatisch erneut übertragen.";
         error.hidden = false;
@@ -226,11 +227,13 @@
     eraseButton.disabled = true;
     window.ColoringStats?.cancelPendingCredential?.();
     try {
-      if (upgradeErase && !legacyUpgradeEraseConfirmed) {
-        legacyUpgradeEraseAttempted = true;
+      if (upgradeErase && !(legacyUpgradeErase?.proof === proof && legacyUpgradeErase.state === "confirmed")) {
+        // In-memory only: record the exact proof before the first network call.
+        // A confirmed deletion of another proof is never reusable here.
+        legacyUpgradeErase = {proof, state:"attempted"};
         const result = await window.ColoringStats.eraseLikesWithProof(proof);
         if (result?.ok !== true) throw new Error("legacy deletion unconfirmed");
-        legacyUpgradeEraseConfirmed = true;
+        legacyUpgradeErase = {proof, state:"confirmed"};
       }
       if (upgradeErase && localStorage.getItem(ID_KEY) !== proof)
         throw new Error("legacy credential changed in another tab");
@@ -261,7 +264,7 @@
         }
       }
     } catch {
-      if (legacyUpgradeEraseConfirmed) {
+      if (upgradeErase && legacyUpgradeErase?.proof === proof && legacyUpgradeErase.state === "confirmed") {
         eraseStatus("Alte Likes gelöscht; neue Browserkennung nicht bestätigt. Bitte überprüfe die Einstellungen.");
       } else {
         eraseStatus("Einwilligung nicht vollständig geändert; Löschung oder Kennung nicht bestätigt. Bitte nutze den Datenschutzkontakt ohne Browserkennung.");

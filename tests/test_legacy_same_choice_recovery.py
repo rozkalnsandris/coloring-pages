@@ -10,7 +10,7 @@ JS = r"""
 const vm = require("node:vm"),fs=require("node:fs");
 const scenario=process.argv[1];
 const KEY="coloring-pages-consent-v1",ID="coloring-pages-visitor-v1";
-const v2="v2-"+"a".repeat(64),v3="v3-"+"b".repeat(64);
+const v2="v2-"+"a".repeat(64),v2b="v2-"+"d".repeat(64),v3="v3-"+"b".repeat(64);
 const initial={version:1,like:true,print:true,decided_at:"2026-10-11T11:00:00Z"};
 const stored=new Map(), calls=[], els=[], events={};let reads=0,confirms=0;
 if(scenario!=="first")stored.set(KEY,JSON.stringify({
@@ -29,7 +29,12 @@ const response=(data,status=200)=>({ok:status>=200&&status<300,status,async json
 async function fetch(path,opt={}){
   const body=JSON.parse(opt.body||"{}");calls.push({path,body,method:opt.method});
   if(path==="/api/stats/erase-likes"){
-    if(scenario==="erase_fail")return response({error:"unavailable"},503);
+    if(scenario==="erase_fail"
+       || (scenario==="two_second_fail" && body.visitor_id===v2b)
+       || (scenario==="two_first_fail" && body.visitor_id===v2))
+      return response({error:"unavailable"},503);
+    if(scenario==="two_second_network" && body.visitor_id===v2b)
+      throw Error("network response ambiguous");
     if(scenario==="race")stored.set(ID,v3);
     return response({ok:true});
   }
@@ -56,8 +61,18 @@ const snapshot=()=>({id:stored.get(ID)||null,consent:stored.get(KEY)?JSON.parse(
    } else await banner.querySelector("[data-consent-accept]").listeners.click();
  }
  const first=snapshot();
+ let second=null;
+ if(scenario.startsWith("two_")){
+   // Another tab presents a different v2 token in the SAME JS page session.
+   stored.set(ID,v2b);
+   await window.ColoringStats.getPage("1234567");
+   await banner.querySelector("[data-consent-accept]").listeners.click();
+   second=snapshot();
+   if(scenario==="two_second_fail" || scenario==="two_second_network")
+     await banner.querySelector("[data-consent-accept]").listeners.click();
+ }
  if(scenario==="erase_fail")await banner.querySelector("[data-consent-accept]").listeners.click();
- console.log(JSON.stringify({first,final:snapshot()}));
+ console.log(JSON.stringify({first,second,final:snapshot()}));
 })().catch(e=>{console.error(e.stack);process.exit(1)});
 """
 class LegacySameChoiceTests(unittest.TestCase):
@@ -124,6 +139,44 @@ class LegacySameChoiceTests(unittest.TestCase):
         self.assertEqual([c["path"] for c in x["calls"] if "page?" not in c["path"]],
                          ["/api/stats/erase-likes"])
         self.assertIn("nicht bestätigt",x["erasure"])
+    def test_two_distinct_proofs_cannot_share_erasure_confirmation(self):
+        x=self.scenario("two_success")
+        requests=[c for c in x["final"]["calls"] if "page?" not in c["path"]]
+        self.assertEqual([c["path"] for c in requests],
+                         ["/api/stats/erase-likes","/api/stats/credential",
+                          "/api/stats/erase-likes","/api/stats/credential"])
+        self.assertEqual(requests[0]["body"],{"visitor_id":"v2-"+"a"*64})
+        self.assertEqual(requests[2]["body"],{"visitor_id":"v2-"+"d"*64})
+        self.assertEqual(x["second"]["id"],"v3-"+"b"*64)
+        self.assertEqual(x["second"]["confirms"],2)
+        self.assertIn("bestätigt",x["second"]["erasure"])
+
+    def test_ambiguous_second_proof_never_inherits_first_success(self):
+        for kind in ("two_second_fail","two_second_network"):
+            with self.subTest(kind=kind):
+                x=self.scenario(kind)
+                req=[c for c in x["final"]["calls"] if "page?" not in c["path"]]
+                self.assertEqual([c["path"] for c in req],
+                                 ["/api/stats/erase-likes","/api/stats/credential",
+                                  "/api/stats/erase-likes"])
+                self.assertEqual(req[-1]["body"],{"visitor_id":"v2-"+"d"*64})
+                self.assertEqual(x["second"]["id"],"v2-"+"d"*64)
+                self.assertIn("nicht bestätigt",x["second"]["erasure"])
+                self.assertNotIn("Alte Likes gelöscht",x["second"]["erasure"])
+                self.assertEqual(x["second"]["calls"],x["final"]["calls"])
+                self.assertIn("nicht bestätigt",x["final"]["err"])
+
+    def test_other_proof_may_succeed_after_first_failed(self):
+        x=self.scenario("two_first_fail")
+        req=[c for c in x["final"]["calls"] if "page?" not in c["path"]]
+        self.assertEqual([c["path"] for c in req],
+                         ["/api/stats/erase-likes","/api/stats/erase-likes",
+                          "/api/stats/credential"])
+        self.assertEqual(req[0]["body"],{"visitor_id":"v2-"+"a"*64})
+        self.assertEqual(req[1]["body"],{"visitor_id":"v2-"+"d"*64})
+        self.assertEqual(x["second"]["id"],"v3-"+"b"*64)
+        self.assertIn("bestätigt",x["second"]["erasure"])
+
     def test_first_refusal_still_never_reads_id(self):
         x=self.scenario("first")["first"]
         self.assertEqual(x["reads"],0)
