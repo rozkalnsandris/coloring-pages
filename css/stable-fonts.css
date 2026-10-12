@@ -1,0 +1,7 @@
+/* #188: Render a single, immediately available font stack on every page.
+   Avoid external font downloads, font-display timing and cross-visit typeface swaps.
+   Do not touch artwork, print sizing, gallery behaviour or accent colors. */
+:root {
+  --font-display: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
