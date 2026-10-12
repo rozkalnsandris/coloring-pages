@@ -12,7 +12,7 @@ class ConsentBannerSourceTests(unittest.TestCase):
             html = self.read(page)
             self.assertIn('css/consent.css?v=199486ea95f10006', html)
             self.assertLess(html.index("js/consent.js?v=7587038c57f09f78"),
-                            html.index("js/stats.js?v=1f8620e78509d50b"))
+                            html.index("js/stats.js?v=151e9967c055067d"))
 
     def test_banner_is_fixed_and_non_blocking(self):
         css = self.read("css/consent.css")

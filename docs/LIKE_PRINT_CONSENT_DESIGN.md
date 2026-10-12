@@ -1,8 +1,13 @@
 # Ausmalwiese — Like/Print consent (#182)
 
+**Current source contract (2026-10-12):** Draft PR #183 implements **Worker-issued v3 credentials**, D1 purpose registration, server-side expiry checks, guarded Like/Print writes and atomic v3 revocation. The old **v2 identifier is accepted ONLY for a one-shot, user-directed Like erasure** when the browser had previously allowed Like and still holds a valid secure v2 token. Normal personalized requests reject v2; on successful withdrawal the client removes the local v2 ID and sends it only in `POST /api/stats/erase-likes`. There is no automatic retry and a failed/unknown response must not be labelled successful. The v2 delete route has no broad retroactive erasure guarantee for backups/logs. PR #158 (`b854d6aa124a935215b02d226c0da50302fa1228`) describes v3 in its legal-page Draft; neither PR has a legal sign-off. `cloudflare/stats-v3-migration.sql` remains unapplied; the real `CONSENT_TTL_SECONDS` and retention/DSAR rules remain unapproved. **NO MERGE / NO LIVE.**
+
+**Historical context:** The v2-only material immediately below describes an earlier source revision, **not the current Worker/API/JS contract**. It is retained only to explain previous design decisions. Refer to the v3 section and the current-status paragraph for the active Draft architecture.
+
+
 **Status:** Source Draft in PR #183. No legal approval, merge or LIVE deployment. Paired legal-pages Draft PR #158 was updated at head `1dafc4e6f96593cad28b38aee5e936f13278e719` to describe this one-step erasure behavior accurately; its obsolete replay-suppression table and 24-hour retry claims no longer appear in the current public-facing Datenschutz draft. Both PRs remain **NOT RELEASE READY** pending coordinated legal/security review; old claims in commit history do not define the current contract.
 
-## Current minimal design (owner authorized 2026-10-12)
+## Historical minimal v2 design (superseded by v3 source)
 
 - Keep the small German fixed banner: **Alle ablehnen**, **Einstellungen**, **Alle akzeptieren**. Settings have independent initially-unchecked Like and Print choices. Reopening and withdrawing consent must be easy. No site-wide blocking of browsing or printing.
 - Save only `coloring-pages-consent-v1` containing purpose booleans, version and time in localStorage. Use the existing securely generated `v2-` random visitor ID only for opted-in purposes; old pre-consent IDs are never silently read or reused. The Like and Print check remains purpose-specific, including across tab changes. **Consent time in localStorage is not verified individual consent evidence**; GDPR Art. 7(1) and TDDDG §25 still require review.
@@ -29,9 +34,9 @@
 
 **No rights implied:** SOURCE ONLY / NO MERGE / NO LIVE / NO LEGAL SIGN-OFF.
 
-## Replay-resistant successor proposal — 2026-10-12 (DESIGN ONLY; not current implementation)
+## v3 registry architecture — initial proposal, now Draft source implementation
 
-**Decision proposed, NOT approved for implementation:** Replace the current v2 browser-generated, indefinitely accepted ID with a **Worker-minted, 256-bit random v3 bearer ID**, accepted only while its **hashed server-side registration** is active for the specific purpose. Store a minimal registration in **one new D1 table**, not a growing blacklist. This is a successor design only: the currently committed PR #183 still uses v2 + one DELETE and has the replay defect described above. **No Worker/schema/JS/tests changes or D1 migration are authorized by this design review.**
+**Status updated:** The originally proposed Worker-minted, 256-bit v3 bearer credential with hashed D1 purpose registration is now implemented as **Draft source**, not LIVE. The original one-statement v2 DELETE remains available exclusively as a deletion-only legacy route for securely held v2 tokens. The new v3 schema migration is present only as a file, without D1 deployment or controller-approved retention. The technical design is not a legal approval or a LIVE authorization.
 
 ### Minimal server contract
 
@@ -52,6 +57,6 @@
 
 **Primary official references:** [D1 transactional batch and prepared statements](https://developers.cloudflare.com/d1/worker-api/d1-database/); [D1 migration procedure](https://developers.cloudflare.com/d1/reference/migrations/); [GDPR Art. 7, 8, 13, 17](https://eur-lex.europa.eu/eli/reg/2016/679/oj); [EDPB consent guidance](https://www.edpb.europa.eu/documents/guideline/guidelines-052020-on-consent-under-regulation-2016679_en); [TDDDG §25](https://www.gesetze-im-internet.de/ttdsg/__25.html).
 
-**Source implementation status (2026-10-12):** Owner authorized v3 **source-only** implementation in PR #183. The Worker registry/guard, JS issuance/rotation, SQL schema plus **unapplied** migration, and tests are Draft source. The current D1 production schema is not proven to contain the registry and the required `CONSENT_TTL_SECONDS` has no controller-approved value. Old v2 personalized GET, Like and Print writes are rejected in the proposed Worker; the legacy v2 DELETE-only route remains. `Datenschutz` in PR #158 currently describes the older v2 behavior and is **not ready for v3 publication**. Controller/legal decisions about children (Art. 8), TTL, consent evidence, log/processor facts, lost IDs and D1 migration/Worker release remain blocked. No MERGE, D1 write or LIVE performed.
+**Source implementation status (2026-10-12):** Owner authorized v3 **source-only** implementation in PR #183. The Worker registry/guard, JS issuance/rotation, SQL schema plus **unapplied** migration, and tests are Draft source. The current D1 production schema is not proven to contain the registry and the required `CONSENT_TTL_SECONDS` has no controller-approved value. Old v2 personalized GET, Like and Print writes are rejected in the proposed Worker; the legacy v2 DELETE-only route remains. `Datenschutz` in PR #158 describes v3 source behavior at its paired head, but **neither Draft is legally approved or verified LIVE**. Controller/legal decisions about children (Art. 8), TTL, consent evidence, log/processor facts, lost IDs and D1 migration/Worker release remain blocked. No MERGE, D1 write or LIVE performed.
 
 **Source implementation is not release authorization.** Do not run any migration or deploy a Worker from this PR without an explicit exact-owner LIVE gate. **NO MERGE / NO LIVE / NO D1 write.**

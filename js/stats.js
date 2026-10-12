@@ -113,10 +113,16 @@
     });
   }
 
-  // Only called during a separately confirmed, user-requested erase operation.
+  // Read the retired v2 credential solely for user-directed Like erasure.
+  // Normal Like/Print/status paths remain strictly v3-only.
   function getErasureProof() {
-    const id = getVisitorId(false, "like");
-    return /^v2-[0-9a-f]{64}$/.test(id) ? id : "";
+    if (window.ColoringConsent?.allows?.("like") !== true) return "";
+    try {
+      const id = localStorage.getItem(VISITOR_KEY) || "";
+      return /^v2-[0-9a-f]{64}$/.test(id) ? id : "";
+    } catch {
+      return ""; // blocked storage must not falsely confirm deletion
+    }
   }
 
   async function eraseLikesWithProof(visitorId) {
