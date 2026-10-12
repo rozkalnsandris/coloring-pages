@@ -1,6 +1,6 @@
 # Ausmalwiese — Like/Print consent (#182)
 
-**Status:** Source Draft in PR #183. No legal approval, merge or LIVE deployment. The paired legal pages PR #158 must be revised to describe this revised one-step erasure behavior; its current draft still describes an obsolete replay-suppression table and 24-hour retry token. Do **not** publish those legal claims without correction. Earlier complex proposals remain available in Git commit history, not as the current contract.
+**Status:** Source Draft in PR #183. No legal approval, merge or LIVE deployment. Paired legal-pages Draft PR #158 was updated at head `1dafc4e6f96593cad28b38aee5e936f13278e719` to describe this one-step erasure behavior accurately; its obsolete replay-suppression table and 24-hour retry claims no longer appear in the current public-facing Datenschutz draft. Both PRs remain **NOT RELEASE READY** pending coordinated legal/security review; old claims in commit history do not define the current contract.
 
 ## Current minimal design (owner authorized 2026-10-12)
 
@@ -21,7 +21,7 @@
 2. **Existing Like rows and IP/day HMAC:** determine valid processing grounds and actual retention criteria. No age-based deletion of *active consented Likes* under this issue. Refusal does not disable distinct existing visit/HMAC measurement; independently describe its GDPR basis.
 3. **DSAR:** contact without emailing browser IDs; record minimal case details; assess legacy/lost-ID matching proportionately per GDPR Arts. 11/12; respond normally within one month. Any manual D1 changes require exact separate approval. D1 Time Travel/provider logs cannot be claimed instantly erased after active-table DELETE.
 4. **Legacy personalized GET sunset:** confirm compatibility with cached clients; plan a separately reviewed date and authorized source/Worker change to reject personalized GET without removing anonymous GET. Do not mine IDs from URLs/logs.
-5. **Paired PR #158:** update draft Datenschutz text and any incompatible tests or site wording **under a separately authorized PR #158 source gate**. Its current mention of permanent replay blocks and the recovery-proof flow is obsolete after this source-only simplification. Both PRs remain Draft until coordinated legal/security sign-off. Validate new exact-head CI and reviews, then seek independent owner MERGE and LIVE/D1 authority if needed.
+5. **Paired PR #158:** its current Datenschutz draft describes the simplified one-shot erasure and the remaining replay risk, not the removed replay-block table or retry credential. Keep the two PRs and browser/Worker behavior aligned after future edits. Both PRs must remain Draft pending GDPR Art. 6/7/8/13/17, DDG §5, TDDDG §25, retention and real processing checks. Before any coordinated release, validate exact-head CI, reviews, browser behavior, and separately authorize each MERGE and required Cloudflare Worker/D1 LIVE action.
 
 **Cloudflare D1:** a prepared `DELETE ... WHERE visitor_hash = ?` with `.bind(hash).run()` provides a single targeted write. D1 `run()` success verifies statement execution; it does not exclude later writes using the same credential. No new D1 migration is necessary for this design and none is authorized. Official API: https://developers.cloudflare.com/d1/worker-api/d1-database/ . Migration reference: https://developers.cloudflare.com/d1/reference/migrations/ .
 
