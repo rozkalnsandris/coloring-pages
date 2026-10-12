@@ -109,7 +109,7 @@ class LegalPageSourceTests(unittest.TestCase):
                          "actual", "no legal certification"):
             with self.subTest(required=required):
                 self.assertIn(required.lower(), report.lower())
-        self.assertIn("die konkrete Gültigkeitsdauer", privacy.lower())
+        self.assertIn("die konkrete gültigkeitsdauer", privacy.lower())
         self.assertNotIn("Wir führen kein", privacy)
 
     def test_art13_open_facts_and_ddg_contact_are_reviewed_without_invention(self):
