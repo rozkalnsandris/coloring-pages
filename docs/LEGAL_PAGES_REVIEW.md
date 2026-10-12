@@ -1,5 +1,30 @@
 # German legal pages — DRAFT / NOT RELEASE READY
 
+## 2026-10-12 — concise public Datenschutzerklärung / Art. 13 and DDG checklist
+
+**Source-only copy review, not a legal sign-off.** Paired source: PR #183 `362c9b5c045111fd4d00880ebaba7c959a1255a2`. The public-facing Draft paragraph on voluntary Like/Print consent was shortened, but must only describe the future coordinated release, not current LIVE behavior. No new phone number, contact form, processor configuration or retention period was invented.
+
+**Facts reflected in the short German notice:** equal-level Reject/Settings/Accept; independent Like and Print opt-ins; browsing/printing without consent; local purpose decision; random optional ID; pseudonymous Like rows in D1; personal status via new POST with legacy GET exposure; only consented new Print intents; withdrawal triggers a single scoped DELETE when a secure v2 proof exists; accurate non-confirmation on failure; historical counters preserved. Old credentials remain usable server-side, so new Likes can reappear; backups are not deleted by the D1 DELETE.
+
+**Art. 13 missing facts (must be resolved BEFORE publication):**
+
+| Processing | Described source fact | Required controller decision/evidence |
+| --- | --- | --- |
+| Optional Like identity and D1 row | Consent choice in browser, D1 hash per page and one-delete withdrawal | Confirm demonstrability under Art. 7(1), consent text version, purpose/Art. 6(1)(a), proportionate Like/ID lifetime and lost-credential rights. Do not say browser timestamp proves individual consent. |
+| Optional Print intent | Only consented new actions; historical aggregate counts retained | Confirm Art. 6 basis and truthful historical/forward-looking labels; distinguish print intent from successful paper print. |
+| Worker visit-HMAC and detail view | Source describes IP/day HMAC and aggregate views independent of Like/Print opt-ins | Record separate Art. 6 basis and necessity, actual cleanup limitations, data category and proportionate retention criteria, including periods without traffic. |
+| Origin, Cloudflare CDN/Worker, security and logs | Public source names Cloudflare; previous read-only log evidence is dated | Determine actual enabled Workers Logs/Traces, edge/origin destinations, roles/subprocessors, contractual transfer safeguards, relevant country processing, log/data retention periods **or criteria**. Do not replace facts with product maximums. |
+| D1 Time Travel and DSAR | Active row deletion is not deletion from every history/backup/log | Confirm actual production subsystem/plan, provider backup window, recovery and rights workflow; do not claim retroactive purge. |
+| Communication by email | Contact is declared; replies contain correspondence | Confirm proportionate retention criteria and whether actual legal obligations apply. |
+
+**DDG §5 / Impressum contact:** The Draft displays a real operator name, owner-attested serviceable postal address and email. §5 DDG (if applicable to this service) requires easy, direct and rapid electronic contact **including email**. It does **not literally mandate a telephone number for all providers**, but whether email alone supplies a sufficiently effective rapid/immediate response needs a legal/factual check. This source has **no verified second rapid contact channel**. Do not invent a phone number or assert a hypothetical form exists; owner must either validate the adequacy of the existing responsive email channel with counsel, or explicitly supply and authorize a real extra contact method. Separately check if this offering qualifies as geschäftsmäßig, any VAT/economic identification, regulated profession/trade register where applicable, and possible media/editorial rules. Neither adding an unrelated feature nor publishing personal details follows from this checklist.
+
+**Release decision:** The short draft intentionally removes internal implementation-history chatter (such as the defunct 24-hour retry) but does not grant permission to release with unresolved facts. Reconcile both Drafts and seek legal/operator validation of Art. 13, §25 TDDDG, DDG §5, GDPR Arts. 6, 7, 11–13 and 17 before Ready; CI/source evidence is not a legal sign-off. No Worker/D1 migration is needed by the revised PR #183, and no LIVE operation is authorized here.
+
+Official sources: [§5 DDG](https://www.gesetze-im-internet.de/ddg/__5.html), [GDPR Article 13](https://eur-lex.europa.eu/eli/reg/2016/679/oj), [§25 TDDDG](https://www.gesetze-im-internet.de/ttdsg/__25.html), [EDPB layered privacy guidance](https://www.edpb.europa.eu/sme/be-compliant/respect-individuals-rights_en).
+
+---
+
 ## Coordinated source-only privacy wording review — 2026-10-12 (#182 / PR #183)
 
 **CURRENT CONTRACT / still Draft.** PR #183 head `362c9b5c045111fd4d00880ebaba7c959a1255a2` implements the owner-approved simple erasure flow. PR #158 remains **NOT RELEASE READY** and is not a standalone legal release. Its prior 2026-10-11 references to replay-suppression hashes, permanent `blocked_until` and 24-hour recovery tokens are **superseded** by this 2026-10-12 change. This note is not legal sign-off or authority for D1, Cloudflare, merge or LIVE changes.

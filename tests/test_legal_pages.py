@@ -76,15 +76,16 @@ class LegalPageSourceTests(unittest.TestCase):
         privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
         report = (ROOT / "docs/LEGAL_PAGES_REVIEW.md").read_text(encoding="utf-8")
         for expected in (
-            "Löschung nicht", "zum Zeitpunkt der Anfrage",
-            "nicht dauerhaft gesperrt", "keine", "24-Stunden-Funktion",
-            "Datenschutzanfragen", "nach zwölf Monaten",
+            "Löschung nicht bestätigt", "zum Zeitpunkt der Anfrage",
+            "nicht dauerhaft gesperrt", "nach zwölf Monaten",
+            "Datenschutzanfragen", "Alle ablehnen", "Alle akzeptieren",
+            "ohne Einwilligung", "Cloudflare Rate Limiter",
         ):
             with self.subTest(expected=expected):
-                self.assertIn(expected, privacy)
+                self.assertIn(expected.lower(), privacy.lower())
         for forbidden in (
             "like_erasure_blocks", "coloring-pages-erasure-pending-v1",
-            "Löschung erneut versuchen", "blocked_until",
+            "Löschung erneut versuchen", "24-Stunden-Funktion", "blocked_until",
         ):
             with self.subTest(forbidden=forbidden):
                 self.assertNotIn(forbidden, privacy)
@@ -92,6 +93,15 @@ class LegalPageSourceTests(unittest.TestCase):
         self.assertIn("does not introduce a D1 schema migration", report)
         self.assertIn("NOT RELEASE READY", report)
         self.assertIn("legacy", report.lower())
+
+    def test_art13_open_facts_and_ddg_contact_are_reviewed_without_invention(self):
+        report = (ROOT / "docs/LEGAL_PAGES_REVIEW.md").read_text(encoding="utf-8")
+        impressum = (ROOT / "impressum.html").read_text(encoding="utf-8")
+        for requirement in ("Art. 13", "DDG §5", "Cloudflare", "no verified second",
+                            "not a legal sign-off"):
+            self.assertIn(requirement.lower(), report.lower())
+        self.assertIn("mailto:", impressum)
+        self.assertNotIn('href="tel:', impressum)
 
     def test_self_hosted_woff2_and_licenses(self):
         import base64
