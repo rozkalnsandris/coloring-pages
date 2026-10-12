@@ -72,27 +72,45 @@ class LegalPageSourceTests(unittest.TestCase):
         self.assertIn("Both PRs remain Draft", report)
         self.assertIn("NOT RELEASE READY", report)
 
-    def test_simplified_like_erasure_draft_disclosure(self):
+    def test_v3_notice_does_not_reuse_obsolete_v2_claims(self):
         privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
         report = (ROOT / "docs/LEGAL_PAGES_REVIEW.md").read_text(encoding="utf-8")
         for expected in (
-            "Löschung nicht bestätigt", "zum Zeitpunkt der Anfrage",
-            "nicht dauerhaft gesperrt", "nach zwölf Monaten",
-            "Datenschutzanfragen", "Alle ablehnen", "Alle akzeptieren",
-            "ohne Einwilligung", "Cloudflare Rate Limiter",
+            "Cloudflare Worker", "v3-", "coloring-pages-visitor-v1",
+            "serverseitig erfassten Zeitpunkt", "Ablaufdatum",
+            "getrennt erlaubten Zwecke", "derselben Transaktion",
+            "alte v3-Kennung", "v2-Kennungen", "nicht mehr angenommen",
+            "URL-Parameter", "Löschung nicht bestätigt",
+            "zum Zeitpunkt der", "ohne Einwilligung", "Cloudflare Rate Limiter",
+            "Backups", "nach der Einwilligung",
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected.lower(), privacy.lower())
         for forbidden in (
-            "like_erasure_blocks", "coloring-pages-erasure-pending-v1",
-            "Löschung erneut versuchen", "24-Stunden-Funktion", "blocked_until",
+            "nicht dauerhaft gesperrt", "Wir führen kein",
+            "like_erasure_blocks", "blocked_until",
+            "24-Stunden-Funktion", "coloring-pages-erasure-pending-v1",
         ):
             with self.subTest(forbidden=forbidden):
                 self.assertNotIn(forbidden, privacy)
-        self.assertIn("one parameter-bound", report)
-        self.assertIn("does not introduce a D1 schema migration", report)
+        self.assertIn("v3 / PR #183 exact head", report)
+        self.assertIn("eb1627dd9945f00fb84511f2fa4161371b4f1e30", report)
+        self.assertIn("visitor_credentials", report)
+        self.assertIn("CONSENT_TTL_SECONDS", report)
+        self.assertIn("unapplied", report)
         self.assertIn("NOT RELEASE READY", report)
-        self.assertIn("legacy", report.lower())
+
+    def test_v3_art13_gaps_are_not_claimed_resolved(self):
+        privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
+        report = (ROOT / "docs/LEGAL_PAGES_REVIEW.md").read_text(encoding="utf-8")
+        for required in ("Art. 13(1)(e)–(f)", "Art. 13(2)(a)",
+                         "Art. 8", "TDDDG §25", "D1 Time Travel",
+                         "legacy", "Cloudflare", "DDG §5",
+                         "actual", "no legal certification"):
+            with self.subTest(required=required):
+                self.assertIn(required.lower(), report.lower())
+        self.assertIn("die konkrete Gültigkeitsdauer", privacy.lower())
+        self.assertNotIn("Wir führen kein", privacy)
 
     def test_art13_open_facts_and_ddg_contact_are_reviewed_without_invention(self):
         report = (ROOT / "docs/LEGAL_PAGES_REVIEW.md").read_text(encoding="utf-8")

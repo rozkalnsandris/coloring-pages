@@ -1,6 +1,36 @@
 # German legal pages — DRAFT / NOT RELEASE READY
 
-## 2026-10-12 — concise public Datenschutzerklärung / Art. 13 and DDG checklist
+## Current source review — 2026-10-12: v3 / PR #183 exact head `eb1627dd9945f00fb84511f2fa4161371b4f1e30` (NOT RELEASE READY)
+
+**Authoritative for current planned source (GitHub only).** This section supersedes the 2026-10-11 and earlier 2026-10-12 **v2 historical reviews below**. PR #158 is legal-page draft text, not standalone deployment; PR #183 is the independent v3 Worker/frontend Draft. Neither is LIVE-verified. A green CI run is not GDPR or legal sign-off. No Worker, D1, Cloudflare, RPi5, merge or production changes were authorized here.
+
+### v3 changes now reflected in `datenschutz.html`
+
+- **Client choice:** equal-level German `Alle ablehnen / Einstellungen / Alle akzeptieren`, independent Like/Print opt-ins; anonymous aggregate Likes and browsing/PNG/A4 printing remain usable on refusal. Local consent preference `coloring-pages-consent-v1` stores purposes, version and decision time. It alone is **not** proof under GDPR Art. 7(1), and the visitor's age/parental authority is not verified.
+- **Worker-issued identifier:** after a purpose opt-in, the proposed Worker creates a cryptographically random 256-bit `v3-` token. The legacy `coloring-pages-visitor-v1` localStorage **key name remains**, but the credential *value* changes to v3. The Worker persists only `SHA-256(token)` plus Like/Print scope, notice version, server-observed consent timestamp and `expires_at` in a proposed new `visitor_credentials` D1 table; it does **not** attest parental authorization or user identity. This is additional pseudonymous data and a server-side consent-event record: the former public claim that **no server-side record exists is false** for v3.
+- **Rights/withdrawal:** personalized `POST /page`, `POST /like` and consented `POST /print` are guarded on active, unexpired, purpose-specific D1 scope. v3 Like revocation uses a D1 transaction to remove matching active Like rows and retire the old credential; an old credential cannot reinsert Likes after committed revocation. Print can remain consented through rotation. Successful response still covers **active rows only**, not Cloudflare D1 Time Travel, logs, backups or unidentifiable legacy accounts; network ambiguity must not be reported as success.
+- **Legacy fence:** old v1/v2 credentials cannot create new Likes/Print events or personal status; old personalized GET with `visitor_id` is rejected instead of supported. Anonymous GET remains. A legacy v2-only self-service delete route continues for eligible secure credentials; lost/weak legacy IDs require proportionate GDPR Arts. 11/12/17 handling. Old cached clients may lose personalization; no claim that old URL logs vanish.
+- **Expiry:** Worker requires `CONSENT_TTL_SECONDS` in a bounded range before issuance; **no controller-approved real value has been verified**. An expired token is rejected on new personalized operations, but this is **not automatic deletion of Like rows, registry history, D1 backups or host logs**. The new `cloudflare/stats-v3-migration.sql` source is **unapplied**. No application/LIVE outcome follows from source.
+
+### GDPR Art. 13 + legal acceptance matrix (owner evidence required before Ready)
+
+| Duty / operation | Source-visible fact | Unresolved owner/legal evidence, not invented in the notice |
+| --- | --- | --- |
+| GDPR Art. 13(1)(a)–(b) controller/DPO | Controller and email/postal address are in the Draft | Check whether a DPO is required; if yes, provide actual contact. Validate DDG §5 classification and electronic contact suitability. |
+| Art. 13(1)(c)–(d), Art. 6 | Optional consented v3 Likes/Print, independent IP/day HMAC, page views, Web Analytics, origin/CDN security and email | Confirm actual per-purpose legal basis, necessary legitimate interests and balancing, analytics consent/strict necessity where applicable, and TDDDG §25 choice storage/reads. |
+| Art. 7(1), Art. 8 | Local preference plus Worker pseudonymous notice-version/timestamp, **no verified identity or parental authority** | Decide whether the service is offered directly to children; if so, assess Art. 8 under-16 parental authorization and reasonable verification. Evaluate consent proof without collecting excessive extra data. |
+| Art. 13(1)(e)–(f) recipients/transfers | Cloudflare CDN/Worker/D1/Web Analytics/Rate Limiter and self-hosted origin are named | Verify account-specific processing roles, recipients/subprocessors, actual third-country transfers and applicable safeguards. Standard Self-Serve DPA incorporation **does not verify actual routing or retention**. |
+| Art. 13(2)(a) periods/criteria | v3 `expires_at` needs unapproved `CONSENT_TTL_SECONDS`; active `likes` lack automatic expiry; visit HMAC cleanup depends on successful visits; logs/backups are distinct | Approve expiry duration **and** physical D1 Like/registry cleanup, visit/aggregate retention criteria, Time Travel/backup, logs, Rate Limiter and email retention. Do not substitute provider product limits or Docker size-based rotation for actual periods. |
+| Art. 13(2)(b)–(d) rights | Access, rectification, erasure, portability, objection, consent withdrawal, DPA complaint are described | Confirm proportionate lost-ID/manual DSAR procedure, response ownership and effect on legacy Likes; do not solicit bearer credentials or identity documents through ordinary email. |
+| Art. 13(2)(e)–(f) required data/automation | Browsing and printing remain independent of opt-in; v3 optional telemetry | Confirm if any mandatory provision/consequences or Art. 22 automated individual decision-making exists; don't assert profile/automation absence without checking real analytics and safeguards. |
+| Coordination/deployment | PR #183 changes Worker/API and requires unapplied D1 v3 migration; PR #158 is HTML/legal text | Separate owner gates for each MERGE and any D1/Worker LIVE operation; check production schema, TTL setting, browser flows, local fonts and old-cache compatibility before publish. |
+
+**Review outcome:** `NOT RELEASE READY` for both Drafts; no legal certification, no arbitrary fixed TTL or cleanup schedule, no assumed Cloudflare configurations. Next gate is concrete operator/controller evidence and legal decisions, then independent owner authorization. Official primary references: [GDPR Art. 13 and Arts. 6–8/17](https://eur-lex.europa.eu/eli/reg/2016/679/oj), [EDPB transparency](https://www.edpb.europa.eu/documents/guideline/transparency_en), [TDDDG §25](https://www.gesetze-im-internet.de/ttdsg/__25.html), [Cloudflare D1 transactional batch](https://developers.cloudflare.com/d1/worker-api/d1-database/), [D1 Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/), [§5 DDG](https://www.gesetze-im-internet.de/ddg/__5.html).
+
+---
+
+
+## Historical v2 source review — 2026-10-12 (superseded by v3 review above)
 
 **Source-only copy review, not a legal sign-off.** Paired source: PR #183 `362c9b5c045111fd4d00880ebaba7c959a1255a2`. The public-facing Draft paragraph on voluntary Like/Print consent was shortened, but must only describe the future coordinated release, not current LIVE behavior. No new phone number, contact form, processor configuration or retention period was invented.
 
@@ -25,9 +55,9 @@ Official sources: [§5 DDG](https://www.gesetze-im-internet.de/ddg/__5.html), [G
 
 ---
 
-## Coordinated source-only privacy wording review — 2026-10-12 (#182 / PR #183)
+## Historical v2 consent review — 2026-10-12 (#182 / PR #183; superseded above)
 
-**CURRENT CONTRACT / still Draft.** PR #183 head `362c9b5c045111fd4d00880ebaba7c959a1255a2` implements the owner-approved simple erasure flow. PR #158 remains **NOT RELEASE READY** and is not a standalone legal release. Its prior 2026-10-11 references to replay-suppression hashes, permanent `blocked_until` and 24-hour recovery tokens are **superseded** by this 2026-10-12 change. This note is not legal sign-off or authority for D1, Cloudflare, merge or LIVE changes.
+**HISTORICAL v2 CONTRACT ONLY; superseded by v3 above.** PR #183 head `362c9b5c045111fd4d00880ebaba7c959a1255a2` implements the owner-approved simple erasure flow. PR #158 remains **NOT RELEASE READY** and is not a standalone legal release. Its prior 2026-10-11 references to replay-suppression hashes, permanent `blocked_until` and 24-hour recovery tokens are **superseded** by this 2026-10-12 change. This note is not legal sign-off or authority for D1, Cloudflare, merge or LIVE changes.
 
 ### Minimal Like/Print consent and erasure
 
