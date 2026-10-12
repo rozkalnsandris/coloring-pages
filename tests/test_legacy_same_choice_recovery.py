@@ -10,7 +10,7 @@ JS = r"""
 const vm = require("node:vm"),fs=require("node:fs");
 const scenario=process.argv[1];
 const KEY="coloring-pages-consent-v1",ID="coloring-pages-visitor-v1";
-const v2="v2-"+"a".repeat(64),v2b="v2-"+"d".repeat(64),v3="v3-"+"b".repeat(64);
+const v2="v2-"+"a".repeat(64),v2b="v2-"+"d".repeat(64),v2c="v2-"+"e".repeat(64),v3="v3-"+"b".repeat(64);
 const initial={version:1,like:true,print:true,decided_at:"2026-10-11T11:00:00Z"};
 const stored=new Map(), calls=[], els=[], events={};let reads=0,confirms=0;
 if(scenario!=="first")stored.set(KEY,JSON.stringify({
@@ -31,7 +31,11 @@ async function fetch(path,opt={}){
   if(path==="/api/stats/erase-likes"){
     if(scenario==="erase_fail"
        || (scenario==="two_second_fail" && body.visitor_id===v2b)
-       || (scenario==="two_first_fail" && body.visitor_id===v2))
+       || (scenario==="two_first_fail" && body.visitor_id===v2)
+       || (scenario==="three_Afail_Bsuccess_A" && body.visitor_id===v2)
+       || (scenario==="three_Afail_Bsuccess_C" && body.visitor_id===v2)
+       || (scenario==="three_Asuccess_Bfail_A" && body.visitor_id===v2b)
+       || scenario==="many_proofs_capacity")
       return response({error:"unavailable"},503);
     if(scenario==="two_second_network" && body.visitor_id===v2b)
       throw Error("network response ambiguous");
@@ -62,7 +66,7 @@ const snapshot=()=>({id:stored.get(ID)||null,consent:stored.get(KEY)?JSON.parse(
  }
  const first=snapshot();
  let second=null;
- if(scenario.startsWith("two_")){
+ if(scenario.startsWith("two_") || scenario.startsWith("three_")){
    // Another tab presents a different v2 token in the SAME JS page session.
    stored.set(ID,v2b);
    await window.ColoringStats.getPage("1234567");
@@ -71,8 +75,27 @@ const snapshot=()=>({id:stored.get(ID)||null,consent:stored.get(KEY)?JSON.parse(
    if(scenario==="two_second_fail" || scenario==="two_second_network")
      await banner.querySelector("[data-consent-accept]").listeners.click();
  }
+ let third=null;
+ if(scenario.startsWith("three_")){
+   // Reappearance of A after B, or an independent third credential C.
+   stored.set(ID,scenario==="three_Afail_Bsuccess_C"?v2c:v2);
+   await window.ColoringStats.getPage("1234567");
+   await banner.querySelector("[data-consent-accept]").listeners.click();
+   third=snapshot();
+   if(scenario==="three_Afail_Bsuccess_A")
+     await banner.querySelector("[data-consent-accept]").listeners.click();
+ }
+ if(scenario==="many_proofs_capacity"){
+   // All ambiguous: at 32 proofs the 33rd MUST be blocked, not evicted.
+   for(let i=1;i<=33;i++){
+     stored.set(ID,"v2-"+i.toString(16).padStart(64,"0"));
+     await window.ColoringStats.getPage("1234567");
+     await banner.querySelector("[data-consent-accept]").listeners.click();
+   }
+   third=snapshot();
+ }
  if(scenario==="erase_fail")await banner.querySelector("[data-consent-accept]").listeners.click();
- console.log(JSON.stringify({first,second,final:snapshot()}));
+ console.log(JSON.stringify({first,second,third,final:snapshot()}));
 })().catch(e=>{console.error(e.stack);process.exit(1)});
 """
 class LegacySameChoiceTests(unittest.TestCase):
@@ -176,6 +199,50 @@ class LegacySameChoiceTests(unittest.TestCase):
         self.assertEqual(req[1]["body"],{"visitor_id":"v2-"+"d"*64})
         self.assertEqual(x["second"]["id"],"v3-"+"b"*64)
         self.assertIn("bestätigt",x["second"]["erasure"])
+
+    def test_failed_A_then_successful_B_never_allows_second_A_post(self):
+        x=self.scenario("three_Afail_Bsuccess_A")
+        req=[c for c in x["final"]["calls"] if "page?" not in c["path"]]
+        self.assertEqual([c["path"] for c in req],
+                         ["/api/stats/erase-likes","/api/stats/erase-likes",
+                          "/api/stats/credential"])
+        self.assertEqual([c["body"]["visitor_id"] for c in req if c["path"].endswith("erase-likes")],
+                         ["v2-"+"a"*64,"v2-"+"d"*64])
+        self.assertEqual(x["third"]["id"],"v2-"+"a"*64)
+        self.assertEqual(x["third"]["calls"],x["final"]["calls"])
+        self.assertIn("nicht bestätigt",x["third"]["err"])
+        self.assertTrue(x["third"]["visible"])
+
+    def test_confirmed_A_after_ambiguous_B_never_resubmits_either(self):
+        x=self.scenario("three_Asuccess_Bfail_A")
+        req=[c for c in x["final"]["calls"] if "page?" not in c["path"]]
+        self.assertEqual([c["path"] for c in req],
+                         ["/api/stats/erase-likes","/api/stats/credential",
+                          "/api/stats/erase-likes","/api/stats/credential"])
+        self.assertEqual([c["body"]["visitor_id"] for c in req if c["path"].endswith("erase-likes")],
+                         ["v2-"+"a"*64,"v2-"+"d"*64])
+        self.assertEqual(x["third"]["id"],"v3-"+"b"*64)
+        self.assertIn("bestätigt",x["third"]["erasure"])
+
+    def test_distinct_third_proof_works_after_ambiguous_first(self):
+        x=self.scenario("three_Afail_Bsuccess_C")
+        req=[c for c in x["final"]["calls"] if "page?" not in c["path"]]
+        self.assertEqual([c["path"] for c in req],
+                         ["/api/stats/erase-likes","/api/stats/erase-likes",
+                          "/api/stats/credential","/api/stats/erase-likes",
+                          "/api/stats/credential"])
+        self.assertEqual([c["body"]["visitor_id"] for c in req if c["path"].endswith("erase-likes")],
+                         ["v2-"+"a"*64,"v2-"+"d"*64,"v2-"+"e"*64])
+        self.assertEqual(x["third"]["id"],"v3-"+"b"*64)
+
+    def test_proof_record_cap_fails_closed_without_eviction(self):
+        x=self.scenario("many_proofs_capacity")
+        req=[c for c in x["final"]["calls"] if c["path"].endswith("erase-likes")]
+        self.assertEqual(len(req),32)
+        self.assertEqual(len(x["final"]["calls"]),32)
+        self.assertEqual(x["third"]["id"],"v2-"+format(33,"064x"))
+        self.assertIn("Zu viele Löschanfragen",x["third"]["err"])
+        self.assertTrue(x["third"]["visible"])
 
     def test_first_refusal_still_never_reads_id(self):
         x=self.scenario("first")["first"]

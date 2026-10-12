@@ -11,7 +11,7 @@ class ConsentBannerSourceTests(unittest.TestCase):
         for page in ("index.html", "detail.html", "kita.html"):
             html = self.read(page)
             self.assertIn('css/consent.css?v=199486ea95f10006', html)
-            self.assertLess(html.index("js/consent.js?v=57a3df1dc20936f9"),
+            self.assertLess(html.index("js/consent.js?v=afe48c8fda820d4e"),
                             html.index("js/stats.js?v=315dcba26f074b49"))
 
     def test_banner_is_fixed_and_non_blocking(self):
