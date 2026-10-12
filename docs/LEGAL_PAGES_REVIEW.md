@@ -1,5 +1,8 @@
 # German legal pages — DRAFT / NOT RELEASE READY
 
+**Pending retention and audience decision (2026-10-12):** [90-day v3, daily cleanup, two UTC-day HMAC and parent/educator audience DESIGN PROPOSAL](PRIVACY_RETENTION_AUDIENCE_DESIGN.md). It has **not** set a production TTL, installed a Cron Trigger, modified a D1 table, or decided GDPR Art. 8 applicability. Paired PR #183 current review head: `ab4e88feb5d9675e2875351e064a1ee7fdf79c3e`; any older head references in historical sections are snapshots, not current source.
+
+
 ## Current source review — 2026-10-12: v3 / PR #183 exact head `eb1627dd9945f00fb84511f2fa4161371b4f1e30` (NOT RELEASE READY)
 
 **Authoritative for current planned source (GitHub only).** This section supersedes the 2026-10-11 and earlier 2026-10-12 **v2 historical reviews below**. PR #158 is legal-page draft text, not standalone deployment; PR #183 is the independent v3 Worker/frontend Draft. Neither is LIVE-verified. A green CI run is not GDPR or legal sign-off. No Worker, D1, Cloudflare, RPi5, merge or production changes were authorized here.
