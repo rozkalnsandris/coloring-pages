@@ -1,6 +1,6 @@
 # coloring-pages
 
-Static, mobile-first coloring-page catalogue for `coloring.rozkalns.net`.
+Static, mobile-first coloring-page catalogue for Ausmalwiese at `ausmalwiese.de`.
 
 ## V1 content model
 

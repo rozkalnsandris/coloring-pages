@@ -280,7 +280,7 @@ function addVerifiedDetailCanonical(id) {
   if (document.querySelector('link[rel="canonical"]')) return;
   const link = document.createElement("link");
   link.setAttribute("rel", "canonical");
-  link.setAttribute("href", `https://coloring.rozkalns.net/detail.html?id=${encodeURIComponent(id)}`);
+  link.setAttribute("href", `https://ausmalwiese.de/detail.html?id=${encodeURIComponent(id)}`);
   document.head.append(link);
 }
 
