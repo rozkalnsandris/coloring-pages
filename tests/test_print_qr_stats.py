@@ -78,7 +78,7 @@ async function check(){
   if(r.status!==302||writes!==1)throw Error('verified bot counted');
   r=await context.worker.fetch(req('https://ausmalwiese.de/q','POST'),env);
   if(r.status!==405||writes!==1)throw Error('method');
-  r=await context.worker.fetch(req('https://ausmalwiese.de/q'),env);
+  r=await context.worker.fetch(req('https://coloring.rozkalns.net/q'),env);
   if(r.status!==404||writes!==1)throw Error('hostname confusion');
   r=await context.worker.fetch(req('https://ausmalwiese.de/q?next=https://evil.example/'),env);
   if(r.headers.location!=='https://ausmalwiese.de/'||writes!==2)throw Error('open redirect');
