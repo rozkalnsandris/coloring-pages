@@ -266,7 +266,7 @@ a { color: inherit; }
   border-radius: 999px; background: #e8f4ff; color: var(--blue-deep);
   font-size: 12px; line-height: 1; font-weight: 800;
 }
-.gallery { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+.gallery { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; align-items: start; }
 .gallery-actions { display: flex; justify-content: center; margin-top: 20px; }
 .gallery-actions .outline-link { cursor: pointer; }
 .coloring-card {
@@ -292,7 +292,7 @@ a { color: inherit; }
 }
 .coloring-card h3 a { text-decoration: none; }
 .badges, .detail-badges { display: flex; flex-wrap: wrap; gap: 7px; }
-.badges { margin-top: auto; }
+.badges { margin-top: 0; }
 .badges span, .detail-badges span {
   display: inline-flex; align-items: center; justify-content: center; border-radius: 999px;
   font-weight: 800;
@@ -812,7 +812,7 @@ a { color: inherit; }
 .ranking-tab:focus-visible { outline: 3px solid rgb(20 116 212 / 20%); outline-offset: 2px; }
 .ranking-tab.is-active { background: #fff; color: var(--blue-deep); box-shadow: 0 3px 10px rgb(33 75 126 / 10%); }
 .ranking-panel[hidden] { display: none; }
-.ranking-gallery .coloring-card { height: 100%; }
+.ranking-gallery .coloring-card { height: auto; }
 /* Keep the asynchronously hydrated six-card ranking region in document flow.
    Reserve enough space for its responsive image ratios and text/badges. */
 .ranking-panel { position: relative; }
@@ -833,6 +833,10 @@ a { color: inherit; }
 @media (max-width: 720px) {
   .ranking-gallery { min-height: calc((100vw - 38px) * 1.581 + 500px); }
 }
+
+/* Reserve ranking space only during loading, never inside populated cards. */
+.ranking-discover[aria-busy="false"] .ranking-gallery { min-height: 0; }
+.ranking-discover[aria-busy="false"] .ranking-status:not([hidden]) { position: static; }
 
 .card-metrics { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 9px; color:#62728b; font-size:12px; font-weight:800; }
 .card-metrics span:first-child { color:#c44161; }

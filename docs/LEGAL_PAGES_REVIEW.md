@@ -1,5 +1,17 @@
 # German legal pages — DRAFT / NOT RELEASE READY
 
+## 2026-10-13 reconciliation to main — still NOT RELEASE READY
+
+- Current source-only reconciliation: reviewed PR #158 at `2ace3bfdccb52a52d00a8074dd18c1c8535dea00` against current `main` `ddd73305201eccfb0c1f8404281f262652602e0e`. Paired consent PR #183 reviewed at `b1968be865c7b08e13623cdf99c99073483197a3`; earlier review SHAs in historical sections are snapshots.
+- **Font preservation:** current `main` uses immutable, locally served WOFF2 files in `assets/fonts/`, `css/fonts.css` and page preloads. These supersede the Draft's embedded base64 stylesheet and `privacy-ofl-v1` URLs. Local font delivery and real page behavior remain subject to separately authorized runtime verification.
+- **Copy clarity:** voluntary Like/Print paragraphs use consistent formal `Sie`; `Impressum` replaces a potentially overbroad third-party-rights disclaimer with a direct content-contact instruction. No telephone number, new operator identifier, actual legal basis or retention period has been invented.
+- **DDG §5 (if applicable):** operator name/address and a means of fast direct electronic contact including email must be assessable and accessible. The statute does not universally mandate a telephone number; response suitability, service classification, potential VAT/economic identifiers, and `MStV §18` editorial duties if applicable still need actual owner/legal review.
+- **DSGVO Art. 13 and TDDDG §25:** no approval yet for actual Cloudflare recipients/processors/transfers, Worker/edge/origin logs, retention/backup criteria, stored consent demonstrability, legacy Like erasure, children (Art. 8) or `CONSENT_TTL_SECONDS`. D1 migration and Cron remain unapplied and not approved. The Draft notice cannot be independently published before these facts and paired PR #183 are reconciled.
+- Source tests/CI do not certify legal compliance. **Both PRs remain Draft / NOT RELEASE READY; NO MERGE, NO LIVE, NO D1/Worker mutation.**
+- Official sources: https://www.gesetze-im-internet.de/ddg/__5.html ; https://www.gesetze-im-internet.de/ttdsg/__25.html ; https://eur-lex.europa.eu/eli/reg/2016/679/oj ; https://www.edpb.europa.eu/documents/guideline/transparency_en
+
+---
+
 **Pending retention and audience decision (2026-10-12):** [90-day v3, daily cleanup, two UTC-day HMAC and parent/educator audience DESIGN PROPOSAL](PRIVACY_RETENTION_AUDIENCE_DESIGN.md). It has **not** set a production TTL, installed a Cron Trigger, modified a D1 table, or decided GDPR Art. 8 applicability. Paired PR #183 current review head: `ab4e88feb5d9675e2875351e064a1ee7fdf79c3e`; any older head references in historical sections are snapshots, not current source.
 
 

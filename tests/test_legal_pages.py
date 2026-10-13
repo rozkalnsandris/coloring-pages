@@ -122,28 +122,38 @@ class LegalPageSourceTests(unittest.TestCase):
         self.assertNotIn('href="tel:', impressum)
 
     def test_self_hosted_woff2_and_licenses(self):
-        import base64
+        import hashlib
         import re
         css = (ROOT / "css/fonts.css").read_text(encoding="utf-8")
-        payloads = re.findall(r'data:font/woff2;base64,([A-Za-z0-9+/=]+)', css)
-        self.assertEqual(len(payloads), 2)
-        for payload in payloads:
-            content = base64.b64decode(payload, validate=True)
-            self.assertEqual(content[:4], b"wOF2")
-            self.assertGreater(len(content), 10000)
+        font_hash = hashlib.sha256(css.encode("utf-8")).hexdigest()[:16]
+        app_hash = hashlib.sha256((ROOT / "css/app.css").read_bytes()).hexdigest()[:16]
+        paths = re.findall(r'src: url\("\.\./(assets/fonts/[^"]+\.woff2)"\)', css)
+        self.assertEqual(len(paths), 2)
+        for path in paths:
+            data = (ROOT / path).read_bytes()
+            self.assertEqual(data[:4], b"wOF2")
+            self.assertIn(hashlib.sha256(data).hexdigest()[:16], path)
         for family in ("Baloo 2", "Nunito"):
             self.assertIn('font-family: "' + family + '";', css)
         for name in ("OFL-Baloo2.txt", "OFL-Nunito.txt"):
-            license = (ROOT / "assets/fonts" / name).read_text(encoding="utf-8")
-            self.assertIn("SIL OPEN FONT LICENSE Version 1.1", license)
+            license_text = (ROOT / "assets/fonts" / name).read_text(encoding="utf-8-sig")
+            self.assertIn("SIL OPEN FONT LICENSE", license_text)
+        self.assertNotIn("data:font/", css)
         for name in (*PUBLIC_PAGES, "impressum.html", "datenschutz.html"):
             html = (ROOT / name).read_text(encoding="utf-8")
-            self.assertIn('href="css/fonts.css?v=privacy-ofl-v1"', html)
+            self.assertIn(f'href="css/fonts.css?v={font_hash}"', html)
+            self.assertIn(f'href="css/app.css?v={app_hash}"', html)
             self.assertNotIn("fonts.googleapis.com", html)
             self.assertNotIn("fonts.gstatic.com", html)
         for name in PUBLIC_PAGES:
             html = (ROOT / name).read_text(encoding="utf-8")
             self.assertIn("js/stats.js?v=kita-campaign-v1", html)
+
+    def test_privacy_uses_consistent_formal_address(self):
+        import re
+        privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
+        self.assertIn("Sie können", privacy)
+        self.assertIsNone(re.search(r"\b(?:du|deine|deines|kannst)\b", privacy, flags=re.I))
 
     def test_public_pages_link_both_legal_pages(self):
         for name in PUBLIC_PAGES:

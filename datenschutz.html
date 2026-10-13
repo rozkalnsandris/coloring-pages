@@ -6,8 +6,10 @@
   <meta name="description" content="Informationen zum Datenschutz auf Ausmalwiese.">
   <title>Datenschutzerklärung | Ausmalwiese</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=c5d8c26a8a8349b2">
-  <link rel="stylesheet" href="css/fonts.css?v=privacy-ofl-v1">
-  <link rel="stylesheet" href="css/app.css?v=ffeaa3173737d6e3">
+  <link rel="preload" href="assets/fonts/baloo2-latin-vf-26fb4610d4bc976d.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/nunito-latin-vf-ba344451eab25b21.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/fonts.css?v=e8c09f4e07f0c140">
+  <link rel="stylesheet" href="css/app.css?v=5b3fded828c78728">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -91,17 +93,17 @@
       <section aria-labelledby="privacy-engagement">
         <h2 id="privacy-engagement">4. Freiwillige Likes und Druckstatistik</h2>
         <p>Die Funktionen „Gefällt mir“ und Druckstatistik sind freiwillig.
-          Du kannst beim ersten Besuch „Alle ablehnen“, „Einstellungen“ oder
+          Sie können beim ersten Besuch „Alle ablehnen“, „Einstellungen“ oder
           „Alle akzeptieren“ wählen. In den Einstellungen lassen sich Likes
           und Druckstatistik getrennt auswählen; beide Optionen sind zunächst
-          ausgeschaltet. <strong>Auch ohne Einwilligung</strong> kannst du
+          ausgeschaltet. <strong>Auch ohne Einwilligung</strong> können Sie
           Malvorlagen ansehen, als PNG herunterladen und auf A4 drucken.
           Die davon unabhängigen Besuchs- und Seitenstatistiken in Abschnitt 3
           bleiben bestehen.</p>
-        <p>Deine Auswahl für die beiden Zwecke, die Version des Dialogs und
+        <p>Ihre Auswahl für die beiden Zwecke, die Version des Dialogs und
           der Zeitpunkt der Entscheidung werden im <code>localStorage</code>
-          deines Browsers unter <code>coloring-pages-consent-v1</code> gespeichert.
-          Über „Datenschutzeinstellungen“ kannst du die Auswahl ändern oder
+          Ihres Browsers unter <code>coloring-pages-consent-v1</code> gespeichert.
+          Über „Datenschutzeinstellungen“ können Sie die Auswahl ändern oder
           widerrufen. Dieser lokale Eintrag enthält keine Besucherkennung.</p>
         <p>Erst nach der Einwilligung für einen Zweck kann unser
           <strong>Cloudflare Worker</strong> eine zufällige, mit
@@ -136,7 +138,7 @@
           Ohne diese Einwilligung wird die Aktion nicht neu gezählt;
           das Drucken bleibt möglich. Historische Gesamtzahlen können
           Ereignisse aus der Zeit vor dem Einwilligungsdialog enthalten.</p>
-        <p>Wenn du deine Like-Einwilligung widerrufst, beendet der Browser
+        <p>Wenn Sie Ihre Like-Einwilligung widerrufen, beendet der Browser
           die erlaubte Like-Nutzung. Bei einer gültigen v3-Kennung versucht
           der Worker, die zugehörigen Likes in der aktuellen D1-Tabelle zu
           löschen und die alte Kennung serverseitig in derselben Transaktion
