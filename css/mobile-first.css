@@ -7,8 +7,8 @@
   .hero-search-tools { width: 100%; }
   .hero-search-tools .search { margin-top: 8px; }
   .hero-search-tools .surprise-action { margin-top: 8px; }
-  .hero-art { width: min(100%, 300px); margin: 2px auto 0; }
-  .hero-art img { max-height: 125px; }
+  .hero-art { width: min(100%, 420px); margin: 2px auto 0; }
+  .hero-art img { max-height: none; }
   .categories { padding: 6px 0 14px; }
   .category-grid { gap: 8px; }
   .category-card { min-height: 94px; padding: 9px 12px;
