@@ -147,7 +147,11 @@ class LegalPageSourceTests(unittest.TestCase):
             self.assertNotIn("fonts.gstatic.com", html)
         for name in PUBLIC_PAGES:
             html = (ROOT / name).read_text(encoding="utf-8")
-            self.assertIn("js/stats.js?v=kita-campaign-v1", html)
+            expected_version = (
+                "instagram-216" if name in ("index.html", "detail.html")
+                else "kita-campaign-v1"
+            )
+            self.assertIn(f"js/stats.js?v={expected_version}", html)
 
     def test_privacy_uses_consistent_formal_address(self):
         import re
