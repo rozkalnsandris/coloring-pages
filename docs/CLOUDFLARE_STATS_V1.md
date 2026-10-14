@@ -160,3 +160,51 @@ The separate `PUBLIC_ORIGIN` binding remains `https://coloring.rozkalns.net` for
 No source commit or application auto-LIVE path creates those routes. Verify route coexistence, HTTPS GET rankings, same-origin Like/Print acceptance, rejection of cross-host/cross-site writes and QR 302 before declaring the issue fixed. This requires Cloudflare owner authorization; do not probe by making production engagement writes without separately scoped test authority.
 
 **Pair PR #183:** its proposed `eraseLikes` route directly compares `Origin` to the single `PUBLIC_ORIGIN`. Before deploying or merging that later privacy feature for the new domains, reconcile that separate erasure-specific check to the same strict per-target-host semantics under its own existing source/review authority. This issue does not edit #183, activate deletion, or bypass privacy consent.
+
+## Instagram UTM landing attribution (#216, source-only)
+
+The official Instagram bio can point to:
+`https://ausmalwiese.de/?utm_source=instagram&utm_medium=social&utm_campaign=profile`.
+Use `utm_campaign=story` and `utm_campaign=reel` for separately shared Stories/Reels links.
+These are explicit tagged URL parameters; an untagged Instagram in-app browser or
+suppressed `Referer` does not become an inferred Instagram arrival.
+
+The public home/detail JS accepts only the exact allowlist
+`utm_source=instagram`, `utm_medium=social`, and
+`utm_campaign=profile|story|reel` on `ausmalwiese.de` / `www.ausmalwiese.de`.
+Multiple copies of an attribution key, unknown values, same-site referrers and
+browser reloads are excluded. A first public landing submits one
+`POST /api/stats/visit` with fixed campaign `instagram-profile|story|reel`
+and stage `landing`. The original daily visitor aggregate still runs.
+Dortmund `campaign=dortmund-01` precedence and its funnel remain intact.
+
+The Worker allowlists these three IDs for landing events only, refuses their
+detail/catalog/print attribution, and excludes marked prefetch/prerender
+requests and Cloudflare-verified bots from Instagram campaign inserts.
+No Instagram-specific tables, cookies, additional visitor identity, raw
+referrers, IPs, URLs or individual user data are stored. Existing
+`daily_campaign_events` retains aggregate campaign/day/event counts.
+`GET /api/stats/campaigns?days=7|30` is the read-only source for the
+7/30-day Instagram dashboard and 30-day profile/story/reel breakdown.
+An older/unavailable Worker is rendered as `–` rather than false zero.
+The campaign GET response includes an explicit `instagram_attribution_version:1` capability
+marker; older Worker versions may return an empty `campaigns` array for Dortmund
+without Instagram support, so the dashboard must **not** show zero without the marker.
+
+**Interpretation:** These are tagged **landing events**, not verified Instagram
+clicks, sessions or unique human visitors. URLs can be copied/shared or
+manually forged; some browsers lose UTM parameters; detectable reloads and
+same-site navigation are excluded, but repeated external landings remain
+separate events. No client storage is added for deduplication.
+
+**Separate activation gate:** Merge of the reviewed app changes cannot
+deploy `cloudflare/stats-worker.js`. The Worker must be deployed with
+separately authorized Cloudflare LIVE changes after confirming correct
+`ausmalwiese.de/api/stats/*` / `www` routes and whether
+`CF_ANALYTICS_HOST` / `CF_ZONE_TAG` represent the canonical host
+instead of the legacy `coloring.rozkalns.net`; do not silently
+retarget legacy metrics. The GitHub source is not LIVE evidence.
+Before activation review the German Datenschutz notice/legal basis
+under GDPR/TDDDG and verify Cloudflare Access protection for
+`/traffic.html`. Instagram profile editing and publication are separately
+authorized account actions.

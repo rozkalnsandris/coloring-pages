@@ -2,6 +2,32 @@
   const API_BASE = "/api/stats";
   const VISITOR_KEY = "coloring-pages-visitor-v1";
   const CAMPAIGN_IDS = new Set(["dortmund-01"]);
+  const INSTAGRAM_UTM_CAMPAIGNS = new Set(["profile", "story", "reel"]);
+
+  // A tagged external landing is an aggregate event, never a distinct person.
+  // No referrer URL, user identifier or campaign value is persisted by this client.
+  function instagramLandingCampaign() {
+    if (location.hostname !== "ausmalwiese.de" && location.hostname !== "www.ausmalwiese.de") return "";
+    const params = new URLSearchParams(location.search);
+    if (params.getAll("utm_source").length !== 1 || params.getAll("utm_medium").length !== 1
+        || params.getAll("utm_campaign").length !== 1) return "";
+    if (params.get("utm_source") !== "instagram" || params.get("utm_medium") !== "social") return "";
+    const name = params.get("utm_campaign") || "";
+    if (!INSTAGRAM_UTM_CAMPAIGNS.has(name)) return "";
+
+    // Do not count browser refreshes or tagged internal links as new arrivals.
+    const navigation = performance.getEntriesByType?.("navigation")?.[0];
+    if (navigation?.type === "reload") return "";
+    if (document.referrer) {
+      try {
+        const from = new URL(document.referrer);
+        if (from.hostname === "ausmalwiese.de" || from.hostname === "www.ausmalwiese.de") return "";
+      } catch {
+        // Browser-referrer suppression does not prevent an explicit UTM landing.
+      }
+    }
+    return "instagram-" + name;
+  }
 
   function currentCampaign() {
     const value = new URLSearchParams(location.search).get("campaign") || "";
@@ -73,9 +99,10 @@
   function trackVisit() {
     const stage = arguments[0] || "";
     const campaign = currentCampaign();
+    const instagram = campaign ? "" : instagramLandingCampaign();
     const body = campaign && (stage === "landing" || stage === "catalog")
       ? {campaign,stage}
-      : {};
+      : instagram ? {campaign:instagram,stage:"landing"} : {};
     fetch(`${API_BASE}/visit`, {
       method: "POST",
       credentials: "same-origin",
