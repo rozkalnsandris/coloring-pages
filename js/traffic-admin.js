@@ -17,6 +17,12 @@
     totalViews: document.querySelector("[data-stats-total-views]"),
     recentViews: document.querySelector("[data-stats-recent-views]"),
     crawlerRequests: document.querySelector("[data-stats-crawler-requests]"),
+    instagram7: document.querySelector("[data-instagram-7]"),
+    instagram30: document.querySelector("[data-instagram-30]"),
+    instagramProfile: document.querySelector("[data-instagram-profile]"),
+    instagramStory: document.querySelector("[data-instagram-story]"),
+    instagramReel: document.querySelector("[data-instagram-reel]"),
+    instagramNote: document.querySelector("[data-instagram-note]"),
     trafficStatus: document.querySelector("[data-traffic-status]"),
     visitsNote: document.querySelector("[data-traffic-visits-note]"),
     viewed: document.querySelector("[data-stats-viewed]"),
@@ -51,6 +57,29 @@
 
   function categoryLabel(value) {
     return CATEGORY_LABELS[value] || value || "–";
+  }
+
+  function instagramCounts(data) {
+    if (data?.instagram_attribution_version !== 1 || !Array.isArray(data?.campaigns)) return null;
+    const counts = {profile:0, story:0, reel:0};
+    for (const item of data.campaigns) {
+      const match = /^instagram-(profile|story|reel)$/.exec(String(item.campaign || ""));
+      if (match) counts[match[1]] += number(item.landing_count);
+    }
+    return {counts, total:counts.profile + counts.story + counts.reel};
+  }
+
+  function renderInstagram(data7, data30) {
+    const week = instagramCounts(data7);
+    const month = instagramCounts(data30);
+    els.instagram7.textContent = week ? formatNumber(week.total) : "–";
+    els.instagram30.textContent = month ? formatNumber(month.total) : "–";
+    for (const [key, el] of [["profile",els.instagramProfile],["story",els.instagramStory],["reel",els.instagramReel]]) {
+      el.textContent = month ? formatNumber(month.counts[key]) : "–";
+    }
+    els.instagramNote.textContent = !week || !month
+      ? "Instagram attribution unavailable until the matching Stats Worker is activated."
+      : "UTM-tagged Instagram landing events, not unique people or verified Instagram referrals. Refreshes and internal navigation are excluded when detectable.";
   }
 
   function createTopItem(row, index) {
@@ -185,10 +214,12 @@
     els.refresh.disabled = true;
     els.status.textContent = "Loading traffic analytics …";
     try {
-      const [catalogResponse, overview, traffic] = await Promise.all([
+      const [catalogResponse, overview, traffic, instagram7, instagram30] = await Promise.all([
         fetch("catalog.json", {cache: "no-store"}),
         window.ColoringStats.getOverview(),
         window.ColoringStats.getTraffic(7),
+        window.ColoringStats.getCampaigns ? window.ColoringStats.getCampaigns(7).catch(() => null) : Promise.resolve(null),
+        window.ColoringStats.getCampaigns ? window.ColoringStats.getCampaigns(30).catch(() => null) : Promise.resolve(null),
       ]);
       if (!catalogResponse.ok) throw new Error("catalog request failed: " + catalogResponse.status);
       const catalog = await catalogResponse.json();
@@ -226,6 +257,7 @@
       els.totalViews.textContent = formatNumber(overview.totals?.view_count);
       els.recentViews.textContent = formatNumber(overview.totals?.recent_views);
       els.crawlerRequests.textContent = formatNumber(traffic.crawler_requests);
+      renderInstagram(instagram7, instagram30);
       els.trafficStatus.textContent = traffic.sampled ? "Sampled · User-Agent heuristic" : "User-Agent heuristic";
       if (els.visitsNote && traffic.sampled) {
         els.visitsNote.textContent = "“Approx. unique visitors” is the Stats Worker’s latest daily privacy-preserving unique-IP count, not an exact people count. “Website visits” is a separate sampled Cloudflare metric.";
