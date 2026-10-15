@@ -671,6 +671,156 @@ async function toggleLike(env, request) {
   const persisted = await env.DB.prepare("SELECT 1 AS liked FROM likes WHERE page_id = ? AND visitor_hash = ?").bind(body.page_id,hash).first();
   return json({page_id:body.page_id,liked:Boolean(persisted),like_count:Number(stats?.like_count||0),print_count:Number(stats?.print_count||0)});
 }
+
+// Source-only next-generation endpoints; not used by the legacy v3 frontend.
+// Do not enable until the D1 additive migration and Like TTL/legal release gates pass.
+// The host-only cookie is scoped only to /api/stats/like, never /api/stats/print.
+const LIKE_COOKIE_NAME = "__Secure-aw-like-v1";
+const LIKE_COOKIE_RE = /^l1-[0-9a-f]{64}$/;
+const LIKE_COOKIE_PATH = "/api/stats/like";
+function likeCookieTtl(env) {
+  const ttl = Number(env.LIKE_COOKIE_TTL_SECONDS);
+  return Number.isSafeInteger(ttl) && ttl >= 86400 && ttl <= 31536000 ? ttl : 0;
+}
+function readLikeCookie(request) {
+  const matches = (request.headers.get("cookie") || "").split(";")
+    .map(value=>value.trim())
+    .filter(value=>value.startsWith(LIKE_COOKIE_NAME + "="));
+  if (matches.length !== 1) return "";
+  const token = matches[0].slice(LIKE_COOKIE_NAME.length + 1);
+  return LIKE_COOKIE_RE.test(token) ? token : "";
+}
+function likeSetCookie(token, ttl = 0) {
+  return LIKE_COOKIE_NAME + "=" + token + "; Path=" + LIKE_COOKIE_PATH
+    + "; Max-Age=" + ttl + "; Secure; HttpOnly; SameSite=Lax";
+}
+function cookieJson(data, status = 200, setCookie = "") {
+  const response = json(data, status);
+  if (setCookie) response.headers.set("set-cookie", setCookie);
+  return response;
+}
+async function cookieLikeSession(env, request) {
+  const token = readLikeCookie(request);
+  if (!token) return null;
+  const hash = await sha256(token);
+  const valid = await env.DB.prepare(
+    "SELECT 1 AS valid FROM like_cookie_sessions WHERE cookie_hash=? AND expires_at>unixepoch()"
+  ).bind(hash).first();
+  return valid ? hash : null;
+}
+async function boundedLikeJson(request, allowedKeys) {
+  const length = Number(request.headers.get("content-length") || "0");
+  if (!Number.isFinite(length) || length > 256) return null;
+  const raw = await request.text();
+  if (raw.length > 256) return null;
+  let body;
+  try { body = JSON.parse(raw); } catch { return null; }
+  if (!body || typeof body !== "object" || Array.isArray(body)
+      || Object.keys(body).some(key=>!allowedKeys.includes(key))) return null;
+  return body;
+}
+async function likeCookieState(env, pageId, hash) {
+  const stats = await env.DB.prepare(
+    "SELECT print_count,like_count FROM page_stats WHERE page_id=?"
+  ).bind(pageId).first();
+  const liked = hash ? await env.DB.prepare(
+    "SELECT 1 AS liked FROM likes WHERE page_id=? AND visitor_hash=?"
+  ).bind(pageId,hash).first() : null;
+  return {page_id:pageId,liked:Boolean(liked),
+    like_count:Number(stats?.like_count||0),print_count:Number(stats?.print_count||0)};
+}
+async function cookieLikeRoutes(env, request, path) {
+  // Read-only aggregate + cookie-scoped state: no creation or renewal on GET.
+  if (path === "/api/stats/like/state" && request.method === "GET") {
+    const pageId = new URL(request.url).searchParams.get("page_id") || "";
+    if (!validPageId(pageId)) return json({error:"invalid_page_id"},400);
+    const hash = await cookieLikeSession(env,request);
+    return json(await likeCookieState(env,pageId,hash));
+  }
+  if (!["/api/stats/like/consent","/api/stats/like/choice",
+        "/api/stats/like/forget"].includes(path) || request.method !== "POST")
+    return json({error:"not_found"},404);
+  if (!strictWrite(request)) return json({error:"forbidden"},403);
+  if (path === "/api/stats/like/consent") {
+    const body = await boundedLikeJson(request,["accept","version"]);
+    if (!body || body.accept !== true || body.version !== 1
+        || Object.keys(body).length !== 2) return json({error:"invalid_request"},400);
+    const prior = await cookieLikeSession(env,request);
+    if (prior) return json({ok:true,already_consented:true});
+    const ttl = likeCookieTtl(env);
+    const ip = request.headers.get("CF-Connecting-IP");
+    if (!ttl || !env.RATE_LIMITER || !ip)
+      return json({error:"like_consent_unavailable"},503);
+    if (!(await rateLimit(env,ip,"like-consent")))
+      return json({error:"rate_limited"},429);
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    const token = "l1-" + [...bytes].map(b=>b.toString(16).padStart(2,"0")).join("");
+    const hash = await sha256(token);
+    const insert = await env.DB.prepare(
+      "INSERT INTO like_cookie_sessions(cookie_hash,consent_notice_version,expires_at) VALUES (?,1,unixepoch()+?)"
+    ).bind(hash,ttl).run();
+    if (insert?.success !== true || insert?.meta?.changes !== 1)
+      return json({error:"like_consent_unconfirmed"},503);
+    return cookieJson({ok:true},201,likeSetCookie(token,ttl));
+  }
+  const hash = await cookieLikeSession(env,request);
+  if (!hash) return json({error:"like_cookie_required"},403);
+  if (path === "/api/stats/like/forget") {
+    const body = await boundedLikeJson(request,["confirm"]);
+    if (!body || body.confirm !== true || Object.keys(body).length !== 1)
+      return json({error:"invalid_request"},400);
+    const batch = await env.DB.batch([
+      env.DB.prepare("DELETE FROM likes WHERE visitor_hash=?").bind(hash),
+      env.DB.prepare("DELETE FROM like_cookie_sessions WHERE cookie_hash=?").bind(hash),
+    ]);
+    if (batch.some(result=>result?.success !== true)
+        || batch[1]?.meta?.changes !== 1)
+      return json({error:"erasure_unconfirmed"},503);
+    return cookieJson({ok:true,revoked:true},200,likeSetCookie("",0));
+  }
+  const body = await boundedLikeJson(request,["page_id","liked"]);
+  if (!body || !validPageId(body.page_id) || typeof body.liked !== "boolean"
+      || Object.keys(body).length !== 2)
+    return json({error:"invalid_request"},400);
+  if (!env.RATE_LIMITER || !(await rateLimit(env,hash,"like-choice")))
+    return json({error:"rate_limited_or_unavailable"},429);
+  // Desired-state changes are idempotent and checked against a live session
+  // inside each SQL mutation: expired/revoked cookies cannot create a Like.
+  const result = body.liked ? await env.DB.prepare(
+    "INSERT INTO likes(page_id,visitor_hash) SELECT ?,cookie_hash FROM like_cookie_sessions WHERE cookie_hash=? AND expires_at>unixepoch() ON CONFLICT(page_id,visitor_hash) DO NOTHING"
+  ).bind(body.page_id,hash).run() : await env.DB.prepare(
+    "DELETE FROM likes WHERE page_id=? AND visitor_hash=? AND EXISTS(SELECT 1 FROM like_cookie_sessions WHERE cookie_hash=? AND expires_at>unixepoch())"
+  ).bind(body.page_id,hash,hash).run();
+  if (result?.success !== true) return json({error:"like_unconfirmed"},503);
+  const stillActive = await env.DB.prepare(
+    "SELECT 1 AS valid FROM like_cookie_sessions WHERE cookie_hash=? AND expires_at>unixepoch()"
+  ).bind(hash).first();
+  if (!stillActive) return json({error:"like_cookie_expired"},403);
+  return json(await likeCookieState(env,body.page_id,hash));
+}
+async function recordAggregatePrint(env, request) {
+  if (!strictWrite(request)) return json({error:"forbidden"},403);
+  const body = await boundedLikeJson(request,["page_id","campaign"]);
+  if (!body || !validPageId(body.page_id)
+      || (body.campaign !== undefined && !validCampaign(body.campaign)))
+    return json({error:"invalid_request"},400);
+  const ip = request.headers.get("CF-Connecting-IP");
+  // IP is used transiently for abuse-limiting only: no persistent per-print ID.
+  if (!ip || !env.RATE_LIMITER) return json({error:"print_unavailable"},503);
+  if (!(await rateLimit(env,ip,"aggregate-print")))
+    return json({error:"rate_limited"},429);
+  const writes = [
+    env.DB.prepare("INSERT INTO page_stats(page_id,print_count,updated_at) VALUES (?,1,datetime('now')) ON CONFLICT(page_id) DO UPDATE SET print_count=print_count+1,updated_at=datetime('now')").bind(body.page_id),
+    env.DB.prepare("INSERT INTO daily_prints(page_id,day,print_count) VALUES (?,date('now'),1) ON CONFLICT(page_id,day) DO UPDATE SET print_count=print_count+1").bind(body.page_id),
+  ];
+  const campaign = campaignEventStatement(env,body.campaign,"print",body.page_id);
+  if (campaign) writes.push(campaign);
+  const result = await env.DB.batch(writes);
+  if (result.some(item=>item?.success !== true)) return json({error:"print_unconfirmed"},503);
+  return json({ok:true},201);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -680,6 +830,8 @@ export default {
       if (request.method === "HEAD") return printQrRedirect();
       return new Response(null, {status:405, headers:{"allow":"GET, HEAD","cache-control":"no-store"}});
     }
+    if (path.startsWith("/api/stats/like/")) return cookieLikeRoutes(env,request,path);
+    if (request.method==="POST" && path==="/api/stats/print-aggregate") return recordAggregatePrint(env,request);
     if (request.method==="GET" && path==="/api/stats/rankings") return rankings(env,request);
     if (request.method==="GET" && path==="/api/stats/overview") return overviewStats(env);
     if (request.method==="GET" && path==="/api/stats/campaigns") return campaignStats(env,request);
