@@ -72,5 +72,5 @@ vm.runInNewContext(fs.readFileSync("js/stats-cookie.js","utf8"),context);
         self.assertEqual(result["prints"],1)
         self.assertEqual([x["body"]["liked"] for x in result["calls"] if x["url"].endswith("/like/choice")],[True,False])
         self.assertEqual([x["body"] for x in result["calls"] if x["url"].endswith("/print-aggregate")],[{"page_id":"1234567"}])
-        self.assertEqual(result["states"],[])
+        self.assertEqual(result["states"],[True])
 if __name__=="__main__":unittest.main()
