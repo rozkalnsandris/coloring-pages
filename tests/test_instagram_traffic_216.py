@@ -126,8 +126,8 @@ console.log('INSTAGRAM_WORKER=PASS');
         self.assertNotIn('method: "POST"',js)
         self.assertIn('noindex,nofollow,noarchive',html)
         self.assertIn('v=instagram-216',html)
-        self.assertIn('js/stats-cookie.js?v=3103e7ecb111f2bf',(ROOT/"index.html").read_text(encoding="utf-8"))
-        self.assertIn('js/stats-cookie.js?v=3103e7ecb111f2bf',(ROOT/"detail.html").read_text(encoding="utf-8"))
+        self.assertIn('js/stats-cookie.js?v=3d14519562cc2f99',(ROOT/"index.html").read_text(encoding="utf-8"))
+        self.assertIn('js/stats-cookie.js?v=3d14519562cc2f99',(ROOT/"detail.html").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
