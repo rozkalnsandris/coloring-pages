@@ -11,9 +11,11 @@
     '<div class="privacy-banner-row">',
     '<p class="privacy-banner-copy">Wenn Sie „Gefällt mir“ nutzen möchten, ',
     'speichern wir für höchstens 180 Tage einen Cookie zur Wiedererkennung Ihrer Likes. ',
-    'Vor der Anonymisierung können Sie Ihre aktiven Likes löschen. ',
-    'Nach der Anonymisierung bleiben nur zusammengefasste Zahlen; ',
-    'die technische Löschung kann sich nach dem Ablauf verzögern. ',
+    'Solange der Cookie gültig ist, können Sie Ihre Likes hier löschen. ',
+    'Nach Ablauf kann die technische Zusammenfassung und Löschung ',
+    'der gespeicherten Likes verzögert erfolgen; dann ist die ',
+    'Löschung über diese Einstellungen nicht mehr möglich. ',
+    'Nach der Anonymisierung bleiben nur zusammengefasste Zahlen. ',
     'Ohne Zustimmung bleibt das Drucken verfügbar. ',
     '<a href="datenschutz.html">Datenschutz</a></p>',
     '<div class="privacy-banner-actions">',
@@ -102,8 +104,16 @@
     if(!window.confirm("Alte Likes einmalig löschen? Dies betrifft nur eine noch vorhandene sichere ältere Browserkennung."))return;
     legacyAttempted=true;changing=true;
     try {
-      await window.ColoringStats.eraseLegacyLikes();
-      announce("Löschung der aktuell gespeicherten alten Likes bestätigt.");
+      const result=await window.ColoringStats.eraseLegacyLikes();
+      if (result?.likes_deleted > 0) {
+        announce("Löschung zugeordneter alter Likes bestätigt.");
+      } else if (result?.likes_deleted === 0) {
+        announce("Alte Kennung bearbeitet; es wurden keine zugeordneten Likes gelöscht.");
+      } else {
+        // The older v2 erasure route confirms a matching deletion but does not
+        // report row counts; never invent a number of deleted Likes.
+        announce("Alter Löschvorgang bestätigt.");
+      }
     } catch {
       announce("Löschung nicht bestätigt. Alte Kennung bitte nicht per E-Mail senden. Kontakt: Datenschutz.");
     } finally {changing=false;}

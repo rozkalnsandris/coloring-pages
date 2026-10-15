@@ -835,9 +835,18 @@ async function eraseLegacyV3(env, request) {
   ]);
   if (results.length!==2 || results.some(x=>x?.success!==true))
     return json({error:"erasure_unconfirmed"},503);
-  const changed=Number(results[0]?.meta?.changes||0)+Number(results[1]?.meta?.changes||0);
-  if (!changed) return json({error:"no_matching_active_records"},404);
-  return json({ok:true,matched:true});
+  // A v3 credential can exist without an active Like. Separate those
+  // outcomes; do not imply Like erasure when only credential was revoked.
+  const likesDeleted=Number(results[0]?.meta?.changes);
+  const credentialsRevoked=Number(results[1]?.meta?.changes);
+  if (!Number.isSafeInteger(likesDeleted) || likesDeleted < 0
+      || !Number.isSafeInteger(credentialsRevoked) || credentialsRevoked < 0
+      || credentialsRevoked > 1)
+    return json({error:"erasure_unconfirmed"},503);
+  if (!likesDeleted && !credentialsRevoked)
+    return json({error:"no_matching_active_records"},404);
+  return json({ok:true,matched:true,likes_deleted:likesDeleted,
+    credential_revoked:credentialsRevoked===1});
 }
 
 async function recordAggregatePrint(env, request) {
