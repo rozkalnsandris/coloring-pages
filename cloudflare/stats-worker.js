@@ -649,7 +649,8 @@ async function eraseLikes(env, request) {
   // only. An old credential reused by a stale client may create a new Like later.
   const result = await env.DB.prepare("DELETE FROM likes WHERE visitor_hash = ?").bind(hash).run();
   if (result?.success !== true) return json({error:"erasure_unconfirmed"},503);
-  return json({ok:true});
+  if (!result?.meta?.changes) return json({error:"no_matching_active_records"},404);
+  return json({ok:true,matched:true});
 }
 
 async function toggleLike(env, request) {
@@ -819,6 +820,26 @@ async function cookieLikeRoutes(env, request, path) {
   if (!stillActive) return json({error:"like_cookie_expired"},403);
   return json(await likeCookieState(env,body.page_id,hash));
 }
+async function eraseLegacyV3(env, request) {
+  // Only an explicit user-directed v3 deletion; never permit new v3 writes.
+  if (!strictWrite(request)) return json({error:"forbidden"},403);
+  const body=await boundedLikeJson(request,["visitor_id"]);
+  if (!body || Object.keys(body).length!==1 || !validVisitorId(body.visitor_id))
+    return json({error:"invalid_request"},400);
+  const hash=await sha256(body.visitor_id);
+  if (!env.RATE_LIMITER) return json({error:"erasure_unavailable"},503);
+  if (!(await rateLimit(env,hash,"legacy-v3-erasure"))) return json({error:"rate_limited"},429);
+  const results=await env.DB.batch([
+    env.DB.prepare("DELETE FROM likes WHERE visitor_hash=?").bind(hash),
+    env.DB.prepare("DELETE FROM visitor_credentials WHERE visitor_hash=?").bind(hash),
+  ]);
+  if (results.length!==2 || results.some(x=>x?.success!==true))
+    return json({error:"erasure_unconfirmed"},503);
+  const changed=Number(results[0]?.meta?.changes||0)+Number(results[1]?.meta?.changes||0);
+  if (!changed) return json({error:"no_matching_active_records"},404);
+  return json({ok:true,matched:true});
+}
+
 async function recordAggregatePrint(env, request) {
   if (!strictWrite(request)) return json({error:"forbidden"},403);
   const body = await boundedLikeJson(request,["page_id","campaign"]);
@@ -847,7 +868,7 @@ async function recordAggregatePrint(env, request) {
  * per-browser votes (the existing DELETE trigger adjusts active count), then
  * remove expired pseudonymous sessions. Legacy votes have no session row.
  */
-const EXPIRED_COOKIE_SELECTOR = "SELECT cookie_hash FROM like_cookie_sessions WHERE expires_at<=unixepoch() ORDER BY expires_at,cookie_hash LIMIT 100";
+const EXPIRED_COOKIE_SELECTOR = "SELECT cookie_hash FROM like_cookie_sessions WHERE expires_at<=?1 ORDER BY expires_at,cookie_hash LIMIT 100";
 const ARCHIVE_COOKIE_SQL = `
   INSERT INTO archived_like_totals(page_id,like_count)
   SELECT l.page_id, COUNT(*) FROM likes l
@@ -862,10 +883,12 @@ const DELETE_EXPIRED_COOKIE_SESSIONS_SQL = `
   DELETE FROM like_cookie_sessions WHERE cookie_hash IN (${EXPIRED_COOKIE_SELECTOR})
 `;
 async function archiveExpiredCookieLikes(env) {
+  // Freeze one UTC cutoff for the archive and both deletions.
+  const cutoff = Math.floor(Date.now()/1000);
   const rows = await env.DB.batch([
-    env.DB.prepare(ARCHIVE_COOKIE_SQL),
-    env.DB.prepare(DELETE_EXPIRED_COOKIE_LIKES_SQL),
-    env.DB.prepare(DELETE_EXPIRED_COOKIE_SESSIONS_SQL),
+    env.DB.prepare(ARCHIVE_COOKIE_SQL).bind(cutoff),
+    env.DB.prepare(DELETE_EXPIRED_COOKIE_LIKES_SQL).bind(cutoff),
+    env.DB.prepare(DELETE_EXPIRED_COOKIE_SESSIONS_SQL).bind(cutoff),
   ]);
   if (rows.length!==3 || rows.some(row=>row?.success!==true))
     throw new Error("expiry_archive_unconfirmed");
@@ -892,13 +915,14 @@ export default {
     if (request.method==="GET" && path==="/api/stats/campaigns") return campaignStats(env,request);
     if (request.method==="GET" && path==="/api/stats/traffic") return trafficStats(env,request);
     if (request.method==="GET" && path==="/api/stats/page") return pageStats(env,request);
-    if (request.method==="POST" && path==="/api/stats/page") return pageStats(env,request);
+    if (request.method==="POST" && path==="/api/stats/page") return json({error:"legacy_personalized_api_retired"},410);
     if (request.method==="POST" && path==="/api/stats/visit") return recordVisitor(env,request);
     if (request.method==="POST" && path==="/api/stats/view") return recordView(env,request);
-    if (request.method==="POST" && path==="/api/stats/print") return recordPrint(env,request);
-    if (request.method==="POST" && path==="/api/stats/like") return toggleLike(env,request);
+    if (request.method==="POST" && path==="/api/stats/print") return json({error:"legacy_personalized_api_retired"},410);
+    if (request.method==="POST" && path==="/api/stats/like") return json({error:"legacy_personalized_api_retired"},410);
     if (request.method==="POST" && path==="/api/stats/erase-likes") return eraseLikes(env,request);
-    if (request.method==="POST" && path==="/api/stats/credential") return credential(env,request);
+    if (request.method==="POST" && path==="/api/stats/erase-legacy-v3") return eraseLegacyV3(env,request);
+    if (request.method==="POST" && path==="/api/stats/credential") return json({error:"legacy_personalized_api_retired"},410);
     return json({error:"not_found"},404);
   },
 };

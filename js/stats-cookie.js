@@ -88,13 +88,14 @@
     let proof="";
     try { proof=localStorage.getItem("coloring-pages-visitor-v1")||""; }
     catch { throw new Error("Legacy proof inaccessible"); }
-    if(!/^v2-[0-9a-f]{64}$/.test(proof))
-      throw new Error("Legacy proof unavailable; use privacy contact");
+    const v2=/^v2-[0-9a-f]{64}$/.test(proof);
+    const v3=/^v3-[0-9a-f]{64}$/.test(proof);
+    if(!v2&&!v3)throw new Error("Legacy proof unavailable; use privacy contact");
     oldEraseAttempted=true; // never retry on ambiguous response
-    const result=await requestJson("/erase-likes",{
+    const result=await requestJson(v3?"/erase-legacy-v3":"/erase-likes",{
       method:"POST",body:JSON.stringify({visitor_id:proof})
     });
-    if(result?.ok!==true)throw new Error("Legacy erasure not confirmed");
+    if(result?.ok!==true||result?.matched!==true)throw new Error("Legacy erasure not confirmed");
     try { if(localStorage.getItem("coloring-pages-visitor-v1")===proof)
       localStorage.removeItem("coloring-pages-visitor-v1"); } catch {}
     return result;

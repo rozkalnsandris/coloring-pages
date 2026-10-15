@@ -5,6 +5,7 @@ Uses source Worker SQL, not mocked substitute SQL. No LIVE database/Worker acces
 import hashlib
 import re
 import sqlite3
+import time
 import unittest
 from pathlib import Path
 
@@ -52,9 +53,11 @@ class CookieArchiveSourceTest(unittest.TestCase):
               LEFT JOIN archived_like_totals a ON a.page_id=p.page_id WHERE p.page_id=?""",(page,)).fetchone()
         return row[0] if row else 0
 
-    def archive(self):
+    def archive(self, cutoff=None):
+        if cutoff is None:
+            cutoff=int(time.time())
         with self.db:
-            return [self.db.execute(query).rowcount for query in source_sql()]
+            return [self.db.execute(query,(cutoff,)).rowcount for query in source_sql()]
 
     def test_duration_is_fixed_not_renewed_by_page_reads(self):
         self.assertIn("const LIKE_COOKIE_TTL_SECONDS = 180 * 24 * 60 * 60",WORKER)
