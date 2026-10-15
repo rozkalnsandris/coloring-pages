@@ -1,5 +1,22 @@
 # German legal pages — DRAFT / NOT RELEASE READY
 
+## 2026-10-15 read-only Cloudflare D1 and origin evidence — still NOT RELEASE READY
+
+**Scope and provenance:** Owner-authorized, read-only observations of the existing Cloudflare Dashboard (Worker `coloring-pages-stats-v1` and bound D1 database `coloring-pages-stats-v1`) and RPi5 origin container. These are dated runtime snapshots, **not** GitHub source proofs of deployed v3 behavior, an audit of individual records, a legal certification, or an authorization for configuration changes. PR #158 legal Draft: `579851a663c6bd51ec1c8e18137d921a0fbc4af5` before this documentation-only update; paired PR #183 consent Draft: `b1968be865c7b08e13623cdf99c99073483197a3`. Both were Draft and unmerged at the time of this review.
+
+| Read-only observation | Confirmed at inspection | What is **not** established |
+| --- | --- | --- |
+| Worker `coloring-pages-stats-v1` observability (Cloudflare Dashboard, 2026-10-14) | **Workers Logs: Disabled; Workers Traces: Disabled.** Dashboard showed a D1 database binding and a Rate Limiter binding. | Does not prove absence of Cloudflare edge/WAF/security/access records, all Logpush destinations, Rate Limiter internal retention, historical logs or future settings. The older October 11 script-settings API responses alone had been inconclusive; the newer Dashboard observation supersedes only that specific Workers Logs/Traces uncertainty. |
+| D1 database placement (Cloudflare Dashboard Settings, 2026-10-15) | **Jurisdiction: The European Union; Region: Eastern Europe; Read replication: Disabled.** | EU D1 jurisdiction is not a blanket assertion that Cloudflare Workers, CDN/edge, security processing, subprocessors or transfers remain exclusively in the EU. |
+| D1 Time Travel (Cloudflare Dashboard, 2026-10-15) | Dashboard stated the ability to restore to points within the **past 30 days**; the visible restore window at inspection was **06 October 2026, 09:28 → 15 October 2026, 07:33** (UI timezone not independently established). | This is a recovery window, **not a D1-row retention/automatic deletion period**. The displayed window did not show a full 30 days of existing history. Removing active Like rows does not demonstrate deletion from earlier recoverable database states, backups or other logs. No restore, bookmark retrieval or row read was performed. |
+| RPi5 origin container logging (read-only host snapshot, 2026-10-14) | The running `coloring-pages-public-coloring-pages-1` container was healthy and used Docker `json-file` logging with `max-size=10m`, `max-file=3`; Docker's default logging driver was also `json-file`. | Rotation is **size-based**, not a guaranteed number of days. This does not establish other host log sinks, backup retention, the content of access logs, or a fixed erasure SLA. |
+
+**Remaining Art. 13 / release gates:** Determine actual processing purposes and lawful bases; Cloudflare recipients, role-specific subprocessors, third-country access and safeguards; edge/security/Rate Limiter/origin/email logging and retention criteria; D1 active/legacy Like, credential and daily-HMAC deletion plus recovery implications; `CONSENT_TTL_SECONDS`, consent demonstrability and GDPR Art. 8 child-audience assessment; and DDG §5 operator classification. The proposed **90-day v3 credential lifetime**, daily D1 cleanup and two UTC-day HMAC limit in [PRIVACY_RETENTION_AUDIENCE_DESIGN.md](PRIVACY_RETENTION_AUDIENCE_DESIGN.md) remain **design only**; no production value, migration, Cron, consent release or legal sign-off is approved. Do not transfer these runtime observations into the public `datenschutz.html` as settled retention claims.
+
+**Boundary:** No secrets, visitor data or D1 rows were read for this evidence. No GitHub `main` merge, Worker/D1/RPi5/Cloudflare mutation, rollback or release was authorized by this review.
+
+---
+
 ## 2026-10-13 reconciliation to main — still NOT RELEASE READY
 
 - Current source-only reconciliation: reviewed PR #158 at `2ace3bfdccb52a52d00a8074dd18c1c8535dea00` against current `main` `ddd73305201eccfb0c1f8404281f262652602e0e`. Paired consent PR #183 reviewed at `b1968be865c7b08e13623cdf99c99073483197a3`; earlier review SHAs in historical sections are snapshots.
