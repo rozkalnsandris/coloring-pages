@@ -7,10 +7,10 @@
   <meta name="description" content="Internal Ausmalwiese traffic and crawler analytics dashboard.">
   <title>Traffic analytics – Ausmalwiese</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=c5d8c26a8a8349b2">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&display=optional" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=6b7ac31a9419c24f">
+  <link rel="preload" href="assets/fonts/baloo2-latin-vf-26fb4610d4bc976d.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/nunito-latin-vf-ba344451eab25b21.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/fonts.css?v=e8c09f4e07f0c140">
+  <link rel="stylesheet" href="css/app.css?v=0b91706cbd11ccc7">
 </head>
 <body class="stats-page">
   <a class="skip-link" href="#main">Skip to content</a>
@@ -71,6 +71,22 @@
         <p class="stats-note" data-traffic-visits-note>
           “Approx. unique visitors” is Cloudflare’s latest available daily Unique Visitors metric (unique IPs) for this hostname. It is not an exact people count, and Free-plan traffic analytics can include crawlers and threats. “Crawler requests” is a separate request count and must not be subtracted from Website visits.
         </p>
+      </div>
+    </section>
+
+    <section class="stats-summary" aria-labelledby="instagram-title">
+      <div class="container">
+        <div class="stats-table-heading">
+          <div><span class="stats-panel-kicker">Attribution · UTM</span><h2 id="instagram-title">Instagram arrivals</h2></div>
+        </div>
+        <div class="stats-kpi-grid">
+          <article class="stats-kpi"><div><span class="stats-kpi-label">Instagram · 7 days</span><strong data-instagram-7>–</strong></div></article>
+          <article class="stats-kpi"><div><span class="stats-kpi-label">Instagram · 30 days</span><strong data-instagram-30>–</strong></div></article>
+          <article class="stats-kpi"><div><span class="stats-kpi-label">Profile · 30 days</span><strong data-instagram-profile>–</strong></div></article>
+          <article class="stats-kpi"><div><span class="stats-kpi-label">Stories · 30 days</span><strong data-instagram-story>–</strong></div></article>
+          <article class="stats-kpi"><div><span class="stats-kpi-label">Reels · 30 days</span><strong data-instagram-reel>–</strong></div></article>
+        </div>
+        <p class="stats-note" data-instagram-note aria-live="polite">Instagram attribution is loading. Counts are landing events, not unique people.</p>
       </div>
     </section>
 
@@ -156,6 +172,6 @@
   </main>
 
   <script src="js/stats.js?v=kita-campaign-v1" defer></script>
-  <script src="js/traffic-admin.js?v=host-unique-v1" defer></script>
+  <script src="js/traffic-admin.js?v=instagram-216" defer></script>
 </body>
 </html>

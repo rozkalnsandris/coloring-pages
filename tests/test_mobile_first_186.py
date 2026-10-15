@@ -11,7 +11,16 @@ class MobileFirstTests(unittest.TestCase):
         self.assertIn('data-filter="tiere"',html)
         self.assertIn('data-ranking-tab="popular"',html)
         self.assertIn('data-ranking-tab="trending"',html)
-        self.assertIn('css/mobile-first.css?v=mobile-search-first-186',html)
+        self.assertIn('css/mobile-first.css?v=mobile-hero-size-186',html)
+    def test_mobile_hero_art_keeps_natural_aspect_ratio(self):
+        css=(ROOT/"css/mobile-first.css").read_text(encoding="utf-8")
+        mobile=css.split("@media (max-width: 720px) {", 1)[1].split("@media (max-width: 360px) {", 1)[0]
+        self.assertIn(".hero-art { width: min(100%, 420px); margin: 2px auto 0; }", mobile)
+        self.assertIn(".hero-art img { max-height: none; }", mobile)
+        self.assertNotIn("max-height: 125px", mobile)
+        desktop=(ROOT/"css/app.css").read_text(encoding="utf-8")
+        self.assertIn("width: 100%; height: auto; max-height: 390px;", desktop)
+
     def test_mobile_layout_and_existing_journey(self):
         css=(ROOT/"css/mobile-first.css").read_text(encoding="utf-8")
         self.assertIn('grid-template-areas: "copy" "search" "art"',css)

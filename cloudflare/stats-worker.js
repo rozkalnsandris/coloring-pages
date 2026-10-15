@@ -13,6 +13,7 @@ const V2_ERASURE_RE = /^v2-[0-9a-f]{64}$/;
 const ANALYTICS_API = "https://api.cloudflare.com/client/v4/graphql";
 const ANALYTICS_RANGE_DAYS = new Set([7, 30]);
 const CAMPAIGN_IDS = new Set(["dortmund-01"]);
+const INSTAGRAM_CAMPAIGN_IDS = new Set(["instagram-profile", "instagram-story", "instagram-reel"]);
 const CAMPAIGN_STAGES = new Set(["landing", "catalog"]);
 const CAMPAIGN_EVENTS = new Set(["landing", "catalog", "detail", "print"]);
 // One shared QR URL for all printed sheets. No page/user identifiers or open redirects.
@@ -67,7 +68,9 @@ async function printQrVisit(env, request) {
 function validPageId(value) { return typeof value === "string" && PAGE_ID_RE.test(value); }
 function validVisitorId(value) { return typeof value === "string" && VISITOR_ID_RE.test(value); }
 function validErasureProof(value) { return typeof value === "string" && V2_ERASURE_RE.test(value); }
-function validCampaign(value) { return typeof value === "string" && CAMPAIGN_IDS.has(value); }
+function validCampaign(value) {
+  return typeof value === "string" && (CAMPAIGN_IDS.has(value) || INSTAGRAM_CAMPAIGN_IDS.has(value));
+}
 
 async function sha256(value) {
   const bytes = new TextEncoder().encode(value);
@@ -108,6 +111,8 @@ async function rateLimit(env, visitorId, action) {
 }
 function campaignEventStatement(env, campaign, event, pageId = "") {
   if (!validCampaign(campaign) || !CAMPAIGN_EVENTS.has(event)) return null;
+  // Instagram is landing attribution only; it cannot increment details or prints.
+  if (INSTAGRAM_CAMPAIGN_IDS.has(campaign) && event !== "landing") return null;
   const pageEvent = event === "detail" || event === "print";
   if (pageEvent ? !validPageId(pageId) : pageId !== "") return null;
   return env.DB.prepare(
@@ -248,6 +253,7 @@ async function campaignStats(env, request) {
       print_count:Number(row.print_count || 0),
     })),
     counting_basis:"aggregate-event-counts-not-unique-kitas",
+    instagram_attribution_version:1,
   });
 }
 
@@ -314,7 +320,12 @@ async function recordVisitor(env, request) {
     ).bind(day,visitorHash),
     env.DB.prepare("DELETE FROM daily_visitors WHERE day < date('now', '-1 day')"),
   ];
-  if (validCampaign(body.campaign) && CAMPAIGN_STAGES.has(body.stage)) {
+  const purpose = [request.headers.get("purpose"), request.headers.get("sec-purpose"),
+    request.headers.get("x-moz")].filter(Boolean).join(" ");
+  const instagramEligible = !INSTAGRAM_CAMPAIGN_IDS.has(body.campaign)
+    || (!/\b(prefetch|prerender)\b/i.test(purpose)
+      && request.cf?.botManagement?.verifiedBot !== true);
+  if (instagramEligible && validCampaign(body.campaign) && CAMPAIGN_STAGES.has(body.stage)) {
     const campaign = campaignEventStatement(env,body.campaign,body.stage);
     if (campaign) statements.push(campaign);
   }

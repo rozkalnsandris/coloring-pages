@@ -3,6 +3,30 @@
   const BASE="/api/stats";
   const CAMPAIGN_IDS=new Set(["dortmund-01"]);
   const states=new Map();
+  const INSTAGRAM_UTM_CAMPAIGNS = new Set(["profile", "story", "reel"]);
+
+  // Tagged external arrivals are aggregate counts, not personal identities.
+  function instagramLandingCampaign() {
+    if (location.hostname !== "ausmalwiese.de" && location.hostname !== "www.ausmalwiese.de") return "";
+    const params = new URLSearchParams(location.search);
+    if (params.getAll("utm_source").length !== 1 || params.getAll("utm_medium").length !== 1
+        || params.getAll("utm_campaign").length !== 1) return "";
+    if (params.get("utm_source") !== "instagram" || params.get("utm_medium") !== "social") return "";
+    const name = params.get("utm_campaign") || "";
+    if (!INSTAGRAM_UTM_CAMPAIGNS.has(name)) return "";
+    const navigation = performance.getEntriesByType?.("navigation")?.[0];
+    if (navigation?.type === "reload") return "";
+    if (document.referrer) {
+      try {
+        const from = new URL(document.referrer);
+        if (from.hostname === "ausmalwiese.de" || from.hostname === "www.ausmalwiese.de") return "";
+      } catch {
+        // Suppressed/malformed external referrers do not prevent tagged landing.
+      }
+    }
+    return "instagram-" + name;
+  }
+
   const currentCampaign=()=>{
     const value=new URLSearchParams(location.search).get("campaign")||"";
     return CAMPAIGN_IDS.has(value)?value:"";
@@ -77,8 +101,9 @@
   }
   function trackVisit(stage="") {
     const campaign=currentCampaign();
+    const instagram=campaign?"":instagramLandingCampaign();
     const body=campaign&&(stage==="landing"||stage==="catalog")
-      ?{campaign,stage}:{};
+      ?{campaign,stage}:instagram?{campaign:instagram,stage:"landing"}:{};
     fetch(BASE+"/visit",{method:"POST",credentials:"same-origin",
       keepalive:true,headers:{"Content-Type":"application/json"},
       body:JSON.stringify(body)}).catch(()=>{});
