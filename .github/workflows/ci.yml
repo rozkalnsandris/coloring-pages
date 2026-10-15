@@ -26,6 +26,9 @@ jobs:
       - name: Install importer dependencies
         run: python3 -m pip install --disable-pip-version-check -r requirements-build.txt
 
+      - name: Install Cut & Paste authoring geometry dependency
+        run: python3 -m pip install --disable-pip-version-check -r requirements-cut-paste.txt
+
       - name: Validate Python syntax
         run: python3 -m compileall -q tools tests
 
