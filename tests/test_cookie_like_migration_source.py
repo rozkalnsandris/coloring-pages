@@ -66,9 +66,10 @@ class LikeCookieSchemaDraftTests(unittest.TestCase):
                 ("a" * 64, 0, 2000000000),
             )
 
-    def test_draft_does_not_claim_release_or_approved_ttl(self):
+    def test_draft_preserves_owner_design_but_no_legal_signoff(self):
         self.assertIn("SOURCE ONLY", DESIGN)
-        self.assertIn("not approved", DESIGN.lower())
+        self.assertIn("180 days", DESIGN.lower())
+        self.assertIn("not legal sign-off", DESIGN.lower())
         self.assertIn("Time Travel", DESIGN)
         self.assertIn("Print", DESIGN)
         self.assertIn("legacy", DESIGN.lower())

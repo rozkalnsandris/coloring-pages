@@ -74,3 +74,17 @@ CREATE TABLE IF NOT EXISTS visitor_credentials (
   expires_at INTEGER NOT NULL
 );
 
+
+CREATE TABLE IF NOT EXISTS like_cookie_sessions (
+  cookie_hash TEXT PRIMARY KEY
+    CHECK (length(cookie_hash) = 64 AND cookie_hash NOT GLOB '*[^0-9a-f]*'),
+  consent_notice_version INTEGER NOT NULL CHECK (consent_notice_version > 0),
+  consent_recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
+  expires_at INTEGER NOT NULL CHECK (expires_at > 0)
+);
+CREATE INDEX IF NOT EXISTS idx_like_cookie_sessions_expiry
+  ON like_cookie_sessions(expires_at);
+CREATE TABLE IF NOT EXISTS archived_like_totals (
+  page_id TEXT PRIMARY KEY,
+  like_count INTEGER NOT NULL DEFAULT 0 CHECK (like_count >= 0)
+);
