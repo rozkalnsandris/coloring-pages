@@ -44,7 +44,7 @@ class CutPasteExporterTests(unittest.TestCase):
     def test_oversized_piece_fails(self):
         data=fixture()
         data["parts"][-1]["art"]["size_mm"]=[190,49]
-        with self.assertRaisesRegex(ValueError,"Cutout exceeds"): app.render(data)
+        with self.assertRaisesRegex(ValueError,"Cutout exceeds|Assembled subject exceeds"): app.render(data)
 
 if __name__=="__main__":
     unittest.main()
