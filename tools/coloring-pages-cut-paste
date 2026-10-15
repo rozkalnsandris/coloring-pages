@@ -7,6 +7,9 @@ import math
 import subprocess
 from pathlib import Path
 from xml.sax.saxutils import escape
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cut_paste_geometry import outline_d, validate_scene, validate_png
 
 A4 = (2480, 3508)
 INK = (17, 17, 193, 256)
@@ -39,8 +42,9 @@ def part_svg(part, cut=False, style=None):
     if cut:
         # The contour is based on the exact outer path; geometrical offset QA is #221.
         off = part["cut"]["offset_mm"]
-        parts.append(f'<path data-cut-for="{a(part["id"])}" d="{path}" fill="none" '
-                     f'stroke="{a(style["color"])}" stroke-width="{n(2*off)}" '
+        guide = a(outline_d(part))
+        parts.append(f'<path data-cut-for="{a(part["id"])}" d="{guide}" fill="none" '
+                     f'stroke="{a(style["color"])}" stroke-width="{n(style["stroke_width_mm"])}" '
                      f'stroke-dasharray="{n(style["dash_mm"])} {n(style["gap_mm"])}"/>')
     return "".join(parts) + "</g>"
 
@@ -144,13 +148,14 @@ def render(source):
     preview=f'<g id="assembled-preview" transform="translate({n(tx)} {n(ty)}) scale({n(s)})">{assembled}</g>'
     body=page(f'<g id="base" transform="{transform(base)}">{part_svg(base,True,source["cut_style"])}</g>'+preview)
     placed=pack(parts,source["cut_style"])
+    geometry_qa=validate_scene(parts,placed,source["cut_style"],pr,source["page_layout"]["assembled_origin_mm"])
     cutout=page('<g id="cutout-sheet">'+''.join(f'<g transform="translate({n(x)} {n(y)})">{part_svg(p,True,source["cut_style"])}</g>' for p,x,y in placed)+'</g>')
     proof=page('<g id="assembled-proof">'+assembled+'</g>')
     return {"01-base.svg":body,"02-cutouts.svg":cutout,"03-assembly-proof.svg":proof}, {
         "parts":[p["id"] for p in parts],
         "cutouts":[{"id":p["id"],"x_mm":x,"y_mm":y} for p,x,y in placed],
         "assembled_bounds_mm":list(bounds),"preview_bounds_mm":list(pr),
-        "preview_scale":s,"review_status":"DRAFT_ONLY; geometry and paper checks pending #221"}
+        "preview_scale":s,"geometry_qa":geometry_qa,"review_status":"DRAFT_ONLY; physical assembly not checked"}
 
 def png(svg,path,inkscape):
     import PIL.Image
@@ -179,6 +184,7 @@ def main():
     for name,svg in pages.items(): (args.output/name).write_text(svg,"utf-8")
     for stem in ("01-base","02-cutouts"):
         png(args.output/(stem+".svg"),args.output/(stem+".png"),args.inkscape)
+    manifest["raster_ink_bounds_mm"]={name:validate_png(args.output/name) for name in ("01-base.png","02-cutouts.png")}
     manifest["source_sha256"]=hashlib.sha256(data).hexdigest()
     manifest["files_sha256"]={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(args.output.iterdir())}
     (args.output/"04-manifest.json").write_text(json.dumps(manifest,indent=2,sort_keys=True)+"\n","utf-8")
