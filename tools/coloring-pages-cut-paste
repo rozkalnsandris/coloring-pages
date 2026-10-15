@@ -155,7 +155,9 @@ def render(source):
         "parts":[p["id"] for p in parts],
         "cutouts":[{"id":p["id"],"x_mm":x,"y_mm":y} for p,x,y in placed],
         "assembled_bounds_mm":list(bounds),"preview_bounds_mm":list(pr),
-        "preview_scale":s,"geometry_qa":geometry_qa,"review_status":"DRAFT_ONLY; physical assembly not checked"}
+        "preview_scale":s,"geometry_qa":geometry_qa,"review_status":"DRAFT_ONLY; physical assembly not checked",
+        "art_review":{"status":"PENDING","human_visual_approval":False,
+                      "reason":"Illustration quality and finished reference need explicit human review #221"}}
 
 def png(svg,path,inkscape):
     import PIL.Image
