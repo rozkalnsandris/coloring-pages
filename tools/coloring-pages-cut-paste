@@ -7,6 +7,8 @@ import math
 import subprocess
 from pathlib import Path
 from xml.sax.saxutils import escape
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cut_paste_geometry import outline_d, validate_scene, validate_png
 
 A4 = (2480, 3508)
