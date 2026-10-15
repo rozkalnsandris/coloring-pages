@@ -63,7 +63,8 @@ class CookieArchiveSourceTest(unittest.TestCase):
         self.assertIn("async scheduled(",WORKER)
 
     def test_expiry_preserves_counter_but_removes_pseudonymous_vote(self):
-        legacy=h("legacy"),expired=self.session("old",True)
+        legacy=h("legacy")
+        expired=self.session("old",True)
         active=self.session("active",False)
         self.like("1234567",legacy)
         self.like("1234567",expired)
