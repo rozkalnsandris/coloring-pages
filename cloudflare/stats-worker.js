@@ -730,12 +730,16 @@ async function likeCookieState(env, pageId, hash) {
     like_count:Number(stats?.like_count||0),print_count:Number(stats?.print_count||0)};
 }
 async function cookieLikeRoutes(env, request, path) {
+  // Proof of an HttpOnly cookie returned by the browser after issuance.
+  if (path === "/api/stats/like/session" && request.method === "GET") {
+    return json({consented:Boolean(await cookieLikeSession(env,request))});
+  }
   // Read-only aggregate + cookie-scoped state: no creation or renewal on GET.
   if (path === "/api/stats/like/state" && request.method === "GET") {
     const pageId = new URL(request.url).searchParams.get("page_id") || "";
     if (!validPageId(pageId)) return json({error:"invalid_page_id"},400);
     const hash = await cookieLikeSession(env,request);
-    return json(await likeCookieState(env,pageId,hash));
+    return json({...await likeCookieState(env,pageId,hash),consented:Boolean(hash)});
   }
   if (!["/api/stats/like/consent","/api/stats/like/choice",
         "/api/stats/like/forget"].includes(path) || request.method !== "POST")
