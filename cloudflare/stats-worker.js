@@ -126,19 +126,21 @@ async function rankings(env, request) {
   const url = new URL(request.url);
   const limit = Math.min(20, Math.max(1, Number(url.searchParams.get("limit")) || 6));
   const popular = await env.DB.prepare(
-    `SELECT page_id, print_count, like_count
-     FROM page_stats
-     WHERE print_count > 0
-     ORDER BY print_count DESC, like_count DESC, page_id ASC
+    `SELECT p.page_id,p.print_count,p.like_count+COALESCE(a.like_count,0) AS like_count
+     FROM page_stats p
+     LEFT JOIN archived_like_totals a ON a.page_id=p.page_id
+     WHERE p.print_count>0
+     ORDER BY p.print_count DESC,like_count DESC,p.page_id ASC
      LIMIT ?`
   ).bind(limit).all();
   const trending = await env.DB.prepare(
     `SELECT d.page_id,
             SUM(d.print_count) AS recent_prints,
             COALESCE(p.print_count, 0) AS print_count,
-            COALESCE(p.like_count, 0) AS like_count
+            COALESCE(p.like_count,0)+COALESCE(a.like_count,0) AS like_count
      FROM daily_prints d
-     LEFT JOIN page_stats p ON p.page_id = d.page_id
+     LEFT JOIN page_stats p ON p.page_id=d.page_id
+     LEFT JOIN archived_like_totals a ON a.page_id=d.page_id
      WHERE d.day >= date('now', '-6 days')
      GROUP BY d.page_id
      HAVING recent_prints > 0
@@ -149,17 +151,19 @@ async function rankings(env, request) {
 }
 async function overviewStats(env) {
   const totals = await env.DB.prepare(
-    `SELECT COALESCE(SUM(print_count), 0) AS print_count,
-            COALESCE(SUM(like_count), 0) AS like_count,
+    `SELECT COALESCE(SUM(p.print_count),0) AS print_count,
+            COALESCE(SUM(p.like_count+COALESCE(a.like_count,0)),0) AS like_count,
             COUNT(*) AS tracked_pages
-     FROM page_stats`
+     FROM page_stats p
+     LEFT JOIN archived_like_totals a ON a.page_id=p.page_id`
   ).first();
   const engagement = await env.DB.prepare(
     `SELECT p.page_id,
             p.print_count,
-            p.like_count,
+            p.like_count+COALESCE(a.like_count,0) AS like_count,
             COALESCE(r.recent_prints, 0) AS recent_prints
      FROM page_stats p
+     LEFT JOIN archived_like_totals a ON a.page_id=p.page_id
      LEFT JOIN (
        SELECT page_id, SUM(print_count) AS recent_prints
        FROM daily_prints
@@ -580,7 +584,7 @@ async function pageStats(env, request) {
     if (!row?.active) return json({error:"credential_expired"},403);
     liked = Boolean(row.liked);
   }
-  const stats = await env.DB.prepare("SELECT print_count, like_count FROM page_stats WHERE page_id = ?").bind(pageId).first();
+  const stats = await env.DB.prepare("SELECT p.print_count,p.like_count+COALESCE(a.like_count,0) AS like_count FROM page_stats p LEFT JOIN archived_like_totals a ON a.page_id=p.page_id WHERE p.page_id=?").bind(pageId).first();
   return json({page_id:pageId,print_count:Number(stats?.print_count||0),like_count:Number(stats?.like_count||0),liked});
 }
 async function recordPrint(env, request) {
@@ -678,7 +682,7 @@ async function toggleLike(env, request) {
     "SELECT 1 AS active FROM visitor_credentials WHERE visitor_hash=? AND like_allowed=1 AND expires_at>unixepoch()"
   ).bind(hash).first();
   if (!stillActive) return json({error:"credential_expired"},403);
-  const stats = await env.DB.prepare("SELECT like_count, print_count FROM page_stats WHERE page_id = ?").bind(body.page_id).first();
+  const stats = await env.DB.prepare("SELECT p.like_count+COALESCE(a.like_count,0) AS like_count,p.print_count FROM page_stats p LEFT JOIN archived_like_totals a ON a.page_id=p.page_id WHERE p.page_id=?").bind(body.page_id).first();
   const persisted = await env.DB.prepare("SELECT 1 AS liked FROM likes WHERE page_id = ? AND visitor_hash = ?").bind(body.page_id,hash).first();
   return json({page_id:body.page_id,liked:Boolean(persisted),like_count:Number(stats?.like_count||0),print_count:Number(stats?.print_count||0)});
 }
@@ -689,9 +693,10 @@ async function toggleLike(env, request) {
 const LIKE_COOKIE_NAME = "__Secure-aw-like-v1";
 const LIKE_COOKIE_RE = /^l1-[0-9a-f]{64}$/;
 const LIKE_COOKIE_PATH = "/api/stats/like";
-function likeCookieTtl(env) {
-  const ttl = Number(env.LIKE_COOKIE_TTL_SECONDS);
-  return Number.isSafeInteger(ttl) && ttl >= 86400 && ttl <= 31536000 ? ttl : 0;
+const LIKE_COOKIE_TTL_SECONDS = 180 * 24 * 60 * 60;
+function likeCookieTtl(_env) {
+  // Fixed 180 days from consent. Reads and Like clicks never renew it.
+  return LIKE_COOKIE_TTL_SECONDS;
 }
 function readLikeCookie(request) {
   const matches = (request.headers.get("cookie") || "").split(";")
@@ -732,7 +737,7 @@ async function boundedLikeJson(request, allowedKeys) {
 }
 async function likeCookieState(env, pageId, hash) {
   const stats = await env.DB.prepare(
-    "SELECT print_count,like_count FROM page_stats WHERE page_id=?"
+    "SELECT p.print_count,p.like_count+COALESCE(a.like_count,0) AS like_count FROM page_stats p LEFT JOIN archived_like_totals a ON a.page_id=p.page_id WHERE p.page_id=?"
   ).bind(pageId).first();
   const liked = hash ? await env.DB.prepare(
     "SELECT 1 AS liked FROM likes WHERE page_id=? AND visitor_hash=?"
@@ -836,7 +841,42 @@ async function recordAggregatePrint(env, request) {
   return json({ok:true},201);
 }
 
+
+/* Source-only bounded expiry; this PR does NOT configure or activate a Cron.
+ * D1.batch is transactional: archive page-level counts once, drop expired
+ * per-browser votes (the existing DELETE trigger adjusts active count), then
+ * remove expired pseudonymous sessions. Legacy votes have no session row.
+ */
+const EXPIRED_COOKIE_SELECTOR = "SELECT cookie_hash FROM like_cookie_sessions WHERE expires_at<=unixepoch() ORDER BY expires_at,cookie_hash LIMIT 100";
+const ARCHIVE_COOKIE_SQL = `
+  INSERT INTO archived_like_totals(page_id,like_count)
+  SELECT l.page_id, COUNT(*) FROM likes l
+  WHERE l.visitor_hash IN (${EXPIRED_COOKIE_SELECTOR})
+  GROUP BY l.page_id
+  ON CONFLICT(page_id) DO UPDATE SET like_count=archived_like_totals.like_count+excluded.like_count
+`;
+const DELETE_EXPIRED_COOKIE_LIKES_SQL = `
+  DELETE FROM likes WHERE visitor_hash IN (${EXPIRED_COOKIE_SELECTOR})
+`;
+const DELETE_EXPIRED_COOKIE_SESSIONS_SQL = `
+  DELETE FROM like_cookie_sessions WHERE cookie_hash IN (${EXPIRED_COOKIE_SELECTOR})
+`;
+async function archiveExpiredCookieLikes(env) {
+  const rows = await env.DB.batch([
+    env.DB.prepare(ARCHIVE_COOKIE_SQL),
+    env.DB.prepare(DELETE_EXPIRED_COOKIE_LIKES_SQL),
+    env.DB.prepare(DELETE_EXPIRED_COOKIE_SESSIONS_SQL),
+  ]);
+  if (rows.length!==3 || rows.some(row=>row?.success!==true))
+    throw new Error("expiry_archive_unconfirmed");
+  return {expired_sessions:Number(rows[2]?.meta?.changes||0)};
+}
+
 export default {
+  async scheduled(_controller, env, _ctx) {
+    // A source handler is not a deployed Cron trigger.
+    return archiveExpiredCookieLikes(env);
+  },
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;

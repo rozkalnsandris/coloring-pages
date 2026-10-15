@@ -10,8 +10,10 @@
   banner.innerHTML=[
     '<div class="privacy-banner-row">',
     '<p class="privacy-banner-copy">Wenn Sie „Gefällt mir“ nutzen möchten, ',
-    'können wir Ihre Auswahl auf späteren Besuchen mit einem Cookie ',
-    'wiedererkennen. Ohne Zustimmung bleibt das Drucken verfügbar. ',
+    'können wir Ihre Auswahl mit einem Cookie für 180 Tage wiedererkennen. ',
+    'Vor Ablauf können Sie Ihre aktiven Likes löschen. Danach bleibt ',
+    'nur die nicht mehr Ihrem Cookie zugeordnete Gesamtsumme. ',
+    'Ohne Zustimmung bleibt das Drucken verfügbar. '
     '<a href="datenschutz.html">Datenschutz</a></p>',
     '<div class="privacy-banner-actions">',
     '<button type="button" data-like-deny>Ablehnen</button>',
