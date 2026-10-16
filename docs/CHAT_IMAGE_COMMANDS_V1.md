@@ -102,6 +102,16 @@ Worksheets/activities:
 - decorative scene elements do not count as task content and should be omitted;
 - optimize for a preschool child being able to understand the task visually without extra explanation.
 
+Two-page **Cut & Paste** special case (only when explicitly requested with `MAKE Cut & Paste <subject>` or equivalent wording; ordinary `MAKE` remains one standard coloring-page draft):
+
+- Build one coherent character art master and define the base and each detachable part only once. Render exactly two ordered worksheet drafts (base + small assembled example; and separate cutouts); never redraw the example independently or introduce accessories not requested.
+- For the A4 first-page layout, prioritize **vertical separation**: place the *actual visible ink* of the small complete-character reference as high as the browser's printing system permits, then place the large bare body as low as permitted above the footer, keeping all outlines, part sizes and glue locations unchanged. Neither reference nor finished full-scale assembly may overlap the body/cutting guides.
+- Current Ausmalwiese `js/print.js` applies `fitA4InkBounds` with real A4 visible-ink limits **x=17..193 mm, y=17..256 mm** (portrait). Although the print master has exact-white **15 mm** outer bands, a further **2 mm** top/side contour guard means the reference should start at **approximately 17 mm, not 15 mm** when printed through the site at `scale=1.0`. The body can reach the **256 mm** bottom limit. A4 is 297 mm high, so **41 mm** stays below the drawing for footer/gap/paper safety.
+- At 300 DPI, use `px = mm × 300 / 25.4` as the raster estimate: the 15 mm white band is about **177 px**, the 17 mm ink boundary about **201 px**, and the 256 mm lower boundary about **3023 px**. The browser computes the exact physical fit with its own `297/3508` and `210/2480` ratios; validate that `print.js` returns **scale exactly 1.0** even with pixel rounding. Prefer a 1–2 px inward tolerance over a subpixel violation that would shrink the whole page.
+- Preserve item sizes from the same reference art across both A4 pages. When relocating already-rendered page contents, use **translation only**; leave original image pixels, dashed contours, and second-sheet parts unchanged. If the required layout does not fit at the preserved print scale, stop the activity for revision—do not silently shrink only one sheet or promote a pretty but non-assemblable example.
+- Image generation supplies art drafts on canonical `1024×1536` / `1536×1024` canvases; exact millimetre positions are a **deterministic A4 authoring/export and QA task**, not something a natural-language image prompt can guarantee. `PUBLISH` remains a separate owner command and must validate the **exact final** pages; physical cutting/gluing and owner visual review remain human gates.
+- Detailed bounds and print proof: [Cut & Paste A4 placement](CUT_PASTE_A4_PLACEMENT_V1.md), [Cut & Paste assembly](CUT_PASTE_ASSEMBLY_V1.md), and [Cut & Paste QA](CUT_PASTE_QA_V1.md).
+
 Examples of the default interpretation:
 
 - `MAKE dino` → one simple dinosaur, white background, no scenery;
