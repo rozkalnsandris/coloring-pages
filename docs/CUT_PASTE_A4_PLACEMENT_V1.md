@@ -29,6 +29,9 @@ Use `px = mm × 300 / 25.4` for nominal authoring estimates: **15 mm ≈177 px**
 
 Example of a correct vertical result: small ink starts at **~17.1 mm**, base ink ends at **~255.95 mm**, both remain the **same pixel sizes** and the print fit returns `scale=1`. Printing the same content with small ink at exactly 15 mm while base reaches 256 mm extends over 241 mm, *exceeding* the 239 mm area, and therefore triggers an unwanted full-page downscale.
 
+
+**Exporter implementation (issue #220):** `tools/coloring-pages-cut-paste` deterministically translates the whole hypothetical full-scale assembly downward in the **page-1 layout only** when deriving the body printable position. The original per-part transforms and page-2 cutout positions stay unchanged, and glue/collision QA runs on a shifted copy of the same geometry. The small preview remains an exact clone of the original assembled scene and is aligned by its visible bounds to ~17.4 mm (allowing outline bleed). If either cannot fit, the exporter fails instead of resizing. Human art and physical glue approval remain pending.
+
 ## Workflow and acceptance
 
 - `MAKE Cut & Paste Fledermaus` (example intent): generate character/master, base + small exact copy, and the separate components page as an **unpublished** two-page draft.
