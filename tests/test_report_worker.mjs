@@ -9,7 +9,7 @@ globalThis.crypto ||= webcrypto;
 const ORIGIN = "https://ausmalwiese.de";
 const REASONS = ["print", "image", "craft", "wrong", "other"];
 const defaults = { id: "1234567", page: 1, reason: "print", turnstile: "a-token" };
-function setup({ pages = 2, title = "Basteln", failEmail = false, challenge = true, rate = true, duplicate = true } = {}) {
+function setup({ pages = 2, title = "Basteln", failEmail = false, emailStatus = 201, messageId = "accepted-1", challenge = true, rate = true, duplicate = true } = {}) {
   const mail = [];
   const siteverifyTokens = new Set();
   const duplicateKeys = new Set();
@@ -26,19 +26,26 @@ function setup({ pages = 2, title = "Basteln", failEmail = false, challenge = tr
     if (String(url) === ORIGIN + "/catalog.json") {
       return Response.json([{ id: "1234567", title, pages: Array.from({ length: pages }, () => ({ print: "/media/example.png" })) }]);
     }
+    if (String(url) === "https://api.brevo.com/v3/smtp/email") {
+      if (failEmail) throw new Error("email unavailable");
+      if (emailStatus !== 201) return Response.json({ code: "provider-error" }, { status: emailStatus });
+      const body = JSON.parse(options.body);
+      mail.push({
+        from: body.sender.email, to: body.to[0].email,
+        text: body.textContent, subject: body.subject,
+        raw: body, headers: options.headers,
+      });
+      return Response.json({ messageId }, { status: 201 });
+    }
     throw new Error("Unexpected fetch");
   };
   const env = {
     TURNSTILE_SITE_KEY: "site-key", TURNSTILE_SECRET: "server-secret",
-    REPORT_FROM: "reports@ausmalwiese.de", REPORT_TO: "verified@example.test",
+    BREVO_API_KEY: "mock-secret-key",
     REPORT_RATE: { limit: async () => ({ success: rate && ++rateCalls <= 20 }) },
     REPORT_DUP: { limit: async ({ key }) => {
       if (!duplicate || duplicateKeys.has(key)) return { success: false };
       duplicateKeys.add(key); return { success: true };
-    } },
-    NOTIFY_OPS: { send: async (message) => {
-      if (failEmail) throw new Error("email unavailable");
-      mail.push(message); return { messageId: "accepted-1" };
     } },
   };
   return { env, mail, upstream, siteverifyTokens };
@@ -60,8 +67,8 @@ test("all five allowed reasons send exactly one verified notification with canon
     const { status, body } = await call(env, { ...defaults, reason, page: 2 });
     assert.equal(status, 200); assert.equal(body.ok, true);
     assert.equal(mail.length, 1);
-    assert.equal(mail[0].from, "reports@ausmalwiese.de");
-    assert.equal(mail[0].to, "verified@example.test");
+    assert.equal(mail[0].from, "info@ausmalwiese.de");
+    assert.equal(mail[0].to, "rozkalns.andris@gmail.com");
     assert.match(mail[0].text, /Seite: 2 von 2/);
     assert.match(mail[0].text, /https:\/\/ausmalwiese.de\/detail.html\?id=1234567&page=2/);
     assert.match(mail[0].text, /Vorlage: Basteln/);
@@ -116,8 +123,30 @@ test("email errors and missing bindings never return a false success", async () 
   const { env, mail } = setup({ failEmail: true });
   assert.equal((await call(env)).status, 503);
   assert.equal(mail.length, 0);
-  delete env.REPORT_TO;
+  delete env.BREVO_API_KEY;
   assert.equal((await call(env)).status, 503);
+});
+test("Brevo API transport pins recipient, avoids identifiable tracking and never retries", async () => {
+  const { env, mail, upstream } = setup();
+  assert.equal((await call(env)).status, 200);
+  assert.equal(mail.length, 1);
+  assert.equal(mail[0].from, "info@ausmalwiese.de");
+  assert.equal(mail[0].to, "rozkalns.andris@gmail.com");
+  assert.equal(mail[0].raw.sender.name, "Ausmalwiese");
+  assert.deepEqual(mail[0].raw.to, [{
+    email: "rozkalns.andris@gmail.com", contactPixelTrackingConsent: false,
+  }]);
+  assert.equal(mail[0].headers["api-key"], "mock-secret-key");
+  assert.equal(mail[0].headers["content-type"], "application/json");
+  assert.equal(upstream.filter((url) => url === "https://api.brevo.com/v3/smtp/email").length, 1);
+  const blocked = setup({ emailStatus: 429 });
+  assert.equal((await call(blocked.env)).status, 503);
+  assert.equal(blocked.mail.length, 0);
+  assert.equal(blocked.upstream.filter((url) => url === "https://api.brevo.com/v3/smtp/email").length, 1);
+  const missing = setup({ messageId: "" });
+  assert.equal((await call(missing.env)).status, 503);
+  const notCreated = setup({ emailStatus: 200 });
+  assert.equal((await call(notCreated.env)).status, 503);
 });
 test("sanitizes catalog title and prevents subject/header injection", async () => {
   const { env, mail } = setup({ title: "Basteln\r\nBcc: attacker@example.test" });
@@ -134,7 +163,7 @@ test("only available, correctly configured endpoints report enabled status", asy
   assert.deepEqual(await good.json(), { siteKey: "site-key" });
   const wrong = await worker.fetch(request(null, { url: ORIGIN + "/api/private", method: "GET" }), env);
   assert.equal(wrong.status, 404);
-  delete env.NOTIFY_OPS;
+  delete env.BREVO_API_KEY;
   const disabled = await worker.fetch(request(null, { url: ORIGIN + "/api/report/config", method: "GET" }), env);
   assert.equal(disabled.status, 503);
   assert.equal(mail.length, 0);
