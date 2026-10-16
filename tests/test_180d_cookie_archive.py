@@ -121,6 +121,28 @@ class CookieArchiveSourceTest(unittest.TestCase):
         self.assertEqual(self.archive(),[0,0,0])
         self.assertEqual(self.count("1234567"),105)
 
+    def test_time_travel_restore_resurrects_pseudonymous_rows(self):
+        """An old database snapshot can reintroduce erased Like records."""
+        expired=self.session("snapshot",True)
+        self.like("1234567",expired)
+        self.db.commit()
+        snapshot=sqlite3.connect(":memory:")
+        try:
+            self.db.backup(snapshot)
+            self.assertEqual(self.archive(),[1,1,1])
+            self.assertEqual(self.count("1234567"),1)
+            self.assertEqual(self.db.execute("SELECT COUNT(*) FROM likes").fetchone()[0],0)
+            snapshot.backup(self.db)
+            self.assertEqual(self.count("1234567"),1)
+            self.assertIsNotNone(self.db.execute(
+                "SELECT 1 FROM likes WHERE visitor_hash=?",(expired,)
+            ).fetchone())
+            self.assertEqual(self.archive(),[1,1,1])
+            self.assertEqual(self.count("1234567"),1)
+            self.assertEqual(self.archive(),[0,0,0])
+        finally:
+            snapshot.close()
+
     def test_legacy_not_migrated_and_archive_has_no_identifiers(self):
         self.assertIn("archived_like_totals",MIGRATION)
         archive_schema=MIGRATION.split("CREATE TABLE IF NOT EXISTS archived_like_totals",1)[1]

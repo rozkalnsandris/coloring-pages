@@ -83,3 +83,16 @@ A Worker `scheduled()` handler is defined in source, but **no Cron schedule has 
 **Bounded concurrency validation:** offline SQLite multi-connection `BEGIN IMMEDIATE` interleaving tests exercise archive-vs-archive, archive-vs-user withdrawal and archive-vs-in-flight Like writes, preserve active-plus-archive totals, and show a successful archive cannot reintroduce a deleted session. They test SQLite serialisation, **not** real Cloudflare D1 request/Cron race performance or production evidence. D1's documented `batch()` transaction and prepared binding are prerequisites, not full release sign-off. Cloudflare [D1 transaction API](https://developers.cloudflare.com/d1/worker-api/d1-database/) / [Prepared statements](https://developers.cloudflare.com/d1/worker-api/prepared-statements/).
 
 **LIVE and legal remain gated:** No Cloudflare/D1 migration, Cron configuration, LIVE deployment, backups, source-to-PR merge or legal sign-off is authorised. The legal PR #158 still describes the old v3 `localStorage`/separate Print consent and must be independently reconciled. Under GDPR/TDDDG review, assess the controller's ability to honour erasure during the post-cookie / pre-archive interval, user age/parental consent, proportionality, evidence, retention and truly anonymous aggregation. 
+
+## Minimal release retention gate — 2026-10-16 (source-only)
+
+No new table, identifier, endpoint or automatic retry is necessary. The real limitation is that the browser stops sending the Like cookie after 180 days. Expired D1 rows may remain identifiable until the archive succeeds. Do NOT claim that all server-side rows disappear at precisely day 180 or that a missing proof can identify a user's historic Like.
+
+**Release BLOCKED until verified separately:**
+1. D1 additive migration present and verified; the existing Worker scheduled handler actually activated by an independently authorized UTC Cron Trigger. Monitor real successful expiry transactions, the bounded 100-session backlog, cleanup lag and failure reporting. A source scheduled handler alone does not run.
+2. Clarify the expired-but-not-yet-archived right-to-erasure process, real maximum retention and legal notice in paired PR #158. The normal forget operation must remain fail-closed without a valid cookie; no replacement tracking proof is authorized.
+3. Treat D1 Time Travel restores as potential reappearance of deleted votes. A separately owner-authorized restore requires an explicit post-restore archive, count and privacy verification before reopening traffic. The new SQLite snapshot and concurrency tests show risks, not a live D1 guarantee.
+4. Validate actual Worker erasure responses under missing/malformed mutation metadata, credential-only deletion, no matching rows and D1 errors. Unknown outcome must never be presented as confirmed.
+
+Cloudflare references: https://developers.cloudflare.com/d1/worker-api/d1-database/ ; https://developers.cloudflare.com/d1/reference/time-travel/ ; https://developers.cloudflare.com/workers/configuration/cron-triggers/ .
+No D1/Cloudflare/Worker LIVE changes, Cron activation, merge, legal approval or release follows from this document or CI.

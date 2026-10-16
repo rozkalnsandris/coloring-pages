@@ -12,8 +12,8 @@ DOC=(ROOT/"docs/LIKE_PRINT_COOKIE_REDESIGN_182.md").read_text(encoding="utf-8")
 class LegacyOutcomeAndExpiryNoticeTests(unittest.TestCase):
     def test_v3_only_claims_likes_if_actual_rows_deleted(self):
         section=WORKER.split("async function eraseLegacyV3(env, request) {",1)[1].split("async function recordAggregatePrint",1)[0]
-        self.assertIn("Number(results[0]?.meta?.changes)",section)
-        self.assertIn("Number(results[1]?.meta?.changes)",section)
+        self.assertIn("const likesDeleted=results[0]?.meta?.changes",section)
+        self.assertIn("const credentialsRevoked=results[1]?.meta?.changes",section)
         self.assertIn("Number.isSafeInteger(likesDeleted)",section)
         self.assertIn("Number.isSafeInteger(credentialsRevoked)",section)
         self.assertIn("likes_deleted:likesDeleted",section)

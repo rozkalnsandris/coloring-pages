@@ -837,8 +837,9 @@ async function eraseLegacyV3(env, request) {
     return json({error:"erasure_unconfirmed"},503);
   // A v3 credential can exist without an active Like. Separate those
   // outcomes; do not imply Like erasure when only credential was revoked.
-  const likesDeleted=Number(results[0]?.meta?.changes);
-  const credentialsRevoked=Number(results[1]?.meta?.changes);
+  // D1 mutation counts must be numeric; null or missing is not proof.
+  const likesDeleted=results[0]?.meta?.changes;
+  const credentialsRevoked=results[1]?.meta?.changes;
   if (!Number.isSafeInteger(likesDeleted) || likesDeleted < 0
       || !Number.isSafeInteger(credentialsRevoked) || credentialsRevoked < 0
       || credentialsRevoked > 1)
