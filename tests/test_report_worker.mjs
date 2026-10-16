@@ -75,8 +75,8 @@ test("invalid id, page number, reason, extra data and untrusted contact paramete
     { ...defaults, page: "1" }, { ...defaults, reason: "unknown" },
     { ...defaults, email: "attacker@example.test" }, { ...defaults, to: "evil@example.test" },
   ];
-  for (const payload of cases) {
-    const response = await call(env, payload);
+  for (const [index, payload] of cases.entries()) {
+    const response = await call(env, { ...payload, turnstile: "unique-invalid-" + index });
     assert.equal(response.status, 400);
     assert.equal(response.body.ok, false);
   }
