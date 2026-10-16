@@ -10,6 +10,7 @@
   <link rel="preload" href="assets/fonts/nunito-latin-vf-ba344451eab25b21.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/fonts.css?v=e8c09f4e07f0c140">
   <link rel="stylesheet" href="css/app.css?v=0b91706cbd11ccc7">
+  <link rel="stylesheet" href="css/report.css?v=015f02d0d6487c19">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -86,6 +87,32 @@
             <button class="outline-link" type="button" data-like-retry>Erneut versuchen</button>
           </div>
 
+          <div class="report-control">
+            <button type="button" class="report-trigger" data-report-open
+              aria-controls="report-panel" aria-expanded="false" hidden>Fehler melden</button>
+            <noscript><p>Um einen Fehler zu melden, ist JavaScript erforderlich.</p></noscript>
+            <p class="report-status" data-report-status role="status" aria-live="polite"></p>
+            <section id="report-panel" class="report-panel" data-report-panel
+              aria-labelledby="report-heading" hidden>
+              <h2 id="report-heading">Fehler melden</h2>
+              <form data-report-form>
+                <fieldset>
+                  <legend>Was ist das Problem?</legend>
+                  <label><input type="radio" name="reason" value="print" required> Drucken funktioniert nicht</label>
+                  <label><input type="radio" name="reason" value="image"> Bild ist abgeschnitten oder fehlerhaft</label>
+                  <label><input type="radio" name="reason" value="craft"> Ausschneiden/Kleben passt nicht</label>
+                  <label><input type="radio" name="reason" value="wrong"> Falsche oder unpassende Vorlage</label>
+                  <label><input type="radio" name="reason" value="other"> Anderer Fehler</label>
+                </fieldset>
+                <div data-report-turnstile></div>
+                <div class="report-panel-actions">
+                  <button type="submit" data-report-submit>Melden</button>
+                  <button type="button" class="report-cancel" data-report-close>Abbrechen</button>
+                </div>
+              </form>
+            </section>
+          </div>
+
           <div class="detail-note">
             <span class="info-dot" aria-hidden="true">i</span>
             <div><strong>Einfach auf A4 drucken</strong>
@@ -98,6 +125,7 @@
 
   <script src="js/stats.js?v=instagram-216" defer></script>
   <script src="js/app.js?v=446c7c313e4a91a5" defer></script>
-  <script src="js/detail.js?v=96b54bfce0683490" defer></script>
+  <script src="js/detail.js?v=ae3041cbc681b83b" defer></script>
+  <script src="js/report.js?v=291c9c03f704b4ca" defer></script>
 </body>
 </html>
