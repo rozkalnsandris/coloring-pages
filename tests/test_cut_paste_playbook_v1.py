@@ -25,6 +25,34 @@ class CutPastePlaybookTests(unittest.TestCase):
         self.assertIn("CUT <subject>", c)
         self.assertIn("PUBLISH", a)
 
+    def test_assembled_fit_gate_precedes_a4_print_approval(self):
+        checks = {
+            "AGENTS.md": (
+                "ART_CONCEPT_ONLY", "ASSEMBLED_FIT=UNVERIFIED",
+                "ASSEMBLED_FIT=FAIL", "176 mm", "STOP",
+            ),
+            "docs/CUT_PASTE_PLAYBOOK_V1.md": (
+                "## 3A.", "assembled_bbox_mm", "assembled_width_mm",
+                "assembled_width_mm <= 176 mm", "fitA4InkBounds",
+                "2026-10-17", "ASSEMBLED_FIT=PASS",
+                "ASSEMBLED_FIT=FAIL", "HOLD",
+            ),
+            "docs/CUT_PASTE_A4_PLACEMENT_V1.md": (
+                "Strict pre-export gate", "x=17..193 mm",
+                "y=17..256 mm", "ASSEMBLED_FIT=UNVERIFIED",
+                "ASSEMBLED_FIT=FAIL", "Fit to page",
+            ),
+            "docs/CHAT_IMAGE_COMMANDS_V1.md": (
+                "Obligāta secība pirms CUT A4 finalizācijas",
+                "176 mm", "ASSEMBLED_FIT=FAIL", "ART_CONCEPT_ONLY",
+            ),
+        }
+        for path, phrases in checks.items():
+            source = (ROOT / path).read_text(encoding="utf-8").lower()
+            for phrase in phrases:
+                with self.subTest(path=path, phrase=phrase):
+                    self.assertIn(phrase.lower(), source)
+
     def test_playbook_separates_machine_from_physical_and_publish(self):
         s = (ROOT / "docs/CUT_PASTE_PLAYBOOK_V1.md").read_text(encoding="utf-8")
         for token in (
