@@ -51,10 +51,22 @@ class CanonicalDomainSourceTests(unittest.TestCase):
 
     def test_merge_and_runtime_gates_are_explicit(self):
         instructions = read("docs/DOMAIN_CANONICAL_CUTOVER_V1.md")
-        for phrase in ("Hold application MERGE", "RPi5 runtime sitemap",
+        for phrase in ("Hold application MERGE", "RPi5 operator upgrade",
                        "Stats Worker separately deploys", "owner LIVE",
                        "RPi5_main#996"):
             self.assertIn(phrase, instructions)
+        # The operator must be coordinated before app MERGE; the running
+        # Worker and dynamic sitemap each require a later independent LIVE
+        # gate, with the legacy hostname redirect strictly last.
+        gates = (
+            "Prepare the RPi5 operator upgrade first",
+            "Deploy and verify the application",
+            "Stats Worker separately deploys",
+            "Publish and verify the dynamic sitemap",
+            "Redirect the legacy host last",
+        )
+        positions = [instructions.index(gate) for gate in gates]
+        self.assertEqual(positions, sorted(positions))
 
 
 if __name__ == "__main__":
