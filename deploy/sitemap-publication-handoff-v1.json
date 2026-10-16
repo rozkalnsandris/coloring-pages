@@ -3,18 +3,18 @@
   "status": "source-only-advisory-not-host-authority",
   "consumer_repository": "rozkalnsandris/coloring-pages",
   "host_owner_repository": "rozkalnsandris/RPi5_main",
-  "canonical_origin": "https://coloring.rozkalns.net",
+  "canonical_origin": "https://ausmalwiese.de",
   "generator": {
     "source_path": "tools/coloring-pages-sitemap",
-    "git_blob_sha1": "5644c8fd366c0c57f6339fddd163c5091ea134c5",
+    "git_blob_sha1": "49c8ba34cf0a4c4ab100463df9adacc4c6e90c2c",
     "input_argument": "--catalog",
     "snapshot_argument": "--expected-catalog-sha256",
     "candidate_verify_argument": "--verify-sitemap",
     "writes_files": false
   },
   "static_urls": [
-    "https://coloring.rozkalns.net/",
-    "https://coloring.rozkalns.net/kita"
+    "https://ausmalwiese.de/",
+    "https://ausmalwiese.de/kita"
   ],
   "publisher_requirements": [
     "trusted-host-owned-fixed-paths-not-consumer-CLI",
