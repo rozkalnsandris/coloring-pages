@@ -73,6 +73,8 @@ function entryPages(entry) {
 function selectPage(entry, pages, pageIndex) {
   const page = pages[pageIndex];
   if (!page) return;
+  detailRoot?.setAttribute("data-page-index", String(pageIndex));
+  document.dispatchEvent(new CustomEvent("ausmalwiese:page-change", { detail: { index: pageIndex } }));
 
   const previewUrl = page.preview || page.print;
   if (detailPreview && previewUrl) {
@@ -353,14 +355,18 @@ async function loadDetail() {
     const breadcrumbCategory = document.querySelector("[data-breadcrumb-category]");
     if (breadcrumbCategory) breadcrumbCategory.textContent = categoryLabel;
 
+    const requestedPage = new URLSearchParams(window.location.search).get("page");
+    const requestedNumber = /^\d{1,2}$/.test(requestedPage || "") ? Number(requestedPage) : 0;
+    const initialIndex = requestedNumber >= 1 && requestedNumber <= pages.length ? requestedNumber - 1 : 0;
     renderPageSwitcher(entry, pages);
-    if (pages.length) selectPage(entry, pages, 0);
+    if (pages.length) selectPage(entry, pages, initialIndex);
 
     const allPrintable = pages.length > 0 && pages.every((page) => page.print);
     setAction(printLink, allPrintable ? `print.html?id=${encodeURIComponent(entry.id)}` : "");
     if (printLabel) {
       printLabel.textContent=pages.length>1 ? `A4 drucken (${pages.length} Seiten)` : "A4 drucken";
     }
+    document.dispatchEvent(new CustomEvent("ausmalwiese:detail-loaded", { detail: { id: entry.id } }));
     await hydrateLikeState(entry.id);
   } catch {
     const message = "Diese Malvorlage ist gerade nicht verfügbar. Bitte versuche es später erneut oder wähle ein anderes Motiv aus der Übersicht.";
