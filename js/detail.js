@@ -74,7 +74,7 @@ function selectPage(entry, pages, pageIndex) {
   const page = pages[pageIndex];
   if (!page) return;
   detailRoot?.setAttribute("data-page-index", String(pageIndex));
-  document.dispatchEvent(new CustomEvent("ausmalwiese:page-change", { detail: { index: pageIndex } }));
+  if (typeof CustomEvent === "function" && typeof document.dispatchEvent === "function") document.dispatchEvent(new CustomEvent("ausmalwiese:page-change", { detail: { index: pageIndex } }));
 
   const previewUrl = page.preview || page.print;
   if (detailPreview && previewUrl) {
@@ -366,7 +366,7 @@ async function loadDetail() {
     if (printLabel) {
       printLabel.textContent=pages.length>1 ? `A4 drucken (${pages.length} Seiten)` : "A4 drucken";
     }
-    document.dispatchEvent(new CustomEvent("ausmalwiese:detail-loaded", { detail: { id: entry.id } }));
+    if (typeof CustomEvent === "function" && typeof document.dispatchEvent === "function") document.dispatchEvent(new CustomEvent("ausmalwiese:detail-loaded", { detail: { id: entry.id } }));
     await hydrateLikeState(entry.id);
   } catch {
     const message = "Diese Malvorlage ist gerade nicht verfügbar. Bitte versuche es später erneut oder wähle ein anderes Motiv aus der Übersicht.";
