@@ -146,7 +146,7 @@ test("detail UI has five radio choices and works without uploading identity or b
   const css = readFileSync(new URL("../css/report.css", import.meta.url), "utf8");
   assert.equal((html.match(/type="radio" name="reason"/g) || []).length, 5);
   for (const code of REASONS) assert.ok(html.includes('value="' + code + '"'));
-  assert.match(html, /data-report-status" role="status" aria-live="polite"/);
+  assert.match(html, /data-report-status role="status" aria-live="polite"/);
   assert.match(html, /data-action-print/);
   assert.match(html, /data-report-close/);
   assert.match(html, /<noscript>/);
