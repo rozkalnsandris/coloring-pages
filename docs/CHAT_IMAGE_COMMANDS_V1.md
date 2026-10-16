@@ -102,6 +102,10 @@ Worksheets/activities:
 - decorative scene elements do not count as task content and should be omitted;
 - optimize for a preschool child being able to understand the task visually without extra explanation.
 
+### `CUT <subject>` — two-page Cut & Paste draft (short alias)
+
+`CUT Fledermaus` is shorthand for `MAKE Cut & Paste Fledermaus`. Create **one** original character and two coherent A4 sheets, all mechanically derived from one shared SVG/JSON part geometry; use [Cut & Paste production playbook](CUT_PASTE_PLAYBOOK_V1.md) for art-first quality, initial component IDs/glue points, print alignment and physical checks. Default without unrequested hats/accessories. `CUT` is an **authoring convention**, not a production publishing/external action. Edits require regeneration/revalidation of all affected derived artifacts; do not combine first and second sheets from mismatched versions. Owner has explicitly postponed Cut & Paste `PUBLISH` until the full ausmalwiese.de transition and a fresh exact-version approval. This does not modify standard single-page `MAKE`.
+
 Two-page **Cut & Paste** special case (only when explicitly requested with `MAKE Cut & Paste <subject>` or equivalent wording; ordinary `MAKE` remains one standard coloring-page draft):
 
 - Build one coherent character art master and define the base and each detachable part only once. Render exactly two ordered worksheet drafts (base + small assembled example; and separate cutouts); never redraw the example independently or introduce accessories not requested.
