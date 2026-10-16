@@ -11,6 +11,9 @@ const REASONS = Object.freeze({
 });
 const PAGE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/i;
 const URL_BASE = "https://ausmalwiese.de";
+const BREVO_URL = "https://api.brevo.com/v3/smtp/email";
+const REPORT_FROM = "info@ausmalwiese.de";
+const REPORT_TO = "rozkalns.andris@gmail.com";
 
 function json(payload, status = 200) {
   return new Response(JSON.stringify(payload), {
@@ -25,7 +28,7 @@ function json(payload, status = 200) {
 }
 function configured(env) {
   return Boolean(env?.TURNSTILE_SITE_KEY && env?.TURNSTILE_SECRET &&
-    env?.REPORT_FROM && env?.REPORT_TO && env?.NOTIFY_OPS?.send &&
+    typeof env?.BREVO_API_KEY === "string" && env.BREVO_API_KEY.length > 0 &&
     env?.REPORT_RATE?.limit && env?.REPORT_DUP?.limit);
 }
 function sanitizedTitle(title) {
@@ -104,18 +107,31 @@ async function submit(request, env, url) {
     if (duplicate?.success !== true) return json({ ok: false }, 429);
     const link = URL_BASE + "/detail.html?id=" + encodeURIComponent(payload.id) + "&page=" + payload.page;
     const reason = REASONS[payload.reason];
-    const result = await env.NOTIFY_OPS.send({
-      from: env.REPORT_FROM,
-      to: env.REPORT_TO,
+    const email = {
+      sender: { email: REPORT_FROM, name: "Ausmalwiese" },
+      to: [{ email: REPORT_TO, contactPixelTrackingConsent: false }],
       subject: "[Ausmalwiese] Fehler gemeldet: " + payload.id,
-      text: [
+      textContent: [
         "Neue Fehlermeldung", "Grund: " + reason,
         "Vorlage: " + entry.title, "ID: " + payload.id,
         "Seite: " + payload.page + " von " + entry.pages,
         "Link: " + link,
       ].join("\n"),
+    };
+    const response = await fetch(BREVO_URL, {
+      method: "POST",
+      headers: {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "api-key": env.BREVO_API_KEY,
+      },
+      body: JSON.stringify(email),
+      redirect: "error",
+      signal: AbortSignal.timeout(10000),
     });
-    if (!result || typeof result.messageId !== "string" || !result.messageId) {
+    if (response.status !== 201) return json({ ok: false }, 503);
+    const result = await response.json();
+    if (typeof result?.messageId !== "string" || !result.messageId.trim()) {
       return json({ ok: false }, 503);
     }
     return json({ ok: true }, 200);
