@@ -2,6 +2,14 @@
 
 **Scope:** This is the source-only editorial/authoring rule for an explicitly requested two-page `MAKE Cut & Paste <subject>` activity. It does **not** alter ordinary single-page `MAKE`, waive the canonical output-size rule for AI drafts, change the runtime print UI, or authorize `PUBLISH`. It supplements [Cut & Paste assembly](CUT_PASTE_ASSEMBLY_V1.md), [Cut & Paste QA](CUT_PASTE_QA_V1.md), and [Chat image commands](CHAT_IMAGE_COMMANDS_V1.md).
 
+## Strict pre-export gate: finished assembled character must physically fit
+
+For every `CUT`, require **art concept → canonical SVG/JSON parts and glue transforms → 100% full-size assembled silhouette → measured fit gate → two A4 sheets**. **Do not** reverse this sequence by independently generating finished A4 images and assuming the assembled figure will fit. The two 2026-10-17 pumpkin-with-wings visual attempts are `ASSEMBLED_FIT=FAIL` examples, not measured-mm evidence.
+
+Form the **full union of actually attached base+cutout artwork** (all wing tips, ears, stems, hats, outline strokes and other projecting elements) at their correct page-1 physical placement and record `assembled_bbox_mm=[left,top,right,bottom]` and assembled width/height. After applying **the same `js/print.js` XY offset and scale used for printing the base page**, the full assembled silhouette must fit x=17..193 mm (**width ≤176 mm**) and y=17..256 mm (**height ≤239 mm**) with 1–2 raster px clearance and no collision with the small preview. The **original page-1 print scale must equal 1.0**; do not count browser downscaling as a fix.
+
+If an ImageGen-only flat raster lacks separate geometry, label `ART_CONCEPT_ONLY / ASSEMBLED_FIT=UNVERIFIED` and STOP rather than claiming a finished CUT. If any attached part would fall off page, mark `ASSEMBLED_FIT=FAIL` and reshape the **shared** source parts/anchors, then regenerate both A4 sheets and the same-source small preview; preserve child-usable cut sizes. Never shrink only one image, use `Fit to page`, or regenerate the same incorrect proportions with a verbal promise. This is a documented required gate, **not proof that the currently installed exporter already enforces it**. Full contract: [Cut & Paste playbook](CUT_PASTE_PLAYBOOK_V1.md).
+
 ## First A4 sheet: use all available height, not just canvas centering
 
 1. Draw a simple attractive **fully assembled original** character. Derive the large **bare body/base**, the small finished reference and the detachable objects from the **same** canonical artwork/part IDs/transforms. One paper component must not appear both built into the base and as a cutout.
