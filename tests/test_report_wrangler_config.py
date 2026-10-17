@@ -10,7 +10,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "cloudflare" / "wrangler.report.json"
 WORKER = ROOT / "cloudflare" / "report-worker.mjs"
-EXPECTED_WORKER_SHA256 = "26d4e597d8c2c961c3a637957ea566654c97c5657a4b2595129c410e9fae22a1"
+EXPECTED_WORKER_SHA256 = "f3c3f9902666d957abb16c5a29cfc4cb73263ccab2e88400e3281aae7ca92f1b"
 
 ROUTES = [
     {"pattern": "ausmalwiese.de/api/report", "zone_name": "ausmalwiese.de"},

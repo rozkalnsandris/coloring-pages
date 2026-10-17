@@ -13,6 +13,7 @@ const PAGE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/i;
 const URL_BASE = "https://ausmalwiese.de";
 const BREVO_URL = "https://api.brevo.com/v3/smtp/email";
 const REPORT_FROM = "info@ausmalwiese.de";
+const ACTIVITY_UNAVAILABLE = "activity_unavailable";
 
 function json(payload, status = 200) {
   return new Response(JSON.stringify(payload), {
@@ -101,7 +102,9 @@ async function submit(request, env, url) {
     if (allowance?.success !== true) return json({ ok: false }, 429);
     if (!await verifyChallenge(env, payload.turnstile, url.hostname)) return json({ ok: false }, 403);
     const entry = await catalogEntry(payload.id);
-    if (!entry || payload.page > entry.pages) return json({ ok: false }, 400);
+    if (!entry || payload.page > entry.pages) {
+      return json({ ok: false, error: ACTIVITY_UNAVAILABLE }, 409);
+    }
     const duplicateKey = await digest(key + ":" + payload.id + ":" + payload.page + ":" + payload.reason);
     const duplicate = await env.REPORT_DUP.limit({ key: duplicateKey });
     if (duplicate?.success !== true) return json({ ok: false }, 429);
