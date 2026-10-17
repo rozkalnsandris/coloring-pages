@@ -10,13 +10,15 @@ Form the **full union of actually attached base+cutout artwork** (all wing tips,
 
 If an ImageGen-only flat raster lacks separate geometry, label `ART_CONCEPT_ONLY / ASSEMBLED_FIT=UNVERIFIED` and STOP rather than claiming a finished CUT. If any attached part would fall off page, mark `ASSEMBLED_FIT=FAIL` and reshape the **shared** source parts/anchors, then regenerate both A4 sheets and the same-source small preview; preserve child-usable cut sizes. Never shrink only one image, use `Fit to page`, or regenerate the same incorrect proportions with a verbal promise. This is a documented required gate, **not proof that the currently installed exporter already enforces it**. Full contract: [Cut & Paste playbook](CUT_PASTE_PLAYBOOK_V1.md).
 
-## First A4 sheet: use all available height, not just canvas centering
+## First A4 sheet: body only
 
-1. Draw a simple attractive **fully assembled original** character. Derive the large **bare body/base**, the small finished reference and the detachable objects from the **same** canonical artwork/part IDs/transforms. One paper component must not appear both built into the base and as a cutout.
-2. Place the small finished reference near the **top** of the first sheet and the large base as far **down** as possible **without overlapping** the small reference, the full-size virtual assembled artwork, or the future cutting area. Do **not** enlarge the reference as filler. The body remains the useful child-sized element.
-3. Place by actual **ink bounds**, not by the PNG's white background, image frame or AI crop. Keep the two page-1 illustrations as separate transformable layers/groups, never shift the whole page as one.
-4. **Do not resize either the body or the cutout parts independently** to satisfy margins. Change only their placement after the approved artwork geometry is frozen. A size change requires a fresh full-scale part-alignment and physical cutting check.
-5. Page 2 contains the exact detachable shapes and outward dashed cut lines, with sufficient 4 mm cutting clearance per #221, within the same browser-safe ink rectangle.
+The current owner-approved authoring flow intentionally removes the small assembled reference from the printed worksheet.
+
+1. ImageGen is used only for the initial character concept. After the owner returns vectorized SVG file(s), the accepted version becomes **SVG-only authoring**; do not redraw it with ImageGen.
+2. **Page 1 contains only the base/body. Page 2 contains only the detachable cut parts.** A diagnostic assembled proof may be created separately for QA, but it is never printed on page 1.
+3. Preserve the supplied SVG shapes, colors and relative proportions. Prefer translation only. If the complete intended assembly cannot fit the physical A4 limits, apply at most one **uniform shared scale** consistently to the base and every detachable part, then recompute all intended glue anchors.
+4. Page 2 keeps each detachable shape at the same shared physical scale as the assembly and uses independent outward dashed cut guides with sufficient cutting clearance.
+5. Never repair an accepted SVG handoff by regenerating one page or one part with ImageGen. A geometry/fit change must be derived again from the same SVG source.
 
 ## Physical bounds — Ausmalwiese browser printing
 
@@ -38,13 +40,13 @@ Use `px = mm × 300 / 25.4` for nominal authoring estimates: **15 mm ≈177 px**
 Example of a correct vertical result: small ink starts at **~17.1 mm**, base ink ends at **~255.95 mm**, both remain the **same pixel sizes** and the print fit returns `scale=1`. Printing the same content with small ink at exactly 15 mm while base reaches 256 mm extends over 241 mm, *exceeding* the 239 mm area, and therefore triggers an unwanted full-page downscale.
 
 
-**Exporter implementation (issue #220):** `tools/coloring-pages-cut-paste` deterministically translates the whole hypothetical full-scale assembly downward in the **page-1 layout only** when deriving the body printable position. The original per-part transforms and page-2 cutout positions stay unchanged, and glue/collision QA runs on a shifted copy of the same geometry. The small preview remains an exact clone of the original assembled scene and is aligned by its visible bounds to ~17.4 mm (allowing outline bleed). If either cannot fit, the exporter fails instead of resizing. Human art and physical glue approval remain pending.
+**Current SVG-handoff placement rule:** the accepted SVG geometry is the source after vectorization. Derive page 1 from the base/body only and page 2 from the detachable vectors only. QA may construct a separate virtual full assembly from the same vectors and anchors to measure `ASSEMBLED_FIT`, but no preview is added to the printed first page. If fit requires a size change, use one consistent uniform scale across the complete character rather than independent page/part resizing. Human art and physical glue approval remain pending.
 
 ## Workflow and acceptance
 
-- `MAKE Cut & Paste Fledermaus` (example intent): generate character/master, base + small exact copy, and the separate components page as an **unpublished** two-page draft.
-- At print-master preparation, deterministically place top preview and lower base using independent translations from their shared component master. Keep every part’s assembled scale/anchor and the cutout sheet invariant. The reviewed CPU `tools/coloring-pages-print-master` handles A4 size and 15 mm bands; it does **not** itself solve the two-component optimal placement—this must be explicitly done by the authoring/exporter, then revalidated.
-- Run canonical `VALIDATE-PRINT` on both exact final A4 PNGs **and** the stricter #221 raster ink/geometry QA. Confirm the browser `scale=1`, no preview/full-size collision, intended glue targets, complete cuts and no branding/footer overlap.
+- `MAKE Cut & Paste Fledermaus` (example intent): generate the character concept, receive owner-vectorized SVG file(s), then derive the base page and cut-parts page as an **unpublished** two-page draft.
+- At print-master preparation, preserve the SVG geometry and common scale. Position page 1 body and page 2 parts independently within their safe areas, without adding an assembled preview. The reviewed CPU `tools/coloring-pages-print-master` handles A4 size and 15 mm bands; assembly fit still needs explicit SVG-derived geometry QA.
+- Run canonical `VALIDATE-PRINT` on both exact final A4 PNGs **and** the stricter #221 raster ink/geometry QA. Confirm the browser `scale=1`, intended glue targets, complete cuts and no branding/footer overlap.
 - Physically print A4 at 100% and cut/glue a sample; obtain exact-version owner review before publication. A CI/geometry PASS alone never claims human art or assembly approval.
 - Keep printed originals and production binaries **out of GitHub**. This authoring rule gives no merge, Drive staging, LIVE or publication authority.
 
