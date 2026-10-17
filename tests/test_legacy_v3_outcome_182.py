@@ -24,7 +24,8 @@ class LegacyOutcomeAndExpiryNoticeTests(unittest.TestCase):
     def test_user_notice_does_not_promise_post_expiry_self_service_erasure(self):
         self.assertIn("Solange der Cookie gültig ist",NOTICE)
         self.assertIn("nicht mehr möglich",NOTICE)
-        self.assertIn("Nach der Anonymisierung",NOTICE)
+        self.assertIn("seitenbezogene Summen ohne Cookie- oder Sitzungskennung",NOTICE)
+        self.assertNotIn("Nach der Anonymisierung",NOTICE)
         self.assertNotIn("Vor der Anonymisierung können Sie Ihre aktiven Likes löschen",NOTICE)
         self.assertIn("result?.likes_deleted === 0",NOTICE)
         self.assertIn("es wurden keine zugeordneten Likes gelöscht",NOTICE)

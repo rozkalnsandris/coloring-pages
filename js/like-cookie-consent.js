@@ -6,21 +6,21 @@
   const banner=document.createElement("section");
   banner.className="privacy-banner";
   banner.setAttribute("role","region");
-  banner.setAttribute("aria-label","Gefällt-mir-Datenschutzeinstellungen");
+  banner.setAttribute("aria-label","Gefällt-mir-Einstellungen für Erwachsene");
   banner.innerHTML=[
     '<div class="privacy-banner-row">',
-    '<p class="privacy-banner-copy">Wenn Sie „Gefällt mir“ nutzen möchten, ',
+    '<p class="privacy-banner-copy"><strong>Für Eltern, Erziehungsberechtigte und pädagogische Fachkräfte:</strong> Wenn Sie „Gefällt mir“ als erwachsene Person nutzen möchten, ',
     'speichern wir für höchstens 180 Tage einen Cookie zur Wiedererkennung Ihrer Likes. ',
     'Solange der Cookie gültig ist, können Sie Ihre Likes hier löschen. ',
     'Nach Ablauf kann die technische Zusammenfassung und Löschung ',
     'der gespeicherten Likes verzögert erfolgen; dann ist die ',
     'Löschung über diese Einstellungen nicht mehr möglich. ',
-    'Nach der Anonymisierung bleiben nur zusammengefasste Zahlen. ',
+    'Nach der technischen Zusammenfassung bleiben nur seitenbezogene Summen ohne Cookie- oder Sitzungskennung. ',
     'Ohne Zustimmung bleibt das Drucken verfügbar. ',
     '<a href="datenschutz.html">Datenschutz</a></p>',
     '<div class="privacy-banner-actions">',
     '<button type="button" data-like-deny>Ablehnen</button>',
-    '<button type="button" data-like-accept>Zustimmen</button>',
+    '<button type="button" data-like-accept>Als erwachsene Person zustimmen</button>',
     '<button type="button" data-like-close>Schließen</button>',
     '</div></div>',
     '<div class="privacy-options-actions">',
@@ -34,7 +34,7 @@
   footer.className="privacy-footer";
   const settings=document.createElement("button");
   settings.type="button";
-  settings.textContent="Gefällt-mir-Datenschutzeinstellungen";
+  settings.textContent="Gefällt-mir-Einstellungen für Erwachsene";
   footer.append(settings);
   document.body.append(banner,footer);
   const feedback=banner.querySelector("[data-like-feedback]");
