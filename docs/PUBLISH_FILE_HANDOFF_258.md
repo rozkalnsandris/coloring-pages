@@ -83,9 +83,14 @@ authenticate that a reference is live, belongs to the right user/provider,
 is unexpired, or contains the asserted bytes.
 
 A missing capability or reference yields `HANDOFF_PREFLIGHT=BLOCKED`,
-exit 2, **no Drive write**. Even a complete synthetic reference inventory
-returns `HANDOFF_PREFLIGHT=OFFLINE_CANDIDATE_ONLY` and
-`REMOTE_SNAPSHOT_BYTES_VERIFIED=NO`, **not a production PASS**. Its test
+exit **2**, **no Drive write**. Even a complete synthetic reference inventory
+returns `HANDOFF_PREFLIGHT=OFFLINE_CANDIDATE_ONLY` with exit **3** and
+`REMOTE_SNAPSHOT_BYTES_VERIFIED=NO`, **not a production PASS**. Nonzero
+exit status intentionally prevents a caller from interpreting the offline
+candidate report as an upload authorization. If the reference has a signed
+URL `se` expiry, malformed, duplicate and expired values are rejected;
+a future timestamp still does **not** prove the reference is owned,
+reachable or byte-identical. Its test
 references are deliberately fake and may **never** be used for upload.
 The tool deliberately contains no Drive SDK calls, credentials, external
 HTTP, RPi5 commands or snapshot-generation side effects.
