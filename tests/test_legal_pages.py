@@ -56,6 +56,9 @@ class LegalPageSourceTests(unittest.TestCase):
                 self.assertIn(expected.lower(), privacy.lower())
         self.assertNotIn("coloring-pages-consent-v1", privacy)
         self.assertNotIn("coloring-pages-visitor-v1", privacy)
+        self.assertNotIn("bei entsprechender Einwilligung Druckaktionen", privacy)
+        self.assertIn("keine Like-Einwilligung", privacy)
+        self.assertIn("aggregierte Druckabsichten ohne dauerhaften Besucher-Identifier", privacy)
 
     def test_like_cookie_legal_draft_is_explicitly_release_gated(self):
         privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
