@@ -49,7 +49,8 @@ class LegalPageSourceTests(unittest.TestCase):
             "__Secure-aw-like-v1", "HttpOnly", "180 Tage", "SHA-256-Hash",
             "seitenbezogenen Summenzähler", "aggregierte Druckabsicht",
             "keinen dauerhaften Besucher-Identifier", "Cloudflare Rate Limiter",
-            "ohne Einwilligung", "nicht automatisch",
+            "Eltern, Erziehungsberechtigte und pädagogische Fachkräfte",
+            "für Erwachsene",
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected.lower(), privacy.lower())
@@ -60,8 +61,9 @@ class LegalPageSourceTests(unittest.TestCase):
         privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
         report = (ROOT / "docs/LEGAL_PAGES_REVIEW.md").read_text(encoding="utf-8")
         for expected in (
-            "Gefällt mir", "180 Tage", "Datenschutzeinstellungen",
-            "aggregierte Druckabsicht", "ohne Einwilligung",
+            "Gefällt mir", "180 Tage", "Gefällt-mir-Einstellungen für Erwachsene",
+            "aggregierte Druckabsicht",
+            "Eltern, Erziehungsberechtigte und pädagogische Fachkräfte",
             "§ 25 TDDDG", "Art. 6 Abs. 1",
         ):
             self.assertIn(expected.lower(), privacy.lower())
