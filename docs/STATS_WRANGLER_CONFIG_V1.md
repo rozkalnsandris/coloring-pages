@@ -1,5 +1,13 @@
 # Stats Worker Wrangler config v1
 
+
+> **PR #183 privacy Draft boundary:** this reviewed Production config is still
+> tied to Worker blob `dd5a2859d55b9ef2d9fb9a9d8bf0a535d25a5ba4`.
+> PR #183 intentionally changes `cloudflare/stats-worker.js` for the source-only
+> Like-cookie/privacy redesign. Do **not** repin this config to the Draft Worker
+> or treat it as deployable evidence. A separate post-#182 config/deployment
+> review, migration plan and explicit LIVE authorization are required.
+
 Status: **SOURCE ONLY / NO LIVE**.
 
 `cloudflare/wrangler.stats-worker.jsonc` is the application-owned reviewed

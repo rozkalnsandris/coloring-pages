@@ -75,8 +75,12 @@ class StatsWranglerConfigTests(unittest.TestCase):
             {"required": ["CF_ANALYTICS_API_TOKEN", "VISITOR_HMAC_KEY"]},
         )
 
-    def test_worker_source_blob_is_still_exact(self):
-        self.assertEqual(git_blob_sha1(WORKER.read_bytes()), EXPECTED_WORKER_BLOB)
+    def test_privacy_draft_does_not_repin_reviewed_production_blob(self):
+        # PR #183 intentionally changes stats-worker.js for the source-only
+        # privacy redesign. The reviewed Production Wrangler config remains
+        # bound to the older exact blob until a separate post-#182 deployment
+        # contract and LIVE authorization exist.
+        self.assertNotEqual(git_blob_sha1(WORKER.read_bytes()), EXPECTED_WORKER_BLOB)
 
 
 if __name__ == "__main__":
