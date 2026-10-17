@@ -53,6 +53,22 @@ class CutPastePlaybookTests(unittest.TestCase):
                 with self.subTest(path=path, phrase=phrase):
                     self.assertIn(phrase.lower(), source)
 
+
+    def test_svg_handoff_is_default_and_printed_preview_is_removed(self):
+        agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        chat = (ROOT / "docs/CHAT_IMAGE_COMMANDS_V1.md").read_text(encoding="utf-8")
+        playbook = (ROOT / "docs/CUT_PASTE_PLAYBOOK_V1.md").read_text(encoding="utf-8")
+        placement = (ROOT / "docs/CUT_PASTE_A4_PLACEMENT_V1.md").read_text(encoding="utf-8")
+
+        self.assertIn("ImageGen concept → owner-provided SVG handoff → SVG-only A4 authoring", agents)
+        self.assertIn("Page 1 contains only the base/body", agents)
+        self.assertIn("No small assembled reference is printed on page 1", chat)
+        self.assertIn("Pašreizējais vienkāršotais SVG handoff", playbook)
+        self.assertIn("1. lapa:** tikai pamatķermenis", playbook)
+        self.assertIn("Page 1 contains only the base/body", placement)
+        self.assertIn("never printed on page 1", placement)
+
+
     def test_playbook_separates_machine_from_physical_and_publish(self):
         s = (ROOT / "docs/CUT_PASTE_PLAYBOOK_V1.md").read_text(encoding="utf-8")
         for token in (
