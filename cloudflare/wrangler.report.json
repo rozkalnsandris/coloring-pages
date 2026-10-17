@@ -1,0 +1,52 @@
+{
+  "name": "coloring-pages-report-v1",
+  "main": "./report-worker.mjs",
+  "compatibility_date": "2026-10-17",
+  "workers_dev": false,
+  "preview_urls": false,
+  "no_bundle": true,
+  "routes": [
+    {
+      "pattern": "ausmalwiese.de/api/report",
+      "zone_name": "ausmalwiese.de"
+    },
+    {
+      "pattern": "ausmalwiese.de/api/report/config",
+      "zone_name": "ausmalwiese.de"
+    },
+    {
+      "pattern": "www.ausmalwiese.de/api/report",
+      "zone_name": "ausmalwiese.de"
+    },
+    {
+      "pattern": "www.ausmalwiese.de/api/report/config",
+      "zone_name": "ausmalwiese.de"
+    }
+  ],
+  "secrets": {
+    "required": [
+      "TURNSTILE_SITE_KEY",
+      "TURNSTILE_SECRET",
+      "BREVO_API_KEY",
+      "REPORT_TO"
+    ]
+  },
+  "ratelimits": [
+    {
+      "name": "REPORT_RATE",
+      "namespace_id": "2067894450",
+      "simple": {
+        "limit": 12,
+        "period": 60
+      }
+    },
+    {
+      "name": "REPORT_DUP",
+      "namespace_id": "2051617019",
+      "simple": {
+        "limit": 1,
+        "period": 60
+      }
+    }
+  ]
+}

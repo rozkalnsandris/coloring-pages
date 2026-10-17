@@ -44,8 +44,8 @@ class SitemapPublisherHandoffTests(unittest.TestCase):
         self.assertEqual(
             self.contract["static_urls"],
             [
-                "https://coloring.rozkalns.net/",
-                "https://coloring.rozkalns.net/kita",
+                "https://ausmalwiese.de/",
+                "https://ausmalwiese.de/kita",
             ],
         )
 
