@@ -1,6 +1,17 @@
 # German legal pages — DRAFT / NOT RELEASE READY
 
 
+## 2026-10-17 Art. 8 / expiry-aggregate review — CURRENT OPEN GATES
+
+**Paired source:** PR #183 now presents the optional persistent Like consent to **parents, holders of parental responsibility and educational professionals**. This is an adult-directed product/UI cue, not age verification, parental-authority verification or a legal conclusion that GDPR Art. 8 is inapplicable. The site itself remains visibly child-oriented. If the Like processing is considered an information-society service offered directly to a child and relies on Art. 6(1)(a), GDPR Art. 8 requires consent/authorisation by the holder of parental responsibility for users below the applicable age threshold and reasonable efforts to verify that authorisation. **This remains a legal/controller gate.**
+
+**Expiry aggregate:** paired PR #183 adds `docs/LIKE_EXPIRY_ANONYMISATION_ASSESSMENT_182.md`. The proposed archive contains only `page_id + like_count`, with no cookie/session key or event timestamp. That is a strong technical candidate for non-linkable aggregate data after source identifiers are deleted, but neither this PR nor public copy may state as a legal fact that the result is anonymous. The assessment must consider record isolation/singling out, linkability and inference together with reasonably available runtime data. EDPB Guidelines 02/2026 on Anonymisation are still a consultation draft through **2026-10-30**.
+
+**Art. 13 gaps still explicit, not silently filled:** before release, the final notice must be matched to actual runtime evidence for (a) Cloudflare/provider roles and recipients, (b) any third-country transfers/safeguards, (c) concrete retention/deletion criteria for Rate Limiter, edge/origin/security logs and D1 recovery history, (d) lawful basis and necessity for aggregate Print/IP processing and independent visit/HMAC analytics, and (e) the actually deployed expiry-cleanup schedule and maximum operational delay. Source text that says these facts are still to be confirmed is preferable to inventing production facts.
+
+**Legal effect:** adult-directed wording does not validate a child's consent; post-expiry aggregation does not retroactively cure invalid consent during the preceding pseudonymous period. Both PRs remain **Draft / NOT RELEASE READY / NO LEGAL SIGN-OFF**.
+
+
 ## 2026-10-17 coordinated #182/#183 retention alignment — CURRENT DRAFT
 
 **Current paired source direction, not legal sign-off:** PR #183 now uses a Like-only, server-issued `HttpOnly` cookie with a fixed **180-day** lifetime, no passive renewal, explicit withdrawal, and no persistent Print visitor identifier. On expiry, the source-only cleanup design moves remaining per-session Like contributions into page-level totals and deletes the expired cookie hash/session and its pseudonymous Like rows. The public Draft in this PR is aligned to that model.

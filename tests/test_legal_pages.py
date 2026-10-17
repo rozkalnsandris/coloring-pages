@@ -87,6 +87,10 @@ class LegalPageSourceTests(unittest.TestCase):
         self.assertIn("Art. 8", report)
         self.assertIn("Anonymisation", report)
         self.assertIn("NO LEGAL SIGN-OFF", report)
+        self.assertIn("record isolation/singling out", report)
+        self.assertIn("linkability", report)
+        self.assertIn("inference", report)
+        self.assertIn("2026-10-30", report)
 
     def test_current_art13_and_release_gaps_are_not_claimed_resolved(self):
         privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
@@ -98,6 +102,9 @@ class LegalPageSourceTests(unittest.TestCase):
             with self.subTest(required=required):
                 self.assertIn(required.lower(), report.lower())
         self.assertIn("180 tage", privacy.lower())
+        self.assertIn("eltern, erziehungsberechtigte und pädagogische fachkräfte", privacy.lower())
+        self.assertIn("art. 8 dsgvo", privacy.lower())
+        self.assertIn("weder das alter noch eine", privacy.lower())
         self.assertIn("vor veröffentlichung gesondert geprüft", privacy.lower())
 
     def test_art13_open_facts_and_ddg_contact_are_reviewed_without_invention(self):
