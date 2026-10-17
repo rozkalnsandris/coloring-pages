@@ -28,7 +28,7 @@ Exact paths deliberately contain no terminal wildcard. Query-bearing URLs theref
 
 The Worker source SHA-256 is pinned by the offline test to:
 
-`26d4e597d8c2c961c3a637957ea566654c97c5657a4b2595129c410e9fae22a1`
+`f3c3f9902666d957abb16c5a29cfc4cb73263ccab2e88400e3281aae7ca92f1b`
 
 ## Protected values
 
