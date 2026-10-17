@@ -109,7 +109,7 @@ class HandoffProbeTests(unittest.TestCase):
 
     def test_five_pages_ten_synthetic_snapshots_are_only_offline_candidates(self):
         result = self.run_probe()
-        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.returncode, 3, result.stderr)
         self.assertIn("REFERENCES_CHECKED=10", result.stdout)
         self.assertIn("HANDOFF_PREFLIGHT=OFFLINE_CANDIDATE_ONLY", result.stdout)
         self.assertIn("REMOTE_SNAPSHOT_BYTES_VERIFIED=NO", result.stdout)
@@ -160,6 +160,30 @@ class HandoffProbeTests(unittest.TestCase):
         self.bindings["references"][0]["file_uri"] = "https://example.invalid/expired"
         self.write("bindings.json", self.bindings)
         self.assert_blocked("unsupported-reference")
+
+    def test_expired_structured_signed_url_is_rejected(self):
+        self.bindings["references"][0]["file_uri"]["download_url"] = (
+            "https://example.invalid/snapshot?se=2000-01-01T00%3A00%3A00Z"
+        )
+        self.write("bindings.json", self.bindings)
+        self.assert_blocked("expired-or-invalid-snapshot-url")
+
+    def test_malformed_expiry_is_rejected(self):
+        self.bindings["references"][0]["file_uri"]["download_url"] = (
+            "https://example.invalid/snapshot?se=not-a-date"
+        )
+        self.write("bindings.json", self.bindings)
+        self.assert_blocked("expired-or-invalid-snapshot-url")
+
+    def test_future_signed_expiry_still_offline_candidate_only(self):
+        self.bindings["references"][0]["file_uri"]["download_url"] = (
+            "https://example.invalid/snapshot?se=2999-01-01T00%3A00%3A00Z"
+        )
+        self.write("bindings.json", self.bindings)
+        result = self.run_probe()
+        self.assertEqual(result.returncode, 3, result.stdout + result.stderr)
+        self.assertIn("OFFLINE_CANDIDATE_ONLY", result.stdout)
+        self.assertIn("REMOTE_SNAPSHOT_BYTES_VERIFIED=NO", result.stdout)
 
     def test_wrong_file_name_is_rejected(self):
         self.bindings["references"][0]["file_uri"]["file_name"] = "someone-else.png"
