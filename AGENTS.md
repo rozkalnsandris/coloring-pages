@@ -177,10 +177,14 @@ Default V1 source artwork standard:
 - Expected public origin class: loopback.
 - Source records configuration intent only; current LIVE deployment, health and deployed revision must always be read fresh from RPi5/runtime evidence.
 
+## Privacy simplicity
+
+The owner-selected target is [Simple privacy rules](docs/SIMPLE_PRIVACY_RULES_V1.md), tracked in #256: free browse/download/print, aggregate hearts without persistent visitor recognition, and concise factual legal pages. Do not build the superseded 18+ gate or 180-day Like-consent flow for the new frontend. Cross-visit Like recognition/unlike and unique-person counts are no longer product promises. Existing source/runtime and historical data require an explicit transition; this target alone does not change them. Add complexity only for a concrete functional, security or legal requirement with a stated reason. Existing merge/LIVE/data/permission boundaries remain unchanged.
+
 ## V1 product priority
 
 Keep the primary journey simple:
 
 **find → preview → print**
 
-Avoid adding accounts, login, ratings, comments, CMS, browser uploads, on-site AI generation or ads in V1. The explicitly approved analytics exception is `docs/CLOUDFLARE_STATS_V1.md`: Cloudflare Web Analytics for aggregate views plus a same-origin Worker/D1 store for print intent, reversible likes, Popular and 7-day Trending. Do not host analytics, a database or an API on RPi5; Cloudflare resource/settings activation remains separately owner-gated.
+Avoid adding accounts, login, ratings, comments, CMS, browser uploads, on-site AI generation or ads in V1. The explicitly approved analytics exception is `docs/CLOUDFLARE_STATS_V1.md`: Cloudflare Web Analytics for aggregate views plus a same-origin Worker/D1 store for print intent, Like counts, Popular and 7-day Trending; the next frontend follows the aggregate-reaction target above. Do not host analytics, a database or an API on RPi5; Cloudflare resource/settings activation remains separately owner-gated.

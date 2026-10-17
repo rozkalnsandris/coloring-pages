@@ -1,5 +1,8 @@
 # Like expiry aggregate — anonymisation assessment (#182)
 
+> **2026-10-18 — target superseded:** [Simple privacy rules](SIMPLE_PRIVACY_RULES_V1.md) / #256 replace the adult-only, persistent Like-cookie product direction with aggregate reactions without persistent visitor recognition. The remainder records the earlier design and implemented cookie backend; it does not require the new frontend to adopt that design. Duties for any existing identifiable records remain until a verified, separately authorized transition. No runtime or data change is implied.
+
+
 **Status:** DRAFT / SOURCE-ONLY / NOT LEGAL SIGN-OFF / NOT LIVE.
 
 ## Scope
