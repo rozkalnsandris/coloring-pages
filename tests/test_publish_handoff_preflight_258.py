@@ -185,6 +185,18 @@ class HandoffProbeTests(unittest.TestCase):
         self.assertIn("OFFLINE_CANDIDATE_ONLY", result.stdout)
         self.assertIn("REMOTE_SNAPSHOT_BYTES_VERIFIED=NO", result.stdout)
 
+    def test_file_id_is_provider_opaque_not_a_hardcoded_scheme(self):
+        self.bindings["references"][0]["file_uri"]["file_id"] = "provider-scoped-opaque-42"
+        self.write("bindings.json", self.bindings)
+        result = self.run_probe()
+        self.assertEqual(result.returncode, 3, result.stdout + result.stderr)
+        self.assertIn("HANDOFF_PREFLIGHT=OFFLINE_CANDIDATE_ONLY", result.stdout)
+
+    def test_empty_file_id_is_rejected(self):
+        self.bindings["references"][0]["file_uri"]["file_id"] = "   "
+        self.write("bindings.json", self.bindings)
+        self.assert_blocked("unsupported-reference")
+
     def test_wrong_file_name_is_rejected(self):
         self.bindings["references"][0]["file_uri"]["file_name"] = "someone-else.png"
         self.write("bindings.json", self.bindings)
