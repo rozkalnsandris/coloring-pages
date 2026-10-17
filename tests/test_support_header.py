@@ -34,7 +34,7 @@ class SupportHeaderTests(unittest.TestCase):
 
     def test_css_versions(self):
         css_version = hashlib.sha256((ROOT / "css/app.css").read_bytes()).hexdigest()[:16]
-        for name in ("index.html", "detail.html", "print.html", "kita.html", "stats.html", "traffic.html"):
+        for name in ("index.html", "detail.html", "print.html", "kita.html", "stats.html", "traffic.html", "impressum.html", "datenschutz.html"):
             html = (ROOT / name).read_text(encoding="utf-8")
             self.assertIn(f'href="css/app.css?v={css_version}"', html)
 
