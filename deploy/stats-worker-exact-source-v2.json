@@ -40,6 +40,7 @@
     "worker-name",
     "worker-routes",
     "worker-custom-domains",
+    "worker-bindings",
     "worker-secrets",
     "worker-vars",
     "cloudflare-zone-dns",
