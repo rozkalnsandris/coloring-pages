@@ -1,5 +1,8 @@
 # Like-only cookie and aggregate Print-intent counters — source design (#182)
 
+> **2026-10-18 — target superseded:** [Simple privacy rules](SIMPLE_PRIVACY_RULES_V1.md) / #256 replace the adult-only, persistent Like-cookie product direction with aggregate reactions without persistent visitor recognition. The remainder records the earlier design and implemented cookie backend; it does not require the new frontend to adopt that design. Duties for any existing identifiable records remain until a verified, separately authorized transition. No runtime or data change is implied.
+
+
 ## 2026-10-17 owner decision — CURRENT backend-first release split
 
 The owner selected the final product direction: **adult-only Like (18+ UI gate in a later frontend PR), explicit Like consent, fixed 180-day non-sliding Like cookie, aggregate Print intent without a persistent Print identifier, Web Analytics EU/EEA exclusion as a separate Cloudflare setting gate, and retirement of the custom daily visitor HMAC metric**.
