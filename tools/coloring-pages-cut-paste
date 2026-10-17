@@ -156,42 +156,25 @@ def render(source):
     left,top,right,bottom=INK
     if x1-3<left or y1-3<top or x2+3>right or y2+3>bottom:
         raise ValueError("Assembled subject exceeds ink box")
-    box=source["page_layout"]["preview_box_mm"]
-    pr=(box[0],box[1],box[0]+box[2],box[1]+box[3])
-    if pr[0]<left or pr[1]<top or pr[2]>right or pr[3]>bottom:
-        raise ValueError("Preview outside ink box")
-    if overlap(pr,(x1-3,y1-3,x2+3,y2+3),2):
-        raise ValueError("Preview overlaps finished silhouette")
-    s=min(box[2]/(x2-x1),box[3]/(y2-y1))
-    tx=box[0]+(box[2]-(x2-x1)*s)/2-x1*s
-    # Align the *actual* visible preview, rather than the white preview box, near
-    # the browser's 17 mm top guard. Retain the exact canonical assembly clone.
-    ty=top+0.4-y1*s
-    pr_ink=(tx+x1*s,ty+y1*s,tx+x2*s,ty+y2*s)
-    preview_stroke=max(p["art"]["stroke_width_mm"]*p["assembly"]["scale"] for p in parts)*s/2
-    if (pr_ink[0]-preview_stroke<left or pr_ink[1]-preview_stroke<top or
-        pr_ink[2]+preview_stroke>right or pr_ink[3]+preview_stroke>bottom):
-        raise ValueError("Preview cannot fit in browser-safe ink box")
     shift, shifted_parts, base_bottom = place_base_low(parts,base,bounds,source["cut_style"])
-    sorted_parts=sorted(parts,key=lambda p:p["assembly"]["z_index"])
     assembled="".join(f'<g transform="{transform(p)}">{part_svg(p)}</g>' for p in sorted_parts)
-    preview=f'<g id="assembled-preview" transform="translate({n(tx)} {n(ty)}) scale({n(s)})">{assembled}</g>'
-    # The body moves on paper, never inside its art model. All virtual assembly
-    # parts are shifted together for collision/glue QA; page 2 stays invariant.
-    body=page(f'<g id="base" transform="translate(0 {n(shift)})"><g transform="{transform(base)}">{part_svg(base,True,source["cut_style"])}</g></g>'+preview)
+    # Page 1 is intentionally base/body only. The complete assembly stays
+    # available as a separate QA proof and is never printed on either sheet.
+    body=page(f'<g id="base" transform="translate(0 {n(shift)})"><g transform="{transform(base)}">{part_svg(base,True,source["cut_style"])}</g></g>')
     placed=pack(parts,source["cut_style"])
-    geometry_qa=validate_scene(shifted_parts,placed,source["cut_style"],pr_ink,source["page_layout"]["assembled_origin_mm"])
+    geometry_qa=validate_scene(shifted_parts,placed,source["cut_style"],None,source["page_layout"]["assembled_origin_mm"])
     cutout=page('<g id="cutout-sheet">'+''.join(f'<g transform="translate({n(x)} {n(y)})">{part_svg(p,True,source["cut_style"])}</g>' for p,x,y in placed)+'</g>')
     proof=page('<g id="assembled-proof">'+assembled+'</g>')
     return {"01-base.svg":body,"02-cutouts.svg":cutout,"03-assembly-proof.svg":proof}, {
         "parts":[p["id"] for p in parts],
         "cutouts":[{"id":p["id"],"x_mm":x,"y_mm":y} for p,x,y in placed],
-        "assembled_bounds_mm":list(bounds),"preview_bounds_mm":list(pr_ink),
+        "assembled_bounds_mm":list(bounds),
         "base_page_offset_y_mm":shift,"base_page_cut_bottom_mm":base_bottom,
         "base_page_assembled_bounds_mm":[x1,y1+shift,x2,y2+shift],
-        "preview_scale":s,"geometry_qa":geometry_qa,"review_status":"DRAFT_ONLY; physical assembly not checked",
+        "printed_preview":False,"geometry_qa":geometry_qa,
+        "review_status":"DRAFT_ONLY; physical assembly not checked",
         "art_review":{"status":"PENDING","human_visual_approval":False,
-                      "reason":"Illustration quality and finished reference need explicit human review #221"}}
+                      "reason":"Illustration quality needs explicit human review #221"}}
 
 def png(svg,path,inkscape):
     import PIL.Image

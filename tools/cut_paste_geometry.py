@@ -135,7 +135,10 @@ def validate_scene(parts, cuts, style, preview_box, origin):
     assembly = None
     for piece in world.values():
         assembly = piece if assembly is None else assembly.union(piece)
-    if assembly.buffer(2).intersects(box(*preview_box)):
+    # The assembled proof is QA-only. A printed preview may be supplied by
+    # older callers, but the current two-page workflow passes None because
+    # page 1 contains only the base/body.
+    if preview_box is not None and assembly.buffer(2).intersects(box(*preview_box)):
         raise ValueError("Finished preview collides with assembly")
     validate_cuts(cuts,style)
     return {"vector_offset":"buffer-of-sampled-original", "cut_gap_mm":4,
