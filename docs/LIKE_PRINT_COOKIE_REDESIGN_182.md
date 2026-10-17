@@ -1,5 +1,8 @@
 # Like-only cookie and anonymous Print-intent counters — source design (#182)
 
+
+**2026-10-17 pair alignment:** paired legal Draft PR #158 now describes this 180-day Like-only cookie/expiry-aggregate model instead of the older dual-purpose v3/90-day proposal. This is source coordination only; neither Draft is legally approved or LIVE. The page-level expiry total must not be called legally anonymous until the separate anonymisation assessment is complete.
+
 **Status: DRAFT / SOURCE ONLY / NOT RELEASE READY.** This document records the owner's 2026-10-15 bounded redesign authorization for issue #182 / PR #183. It supersedes the *proposed implementation direction*, not the historical authorization record or installed behavior. Initial exact PR HEAD: `b1968be865c7b08e13623cdf99c99073483197a3`; initial `main`: `8baff6f43d4705039914757b34a88b700fef0996`. Neither commit is a LIVE proof. PR #158 legal pages must be coordinated separately.
 
 ## Owner's bounded DESIGN decision — 2026-10-15 (NOT legal sign-off)
