@@ -9,7 +9,7 @@
 | Komanda | Darbība | Ko tā nedod |
 | --- | --- | --- |
 | `CUT <subject>` | Īsā komanda **vienam** divu lapu Cut & Paste melnrakstam; ekvivalenta `MAKE Cut & Paste <subject>` | Nav izvietošanas, merge vai publikācijas |
-| `MAKE Cut & Paste <subject>` | Izveido sākotnējo tēlu un abas savstarpēji saskaņotās lapas saskaņā ar šo līgumu | Nav garantēta fiziska izgriežamība |
+| `MAKE Cut & Paste <subject>` | ImageGen izveido sākotnējo tēla konceptu; pēc īpašnieka SVG handoff abas A4 lapas veido tikai no šiem vektoriem | Nav garantēta fiziska izgriežamība |
 | `EDIT <exact instruction>` | Maina tikai nosauktās detaļas *vienā kanoniskajā avotā* un pēc tam atjauno visus atvasinātos attēlus | Vecie validācijas rezultāti kļūst nederīgi |
 | `REMAKE` | Veido jaunu kompozīciju, nevis slepeni aizvieto apstiprinātas detaļas | Nav iepriekšējā varianta apstiprinājuma |
 | `VALIDATE-PRINT` | Tikai precīzā gala A4 PNG tehniskā pārbaude | Nav ģeometriskas salikšanas vai fiziska testa PASS |
@@ -18,6 +18,16 @@
 Parastais `MAKE <subject>` joprojām veido **vienu** krāsojamo lapu. `CUT` nav komanda ģenerēt vairākus tēlus vienā reizē, atvērt individuālu GitHub issue katram tēlam vai automātiski publicēt.
 
 Piemēri: `CUT Fledermaus`, `CUT Halloween Kürbis`, `CUT Weihnachten Schneemann`. Vispirms pabeidz un apstiprini vienu tēlu, tikai pēc tam sāc nākamo. Iekšējā saruna — latviski, gala lietotāja nosaukumi un norādes — vāciski.
+
+### Pašreizējais vienkāršotais SVG handoff
+
+1. ChatGPT ar ImageGen izveido tikai sākotnējo krāsaino tēla konceptu.
+2. Īpašnieks ārēji vektorizē attēlu un atsūta SVG failu(-us).
+3. Pēc SVG handoff **ImageGen šai versijai vairs netiek lietots**. Formas, krāsas un proporcijas netiek pārzīmētas; A4 sagatavošana ir deterministiska vektoru izvietošana.
+4. **1. lapa:** tikai pamatķermenis. **2. lapa:** tikai griežamās detaļas. Uz 1. lapas nav saliktā tēla paraugbildes.
+5. Griešanas kontūras drīkst pievienot/normalizēt no SVG ārējā silueta. Izvietojumam vispirms lieto translāciju; ja salikuma fit to prasa, vienu uniform scale piemēro visam tēlam konsekventi.
+6. Diagnostikas salikumu drīkst veidot QA vajadzībām, bet tas nav drukājamās lapas saturs.
+
 
 ## 2. Mākslinieciskais kvalitātes standarts
 
@@ -29,13 +39,13 @@ Vizuālā pieņemšana ir cilvēka solis. CI PASS pierāda tikai testētos invar
 
 ## 3. Viens kanoniskais tēls: neatkarīgas kopijas ir AIZLIEGTAS
 
-**Source of truth:** rediģējams SVG part tree + versēts JSON salikuma manifests; skat. [assembly v1](CUT_PASTE_ASSEMBLY_V1.md) un `metadata/cut-paste-character-v1.schema.json`. Katram elementam vienreiz piešķir:
+**Source of truth pēc handoff:** īpašnieka atsūtītais vektorizētais SVG fails vai SVG failu pāris. ImageGen ir tikai pirms-vektorizācijas mākslas koncepts; pēc SVG saņemšanas pieņemtajai versijai ImageGen vairs netiek lietots. No SVG drīkst atvasināt versētu salikuma manifestu/enkurus QA vajadzībām; skat. [assembly v1](CUT_PASTE_ASSEMBLY_V1.md) un `metadata/cut-paste-character-v1.schema.json`. Katram elementam vienreiz piešķir:
 - stabilu unikālu `part_id` un lomu `base` / `cutout`;
 - precīzu ārējo kontūru, iekšējo zīmējumu, krāsu, mērogu milimetros un orientāciju;
 - salikšanas koordinātas, rotāciju, simetrijas pusi un slāņu secību;
 - priekšpusē pieejamu līmēšanas mērķi, kontakta laukumu un darbību secību.
 
-No **tā paša** ieraksta atvasini **(a)** lielo rumpi uz 1. lapas, **(b)** izgriežamos elementus uz 2. lapas, **(c)** mazo gatavā tēla paraugu uz 1. lapas, **(d)** diagnostikas salikuma attēlu (*assembly proof*). Parauga detaļu skaits, forma un proporcijas obligāti sakrīt ar faktiski izgriežamajām detaļām pēc vienas globālas parauga mērogošanas. Nedrīkst salikt 1. lapu no vecā PDF un 2. lapu no jauna PDF, ja salikuma versijas/hashi atšķiras, pat ja abas lapas atsevišķi ir skaistas un A4 PASS.
+No **tā paša SVG avota** atvasini **(a)** lielo rumpi uz 1. lapas un **(b)** izgriežamos elementus uz 2. lapas. Uz 1. lapas **nav** mazā gatavā tēla parauga. Atsevišķu diagnostikas salikuma attēlu (*assembly proof*) drīkst ģenerēt tikai QA vajadzībām; tas nav drukājamās lapas saturs. Nedrīkst salikt 1. lapu no vecā PDF un 2. lapu no jauna PDF, ja salikuma versijas/hashi atšķiras, pat ja abas lapas atsevišķi ir skaistas un A4 PASS.
 
 Katru anatomijas elementu izvēlies **vienreiz**: ja ausis/spārni/ķepas/acis ir `cutout`, tie **nedrīkst** būt jau uzzīmēti uz lielās pamatnes. Vienai detaļai ir tieši viena lietošanas vieta; bez dublikātiem vai neizmantotām detaļām. Slāņu secība un līmēšana tikai pieejamā priekšpusē; bērnam nav jācenšas iebāzt detaļu aiz gatava, neatdalāma objekta. Spārni sikspārnim jāpievieno **rumpja/vēdera sānos**, nevis sejas vai galvas vidū.
 
@@ -47,20 +57,20 @@ Katru anatomijas elementu izvēlies **vienreiz**: ja ausis/spārni/ķepas/acis i
 
 **Obligātā secība (bez apstiprināšanas no ImageGen attēla vien):**
 
-1. Vispirms izveido vienu oriģinālu gatavā tēla māksliniecisko koncepciju un **vienu kanonisku SVG/JSON part tree**. Nosaki katras fiziskās detaļas unikālo ID, ārējo siluetu, mērogu, rotāciju un precīzu priekšpuses līmēšanas vietu. Plakans ImageGen attēls bez detaļu ģeometrijas ir tikai `ART_CONCEPT_ONLY`, nevis gatavs CUT.
-2. **PIRMS** abu A4 lapu finalizācijas matemātiski atvasini visu pamatnes un salikto detaļu siluetu union/bounding box 100% fiziskajā mērogā, ņemot vērā ārējo mākslas kontūru, abu spārnu galus, ausis, ragi/cepure/kāts, asti, līmēšanas pārlaidumus un pilno slāņu secību. Reģistrē `assembled_bbox_mm=[left,top,right,bottom]`, `assembled_width_mm=right-left`, `assembled_height_mm=bottom-top`. Mazā parauga izmēri neattiecas uz šo testu.
-3. Novieto pilno salikumu **tās pašas 1. lapas lielā rumpja fiziskajās koordinātās**, kur bērns salīmēs detaļas. Atkārto precīzo `js/print.js` `fitA4InkBounds` lapas transformāciju (ieskaitot XY translāciju). Gala salikuma ārējai robežai jāiekļaujas **`x=17..193 mm`, `y=17..256 mm`**, tātad `assembled_width_mm <= 176 mm` un `assembled_height_mm <= 239 mm`, ņemot vērā 1–2 px rezerves noapaļošanai. Papildus pārbaudi, vai spārni/citas izvirzītās detaļas nešķērso mazo paraugu vai atsevišķās griešanas līnijas. **Nedrīkst** paļauties uz pārlūka/drukas dialoga `Fit to page` samazināšanu; abu A4 lapu normālais print `scale=1.0`.
-4. Tikai `ASSEMBLED_FIT=PASS` ar izmērītiem mm un vienas kanoniskās ģeometrijas pierādījumu atļauj atvasināt **1. lapas pamatni + mazo klonēto paraugu** un **2. lapas griežamās detaļas**. Pēc tam joprojām atsevišķi pārbaudi abu lapu A4/PNG kvalitāti, 4 mm šķēru atstarpes, priekšpuses līmēšanas enkurus, nebrendētu oriģinālu un `js/print.js` drukas zonu.
-5. Ja saliktais tēls ar spārniem iziet ārā, trūkst ģeometrijas vai nav precīzas izvietošanas pārbaudes: `ASSEMBLED_FIT=FAIL` vai `ASSEMBLED_FIT=UNVERIFIED` un **STOP pirms divu A4 CUT gala lapu apstiprināšanas**. Atgriezies pie **kopējā SVG/JSON avota**, saskaņoti samazini rumpi un izvirzītās detaļas vai pārprojektē proporcijas, pārrēķini līmēšanas vietas, nepazaudē bērnam lietojamas griežamās zonas, atvasini abas lapas/paraugu no jauna un atkārto visus testus. Aizliegts saglabāt veco 1. lapas paraugu vai atsevišķi samazināt vienu spārna rastru.
+1. Vispirms ar ImageGen izveido vienu oriģinālu gatavā tēla māksliniecisko koncepciju. Īpašnieks to vektorizē ārēji un atsūta SVG failu(-us). **No šī brīža ImageGen šai versijai vairs netiek izmantots.** No atsūtītā SVG nosaki katras fiziskās detaļas unikālo ID, ārējo siluetu, kopīgo mērogu, rotāciju un paredzēto priekšpuses līmēšanas vietu. Plakans ImageGen attēls bez SVG ģeometrijas ir tikai `ART_CONCEPT_ONLY`, nevis gatavs CUT.
+2. **PIRMS** abu A4 lapu finalizācijas matemātiski atvasini visu pamatnes un salikto detaļu siluetu union/bounding box 100% fiziskajā mērogā, ņemot vērā ārējo mākslas kontūru, abu spārnu galus, ausis, ragi/cepure/kāts, asti, līmēšanas pārlaidumus un pilno slāņu secību. Reģistrē `assembled_bbox_mm=[left,top,right,bottom]`, `assembled_width_mm=right-left`, `assembled_height_mm=bottom-top`. QA diagnostikas attēla izmēri neattiecas uz šo fiziskā salikuma testu.
+3. Novieto pilno salikumu **tās pašas 1. lapas lielā rumpja fiziskajās koordinātās**, kur bērns salīmēs detaļas. Atkārto precīzo `js/print.js` `fitA4InkBounds` lapas transformāciju (ieskaitot XY translāciju). Gala salikuma ārējai robežai jāiekļaujas **`x=17..193 mm`, `y=17..256 mm`**, tātad `assembled_width_mm <= 176 mm` un `assembled_height_mm <= 239 mm`, ņemot vērā 1–2 px rezerves noapaļošanai. **Nedrīkst** paļauties uz pārlūka/drukas dialoga `Fit to page` samazināšanu; abu A4 lapu normālais print `scale=1.0`.
+4. Tikai `ASSEMBLED_FIT=PASS` ar izmērītiem mm un vienas SVG ģeometrijas pierādījumu atļauj atvasināt **1. lapas pamatni bez saliktā parauga** un **2. lapas griežamās detaļas**. Pēc tam joprojām atsevišķi pārbaudi abu lapu A4/PNG kvalitāti, 4 mm šķēru atstarpes, priekšpuses līmēšanas enkurus, nebrendētu oriģinālu un `js/print.js` drukas zonu.
+5. Ja saliktais tēls ar spārniem iziet ārā, trūkst ģeometrijas vai nav precīzas izvietošanas pārbaudes: `ASSEMBLED_FIT=FAIL` vai `ASSEMBLED_FIT=UNVERIFIED` un **STOP pirms divu A4 CUT gala lapu apstiprināšanas**. Atgriezies pie atsūtītā SVG avota, saskaņoti maini kopīgo mērogu/enkurus, nepazaudē bērnam lietojamas griežamās zonas, atvasini abas lapas no jauna un atkārto visus testus. Aizliegts pēc SVG handoff labot fit ar jaunu ImageGen zīmējumu vai atsevišķi samazināt tikai vienu spārnu/lapu.
 
 **Statusi un godīgs pierādījums:** `ART_CONCEPT_ONLY`, `ASSEMBLED_FIT=UNVERIFIED`, `ASSEMBLED_FIT=FAIL` vai `ASSEMBLED_FIT=PASS`, kur `PASS` vienmēr ietver full-size robežas mm, tā paša avota detaļu identitāti un izmantoto print placement. Attēla modelis **nedrīkst apgalvot** ģeometrijas PASS, ja faktiskais izmēru aprēķins nav veikts. Šis source-only noteikums vēl **neievieš jaunu automātisku checker**. A4 PASS neaizstāj fizisko 100% izgriešanu/salīmēšanu, vizuālo apstiprinājumu vai publicēšanas HOLD.
 
 ## 4. Lapu līgums un precīzi drukas aprēķini
 
-1. **`01 Körper/Grundform`:** tikai liels rumpis, pareizā vietā un nemainīgā mērogā; **mazs saliktais paraugs pašā augšā**. Paraugs neaizskar ne rumpja izgriešanas kontūru, ne potenciālo saliktā tēla ar spārniem/ausīm pilno aizņemto laukumu.
+1. **`01 Körper/Grundform`:** tikai liels rumpis/pamatne no atsūtītā SVG; **bez mazā saliktā parauga** un bez citiem dekoratīviem elementiem.
 2. **`02 Ausschneideteile`:** visas un tikai detaļas, kuru vajag salikumam; katra tieši vienreiz; atsevišķa, slēgta, uz ārpusi nobīdīta **pārtraukta griešanas kontūra**. Nekad nepārtrauktā mākslas kontūra nav jāaizvieto ar pārtrauktu. Bērna šķērēm atstāj vismaz QA noteiktos **4 mm starp griešanas līniju stroke envelopes**, nevis tikai starp krāsainajiem objektiem.
 
-Portrait A4: **210×297 mm = 2480×3508 RGB PNG**, aptuveni **300 DPI**. Precīzi balta `#FFFFFF` 15 mm josla (rastera pārbaudē 177 px). Taču `js/print.js` reālais **no-downscale visible ink** laukums ir stingrāks: `x=17..193 mm` un `y=17..256 mm`. Tātad platums **176 mm**, augstums **239 mm**, zem zīmējuma rezervēti **41 mm** (vietnes footer, atstarpe, apakšējā mala), papildus **2 mm** kontūru rezerve. `15 mm` nav pareizs mērķis mazā parauga redzamajai augšmalai; jābūt ap **17 mm** ar 1–2 px rezervi.
+Portrait A4: **210×297 mm = 2480×3508 RGB PNG**, aptuveni **300 DPI**. Precīzi balta `#FFFFFF` 15 mm josla (rastera pārbaudē 177 px). Taču `js/print.js` reālais **no-downscale visible ink** laukums ir stingrāks: `x=17..193 mm` un `y=17..256 mm`. Tātad platums **176 mm**, augstums **239 mm**, zem zīmējuma rezervēti **41 mm** (vietnes footer, atstarpe, apakšējā mala), papildus **2 mm** kontūru rezerve. Drukājamās redzamās tintes robežai jāpaliek vismaz ap **17 mm** no augšas/sāniem ar 1–2 px rezervi; 15 mm baltā josla viena pati nav pietiekama `scale=1.0` pierādījumam.
 
 Pie rastra A4 efektīvā koordinātu pārrēķina (ievērojot attiecīgā eksporta izmēru):
 - `x_mm = x_px × 210 / 2480`; `y_mm = y_px × 297 / 3508`;
@@ -68,17 +78,17 @@ Pie rastra A4 efektīvā koordinātu pārrēķina (ievērojot attiecīgā ekspor
 - `inkWidth = (right-left+1) × 210/2480`, `inkHeight = (bottom-top+1) × 297/3508`;
 - `scale = min(1, 176/inkWidth, 239/inkHeight)`. Vajadzīgs **scale = 1.0**, bez pārslēgšanās uz mazāku.
 
-**Izkārtojuma algoritms:** nosaki atsevišķi mazā parauga un rumpja *redzamās tintes* bounding box; pārvieto paraugu augšup līdz ~17 mm, rumpi lejup, līdz tā griešanas līnijas pēdējais punkts ir droši pirms 256 mm; pārvieto kā atsevišķus slāņus, nevis visu PNG kopā. Pārbaudi **pilno lielo salikumu** ar spārniem/ausīm, ne tikai rumpi — horizontāli nekas nedrīkst iziet no atļautās zonas vai aizskart blakus esošus objektus. Ja pilns tēls neietilpst, to pārprojektē kanoniskajā mēroga/transformāciju kokā un **ģenerē abas lapas no jauna**, nevis slepeni samazina vienu rastra lapu.
+**Izkārtojuma algoritms:** nosaki rumpja un 2. lapas detaļu *redzamās tintes* bounding box no atsūtītajiem SVG. Saglabā SVG formas, krāsas un proporcijas; vispirms lieto translāciju. Ja pilns saliktais tēls neietilpst atļautajā fiziskajā zonā, drīkst lietot tikai vienu **kopīgu uniform scale** visam tēlam (pamatnei un visām atdalāmajām detaļām), tad pārrēķina enkurus un **ģenerē abas lapas no jauna**. Nekad nesamazini tikai vienu rastra lapu vai vienu detaļu neatkarīgi.
 
-**Uzmanību:** vietnes `fitA4InkBounds` vēl arī **centrē kopējo redzamās tintes laukumu** pēc aprēķinātā `scale`. Tādēļ tikai PNG koordinātas vien nevar apliecināt, ka uz **fiziskās** izdrukas paraugs būs tieši 17 mm un rumpis tieši 256 mm. Pārbaudi pēc pilnās `js/print.js` transformācijas un vajadzības gadījumā faktiski izdrukā!
+**Uzmanību:** vietnes `fitA4InkBounds` vēl arī **centrē kopējo redzamās tintes laukumu** pēc aprēķinātā `scale`. Tādēļ tikai PNG koordinātas vien nevar apliecināt precīzo **fiziskās** izdrukas redzamās tintes novietojumu. Pārbaudi pēc pilnās `js/print.js` transformācijas un vajadzības gadījumā faktiski izdrukā!
 
 ## 5. Griešanas un izmēru labošanas noteikumi
 
 - Katra cut līnija ir atvasināta no precīza vektora ārējā silueta (derīgs, slēgts, bez self-intersection) ar ārēju offset; SVG `stroke-dasharray` kontrolē tikai svītrojumu. Skat. [QA v1](CUT_PASTE_QA_V1.md).
 - Pirms samazināšanas **izmēri ar lineālu** reālā 100% A4 testā: cik mm spārna gals pārsniedz vēlamo pozīciju, pilnās samontētās figūras platums, acu/mutes/smagāko detaļu salīdzinājums pret rumpi. Telefona fotogrāfija ar perspektīvu dod tikai *aptuvenu* proporciju norādi, neprecīzu fizisku mm mērījumu; pēc tās nevar deklarēt garantētu salīmēšanu.
-- Ja 10–12% samazināti spārni, 10% acis, deguns vai mute: dokumentē **katru pirms/pēc mm un koeficientu**, atjaunini tieši tās pašas detaļas arī mazajā paraugā **no kanoniskās ģeometrijas**, pārskati līmēšanas enkurus un visu figūras gala bbox, izvada abas lapas atkārtoti.
-- Ja pirmā lapa ir iesaldēta, saglabā visu rumpja reģionu bitu/pikseļu identisku un maini tikai iepriekš skaidri norādīto parauga slāni. Ja paraugu nav iespējams labot tā, lai tas sakristu ar 2. lapu, **STOP**, nelieto veco paraugu kā gatavas jaunās lapas apliecinājumu.
-- Uzacis vai citas no jauna pievienotas detaļas ir jāparāda **abās** atvasinātajās vietās (paraugs un cutout), ar cut kontūru un reāli lietojamu līmēšanas vietu. Tikai skaists rastra ielāps nav ģeometriskas saderības pierādījums.
+- Ja nepieciešama mēroga korekcija, dokumentē pirms/pēc mm un koeficientu, piemēro vienu saskaņotu mērogu visai aktivitātei, pārskati līmēšanas enkurus un visu figūras gala bbox, tad izvada abas lapas atkārtoti.
+- Pēc SVG handoff nevienu lapu nelabo ar atsevišķu AI/rastera pārzīmēšanu. Izmaiņas veic SVG-derived izvietojumā vai vienotajā mērogā un pēc tam abas A4 lapas atvasina no jauna.
+- Ja pēc handoff jāpievieno vai jānoņem detaļa, maina pašu SVG avotu un pēc tam atjauno atbilstošo base/cutout izvadi. Tikai skaists rastra ielāps nav ģeometriskas saderības pierādījums.
 - Nākamais labojums atceļ **visus** vecos QA/print/owner apstiprinājumus attiecīgajam izvades pārim; apstiprini precīzu jaunu versiju ar SHAs.
 
 ## 6. Izvade, footer un provizoriska druka
@@ -115,7 +125,7 @@ Katrai precīzajai versijai glabā pārskatu ar:
 - `ART_REVIEW` — `PENDING|PASS|FAIL` + īpašnieka vērtējums; figurālās kvalitātes pārbaude.
 - `GEOMETRY_QA` — `PENDING|PASS|FAIL`; 1:1 part ID/izmēri, līmēšanas laukumi, pretējās puses, full-body extent, no overlap, kontūras un 4 mm scissor separation.
 - `PRINT_QA` — `PENDING|PASS|FAIL`; A4, RGB, ~300 DPI, 15 mm exact-white, x/y 17..193/17..256 mm, site-render scale=1, footer/QR nav oriģinālajā PNG.
-- `PHYSICAL_QA` — `PENDING|PASS|FAIL`; īsts 100% A4 izdrukāts, izgriezts, salīmēts (sikspārnis un cits tēls pirms foundation #221 slēgšanas), foto/izmēri, atbilstība mazajam paraugam.
+- `PHYSICAL_QA` — `PENDING|PASS|FAIL`; īsts 100% A4 izdrukāts, izgriezts, salīmēts (sikspārnis un cits tēls pirms foundation #221 slēgšanas), foto/izmēri, atbilstība paredzētajam salikumam.
 - `OWNER_APPROVAL` — `PENDING|PASS|FAIL`; precīzajai divu lapu SHA identitātei, nevis abstraktai idejai.
 - `PUBLISH` — `HOLD|NOT_REQUESTED|STOP|PASS`. Šajā brīdī **HOLD**, nevis PASS.
 
