@@ -6,6 +6,8 @@ From a valid `detail.html?id=<activity-id>`, a visitor can open **Fehler melden*
 
 Browser entry: `detail.html` + `css/report.css` + `js/report.js` + bounded `js/detail.js` page event and deep-link handling. Server entry: standalone `cloudflare/report-worker.mjs` (no Stats Worker, D1, server-side database or RPi5 backend). Entire implementation is **source-only / not deployed**; the frontend button will not work until a separately approved Worker route, email binding and secrets are correctly configured.
 
+If the activity ID or selected page existed when the detail page loaded but is no longer present in the current server-side catalogue at submit time, the Worker returns only the static `409` code `activity_unavailable` and does not call Brevo. The frontend closes and disables reporting for that stale activity and announces **„Diese Malvorlage ist nicht mehr verfügbar. Bitte lade die Seite neu oder wähle eine andere Vorlage.“** Other backend failures keep the generic retry message so provider/security details are not exposed.
+
 ## Worker routing and bindings — not an apply/run instruction
 
 - Route **only** `https://ausmalwiese.de/api/report` (POST) and `/api/report/config` (GET) to the report Worker; route-mask matching must not unintentionally take over `/api/stats/*`, `/catalog.json` or the home/detail/print paths. If `www` stays public, configure the equivalent narrow route or redirect consistently; do not turn report handling into a catch-all.
@@ -27,7 +29,7 @@ Browser entry: `detail.html` + `css/report.css` + `js/report.js` + bounded `js/d
 
 ## Tests and maintenance
 
-Run `node --test tests/test_report_worker.mjs` locally. `tests/test_report_node.py` runs this suite as part of the existing Python `unittest discover -s tests -v` CI job; Node.js must be present. Tests cover five reasons, multi-page links, malformed data, origin, replayed/invalid challenges, duplicate/rate rejection, email failures, header/title sanitization, config/route fail-closed behavior and structural report UI checks. The Worker sends **no real email** in tests; `fetch` and bindings are mocked. Runtime/browser usability and legal approval still require separate review.
+Run `node --test tests/test_report_worker.mjs` locally. `tests/test_report_node.py` runs this suite as part of the existing Python `unittest discover -s tests -v` CI job; Node.js must be present. Tests cover five reasons, multi-page links, malformed data, stale/removed activity and page handling before Brevo, origin, replayed/invalid challenges, duplicate/rate rejection, email failures, header/title sanitization, config/route fail-closed behavior and structural report UI checks. The Worker sends **no real email** in tests; `fetch` and bindings are mocked. Runtime/browser usability and legal approval still require separate review.
 
 Canonical links:
 - https://developers.brevo.com/reference/send-transac-email

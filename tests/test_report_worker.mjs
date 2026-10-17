@@ -9,7 +9,7 @@ globalThis.crypto ||= webcrypto;
 const ORIGIN = "https://ausmalwiese.de";
 const REASONS = ["print", "image", "craft", "wrong", "other"];
 const defaults = { id: "1234567", page: 1, reason: "print", turnstile: "a-token" };
-function setup({ pages = 2, title = "Basteln", failEmail = false, emailStatus = 201, messageId = "accepted-1", challenge = true, rate = true, duplicate = true } = {}) {
+function setup({ pages = 2, title = "Basteln", catalogId = "1234567", failEmail = false, emailStatus = 201, messageId = "accepted-1", challenge = true, rate = true, duplicate = true } = {}) {
   const mail = [];
   const siteverifyTokens = new Set();
   const duplicateKeys = new Set();
@@ -24,7 +24,7 @@ function setup({ pages = 2, title = "Basteln", failEmail = false, emailStatus = 
       return Response.json({ success: valid, hostname: "ausmalwiese.de", action: "report" });
     }
     if (String(url) === ORIGIN + "/catalog.json") {
-      return Response.json([{ id: "1234567", title, pages: Array.from({ length: pages }, () => ({ print: "/media/example.png" })) }]);
+      return Response.json([{ id: catalogId, title, pages: Array.from({ length: pages }, () => ({ print: "/media/example.png" })) }]);
     }
     if (String(url) === "https://api.brevo.com/v3/smtp/email") {
       if (failEmail) throw new Error("email unavailable");
@@ -77,8 +77,8 @@ test("all five allowed reasons send exactly one verified notification with canon
 test("invalid id, page number, reason, extra data and untrusted contact parameters are denied", async () => {
   const { env, mail, upstream } = setup();
   const cases = [
-    { ...defaults, id: "../admin" }, { ...defaults, id: "not-found" },
-    { ...defaults, page: 0 }, { ...defaults, page: 3 },
+    { ...defaults, id: "../admin" },
+    { ...defaults, page: 0 },
     { ...defaults, page: "1" }, { ...defaults, reason: "unknown" },
     { ...defaults, email: "attacker@example.test" }, { ...defaults, to: "evil@example.test" },
   ];
@@ -89,6 +89,22 @@ test("invalid id, page number, reason, extra data and untrusted contact paramete
   }
   assert.equal(mail.length, 0);
   assert.ok(upstream.every((value) => value.includes("/siteverify") || value === ORIGIN + "/catalog.json"));
+});
+test("removed activity returns one safe unavailable signal and never reaches Brevo", async () => {
+  const { env, mail, upstream } = setup({ catalogId: "7654321" });
+  const response = await call(env);
+  assert.equal(response.status, 409);
+  assert.deepEqual(response.body, { ok: false, error: "activity_unavailable" });
+  assert.equal(mail.length, 0);
+  assert.equal(upstream.filter((url) => url === "https://api.brevo.com/v3/smtp/email").length, 0);
+});
+test("removed page returns the same safe unavailable signal", async () => {
+  const { env, mail, upstream } = setup({ pages: 1 });
+  const response = await call(env, { ...defaults, page: 2 });
+  assert.equal(response.status, 409);
+  assert.deepEqual(response.body, { ok: false, error: "activity_unavailable" });
+  assert.equal(mail.length, 0);
+  assert.equal(upstream.filter((url) => url === "https://api.brevo.com/v3/smtp/email").length, 0);
 });
 test("only same-origin browser POST is accepted", async () => {
   const { env, mail } = setup();
@@ -189,6 +205,9 @@ test("detail UI has five radio choices and works without uploading identity or b
   assert.match(js, /const initialIndex =/);
   assert.match(client, /data-report-submit/);
   assert.match(client, /ausmalwiese:detail-loaded/);
+  assert.match(client, /activity_unavailable/);
+  assert.match(client, /Diese Malvorlage ist nicht mehr verfügbar\. Bitte lade die Seite neu oder wähle eine andere Vorlage\./);
+  assert.match(client, /openButton\.hidden = true/);
   assert.match(css, /:focus-visible/);
 });
 test("all report JavaScript is syntactically valid", () => {

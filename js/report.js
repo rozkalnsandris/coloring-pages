@@ -17,7 +17,16 @@
   let siteKeyPromise = null;
   let scriptPromise = null;
   let busy = false;
+  const ACTIVITY_UNAVAILABLE = "activity_unavailable";
+  const ACTIVITY_UNAVAILABLE_MESSAGE = "Diese Malvorlage ist nicht mehr verfügbar. Bitte lade die Seite neu oder wähle eine andere Vorlage.";
   function say(message) { status.textContent = message; }
+  function markActivityUnavailable() {
+    activityId = "";
+    panel.hidden = true;
+    openButton.hidden = true;
+    openButton.setAttribute("aria-expanded", "false");
+    say(ACTIVITY_UNAVAILABLE_MESSAGE);
+  }
   function close() {
     if (busy) return;
     panel.hidden = true;
@@ -110,6 +119,10 @@
         body: JSON.stringify({ id: activityId, page, reason, turnstile: token }),
       });
       const result = await response.json().catch(() => null);
+      if (response.status === 409 && result?.ok === false && result?.error === ACTIVITY_UNAVAILABLE) {
+        markActivityUnavailable();
+        return;
+      }
       if (!response.ok || result?.ok !== true) throw new Error("not sent");
       panel.hidden = true;
       openButton.setAttribute("aria-expanded", "false");
