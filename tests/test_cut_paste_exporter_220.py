@@ -16,16 +16,21 @@ def fixture(name="v1_bat_valid.json"):
     return json.loads((ROOT/"tests/fixtures/cut_paste"/name).read_text("utf-8"))
 
 class CutPasteExporterTests(unittest.TestCase):
-    def test_derived_views_share_the_same_parts(self):
+    def test_derived_views_share_the_same_parts_without_printed_preview(self):
         svg,meta=app.render(fixture())
         self.assertEqual(len(meta["parts"]),9)
         self.assertEqual(len(meta["cutouts"]),8)
         for part in meta["parts"]:
             marker='data-part-id="'+part+'"'
             self.assertIn(marker,svg["03-assembly-proof.svg"])
-            self.assertIn(marker,svg["01-base.svg"])
-            self.assertEqual(svg["02-cutouts.svg"].count(marker),0 if part=="body" else 1)
-        self.assertIn('id="assembled-preview"',svg["01-base.svg"])
+            if part=="body":
+                self.assertEqual(svg["01-base.svg"].count(marker),1)
+                self.assertEqual(svg["02-cutouts.svg"].count(marker),0)
+            else:
+                self.assertEqual(svg["01-base.svg"].count(marker),0)
+                self.assertEqual(svg["02-cutouts.svg"].count(marker),1)
+        self.assertNotIn('id="assembled-preview"',svg["01-base.svg"])
+        self.assertFalse(meta["printed_preview"])
         self.assertNotIn("stroke-dasharray",svg["03-assembly-proof.svg"])
 
     def test_idempotent_svg_and_layout(self):
@@ -36,15 +41,17 @@ class CutPasteExporterTests(unittest.TestCase):
             with self.subTest(name=name),self.assertRaises(ValueError):
                 app.render(fixture(name))
 
-    def test_finished_preview_collision_fails(self):
-        data=fixture()
-        data["page_layout"]["preview_box_mm"]=[70,120,30,20]
-        with self.assertRaisesRegex(ValueError,"Preview overlaps"): app.render(data)
+    def test_legacy_preview_box_is_ignored(self):
+        one=fixture()
+        two=fixture()
+        two["page_layout"]["preview_box_mm"]=[70,120,30,20]
+        self.assertEqual(app.render(one),app.render(two))
 
     def test_oversized_piece_fails(self):
         data=fixture()
         data["parts"][-1]["art"]["size_mm"]=[190,49]
-        with self.assertRaisesRegex(ValueError,"Cutout exceeds|Assembled subject exceeds"): app.render(data)
+        with self.assertRaisesRegex(ValueError,"Cutout exceeds|Assembled subject exceeds"):
+            app.render(data)
 
 if __name__=="__main__":
     unittest.main()
