@@ -1,5 +1,15 @@
 # German legal pages — DRAFT / NOT RELEASE READY
 
+## 2026-10-17 fresh Cloudflare runtime metadata — CURRENT EVIDENCE
+
+**Read-only evidence, not legal sign-off:** an authenticated Cloudflare Dashboard review on 2026-10-17 confirmed the account is on **Free ($0/month) / Workers & Pages Free**, Worker `coloring-pages-stats-v1` has **Workers Logs disabled** and **Workers Traces disabled**, and D1 database `coloring-pages-stats-v1` is on the Free tier. The visible D1 Time Travel restore window was **2026-10-10 → 2026-10-17**, matching Cloudflare's documented **7-day Workers Free** recovery limit. This is recovery history, not active-row retention or a seven-day deletion SLA.
+
+**Web Analytics:** `ausmalwiese.de` is **enabled** with Automatic setup (created 2026-10-11). Cloudflare's current documentation states that unsampled beacon data is retained for **7 days**, then aggregated down to roughly 10% for longer-term storage; Web Analytics data is accessible for the previous **six months**. This closes the retention-fact gap for that Cloudflare product, but **does not decide its GDPR lawful basis**.
+
+**Rate Limiter:** the Production Worker exposes binding `RATE_LIMITER` with namespace `1152026106`. The Dashboard read-only binding card did not expose the configured limit/period without entering an edit surface, so those LIVE values remain **UNKNOWN**. The reviewed source config's `100 / 60s` value is not promoted to a LIVE fact.
+
+**Still unverified:** Cloudflare role/recipient and transfer/safeguard wording; edge/WAF/security and Rate Limiter retention; current origin access-log retention; lawful basis/necessity for Web Analytics, aggregate Print/IP and visit/HMAC processing; and the deployed expiry-cleanup/Cron schedule plus maximum cleanup delay. No secret values, D1 rows, settings writes or Cloudflare mutations were used for this evidence.
+
 
 ## 2026-10-17 Art. 8 / expiry-aggregate review — CURRENT OPEN GATES
 
@@ -7,7 +17,7 @@
 
 **Expiry aggregate:** paired PR #183 adds `docs/LIKE_EXPIRY_ANONYMISATION_ASSESSMENT_182.md`. The proposed archive contains only `page_id + like_count`, with no cookie/session key or event timestamp. That is a strong technical candidate for non-linkable aggregate data after source identifiers are deleted, but neither this PR nor public copy may state as a legal fact that the result is anonymous. The assessment must consider record isolation/singling out, linkability and inference together with reasonably available runtime data. EDPB Guidelines 02/2026 on Anonymisation are still a consultation draft through **2026-10-30**.
 
-**Art. 13 gaps still explicit, not silently filled:** before release, the final notice must be matched to actual runtime evidence for (a) Cloudflare/provider roles and recipients, (b) any third-country transfers/safeguards, (c) concrete retention/deletion criteria for Rate Limiter, edge/origin/security logs and D1 recovery history, (d) lawful basis and necessity for aggregate Print/IP processing and independent visit/HMAC analytics, and (e) the actually deployed expiry-cleanup schedule and maximum operational delay. Source text that says these facts are still to be confirmed is preferable to inventing production facts.
+**Art. 13 gaps still explicit, not silently filled:** fresh runtime evidence now fixes the current Workers Free plan, 7-day D1 Time Travel recovery window, enabled Web Analytics retention facts, and disabled Workers Logs/Traces for the Stats Worker. Before release, the final notice still needs (a) Cloudflare/provider roles and recipients, (b) any third-country transfers/safeguards, (c) concrete retention/deletion criteria for Rate Limiter, edge/origin/security logs, (d) lawful basis and necessity for Web Analytics, aggregate Print/IP processing and independent visit/HMAC analytics, and (e) the actually deployed expiry-cleanup schedule and maximum operational delay. Source text must keep these remaining facts open rather than inventing them.
 
 **Legal effect:** adult-directed wording does not validate a child's consent; post-expiry aggregation does not retroactively cure invalid consent during the preceding pseudonymous period. Both PRs remain **Draft / NOT RELEASE READY / NO LEGAL SIGN-OFF**.
 
@@ -22,8 +32,8 @@ Still open before release:
 - **GDPR Art. 8 / audience:** Ausmalwiese serves material for young children. Whether the optional Like feature is an information-society service offered directly to children, and any resulting parental-authorization/verification duty, still needs legal/controller determination.
 - **Anonymisation assessment:** the expiry archive is designed to keep only page-level totals without a cookie/session key, but the legal conclusion that those totals are anonymous remains a separate assessment. EDPB Guidelines 02/2026 on Anonymisation are still a public-consultation draft through 2026-10-30, not final guidance.
 - **Runtime truth:** GitHub source does not prove that the D1 migration, scheduled cleanup/Cron, Worker source or frontend are LIVE. Release requires fresh runtime evidence and separately authorized D1/Worker/application actions.
-- **Recovery/log boundaries:** D1 Time Travel is recovery history, not active-row retention. Current Cloudflare documentation distinguishes 7 days on Workers Free and 30 days on Workers Paid; the actual production plan/settings must be verified rather than inferred.
-- **Aggregate Print / technical connection data:** the planned Print event has no stable visitor ID, but its lawful basis, rate-limiter/edge processing and retention still require final legal review.
+- **Recovery/log boundaries:** fresh 2026-10-17 authenticated Dashboard evidence confirms **Workers Free** and a D1 Time Travel restore window from **2026-10-10 to 2026-10-17**; the current Draft therefore uses the **7-day** recovery limit. This supersedes the earlier plan ambiguity, while the dated 2026-10-15 observation remains below as audit history. Time Travel remains recovery history, not active-row retention. Workers Logs and Workers Traces are currently disabled for the Stats Worker; separate edge/WAF/security, Rate Limiter and origin logging still require their own retention evidence.
+- **Aggregate Print / technical connection data:** the planned Print event has no stable visitor ID, but its lawful basis, Rate Limiter/edge processing and retention still require final legal review. Web Analytics is now runtime-confirmed enabled with its provider retention facts documented above, but its GDPR lawful basis remains open.
 
 Both PR #158 and PR #183 remain **Draft / NOT RELEASE READY / NO LEGAL SIGN-OFF**. This coordination performs no D1, Worker, Cloudflare or application deployment.
 

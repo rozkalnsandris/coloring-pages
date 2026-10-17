@@ -53,22 +53,34 @@
         <p>Für die technisch notwendige Bereitstellung und Absicherung kommt
           Art. 6 Abs. 1 lit. f DSGVO als Rechtsgrundlage in Betracht
           (Interessen an Verfügbarkeit, Sicherheit und Fehlerdiagnose).
-          Die Rechtsgrundlagen der einzelnen Vorgänge, die tatsächlichen
-          Empfänger, mögliche Drittlandübermittlungen und die
-          Aufbewahrungsfristen der Server- und Cloudflare-Protokolle sind
-          vor Veröffentlichung noch konkret zu prüfen.</p>
+          Für unseren eigenen Stats Worker waren am 17. Oktober 2026
+          <strong>Workers Logs und Workers Traces deaktiviert</strong>.
+          Dies sagt nichts über separate Cloudflare-Edge-, Sicherheits-,
+          Rate-Limiter- oder originseitige Protokolle aus. Soweit nachfolgend
+          keine konkrete Frist genannt ist, sind die Rechtsgrundlagen der
+          einzelnen Vorgänge, die tatsächlichen Empfänger, mögliche
+          Drittlandübermittlungen sowie Speicher- und Löschkriterien vor
+          Veröffentlichung noch konkret zu prüfen.</p>
       </section>
 
       <section aria-labelledby="privacy-analytics">
         <h2 id="privacy-analytics">3. Webanalyse und pseudonymisierte Nutzungsstatistik</h2>
-        <p>Wir nutzen <strong>Cloudflare Web Analytics</strong>. Dabei wird ein
+        <p>Wir nutzen <strong>Cloudflare Web Analytics</strong>; die Funktion ist
+          für <strong>ausmalwiese.de</strong> aktiviert. Dabei wird ein
           Analyse-Skript von Cloudflare geladen, das technische Informationen
           zur Seitennutzung und zur Ladeleistung verarbeitet. Nach Angaben von
           Cloudflare verwendet dieses Web-Analytics-Skript keine Cookies oder
           <code>localStorage</code> zur Wiedererkennung einzelner Besucher.
-          Diese Angabe bezieht sich allein auf Web Analytics;
-          unabhängig davon kann Cloudflare bei Sicherheitsfunktionen
-          technische Cookies einsetzen.</p>
+          Cloudflare speichert nicht gesampelte Beacon-Daten nach eigener
+          Dokumentation für <strong>sieben Tage</strong> und fasst sie danach
+          für die längerfristige Speicherung auf ungefähr zehn Prozent des
+          ursprünglichen Umfangs zusammen; im Dashboard sind Web-Analytics-Daten
+          für die letzten <strong>sechs Monate</strong> abrufbar.
+          Diese Angaben beziehen sich allein auf Web Analytics; unabhängig davon
+          kann Cloudflare bei Sicherheitsfunktionen technische Cookies und andere
+          Verbindungsdaten verarbeiten. Die konkrete datenschutzrechtliche
+          Rechtsgrundlage der Webanalyse wird vor Veröffentlichung abschließend
+          festgelegt.</p>
         <p>Zusätzlich übermittelt unsere Website bei Aufrufen der Startseite und
           von Malvorlagen an einen eigenen Cloudflare Worker eine Besuchsmeldung.
           Der Worker verwendet die IP-Adresse nur während der Verarbeitung
@@ -159,9 +171,15 @@
           verbundene Verarbeitung personenbezogener Daten ist Art. 6 Abs. 1
           lit. a DSGVO vorgesehen. Ein Widerruf wirkt für die Zukunft und
           berührt die Rechtmäßigkeit der vorherigen Verarbeitung nicht.
-          Wiederherstellungsverläufe, technische Protokolle und die rechtliche
-          Einordnung der nach Ablauf verbleibenden reinen Summenzähler werden
-          vor Veröffentlichung gesondert geprüft.</p>
+          Das aktuell genutzte Cloudflare-Konto verwendet den
+          <strong>Workers-Free-Tarif</strong>. Für die gebundene D1-Datenbank
+          zeigte das Cloudflare Dashboard am 17. Oktober 2026 ein
+          <strong>Time-Travel-Wiederherstellungsfenster von sieben Tagen</strong>.
+          Diese Wiederherstellungshistorie ist keine aktive Like-Speicherfrist;
+          ein Restore kann einen früheren Datenbankzustand wiederherstellen.
+          Technische Edge-, Origin- und Rate-Limiter-Protokolle sowie die
+          rechtliche Einordnung der nach Ablauf verbleibenden reinen
+          Summenzähler werden vor Veröffentlichung gesondert geprüft.</p>
       </section>
 
       <section aria-labelledby="privacy-fonts">

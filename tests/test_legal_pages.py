@@ -111,6 +111,34 @@ class LegalPageSourceTests(unittest.TestCase):
         self.assertIn("art. 8 dsgvo", privacy.lower())
         self.assertIn("weder das alter noch eine", privacy.lower())
         self.assertIn("vor veröffentlichung gesondert geprüft", privacy.lower())
+        for verified in (
+            "Workers Logs und Workers Traces deaktiviert",
+            "sieben Tage",
+            "sechs Monate",
+            "Workers-Free-Tarif",
+            "Time-Travel-Wiederherstellungsfenster von sieben Tagen",
+        ):
+            self.assertIn(verified.lower(), privacy.lower())
+        for verified in (
+            "fresh Cloudflare runtime metadata",
+            "Workers Free",
+            "2026-10-10",
+            "2026-10-17",
+            "Workers Logs disabled",
+            "Workers Traces disabled",
+            "six months",
+            "LIVE values remain **UNKNOWN**",
+        ):
+            self.assertIn(verified.lower(), report.lower())
+        for still_open in (
+            "roles and recipients",
+            "third-country transfers/safeguards",
+            "Rate Limiter",
+            "origin",
+            "lawful basis",
+            "expiry-cleanup schedule",
+        ):
+            self.assertIn(still_open.lower(), report.lower())
 
     def test_art13_open_facts_and_ddg_contact_are_reviewed_without_invention(self):
         report = (ROOT / "docs/LEGAL_PAGES_REVIEW.md").read_text(encoding="utf-8")
