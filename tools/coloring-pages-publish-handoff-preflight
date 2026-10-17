@@ -12,6 +12,8 @@ import json
 from pathlib import Path
 import re
 import sys
+from datetime import datetime, timezone
+from urllib.parse import parse_qs, urlsplit
 
 INDEX_SCHEMA = "rozkalns.coloring-pages.publish-preflight-result.v1"
 MANIFEST_SCHEMA = "rozkalns.coloring-pages.drive-staging-manifest.v1"
@@ -133,6 +135,20 @@ def verify_capabilities(capabilities: object) -> None:
         block("snapshot-materializer-unavailable")
 
 
+def signed_reference_expired_or_invalid(url: str) -> bool:
+    """Fail closed for an explicit signed-URL expiry; no provider authenticity proof."""
+    try:
+        values = parse_qs(urlsplit(url).query, keep_blank_values=True)
+        if "se" not in values:
+            return False
+        if len(values["se"]) != 1:
+            return True
+        expiry = datetime.fromisoformat(values["se"][0].replace("Z", "+00:00"))
+    except ValueError:
+        return True
+    return expiry.tzinfo is None or expiry <= datetime.now(timezone.utc)
+
+
 def verify_bindings(bindings: object, expected: list[dict]) -> None:
     exact_keys(bindings, {"schema", "surface", "source_field", "references"}, code="invalid-bindings")
     if bindings["schema"] != BINDINGS_SCHEMA or bindings["surface"] != SURFACE or bindings["source_field"] != SOURCE_FIELD:
@@ -157,6 +173,8 @@ def verify_bindings(bindings: object, expected: list[dict]) -> None:
             or uri["file_name"] != name or uri["mime_type"] != item["mime_type"]
         ):
             block("unsupported-reference")
+        if signed_reference_expired_or_invalid(uri["download_url"]):
+            block("expired-or-invalid-snapshot-url")
     for entry in expected:
         item = ref_by_file.get(entry["file"])
         if item is None or any(item[k] != entry[k] for k in ("sha256", "size_bytes", "mime_type")):
@@ -190,7 +208,8 @@ def main() -> int:
     print("REMOTE_SNAPSHOT_BYTES_VERIFIED=NO")
     print("DRIVE_MUTATION=NO")
     print("PUBLISH_AUTHORIZATION=NOT_GRANTED")
-    return 0
+    # A syntactically valid offline inventory is not a publication-ready gate.
+    return 3
 
 
 if __name__ == "__main__":
