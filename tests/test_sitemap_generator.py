@@ -11,7 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 HELPER = ROOT / "tools" / "coloring-pages-sitemap"
-ORIGIN = "https://coloring.rozkalns.net"
+ORIGIN = "https://ausmalwiese.de"
 
 
 def entry(activity_id):

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Cut & Paste source SVG exporter, issue #220; NOT print/assembly approval (#221)."""
 import argparse
+import copy
 import hashlib
 import json
 import math
@@ -9,7 +10,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from cut_paste_geometry import outline_d, validate_scene, validate_png
+from cut_paste_geometry import guide_polygon, outline_d, place, validate_scene, validate_png
 
 A4 = (2480, 3508)
 INK = (17, 17, 193, 256)
@@ -127,6 +128,26 @@ def pack(parts,style):
         heights[i]=y+h+m+8
     return placed
 
+def place_base_low(parts, base, bounds, style):
+    """Pure page-1 offset: keep all relative assembly anchors and part scales."""
+    bottom = INK[3]
+    base_guide = place(base, guide_polygon(base))
+    base_stroke = style["stroke_width_mm"] * base["assembly"]["scale"] / 2
+    # Full-scale hypothetically assembled cutouts also need room on page 1.
+    assembled_bottom = max(
+        bounding(p)[3] + p["art"]["stroke_width_mm"] * p["assembly"]["scale"] / 2
+        for p in parts
+    )
+    lowest_ink = max(base_guide.bounds[3] + base_stroke, assembled_bottom)
+    shift = math.floor((bottom - 0.25 - lowest_ink) * 1000) / 1000
+    if shift < 0:
+        raise ValueError("Finished assembly cannot fit above the footer without resizing")
+    shifted = copy.deepcopy(parts)
+    for p in shifted:
+        p["assembly"]["translate_mm"][1] += shift
+    return shift, shifted, base_guide.bounds[3] + base_stroke + shift
+
+
 def render(source):
     parts,base=check(source)
     sorted_parts=sorted(parts,key=lambda p:p["assembly"]["z_index"])
@@ -143,19 +164,34 @@ def render(source):
         raise ValueError("Preview overlaps finished silhouette")
     s=min(box[2]/(x2-x1),box[3]/(y2-y1))
     tx=box[0]+(box[2]-(x2-x1)*s)/2-x1*s
-    ty=box[1]+(box[3]-(y2-y1)*s)/2-y1*s
+    # Align the *actual* visible preview, rather than the white preview box, near
+    # the browser's 17 mm top guard. Retain the exact canonical assembly clone.
+    ty=top+0.4-y1*s
+    pr_ink=(tx+x1*s,ty+y1*s,tx+x2*s,ty+y2*s)
+    preview_stroke=max(p["art"]["stroke_width_mm"]*p["assembly"]["scale"] for p in parts)*s/2
+    if (pr_ink[0]-preview_stroke<left or pr_ink[1]-preview_stroke<top or
+        pr_ink[2]+preview_stroke>right or pr_ink[3]+preview_stroke>bottom):
+        raise ValueError("Preview cannot fit in browser-safe ink box")
+    shift, shifted_parts, base_bottom = place_base_low(parts,base,bounds,source["cut_style"])
+    sorted_parts=sorted(parts,key=lambda p:p["assembly"]["z_index"])
     assembled="".join(f'<g transform="{transform(p)}">{part_svg(p)}</g>' for p in sorted_parts)
     preview=f'<g id="assembled-preview" transform="translate({n(tx)} {n(ty)}) scale({n(s)})">{assembled}</g>'
-    body=page(f'<g id="base" transform="{transform(base)}">{part_svg(base,True,source["cut_style"])}</g>'+preview)
+    # The body moves on paper, never inside its art model. All virtual assembly
+    # parts are shifted together for collision/glue QA; page 2 stays invariant.
+    body=page(f'<g id="base" transform="translate(0 {n(shift)})"><g transform="{transform(base)}">{part_svg(base,True,source["cut_style"])}</g></g>'+preview)
     placed=pack(parts,source["cut_style"])
-    geometry_qa=validate_scene(parts,placed,source["cut_style"],pr,source["page_layout"]["assembled_origin_mm"])
+    geometry_qa=validate_scene(shifted_parts,placed,source["cut_style"],pr_ink,source["page_layout"]["assembled_origin_mm"])
     cutout=page('<g id="cutout-sheet">'+''.join(f'<g transform="translate({n(x)} {n(y)})">{part_svg(p,True,source["cut_style"])}</g>' for p,x,y in placed)+'</g>')
     proof=page('<g id="assembled-proof">'+assembled+'</g>')
     return {"01-base.svg":body,"02-cutouts.svg":cutout,"03-assembly-proof.svg":proof}, {
         "parts":[p["id"] for p in parts],
         "cutouts":[{"id":p["id"],"x_mm":x,"y_mm":y} for p,x,y in placed],
-        "assembled_bounds_mm":list(bounds),"preview_bounds_mm":list(pr),
-        "preview_scale":s,"geometry_qa":geometry_qa,"review_status":"DRAFT_ONLY; physical assembly not checked"}
+        "assembled_bounds_mm":list(bounds),"preview_bounds_mm":list(pr_ink),
+        "base_page_offset_y_mm":shift,"base_page_cut_bottom_mm":base_bottom,
+        "base_page_assembled_bounds_mm":[x1,y1+shift,x2,y2+shift],
+        "preview_scale":s,"geometry_qa":geometry_qa,"review_status":"DRAFT_ONLY; physical assembly not checked",
+        "art_review":{"status":"PENDING","human_visual_approval":False,
+                      "reason":"Illustration quality and finished reference need explicit human review #221"}}
 
 def png(svg,path,inkscape):
     import PIL.Image

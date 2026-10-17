@@ -18,6 +18,9 @@ The output directory must be empty, and Inkscape CLI must be present for two opa
 - Actual exported PNG dimensions, mode, ~300 DPI, and visible nonwhite pixel bounds are checked using the same RGB >=250 white threshold as the current browser print.js. Raster ink must fit in the browser/footer-safe area without shrinking. The 15 mm all-white margin follows automatically from that stricter ink box.
 - The generated local authoring manifest records geometry results, actual raster ink bounds, source SHA-256, and file hashes. A recorded machine PASS alone never authorizes publication.
 
+## Art-first illustration quality gate (human, not CI)
+Before treating any machine-validated A4 draft as a candidate for printing/publishing, apply [Cut & Paste art-first visual review](CUT_PASTE_ART_DIRECTION_V1.md). The 2026-10-15 primitive bat/pumpkin prototypes are **VISUAL_FAIL** despite correct A4 geometry. Realistic, appealing editable Bézier contours and a human visual acceptance of the **exact final assembled reference** are required before progressing to paper assembly. Geometry-only sample fixtures must not be promoted on test success. Output `art_review.status=PENDING` means **not approved**; it is not a substitute for the human decision.
+
 ## Human/owner gate still required
 Print at 100% on real A4 (including branding/QR from Ausmalwiese print UI), cut out and glue the parts using a real physical prototype. Check where paper overlaps, the finished result against the small top-right picture, any very small/tight cuts, uncut glue tabs, and any printer-induced scaling. Record observed pass/fail for the bat **and a non-bat** example. No such physical observation can be inferred from GitHub CI or a manifest.
 

@@ -5,3 +5,7 @@ __pycache__/
 # Production coloring-page binaries live on the RPi5 content store, not GitHub.
 originals/*
 !originals/.gitkeep
+
+# Wrangler deployment inputs must never be committed.
+cloudflare/*.secrets.json
+cloudflare/*.secrets.env

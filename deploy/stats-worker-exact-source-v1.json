@@ -1,0 +1,38 @@
+{
+  "schema": "ausmalwiese.stats-worker-exact-source-deploy.v1",
+  "repository": "rozkalnsandris/coloring-pages",
+  "worker": "coloring-pages-stats-v1",
+  "environment": "production",
+  "source_path": "cloudflare/stats-worker.js",
+  "source_blob_sha1": "dd5a2859d55b9ef2d9fb9a9d8bf0a535d25a5ba4",
+  "qr_host": "ausmalwiese.de",
+  "qr_destination": "https://ausmalwiese.de/",
+  "routes": [
+    "coloring.rozkalns.net/api/stats/*",
+    "ausmalwiese.de/api/stats/*",
+    "www.ausmalwiese.de/api/stats/*",
+    "ausmalwiese.de/q"
+  ],
+  "bindings": {
+    "DB": "d1_database",
+    "RATE_LIMITER": "rate_limiter",
+    "PUBLIC_ORIGIN": "plain_text",
+    "CF_ANALYTICS_HOST": "plain_text",
+    "CF_ZONE_TAG": "plain_text",
+    "VISITOR_HMAC_KEY": "secret_text",
+    "CF_ANALYTICS_API_TOKEN": "secret_text"
+  },
+  "excluded_changes": [
+    "worker-name",
+    "worker-routes",
+    "worker-custom-domains",
+    "worker-bindings",
+    "worker-secrets",
+    "worker-vars",
+    "d1-schema-data",
+    "cloudflare-zone-dns",
+    "access-waf",
+    "other-workers"
+  ],
+  "deployment_mode": "separate-owner-authorized-trusted-operator-only"
+}
