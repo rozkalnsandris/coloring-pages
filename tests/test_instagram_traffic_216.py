@@ -14,7 +14,7 @@ class InstagramTrafficTests(unittest.TestCase):
     def test_browser_allows_only_external_tagged_landings(self):
         harness = r"""
 const fs=require('fs'),vm=require('vm');
-const code=fs.readFileSync('js/stats-cookie.js','utf8');
+const code=fs.readFileSync('js/stats.js','utf8');
 function visit(url, referrer='', navType='navigate'){
   const u=new URL(url), calls=[];
   const ctx={
@@ -126,8 +126,8 @@ console.log('INSTAGRAM_WORKER=PASS');
         self.assertNotIn('method: "POST"',js)
         self.assertIn('noindex,nofollow,noarchive',html)
         self.assertIn('v=instagram-216',html)
-        self.assertIn('js/stats-cookie.js?v=3d14519562cc2f99',(ROOT/"index.html").read_text(encoding="utf-8"))
-        self.assertIn('js/stats-cookie.js?v=3d14519562cc2f99',(ROOT/"detail.html").read_text(encoding="utf-8"))
+        self.assertIn('v=instagram-216',(ROOT/"index.html").read_text(encoding="utf-8"))
+        self.assertIn('v=instagram-216',(ROOT/"detail.html").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

@@ -61,22 +61,20 @@ def test_cloudflare_stats_contract_keeps_rpi5_out_of_state():
     assert '"/api/stats/rankings"' in worker
     assert '"/api/stats/print"' in worker
     assert '"/api/stats/like"' in worker
-    assert '"/api/stats/visit"' not in worker
+    assert 'path==="/api/stats/visit"' in worker
     assert "RATE_LIMITER" in worker
     assert "CREATE TABLE IF NOT EXISTS page_stats" in schema
-    assert "CREATE TABLE IF NOT EXISTS daily_visitors" in schema
-    assert "VISITOR_HMAC_KEY" in worker
+    assert "CREATE TABLE IF NOT EXISTS daily_visitors" not in schema
+    assert "VISITOR_HMAC_KEY" not in worker
     assert "PRIMARY KEY (page_id, visitor_hash)" in schema
     assert "Raspberry Pi" in docs
     assert "print intent" in docs
 def test_stats_frontend_uses_first_party_random_id_only_on_engagement():
     js=read("js/stats.js")
     assert 'getVisitorId(false)' in js
-    assert 'ensureCredential("like")' in js
+    assert 'getVisitorId(true)' in js
     assert 'localStorage.getItem(VISITOR_KEY)' in js
-    assert 'changeCredential(next, priorId = "")' in js
-    assert 'V3_RE.test(id)' in js
-    assert 'Math.random()' not in js
+    assert 'crypto?.randomUUID?.()' in js
 
 
 class TrendingSqlRegressionTests(unittest.TestCase):
@@ -182,27 +180,26 @@ class AdminStatsDashboardTests(unittest.TestCase):
 
 
 class CloudflareUniqueVisitorTests(unittest.TestCase):
-    def test_unique_visitors_use_day_scoped_hmac_without_persisting_raw_ip(self):
+
+    def test_daily_visitor_hmac_is_removed_but_campaign_visit_route_remains(self):
         worker = read("cloudflare/stats-worker.js")
         schema = read("cloudflare/stats-schema.sql")
+        cleanup = read("cloudflare/stats-remove-daily-visitor-hmac.sql")
 
-        self.assertIn("CREATE TABLE IF NOT EXISTS daily_visitors", schema)
-        self.assertIn("PRIMARY KEY (day, visitor_hash)", schema)
-        self.assertNotIn("client_ip", schema)
-        self.assertNotIn("CF-Connecting-IP", schema)
-
+        self.assertNotIn("CREATE TABLE IF NOT EXISTS daily_visitors", schema)
+        self.assertNotIn("VISITOR_HMAC_KEY", worker)
+        self.assertNotIn("hmacSha256", worker)
         self.assertIn('path==="/api/stats/visit"', worker)
-        self.assertIn('request.headers.get("CF-Connecting-IP")', worker)
-        self.assertIn("VISITOR_HMAC_KEY", worker)
-        self.assertIn('{name:"HMAC",hash:"SHA-256"}', worker)
-        self.assertIn("INSERT OR IGNORE INTO daily_visitors", worker)
-        self.assertIn("DELETE FROM daily_visitors", worker)
+        visitor = worker[worker.index("async function recordVisitor"):worker.index("async function trafficStats")]
+        self.assertNotIn("CF-Connecting-IP", visitor)
+        self.assertNotIn("daily_visitors", visitor)
+        self.assertIn("campaignEventStatement", visitor)
 
         traffic = worker[worker.index("async function trafficStats"):worker.index("async function recordView")]
-        self.assertIn("FROM daily_visitors", traffic)
-        self.assertIn('unique_visitors_basis:"worker-d1-daily-hmac-ip"', traffic)
-        self.assertNotIn("httpRequests1dGroups", traffic)
-        self.assertNotIn("uniq { uniques }", traffic)
+        self.assertNotIn("FROM daily_visitors", traffic)
+        self.assertIn('uniqueVisitorsStatus = "removed"', traffic)
+        self.assertIn('unique_visitors_basis:"removed-no-persistent-visitor-metric"', traffic)
+        self.assertIn("DROP TABLE IF EXISTS daily_visitors", cleanup)
 
     def test_public_pages_track_visit_without_creating_browser_identity(self):
         shared = read("js/stats.js")
@@ -251,9 +248,9 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertNotIn("query AdminUniqueVisitors", traffic)
         self.assertNotIn("httpRequests1dGroups", traffic)
         self.assertNotIn("uniq { uniques }", traffic)
-        self.assertIn("FROM daily_visitors", traffic)
+        self.assertNotIn("FROM daily_visitors", traffic)
         self.assertIn("unique_visitors_date", traffic)
-        self.assertIn('unique_visitors_basis:"worker-d1-daily-hmac-ip"', traffic)
+        self.assertIn('unique_visitors_basis:"removed-no-persistent-visitor-metric"', traffic)
         self.assertIn("dimensions { datetimeHour }", traffic)
         self.assertIn("sum { visits }", traffic)
         self.assertIn("visitsRows.reduce", traffic)
@@ -322,7 +319,7 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertNotIn('href="traffic.html"', public_home)
         self.assertIn("/traffic.html", docs)
         self.assertIn("CF_ANALYTICS_API_TOKEN", docs)
-        self.assertIn("VISITOR_HMAC_KEY", docs)
+        self.assertIn("daily visitor HMAC collection is retired", docs)
         self.assertIn("separate Cloudflare owner gate", docs)
 
 

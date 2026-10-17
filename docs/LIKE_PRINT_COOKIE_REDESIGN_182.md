@@ -1,4 +1,17 @@
-# Like-only cookie and anonymous Print-intent counters — source design (#182)
+# Like-only cookie and aggregate Print-intent counters — source design (#182)
+
+## 2026-10-17 owner decision — CURRENT backend-first release split
+
+The owner selected the final product direction: **adult-only Like (18+ UI gate in a later frontend PR), explicit Like consent, fixed 180-day non-sliding Like cookie, aggregate Print intent without a persistent Print identifier, Web Analytics EU/EEA exclusion as a separate Cloudflare setting gate, and retirement of the custom daily visitor HMAC metric**.
+
+This PR is now **backend-first only**. It keeps the current main frontend and its legacy `/like` + `/print` calls unchanged so an independently deployed backend cannot break the existing site. In parallel it adds the future Like-cookie endpoints, aggregate Print endpoint, 180-day expiry/archive source and additive cookie schema. The legacy write endpoints are compatibility-only and must not be treated as the final consent model; legal release remains blocked until the separately reviewed frontend cutover is LIVE and stale legacy writes are fenced in a later exact backend cleanup.
+
+Daily visitor HMAC processing is removed from the new Worker: `/visit` remains only as an aggregate allowlisted campaign-event compatibility endpoint and no longer reads `CF-Connecting-IP`, derives an HMAC, writes `daily_visitors` or reports a unique-visitor estimate. Fresh schema no longer creates `daily_visitors`. A separate post-Worker migration is prepared to drop the existing legacy table; it is **not** authorized or executed here. The existing `VISITOR_HMAC_KEY` Cloudflare secret binding is not read by the new Worker and is deliberately not deleted by this source-only PR because secret/settings mutation needs a separate Cloudflare owner gate.
+
+Release order is fail-closed: additive cookie tables → exact backend Worker rollout with legacy compatibility → read-only verification → separately authorized legacy `daily_visitors` cleanup and Cron activation → only then the adult-only frontend/legal cutover. Web Analytics EU exclusion is configuration evidence, not a GitHub source change.
+
+**No merge, D1 mutation, Worker upload, Cron activation, secret/settings change, frontend deployment or legal sign-off is authorized by this source change.**
+
 
 
 **2026-10-17 adult-direction + anonymisation review:** the consent surface is intentionally addressed to parents, holders of parental responsibility and educational professionals, while remaining an interface cue rather than age/parental-status verification. Expiry output is described technically as page-level totals without cookie/session identifiers; do not call it legally anonymous before completing the separate assessment in `LIKE_EXPIRY_ANONYMISATION_ASSESSMENT_182.md`. GDPR Art. 8 classification remains an owner/legal gate.

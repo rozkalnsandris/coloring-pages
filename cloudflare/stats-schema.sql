@@ -42,11 +42,6 @@ CREATE TABLE IF NOT EXISTS daily_views (
 );
 CREATE INDEX IF NOT EXISTS idx_daily_views_day ON daily_views(day, view_count DESC);
 
-CREATE TABLE IF NOT EXISTS daily_visitors (
-  day TEXT NOT NULL,
-  visitor_hash TEXT NOT NULL,
-  PRIMARY KEY (day, visitor_hash)
-);
 
 CREATE TABLE IF NOT EXISTS daily_campaign_events (
   campaign TEXT NOT NULL,
@@ -65,16 +60,6 @@ CREATE TABLE IF NOT EXISTS daily_print_qr_scans (
   scan_count INTEGER NOT NULL DEFAULT 0 CHECK (scan_count >= 0)
 );
 
-CREATE TABLE IF NOT EXISTS visitor_credentials (
-  visitor_hash TEXT PRIMARY KEY,
-  like_allowed INTEGER NOT NULL CHECK (like_allowed IN (0, 1)),
-  print_allowed INTEGER NOT NULL CHECK (print_allowed IN (0, 1)),
-  notice_version INTEGER NOT NULL CHECK (notice_version > 0),
-  consent_recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
-  expires_at INTEGER NOT NULL
-);
-
-
 CREATE TABLE IF NOT EXISTS like_cookie_sessions (
   cookie_hash TEXT PRIMARY KEY
     CHECK (length(cookie_hash) = 64 AND cookie_hash NOT GLOB '*[^0-9a-f]*'),
@@ -84,6 +69,7 @@ CREATE TABLE IF NOT EXISTS like_cookie_sessions (
 );
 CREATE INDEX IF NOT EXISTS idx_like_cookie_sessions_expiry
   ON like_cookie_sessions(expires_at);
+
 CREATE TABLE IF NOT EXISTS archived_like_totals (
   page_id TEXT PRIMARY KEY,
   like_count INTEGER NOT NULL DEFAULT 0 CHECK (like_count >= 0)

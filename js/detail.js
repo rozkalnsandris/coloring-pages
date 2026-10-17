@@ -230,7 +230,7 @@ async function hydrateLikeState(pageId) {
   try {
     if (!window.ColoringStats?.getPage) throw new Error("Like status unavailable");
     const data=await window.ColoringStats.getPage(pageId);
-    renderLikeState({...data, liked: window.ColoringConsent?.allows?.("like") === true && data?.liked});
+    renderLikeState(data);
     likeButton.disabled=false;
     likeButton.classList.remove("is-disabled");
   } catch {
@@ -248,22 +248,13 @@ likeRetryButton?.addEventListener("click", () => {
 });
 likeButton?.addEventListener("click",async()=>{
   if (!loadedEntryId || likeButton.disabled || !window.ColoringStats?.toggleLike) return;
-  if (window.ColoringConsent?.allows?.("like") !== true) {
-    window.ColoringConsent?.openSettings?.();
-    if (likeStatus) {
-      likeStatus.textContent = "Bitte erlaube die Gefällt-mir-Funktion in den Datenschutzeinstellungen.";
-      likeStatus.hidden = false;
-    }
-    return;
-  }
   if (likeStatus) {
     likeStatus.textContent = "";
     likeStatus.hidden = true;
   }
   likeButton.disabled=true;
   try {
-    const data = await window.ColoringStats.toggleLike(loadedEntryId);
-    if (window.ColoringConsent?.allows?.("like") === true) renderLikeState(data);
+    renderLikeState(await window.ColoringStats.toggleLike(loadedEntryId));
   } catch {
     if (likeStatus) {
       likeStatus.textContent = "Gefällt mir konnte nicht gespeichert werden. Bitte versuche es erneut.";
@@ -273,12 +264,6 @@ likeButton?.addEventListener("click",async()=>{
     likeButton.disabled=false;
   }
 });
-
-if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
-  document.addEventListener("coloring-consent-changed", () => {
-    if (loadedEntryId) hydrateLikeState(loadedEntryId);
-  });
-}
 
 function markMissingDetailNoindex() {
   // Only confirmed absent IDs are excluded; a failed catalog fetch is not proof.

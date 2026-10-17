@@ -41,7 +41,7 @@ class StatsWorkerSourceGuardTests(unittest.TestCase):
     def test_old_deploy_blob_is_not_current_privacy_worker(self):
         raw = (ROOT / guard.SOURCE_PATH).read_bytes()
         self.assertNotEqual(guard.git_blob_sha1(raw), guard.BLOB)
-        self.assertIn("CONSENT_TTL_SECONDS", raw.decode("utf-8"))
+        self.assertIn("LIKE_COOKIE_TTL_SECONDS", raw.decode("utf-8"))
 
     def _copy(self, location):
         for file in (guard.SOURCE_PATH, guard.CONTRACT_PATH):
