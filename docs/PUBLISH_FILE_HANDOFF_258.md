@@ -78,7 +78,7 @@ The optional `--bindings` JSON has schema
 containing **one entry for every PNG and JSON**. Each entry carries
 `file`, `sha256`, `size_bytes`, `mime_type`, and a connector-exported
 `file_uri` with `file_id`, `download_url`, `file_name` and
-`mime_type`. These are *candidate declarations*: the probe cannot
+`mime_type`. The `file_id` is an opaque, nonempty provider-supplied value; the probe must not assume any undocumented URI scheme or fixed prefix. These are *candidate declarations*: the probe cannot
 authenticate that a reference is live, belongs to the right user/provider,
 is unexpired, or contains the asserted bytes.
 
