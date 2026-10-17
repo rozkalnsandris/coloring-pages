@@ -9,7 +9,7 @@ class CookieFrontendTests(unittest.TestCase):
     def test_public_pages_load_only_new_cookie_js(self):
         for name in ("index.html","detail.html","kita.html"):
             html=(ROOT/name).read_text()
-            self.assertIn("js/like-cookie-consent.js?v=adult-like-182-v1",html)
+            self.assertIn("js/like-cookie-consent.js?v=4581aa00d195af54",html)
             self.assertIn("js/stats-cookie.js?v=3d14519562cc2f99",html)
             self.assertLess(html.index("js/like-cookie-consent.js"),html.index("js/stats-cookie.js"))
             self.assertNotIn('src="js/consent.js?',html)
