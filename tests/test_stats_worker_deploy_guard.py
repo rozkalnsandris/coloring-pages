@@ -28,10 +28,9 @@ def inventory(version="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"):
 
 
 class StatsWorkerSourceGuardTests(unittest.TestCase):
-    def test_real_source_exact_blob_and_qr(self):
-        result = guard.check_source_contract(ROOT)
-        self.assertEqual(result["blob"], guard.BLOB)
-        self.assertEqual(result["result"], "SOURCE_CONTRACT_OK_NOT_LIVE_PROOF")
+    def test_current_privacy_worker_blocks_old_exact_deploy_contract(self):
+        with self.assertRaisesRegex(guard.GuardFailure, "WORKER_BLOB_DRIFT"):
+            guard.check_source_contract(ROOT)
 
     def test_offline_cli_only(self):
         source = (ROOT / "tools/stats_worker_deploy_guard.py").read_text(encoding="utf-8")
@@ -39,9 +38,10 @@ class StatsWorkerSourceGuardTests(unittest.TestCase):
                           "os.system(", "subprocess.run(", "def deploy("):
             self.assertNotIn(forbidden, source)
 
-    def test_git_blob_hash_not_plain_sha1(self):
+    def test_old_deploy_blob_is_not_current_privacy_worker(self):
         raw = (ROOT / guard.SOURCE_PATH).read_bytes()
-        self.assertEqual(guard.git_blob_sha1(raw), guard.BLOB)
+        self.assertNotEqual(guard.git_blob_sha1(raw), guard.BLOB)
+        self.assertIn("LIKE_COOKIE_TTL_SECONDS", raw.decode("utf-8"))
 
     def _copy(self, location):
         for file in (guard.SOURCE_PATH, guard.CONTRACT_PATH):

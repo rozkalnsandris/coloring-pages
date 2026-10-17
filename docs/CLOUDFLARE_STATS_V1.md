@@ -1,5 +1,7 @@
 # Cloudflare engagement stats v1
 
+> **Privacy transition:** daily visitor HMAC collection is retired from the new Worker/source schema. Removing the legacy LIVE `daily_visitors` table is a separate Cloudflare owner gate; source changes and CI do not apply that cleanup or deploy the Worker.
+
 ## Purpose
 Keep Coloring Pages analytics off the Raspberry Pi while supporting:
 - all-time print-click counts;

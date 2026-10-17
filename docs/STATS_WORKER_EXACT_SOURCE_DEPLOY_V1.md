@@ -1,6 +1,9 @@
 # Ausmalwiese Stats Worker — exact-source deployment procedure (SOURCE ONLY, #213)
 
-Status: **SOURCE-ONLY / NO LIVE WORKER DEPLOYMENT APPROVED**. This procedure belongs exclusively to `coloring-pages-stats-v1` and its hard-coded `/q` destination correction. It does not extend the merged application PR #214, authorize a new Worker, perform a Cloudflare write, read credentials, or operate on RPi5 services. The owner must separately authorize and review the final **trusted** LIVE operator and its exact mutation.
+Status: **SOURCE-ONLY / NO LIVE WORKER DEPLOYMENT APPROVED**.
+
+**Superseded for the #182 backend-first privacy Draft.** PR #183 now adds the fixed 180-day Like-cookie backend, aggregate Print endpoint and expiry/archive source while preserving the current legacy Like/Print routes for the compatibility window. It also removes daily visitor HMAC processing from the new Worker. This older seven-binding exact-source contract remains intentionally frozen as a fail-closed production baseline and is **not** repinned here; its guard must stop with `WORKER_BLOB_DRIFT` on the #182 source. The existing `VISITOR_HMAC_KEY` binding may remain present but unused until a separately authorized Cloudflare settings cleanup. A later deployment contract must bind the additive D1 migration, exact new Worker bytes, post-Worker `daily_visitors` cleanup, Cron decision and fresh owner LIVE boundary.
+ This procedure belongs exclusively to `coloring-pages-stats-v1` and its hard-coded `/q` destination correction. It does not extend the merged application PR #214, authorize a new Worker, perform a Cloudflare write, read credentials, or operate on RPi5 services. The owner must separately authorize and review the final **trusted** LIVE operator and its exact mutation.
 
 ## Immutable source gate
 
