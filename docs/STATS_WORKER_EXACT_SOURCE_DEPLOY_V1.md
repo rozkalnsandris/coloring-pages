@@ -1,6 +1,9 @@
 # Ausmalwiese Stats Worker — exact-source deployment procedure (SOURCE ONLY, #213)
 
-Status: **SOURCE-ONLY / NO LIVE WORKER DEPLOYMENT APPROVED**. This procedure belongs exclusively to `coloring-pages-stats-v1` and its hard-coded `/q` destination correction. It does not extend the merged application PR #214, authorize a new Worker, perform a Cloudflare write, read credentials, or operate on RPi5 services. The owner must separately authorize and review the final **trusted** LIVE operator and its exact mutation.
+Status: **SOURCE-ONLY / NO LIVE WORKER DEPLOYMENT APPROVED**.
+
+**Superseded for the #182 privacy Draft.** PR #183 changes `cloudflare/stats-worker.js`, adds consent/schema behavior and requires a future `CONSENT_TTL_SECONDS` runtime value. Therefore this older seven-binding exact-source contract is intentionally **not** repinned to the Draft Worker. Its guard must stop with `WORKER_BLOB_DRIFT` on the #182 source until a separately reviewed post-#182 deployment/migration contract defines the D1 migration, the additional binding/value, exact Worker bytes and fresh owner LIVE boundary. Do not weaken the guard or treat the old contract as deployable evidence for #182.
+ This procedure belongs exclusively to `coloring-pages-stats-v1` and its hard-coded `/q` destination correction. It does not extend the merged application PR #214, authorize a new Worker, perform a Cloudflare write, read credentials, or operate on RPi5 services. The owner must separately authorize and review the final **trusted** LIVE operator and its exact mutation.
 
 ## Immutable source gate
 
