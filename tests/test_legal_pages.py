@@ -76,7 +76,7 @@ class LegalPageSourceTests(unittest.TestCase):
         for expected in (
             "__Secure-aw-like-v1", "180 Tage", "HttpOnly",
             "seitenbezogenen Summenzähler", "Druckstatistik",
-            "Löschung", "Rate Limiting",
+            "Löschung", "Cloudflare Rate Limiter",
         ):
             self.assertIn(expected.lower(), privacy.lower())
         for forbidden in (
