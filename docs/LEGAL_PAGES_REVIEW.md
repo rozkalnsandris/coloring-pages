@@ -1,5 +1,22 @@
 # German legal pages — DRAFT / NOT RELEASE READY
 
+
+## 2026-10-17 coordinated #182/#183 retention alignment — CURRENT DRAFT
+
+**Current paired source direction, not legal sign-off:** PR #183 now uses a Like-only, server-issued `HttpOnly` cookie with a fixed **180-day** lifetime, no passive renewal, explicit withdrawal, and no persistent Print visitor identifier. On expiry, the source-only cleanup design moves remaining per-session Like contributions into page-level totals and deletes the expired cookie hash/session and its pseudonymous Like rows. The public Draft in this PR is aligned to that model.
+
+This **supersedes the earlier 90-day v3 retention proposal** as a product/source decision. Historical 90-day/v3 sections below remain only as audit history and must not be treated as the current retention choice. Exact mutable PR heads are deliberately not made normative here; read PR #183 and this PR fresh before any release decision.
+
+Still open before release:
+- **GDPR Art. 8 / audience:** Ausmalwiese serves material for young children. Whether the optional Like feature is an information-society service offered directly to children, and any resulting parental-authorization/verification duty, still needs legal/controller determination.
+- **Anonymisation assessment:** the expiry archive is designed to keep only page-level totals without a cookie/session key, but the legal conclusion that those totals are anonymous remains a separate assessment. EDPB Guidelines 02/2026 on Anonymisation are still a public-consultation draft through 2026-10-30, not final guidance.
+- **Runtime truth:** GitHub source does not prove that the D1 migration, scheduled cleanup/Cron, Worker source or frontend are LIVE. Release requires fresh runtime evidence and separately authorized D1/Worker/application actions.
+- **Recovery/log boundaries:** D1 Time Travel is recovery history, not active-row retention. Current Cloudflare documentation distinguishes 7 days on Workers Free and 30 days on Workers Paid; the actual production plan/settings must be verified rather than inferred.
+- **Aggregate Print / technical connection data:** the planned Print event has no stable visitor ID, but its lawful basis, rate-limiter/edge processing and retention still require final legal review.
+
+Both PR #158 and PR #183 remain **Draft / NOT RELEASE READY / NO LEGAL SIGN-OFF**. This coordination performs no D1, Worker, Cloudflare or application deployment.
+
+
 ## 2026-10-15 read-only Cloudflare D1 and origin evidence — still NOT RELEASE READY
 
 **Scope and provenance:** Owner-authorized, read-only observations of the existing Cloudflare Dashboard (Worker `coloring-pages-stats-v1` and bound D1 database `coloring-pages-stats-v1`) and RPi5 origin container. These are dated runtime snapshots, **not** GitHub source proofs of deployed v3 behavior, an audit of individual records, a legal certification, or an authorization for configuration changes. PR #158 legal Draft: `579851a663c6bd51ec1c8e18137d921a0fbc4af5` before this documentation-only update; paired PR #183 consent Draft: `b1968be865c7b08e13623cdf99c99073483197a3`. Both were Draft and unmerged at the time of this review.

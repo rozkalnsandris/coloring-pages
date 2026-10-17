@@ -1,5 +1,8 @@
 # Privacy retention and audience proposal — 2026-10-12 (DESIGN ONLY)
 
+
+> **SUPERSEDED RETENTION CHOICE — 2026-10-17:** the 90-day v3 value in this document is historical proposal material. The current owner-approved source design in PR #183 is a fixed **180-day Like-only cookie/session lifetime**, not silently renewed by visits, Likes or Print. Expiry is designed to retain only page-level Like totals while deleting the expired session hash and pseudonymous Like rows; Print no longer uses a persistent visitor credential. Art. 8/audience, anonymisation, real Cron/D1/Worker deployment, provider recovery/log retention and legal sign-off remain open. The historical proposal below is retained for audit and must not be used as the current release policy.
+
 **Scope:** `coloring-pages` issue #158, legal-page Draft PR #158 (source review) coordinated with issue #182 / paired Draft PR #183 at exact head `ab4e88feb5d9675e2875351e064a1ee7fdf79c3e`. Current `main` reference: `87d3e9ca7078ac27291f1ebfcc4924db276340db`. This is an **owner-requested design proposal**, not an adopted retention policy, legal approval, a claim about LIVE Cloudflare/RPi5, a D1 migration or a deployment instruction. **NO MERGE / NO LIVE / NO WORKER OR D1 WRITES.**
 
 ## 1. Decision register — proposals, not adopted facts

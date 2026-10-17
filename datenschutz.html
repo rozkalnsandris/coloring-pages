@@ -92,86 +92,69 @@
 
       <section aria-labelledby="privacy-engagement">
         <h2 id="privacy-engagement">4. Freiwillige Likes und Druckstatistik</h2>
-        <p>Die Funktionen „Gefällt mir“ und Druckstatistik sind freiwillig.
-          Sie können beim ersten Besuch „Alle ablehnen“, „Einstellungen“ oder
-          „Alle akzeptieren“ wählen. In den Einstellungen lassen sich Likes
-          und Druckstatistik getrennt auswählen; beide Optionen sind zunächst
-          ausgeschaltet. <strong>Auch ohne Einwilligung</strong> können Sie
-          Malvorlagen ansehen, als PNG herunterladen und auf A4 drucken.
-          Die davon unabhängigen Besuchs- und Seitenstatistiken in Abschnitt 3
-          bleiben bestehen.</p>
-        <p>Ihre Auswahl für die beiden Zwecke, die Version des Dialogs und
-          der Zeitpunkt der Entscheidung werden im <code>localStorage</code>
-          Ihres Browsers unter <code>coloring-pages-consent-v1</code> gespeichert.
-          Über „Datenschutzeinstellungen“ können Sie die Auswahl ändern oder
-          widerrufen. Dieser lokale Eintrag enthält keine Besucherkennung.</p>
-        <p>Erst nach der Einwilligung für einen Zweck kann unser
-          <strong>Cloudflare Worker</strong> eine zufällige, mit
-          <code>v3-</code> beginnende Browserkennung ausgeben. Der Browser
-          speichert sie unter <code>coloring-pages-visitor-v1</code>; der
-          Schlüsselname bleibt aus Kompatibilitätsgründen gleich. Bereits
-          vorhandene ältere Kennungen werden bei der ersten Entscheidung
-          entfernt, ohne sie vorher zur Wiedererkennung auszulesen.
-          Der Worker speichert in Cloudflare D1 nicht die Kennung selbst,
-          sondern ihren SHA-256-Hash sowie die für Likes und Druckstatistik
-          getrennt erlaubten Zwecke, die Version des Einwilligungstextes,
-          den serverseitig erfassten Zeitpunkt und das Ablaufdatum.
-          Diese Angaben belegen für sich allein weder die Identität der
-          einwilligenden Person noch eine elterliche Berechtigung.</p>
-        <p>Bei freiwilligen Likes wird der Hash gemeinsam mit der jeweiligen
-          Malvorlage in D1 gespeichert. Die persönliche Like-Anzeige nutzt
-          eine HTTPS-POST-Anfrage mit der Kennung im JSON-Inhalt; öffentliche
-          Like-Zahlen benötigen keine Kennung. Der Worker prüft vor
-          kennungsbezogenen Aktionen den erlaubten Zweck und die Gültigkeit
-          des serverseitigen Eintrags. Alte Kennungen der Versionen v1/v2
-          werden für neue Likes, Druckmeldungen und persönliche
-          Statusabfragen nicht mehr angenommen. Auch zwischengespeicherte
-          alte Seiten können noch <code>visitor_id</code> als
-          <strong>URL-Parameter</strong> anfragen; die neue API weist solche
-          personalisierten GET-Anfragen zurück, ältere URL-Einträge in
-          technischen Protokollen werden dadurch nicht rückwirkend gelöscht.
-          Der Cloudflare Rate Limiter kann zur Missbrauchsbegrenzung
-          technische Verbindungsdaten verarbeiten.</p>
-        <p>Nur mit Einwilligung zur Druckstatistik übertragen wir beim
-          Drucken eine Kennung für eine POST-Meldung. Wir zählen
-          <strong>Druckabsichten, keine bestätigten Papierausdrucke</strong>.
-          Ohne diese Einwilligung wird die Aktion nicht neu gezählt;
-          das Drucken bleibt möglich. Historische Gesamtzahlen können
-          Ereignisse aus der Zeit vor dem Einwilligungsdialog enthalten.</p>
-        <p>Wenn Sie Ihre Like-Einwilligung widerrufen, beendet der Browser
-          die erlaubte Like-Nutzung. Bei einer gültigen v3-Kennung versucht
-          der Worker, die zugehörigen Likes in der aktuellen D1-Tabelle zu
-          löschen und die alte Kennung serverseitig in derselben Transaktion
-          zu deaktivieren. Für weiterhin erlaubte Zwecke kann er eine
-          neue Kennung ausgeben. Eine so deaktivierte alte v3-Kennung
-          berechtigt nicht mehr zu neuen Likes. Für ältere gültige
-          v2-Kennungen ist ausschließlich ein gesonderter
-          Löschaufruf vorgesehen; sie erhalten keine neuen Schreibrechte.
-          Bei fehlenden oder nicht mehr verfügbaren Kennungen kann eine
-          Zuordnung zu früheren Likes unmöglich sein.</p>
-        <p>Eine <strong>bestätigte Löschung</strong> bezieht sich nur auf
-          zugeordnete Einträge der aktiven D1-Tabelle zum Zeitpunkt der
-          Anfrage. Andere Likes und bereits gezählte Druckabsichten bleiben
-          erhalten. Bei technischen Fehlern oder ungewissen Antworten
-          erscheint <strong>„Löschung nicht bestätigt“</strong>.
-          Eine nicht bestätigte Löschung wird nicht als erfolgreich
-          ausgegeben. Es gibt keinen automatischen erneuten Löschversuch
-          mit einer aufgehobenen alten Kennung. Die Löschung aktiver
-          Einträge entfernt Daten nicht sofort aus Backups,
-          Wiederherstellungsverläufen oder technischen Protokollen.
-          Für Datenschutzanfragen verwenden Sie bitte die Kontaktadresse in Abschnitt 1.
-          Senden Sie weder Browserkennungen noch Ausweiskopien per E-Mail.</p>
-        <p>Für die freiwillige Verarbeitung mit Browserkennung ist eine
-          Einwilligung gemäß Art. 6 Abs. 1 lit. a DSGVO und
-          § 25 TDDDG vorgesehen. Der Widerruf wirkt für die Zukunft;
-          die zuvor erfolgte Verarbeitung wird dadurch nicht automatisch
-          unrechtmäßig. Aktive Likes und serverseitige Berechtigungen
-          werden nicht allein durch das Ablaufen der Kennung nach einem
-          bereits festgelegten Zeitraum nachweisbar vollständig gelöscht.
-          Die konkrete Gültigkeitsdauer der Kennung, Löschregeln für
-          verbleibende D1-Einträge und die Aufbewahrungsfristen sind
-          vor der Veröffentlichung zu bestätigen.</p>
+        <p>Die Funktion „Gefällt mir“ ist freiwillig. Auch ohne Einwilligung
+          können Sie Malvorlagen ansehen, als PNG herunterladen und auf A4
+          drucken. Ein Klick auf „Gefällt mir“ setzt nicht automatisch einen
+          dauerhaften Wiedererkennungswert; die Speicherung wird erst nach
+          einer ausdrücklichen Zustimmung aktiviert.</p>
+        <p>Nach dieser Zustimmung setzt unser Cloudflare Worker für die
+          Like-Funktion einen zufälligen, sicheren <strong>HttpOnly-Cookie</strong>
+          <code>__Secure-aw-like-v1</code>. Er ist auf die Like-API beschränkt
+          und höchstens <strong>180 Tage</strong> ab der Zustimmung gültig.
+          Seitenaufrufe, Likes oder Druckaktionen verlängern diese Frist nicht.
+          JavaScript auf der Seite kann den Cookie-Wert nicht auslesen.</p>
+        <p>In Cloudflare D1 wird nicht der Cookie-Wert selbst gespeichert,
+          sondern nur dessen SHA-256-Hash zusammen mit der Version des
+          Einwilligungshinweises, dem serverseitig erfassten Zeitpunkt und
+          dem Ablaufzeitpunkt. Ein aktiver Like speichert zusätzlich die
+          jeweilige Vorlagen-ID zusammen mit diesem Hash. Der Worker prüft
+          die noch gültige Like-Sitzung bei jeder personalisierten
+          Like-Aktion. Öffentliche Like-Zahlen benötigen keinen Cookie.</p>
+        <p>Sie können die Like-Einwilligung jederzeit über
+          „Gefällt-mir-Datenschutzeinstellungen“ widerrufen. Bei bestätigtem
+          Widerruf werden die diesem noch gültigen Cookie zugeordneten
+          aktiven Likes und der D1-Sitzungseintrag gelöscht und der Browser-
+          Cookie beendet. Dadurch kann die angezeigte Like-Zahl sinken.
+          Bei einem technischen Fehler oder einer unklaren Antwort wird eine
+          Löschung nicht als erfolgreich dargestellt.</p>
+        <p>Nach Ablauf der 180 Tage ist der Cookie nicht mehr für neue Likes
+          gültig. Die vorgesehene Ablaufbereinigung überführt verbleibende
+          Likes einer abgelaufenen Sitzung nur noch in einen
+          <strong>seitenbezogenen Summenzähler</strong> und löscht anschließend
+          die zugehörigen pseudonymen Like-Zeilen und den Sitzungshash.
+          Dieser Summenzähler enthält keinen Cookie-Hash und keine Zuordnung
+          zu einer einzelnen Browser-Sitzung. Nach dieser Zusammenfassung
+          kann ein einzelner früherer Beitrag nicht mehr über den abgelaufenen
+          Cookie herausgesucht oder zurückgenommen werden. Eine spätere neue
+          Zustimmung kann erneut einen Like erzeugen; die öffentliche Zahl
+          beschreibt daher historische Like-Aktionen und nicht eindeutig
+          identifizierte Personen.</p>
+        <p>Die Druckstatistik verwendet diesen Like-Cookie nicht und speichert
+          dafür keinen dauerhaften Besucher-Identifier. Beim Start eines
+          Druckvorgangs kann eine <strong>aggregierte Druckabsicht</strong> für
+          die jeweilige Vorlage gezählt werden; damit wird kein tatsächlich
+          ausgeführter Papierdruck bestätigt. Das Drucken selbst bleibt von
+          der Like-Einwilligung unabhängig. Zur Missbrauchsbegrenzung können
+          während der Anfrage technische Verbindungsdaten, insbesondere die
+          IP-Adresse, für Origin-Prüfung und Rate Limiting verarbeitet werden.</p>
+        <p>Ältere lokale Besucherkennungen aus früheren Versionen werden nicht
+          für neue Likes oder Druckmeldungen verwendet. Soweit im Browser noch
+          eine geeignete ältere Kennung vorhanden ist, kann eine ausdrücklich
+          angeforderte Alt-Löschung einmalig versucht werden. Es gibt keinen
+          automatischen Wiederholungsversuch bei unklarem Ergebnis. Ist eine
+          Zuordnung nicht mehr möglich, kann eine individuelle Prüfung über
+          den Datenschutzkontakt erforderlich sein; senden Sie dabei keine
+          Browserkennung oder Ausweiskopie unaufgefordert per E-Mail.</p>
+        <p>Für das Speichern und Auslesen des freiwilligen Like-Cookies ist
+          eine Einwilligung nach § 25 TDDDG vorgesehen; für die damit
+          verbundene Verarbeitung personenbezogener Daten ist Art. 6 Abs. 1
+          lit. a DSGVO vorgesehen. Ein Widerruf wirkt für die Zukunft und
+          berührt die Rechtmäßigkeit der vorherigen Verarbeitung nicht.
+          Wiederherstellungsverläufe, technische Protokolle und die rechtliche
+          Einordnung der nach Ablauf verbleibenden reinen Summenzähler werden
+          vor Veröffentlichung gesondert geprüft.</p>
       </section>
+
       <section aria-labelledby="privacy-fonts">
         <h2 id="privacy-fonts">5. Schriftarten</h2>
         <p>Wir verwenden die Schriftarten Baloo 2 und Nunito unter

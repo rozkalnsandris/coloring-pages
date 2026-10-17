@@ -213,7 +213,7 @@ class UIErrorStateTests(unittest.TestCase):
                  "difficulty":"easy","age":"3-6"}
         cases = [
             ("valid-with-campaign", "?id=1234567&campaign=school", "ok",
-             [entry], ["https://coloring.rozkalns.net/detail.html?id=1234567"], True),
+             [entry], ["https://ausmalwiese.de/detail.html?id=1234567"], True),
             ("unknown-id", "?id=7654321", "ok", [entry], [], False),
             ("no-id", "", "ok", [entry], [], False),
             ("network", "?id=1234567", "network", [entry], [], False),
@@ -350,8 +350,8 @@ class PageHead(HTMLParser):
 class SEOPreflightTests(unittest.TestCase):
     def test_verified_home_kita_canonicals_and_admin_noindex(self):
         verified = {
-            "index.html": "https://coloring.rozkalns.net/",
-            "kita.html": "https://coloring.rozkalns.net/kita",
+            "index.html": "https://ausmalwiese.de/",
+            "kita.html": "https://ausmalwiese.de/kita",
         }
         for page, expected in verified.items():
             parser = PageHead()
@@ -384,8 +384,8 @@ class SEOPreflightTests(unittest.TestCase):
         self.assertEqual(sitemap.tag, "{http://www.sitemaps.org/schemas/sitemap/0.9}urlset")
         urls = [element.text for element in sitemap.findall("sm:url/sm:loc", namespace)]
         self.assertEqual(urls, [
-            "https://coloring.rozkalns.net/",
-            "https://coloring.rozkalns.net/kita",
+            "https://ausmalwiese.de/",
+            "https://ausmalwiese.de/kita",
         ])
         self.assertEqual(len(urls), len(set(urls)), "Duplicate URLs in sitemap")
         self.assertFalse(any("?" in item or "detail.html" in item for item in urls))
@@ -398,7 +398,7 @@ class SEOPreflightTests(unittest.TestCase):
             "User-agent: *",
             "Allow: /",
             "",
-            "Sitemap: https://coloring.rozkalns.net/sitemap.xml",
+            "Sitemap: https://ausmalwiese.de/sitemap.xml",
         ])
         self.assertNotIn("Disallow:", robots,
                          "Keep existing admin noindex crawlable")

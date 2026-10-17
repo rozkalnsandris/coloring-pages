@@ -16,7 +16,7 @@ const CAMPAIGN_STAGES = new Set(["landing", "catalog"]);
 const CAMPAIGN_EVENTS = new Set(["landing", "catalog", "detail", "print"]);
 // One shared QR URL for all printed sheets. No page/user identifiers or open redirects.
 const PRINT_QR_HOST = "ausmalwiese.de";
-const PRINT_QR_DESTINATION = "https://coloring.rozkalns.net/";
+const PRINT_QR_DESTINATION = "https://ausmalwiese.de/";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {

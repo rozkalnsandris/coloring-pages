@@ -43,74 +43,62 @@ class LegalPageSourceTests(unittest.TestCase):
                 self.assertNotIn("Coloring Pages", html)
                 self.assertNotIn("brand-pages", html)
 
-    def test_privacy_draft_matches_existing_stats_contract(self):
+    def test_privacy_draft_matches_current_paired_like_cookie_model(self):
         privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
-        frontend = (ROOT / "js/stats.js").read_text(encoding="utf-8")
-        worker = (ROOT / "cloudflare/stats-worker.js").read_text(encoding="utf-8")
-        self.assertIn("pseudonymisierte Nutzungsstatistik", privacy)
-        self.assertIn("URL-Parameter", privacy)
-        self.assertIn('query.set("visitor_id", visitorId)', frontend)
-        self.assertIn('return requestJson(`/page?${query}`);', frontend)
-        self.assertIn('request.method==="GET" && path==="/api/stats/page"', worker)
-        self.assertIn("const visitorHash = await sha256(visitorId);", worker)
-        print_source = frontend.split("function trackPrint(pageId) {", 1)[1].split("window.ColoringStats =", 1)[0]
-        self.assertIn("getVisitorId(true)", print_source)
-        self.assertIn("visitor_id: visitorId", print_source)
-        self.assertIn('rateLimit(env,body.visitor_id,"print")', worker)
-        self.assertIn("Landesbeauftragten für Datenschutz", privacy)
-    def test_consent_banner_legal_draft_is_explicitly_release_gated(self):
-        privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
-        report = (ROOT / "docs/LEGAL_PAGES_REVIEW.md").read_text(encoding="utf-8")
         for expected in (
-            "coloring-pages-consent-v1", "coloring-pages-visitor-v1",
-            "Alle ablehnen", "Alle akzeptieren", "Datenschutzeinstellungen",
-            "Gefällt mir", "Druckstatistik", "URL-Parameter",
-            "nicht automatisch", "ohne Einwilligung", "Cloudflare Rate Limiter",
-        ):
-            self.assertIn(expected.lower(), privacy.lower())
-        self.assertIn("PR #183 consent banner alignment", report)
-        self.assertIn("Both PRs remain Draft", report)
-        self.assertIn("NOT RELEASE READY", report)
-
-    def test_v3_notice_does_not_reuse_obsolete_v2_claims(self):
-        privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
-        report = (ROOT / "docs/LEGAL_PAGES_REVIEW.md").read_text(encoding="utf-8")
-        for expected in (
-            "Cloudflare Worker", "v3-", "coloring-pages-visitor-v1",
-            "serverseitig erfassten Zeitpunkt", "Ablaufdatum",
-            "getrennt erlaubten Zwecke", "derselben Transaktion",
-            "alte v3-Kennung", "v2-Kennungen", "nicht mehr angenommen",
-            "URL-Parameter", "Löschung nicht bestätigt",
-            "zum Zeitpunkt der", "ohne Einwilligung", "Cloudflare Rate Limiter",
-            "Backups", "nach der Einwilligung",
+            "__Secure-aw-like-v1", "HttpOnly", "180 Tage", "SHA-256-Hash",
+            "seitenbezogenen Summenzähler", "aggregierte Druckabsicht",
+            "keinen dauerhaften Besucher-Identifier", "Cloudflare Rate Limiter",
+            "ohne Einwilligung", "nicht automatisch",
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected.lower(), privacy.lower())
-        for forbidden in (
-            "nicht dauerhaft gesperrt", "Wir führen kein",
-            "like_erasure_blocks", "blocked_until",
-            "24-Stunden-Funktion", "coloring-pages-erasure-pending-v1",
-        ):
-            with self.subTest(forbidden=forbidden):
-                self.assertNotIn(forbidden, privacy)
-        self.assertIn("v3 / PR #183 exact head", report)
-        self.assertIn("eb1627dd9945f00fb84511f2fa4161371b4f1e30", report)
-        self.assertIn("visitor_credentials", report)
-        self.assertIn("CONSENT_TTL_SECONDS", report)
-        self.assertIn("unapplied", report)
-        self.assertIn("NOT RELEASE READY", report)
+        self.assertNotIn("coloring-pages-consent-v1", privacy)
+        self.assertNotIn("coloring-pages-visitor-v1", privacy)
 
-    def test_v3_art13_gaps_are_not_claimed_resolved(self):
+    def test_like_cookie_legal_draft_is_explicitly_release_gated(self):
         privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
         report = (ROOT / "docs/LEGAL_PAGES_REVIEW.md").read_text(encoding="utf-8")
-        for required in ("Art. 13(1)(e)–(f)", "Art. 13(2)(a)",
-                         "Art. 8", "TDDDG §25", "D1 Time Travel",
-                         "legacy", "Cloudflare", "DDG §5",
-                         "actual", "no legal certification"):
+        for expected in (
+            "Gefällt mir", "180 Tage", "Datenschutzeinstellungen",
+            "aggregierte Druckabsicht", "ohne Einwilligung",
+            "§ 25 TDDDG", "Art. 6 Abs. 1",
+        ):
+            self.assertIn(expected.lower(), privacy.lower())
+        self.assertIn("180-day", report)
+        self.assertIn("supersedes the earlier 90-day", report)
+        self.assertIn("Both PR #158 and PR #183 remain", report)
+        self.assertIn("NOT RELEASE READY", report)
+
+    def test_current_notice_no_longer_presents_v3_as_active_model(self):
+        privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
+        report = (ROOT / "docs/LEGAL_PAGES_REVIEW.md").read_text(encoding="utf-8")
+        for expected in (
+            "__Secure-aw-like-v1", "180 Tage", "HttpOnly",
+            "seitenbezogenen Summenzähler", "Druckstatistik",
+            "Löschung", "Rate Limiting",
+        ):
+            self.assertIn(expected.lower(), privacy.lower())
+        for forbidden in (
+            "coloring-pages-consent-v1", "coloring-pages-visitor-v1",
+            "Alle akzeptieren", "getrennt erlaubten Zwecke",
+        ):
+            self.assertNotIn(forbidden, privacy)
+        self.assertIn("Art. 8", report)
+        self.assertIn("Anonymisation", report)
+        self.assertIn("NO LEGAL SIGN-OFF", report)
+
+    def test_current_art13_and_release_gaps_are_not_claimed_resolved(self):
+        privacy = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
+        report = (ROOT / "docs/LEGAL_PAGES_REVIEW.md").read_text(encoding="utf-8")
+        for required in (
+            "Art. 8", "TDDDG §25", "D1 Time Travel", "Cloudflare",
+            "actual production", "NO LEGAL SIGN-OFF",
+        ):
             with self.subTest(required=required):
                 self.assertIn(required.lower(), report.lower())
-        self.assertIn("die konkrete gültigkeitsdauer", privacy.lower())
-        self.assertNotIn("Wir führen kein", privacy)
+        self.assertIn("180 tage", privacy.lower())
+        self.assertIn("vor veröffentlichung gesondert geprüft", privacy.lower())
 
     def test_art13_open_facts_and_ddg_contact_are_reviewed_without_invention(self):
         report = (ROOT / "docs/LEGAL_PAGES_REVIEW.md").read_text(encoding="utf-8")

@@ -11,7 +11,7 @@ authority or make consumer-provided paths or flags trusted RPi5 runtime inputs.
 
 The Coloring Pages repository owns the deterministic read-only
 `tools/coloring-pages-sitemap` generator. Its reviewed Git **blob SHA-1** is
-`5644c8fd366c0c57f6339fddd163c5091ea134c5` and must be independently checked by the host owner before use. A
+`49c8ba34cf0a4c4ab100463df9adacc4c6e90c2c` and must be independently checked by the host owner before use. A
 later consumer change to this blob must force an explicit review/repin; merely
 merging a new `coloring-pages/main` is not an authorization to adopt a
 different generator. The normal generator writes XML only to stdout; the

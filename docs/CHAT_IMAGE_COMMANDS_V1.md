@@ -102,6 +102,22 @@ Worksheets/activities:
 - decorative scene elements do not count as task content and should be omitted;
 - optimize for a preschool child being able to understand the task visually without extra explanation.
 
+### `CUT <subject>` — two-page Cut & Paste draft (short alias)
+
+`CUT Fledermaus` is shorthand for `MAKE Cut & Paste Fledermaus`. The default flow is deliberately simple: **(1) ChatGPT creates one original colored character concept with ImageGen, (2) the owner vectorizes it externally and returns the SVG file(s), (3) from that handoff onward ChatGPT uses only the supplied SVG geometry to build the two A4 sheets.** Do not redraw or regenerate the accepted character with ImageGen after SVG handoff. Page 1 contains only the base/body; page 2 contains only the detachable parts. No small assembled reference is printed on page 1. Preserve the SVG shapes, colors and proportions; use translation and, when required for physical fit, one consistent uniform scale across the complete activity. Use [Cut & Paste production playbook](CUT_PASTE_PLAYBOOK_V1.md) for print alignment and physical checks. `CUT` is an **authoring convention**, not a production publishing/external action. Owner has explicitly postponed Cut & Paste `PUBLISH` until the full ausmalwiese.de transition and a fresh exact-version approval. This does not modify standard single-page `MAKE`.
+
+**Obligāta secība pirms CUT A4 finalizācijas:** vispirms ImageGen izveido tikai māksliniecisko konceptu. Kad īpašnieks atsūta vektorizēto SVG, tas kļūst par autorēšanas avotu un ImageGen šai versijai vairs netiek izmantots. No SVG nosaki pamatni, griežamās detaļas, kopīgo mērogu un paredzētos līmēšanas enkurus; aprēķini `ASSEMBLED_FIT` pilnam salikumam. Pēc vietnes faktiskās `js/print.js` transformācijas tam jāietilpst portreta A4 `x=17..193 mm` (**max 176 mm platumā**), `y=17..256 mm` (scale=1.0). Divas atsevišķi derīgas A4 lapas NAV saliktā objekta tests. Tikai ImageGen rastrs = `ART_CONCEPT_ONLY / ASSEMBLED_FIT=UNVERIFIED`. Pārsniegts izmērs vai nav mērījuma = `ASSEMBLED_FIT=FAIL / STOP`; labo SVG-derived kopīgo mērogu/enkurus un atvasini abas lapas no jauna. [Precīzs pre-export līgums](CUT_PASTE_PLAYBOOK_V1.md).
+
+Two-page **Cut & Paste** special case (only when explicitly requested with `MAKE Cut & Paste <subject>` or equivalent wording; ordinary `MAKE` remains one standard coloring-page draft):
+
+- Create one coherent character concept with ImageGen, then wait for the owner-provided SVG handoff. After handoff, define the base and each detachable part from those SVG vectors only; no ImageGen redraws for that accepted version.
+- Render exactly two ordered worksheet drafts: **page 1 = base/body only; page 2 = detachable cut parts only.** Do not print a small assembled example on page 1. A diagnostic assembly may exist separately for QA, but it is not part of either worksheet page.
+- Current Ausmalwiese `js/print.js` applies `fitA4InkBounds` with real A4 visible-ink limits **x=17..193 mm, y=17..256 mm** (portrait). Keep all printed ink inside that rectangle at `scale=1.0`; A4 is 297 mm high, so **41 mm** stays below the drawing for footer/gap/paper safety.
+- At 300 DPI, use `px = mm × 300 / 25.4` as the raster estimate: the 15 mm white band is about **177 px**, the 17 mm ink boundary about **201 px**, and the 256 mm lower boundary about **3023 px**. The browser computes the exact physical fit with its own `297/3508` and `210/2480` ratios; validate that `print.js` returns **scale exactly 1.0** even with pixel rounding.
+- Preserve the supplied SVG shapes, colors and proportions across both pages. Prefer translation only. If the complete assembled figure cannot fit, one **uniform shared scale** may be applied consistently to the base and every detachable part; never shrink only one sheet or one wing/part independently.
+- Image generation supplies only the pre-vectorization art concept. Exact millimetre positions and final A4 rasterization are a **deterministic SVG authoring/export and QA task**. `PUBLISH` remains a separate owner command and must validate the **exact final** pages; physical cutting/gluing and owner visual review remain human gates.
+- Detailed bounds and print proof: [Cut & Paste A4 placement](CUT_PASTE_A4_PLACEMENT_V1.md), [Cut & Paste assembly](CUT_PASTE_ASSEMBLY_V1.md), and [Cut & Paste QA](CUT_PASTE_QA_V1.md).
+
 Examples of the default interpretation:
 
 - `MAKE dino` → one simple dinosaur, white background, no scenery;

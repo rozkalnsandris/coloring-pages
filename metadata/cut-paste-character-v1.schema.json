@@ -1,0 +1,436 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ausmalwiese:cut-paste:character:v1",
+  "title": "Ausmalwiese Cut & Paste character authoring source v1",
+  "description": "Structural contract only; semantic uniqueness, cutting and printing QA belong to #221.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "slug",
+    "season",
+    "age_range",
+    "preview_source",
+    "print_target",
+    "page_layout",
+    "cut_style",
+    "parts"
+  ],
+  "properties": {
+    "schema": {
+      "const": "ausmalwiese.cut-paste.character.v1"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "season": {
+      "type": "string",
+      "minLength": 1
+    },
+    "age_range": {
+      "const": "3-6"
+    },
+    "preview_source": {
+      "const": "recompose-exact-parts"
+    },
+    "print_target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "paper",
+        "orientation",
+        "raster_px",
+        "dpi",
+        "color_mode"
+      ],
+      "properties": {
+        "paper": {
+          "const": "A4"
+        },
+        "orientation": {
+          "const": "portrait"
+        },
+        "raster_px": {
+          "const": [
+            2480,
+            3508
+          ]
+        },
+        "dpi": {
+          "const": 300
+        },
+        "color_mode": {
+          "const": "RGB"
+        }
+      }
+    },
+    "page_layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ink_box_mm",
+        "assembled_origin_mm",
+        "preview_box_mm"
+      ],
+      "properties": {
+        "ink_box_mm": {
+          "const": [
+            17,
+            17,
+            193,
+            256
+          ]
+        },
+        "assembled_origin_mm": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "preview_box_mm": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          ],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4
+        }
+      }
+    },
+    "cut_style": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "color",
+        "stroke_width_mm",
+        "dash_mm",
+        "gap_mm"
+      ],
+      "properties": {
+        "color": {
+          "const": "#000000"
+        },
+        "stroke_width_mm": {
+          "type": "number",
+          "minimum": 0.4,
+          "maximum": 1.2
+        },
+        "dash_mm": {
+          "type": "number",
+          "minimum": 1.5,
+          "maximum": 5
+        },
+        "gap_mm": {
+          "type": "number",
+          "minimum": 1.5,
+          "maximum": 5
+        }
+      }
+    },
+    "parts": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "feature",
+          "role",
+          "art",
+          "cut",
+          "assembly",
+          "glue"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "feature": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "role": {
+            "enum": [
+              "base",
+              "cutout"
+            ]
+          },
+          "built_in_features": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]*$"
+            }
+          },
+          "art": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "size_mm",
+              "outer_path_d",
+              "fill",
+              "stroke",
+              "stroke_width_mm",
+              "interior"
+            ],
+            "properties": {
+              "size_mm": {
+                "type": "array",
+                "prefixItems": [
+                  {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
+                ],
+                "items": false,
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "outer_path_d": {
+                "type": "string",
+                "minLength": 8,
+                "pattern": "^[Mm]"
+              },
+              "fill": {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "stroke": {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "stroke_width_mm": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "interior": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "path_d",
+                    "fill"
+                  ],
+                  "properties": {
+                    "path_d": {
+                      "type": "string",
+                      "minLength": 8,
+                      "pattern": "^[Mm]"
+                    },
+                    "fill": {
+                      "type": "string",
+                      "pattern": "^#[0-9A-Fa-f]{6}$"
+                    },
+                    "stroke": {
+                      "type": "string",
+                      "pattern": "^#[0-9A-Fa-f]{6}$"
+                    },
+                    "stroke_width_mm": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "cut": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "method",
+              "offset_mm"
+            ],
+            "properties": {
+              "method": {
+                "const": "offset-of-outer-path"
+              },
+              "offset_mm": {
+                "type": "number",
+                "minimum": 1.5,
+                "maximum": 4
+              }
+            }
+          },
+          "assembly": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "translate_mm",
+              "rotate_deg",
+              "scale",
+              "z_index"
+            ],
+            "properties": {
+              "translate_mm": {
+                "type": "array",
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "items": false,
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "rotate_deg": {
+                "type": "number"
+              },
+              "scale": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "z_index": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "glue": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "target_id",
+                  "side",
+                  "piece_anchor_mm",
+                  "target_anchor_mm",
+                  "minimum_contact_area_mm2",
+                  "sequence"
+                ],
+                "properties": {
+                  "target_id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]*$"
+                  },
+                  "side": {
+                    "const": "front"
+                  },
+                  "piece_anchor_mm": {
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "target_anchor_mm": {
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "minimum_contact_area_mm2": {
+                    "type": "number",
+                    "minimum": 12
+                  },
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "role": {
+                  "const": "base"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "built_in_features"
+              ],
+              "properties": {
+                "glue": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "role": {
+                  "const": "cutout"
+                }
+              }
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "built_in_features"
+                ]
+              },
+              "properties": {
+                "glue": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

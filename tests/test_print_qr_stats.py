@@ -67,7 +67,7 @@ const req=(url,method='GET',headers={},cf={})=>({
 });
 async function check(){
   let r=await context.worker.fetch(req('https://ausmalwiese.de/q'),env);
-  if(r.status!==302||r.headers.location!=='https://coloring.rozkalns.net/'||writes!==1)throw Error('valid GET');
+  if(r.status!==302||r.headers.location!=='https://ausmalwiese.de/'||writes!==1)throw Error('valid GET');
   if(!String(r.headers['cache-control']).includes('no-store'))throw Error('cache');
   if(r.headers['referrer-policy']!=='no-referrer')throw Error('referrer');
   r=await context.worker.fetch(req('https://ausmalwiese.de/q','HEAD'),env);
@@ -81,7 +81,7 @@ async function check(){
   r=await context.worker.fetch(req('https://coloring.rozkalns.net/q'),env);
   if(r.status!==404||writes!==1)throw Error('hostname confusion');
   r=await context.worker.fetch(req('https://ausmalwiese.de/q?next=https://evil.example/'),env);
-  if(r.headers.location!=='https://coloring.rozkalns.net/'||writes!==2)throw Error('open redirect');
+  if(r.headers.location!=='https://ausmalwiese.de/'||writes!==2)throw Error('open redirect');
   env.DB.prepare=()=>({run:async()=>{throw Error('D1 unavailable')}});
   r=await context.worker.fetch(req('https://ausmalwiese.de/q'),env);
   if(r.status!==302)throw Error('failure blocked visitor');
