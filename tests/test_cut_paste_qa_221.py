@@ -69,11 +69,12 @@ class CutPasteGeometryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"glue anchors"):
             app.render(record)
 
-    def test_header_preview_collision_blocks(self):
+    def test_legacy_preview_box_does_not_affect_svg_only_pages(self):
         record=fixture()
         record["page_layout"]["preview_box_mm"]=[70,120,40,30]
-        with self.assertRaisesRegex(ValueError,"Preview overlaps"):
-            app.render(record)
+        svg,meta=app.render(record)
+        self.assertNotIn('id="assembled-preview"',svg["01-base.svg"])
+        self.assertFalse(meta["printed_preview"])
 
     def test_physical_png_shape_and_footer_ink_bounds(self):
         with tempfile.TemporaryDirectory() as folder:
