@@ -168,7 +168,7 @@ def verify_bindings(bindings: object, expected: list[dict]) -> None:
         # Legacy container_path, source_file_ref and arbitrary URL/path strings are not.
         exact_keys(uri, {"file_id", "download_url", "file_name", "mime_type"}, code="unsupported-reference")
         if (
-            not isinstance(uri["file_id"], str) or not uri["file_id"].startswith("sediment://file_")
+            not isinstance(uri["file_id"], str) or not uri["file_id"].strip()
             or not isinstance(uri["download_url"], str) or not uri["download_url"].startswith("https://")
             or uri["file_name"] != name or uri["mime_type"] != item["mime_type"]
         ):
