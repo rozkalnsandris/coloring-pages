@@ -189,7 +189,9 @@ def render(source):
         "assembled_bounds_mm":list(bounds),"preview_bounds_mm":list(pr_ink),
         "base_page_offset_y_mm":shift,"base_page_cut_bottom_mm":base_bottom,
         "base_page_assembled_bounds_mm":[x1,y1+shift,x2,y2+shift],
-        "preview_scale":s,"geometry_qa":geometry_qa,"review_status":"DRAFT_ONLY; physical assembly not checked"}
+        "preview_scale":s,"geometry_qa":geometry_qa,"review_status":"DRAFT_ONLY; physical assembly not checked",
+        "art_review":{"status":"PENDING","human_visual_approval":False,
+                      "reason":"Illustration quality and finished reference need explicit human review #221"}}
 
 def png(svg,path,inkscape):
     import PIL.Image
