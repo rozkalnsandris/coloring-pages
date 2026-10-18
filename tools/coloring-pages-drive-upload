@@ -267,9 +267,12 @@ def send_once(frozen: tuple[Request, ...], sender):
         check_frozen_request(manifest)
         ident = png.filename[:-4]
         require(
+            png.filename == ident + ".png" and manifest.filename == ident + ".json"
+            and png.mime == "image/png" and manifest.mime == "application/json",
+            "frozen-identity-or-order",
+        )
+        require(
             ID.fullmatch(ident) is not None and ident not in seen_ids
-            and png.filename == ident + ".png"
-            and manifest.filename == ident + ".json"
             and png.folder_id == folder and manifest.folder_id == folder,
             "batch-folder-or-id-mismatch",
         )
