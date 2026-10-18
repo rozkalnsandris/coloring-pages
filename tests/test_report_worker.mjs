@@ -8,12 +8,12 @@ const ORIGIN = "https://ausmalwiese.de";
 const REASONS = ["print", "image", "craft", "wrong", "other"];
 const defaults = { id: "1234567", page: 1, reason: "print" };
 
-function setup({ failEmail = false } = {}) {
+function setup({ emailError = null } = {}) {
   const mail = [];
   const env = {
     EMAIL: {
       send: async (message) => {
-        if (failEmail) throw new Error("email unavailable");
+        if (emailError !== null) throw emailError;
         mail.push(message);
         return { messageId: "accepted-1" };
       },
@@ -38,6 +38,17 @@ function request(payload = defaults, {
 async function call(env, payload = defaults, params) {
   const response = await worker.fetch(request(payload, params), env);
   return { status: response.status, body: await response.json() };
+}
+
+async function captureErrorLogs(run) {
+  const logs = [];
+  const original = console.error;
+  console.error = (...args) => logs.push(args);
+  try {
+    return { value: await run(), logs };
+  } finally {
+    console.error = original;
+  }
 }
 
 test("all five allowed reasons send one plain-text email through EMAIL binding", async () => {
@@ -118,16 +129,65 @@ test("only same-origin browser POST to the exact report path is accepted", async
   assert.equal(mail.length, 0);
 });
 
-test("missing binding and email send errors fail closed without false success", async () => {
+test("missing binding fails closed without a send attempt", async () => {
   const missing = await call({}, defaults);
   assert.equal(missing.status, 503);
   assert.deepEqual(missing.body, { ok: false });
+});
 
-  const broken = setup({ failEmail: true });
-  const failed = await call(broken.env, defaults);
+test("email send failure logs only one sanitized provider code", async () => {
+  const providerError = new Error("provider detail must stay private");
+  providerError.code = "E_SENDER_NOT_VERIFIED";
+  const broken = setup({ emailError: providerError });
+  const payload = { id: "7654321", page: 7, reason: "craft" };
+  const { value: failed, logs } = await captureErrorLogs(
+    () => call(broken.env, payload),
+  );
+
   assert.equal(failed.status, 503);
   assert.deepEqual(failed.body, { ok: false });
   assert.equal(broken.mail.length, 0);
+  assert.deepEqual(logs, [[{
+    event: "report_email_send_failed",
+    code: "E_SENDER_NOT_VERIFIED",
+  }]]);
+
+  const serialized = JSON.stringify(logs);
+  for (const forbidden of [
+    "provider detail must stay private",
+    "7654321",
+    "craft",
+    "info@ausmalwiese.de",
+    "https://ausmalwiese.de",
+  ]) {
+    assert.ok(!serialized.includes(forbidden), forbidden);
+  }
+});
+
+test("malformed email error codes are logged only as UNKNOWN", async () => {
+  const invalidCodes = [
+    "sender_not_verified",
+    "E_BAD-DASH",
+    7,
+    "E_" + "A".repeat(63),
+  ];
+
+  for (const code of invalidCodes) {
+    const providerError = new Error("private provider detail");
+    providerError.code = code;
+    const broken = setup({ emailError: providerError });
+    const { value: failed, logs } = await captureErrorLogs(
+      () => call(broken.env, defaults),
+    );
+
+    assert.equal(failed.status, 503);
+    assert.deepEqual(failed.body, { ok: false });
+    assert.deepEqual(logs, [[{
+      event: "report_email_send_failed",
+      code: "UNKNOWN",
+    }]]);
+    assert.ok(!JSON.stringify(logs).includes("private provider detail"));
+  }
 });
 
 test("worker has no Brevo, Turnstile, rate-limit, catalog or recipient input path", () => {
@@ -140,6 +200,7 @@ test("worker has no Brevo, Turnstile, rate-limit, catalog or recipient input pat
   }
   assert.match(source, /env\.EMAIL\.send/);
   assert.match(source, /to: undefined/);
+  assert.doesNotMatch(source, /error\.message|error\.stack/);
 });
 
 test("detail UI has five radio choices and no Turnstile dependency", () => {

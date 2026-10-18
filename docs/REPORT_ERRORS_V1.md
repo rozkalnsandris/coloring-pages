@@ -28,6 +28,9 @@ The Worker:
 - never accepts sender or recipient from the visitor;
 - returns `200 {"ok":true}` only after the Email Service binding resolves;
 - returns `503 {"ok":false}` if the binding is missing or sending fails;
+- on an Email Service send exception, writes exactly one structured error log with only `event: "report_email_send_failed"` and a sanitized provider `code`;
+- accepts that code only when it is a bounded uppercase `E_[A-Z0-9_]+` token (maximum 64 characters), otherwise logs `UNKNOWN`;
+- never logs the provider error message/stack, request payload, activity ID/page/reason, sender/destination, headers, IP or URL;
 - has no Brevo, Turnstile, rate-limit, catalog lookup, D1 or Stats dependency.
 
 ## Email binding
@@ -44,6 +47,9 @@ Cloudflare documentation reviewed 2026-10-18:
 - https://developers.cloudflare.com/email-service/api/send-emails/workers-api/
 - https://developers.cloudflare.com/email-service/configuration/send-bindings/
 - https://developers.cloudflare.com/email-service/configuration/email-routing-addresses/
+- https://developers.cloudflare.com/workers/observability/logs/workers-logs/
+
+The Email Service Workers API documents thrown errors with machine-readable `code` and human-readable `message`. This Worker deliberately records only the sanitized code. Workers Logs recommends structured JSON objects so the fixed `event` and `code` fields remain queryable without storing provider messages or visitor-derived report data.
 
 ## Routes
 
