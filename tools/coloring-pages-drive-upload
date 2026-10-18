@@ -60,6 +60,7 @@ class Request:
     media_md5: str
     media_size: int
     request_sha256: str
+    identity_sha256: str
 
 
 def require(ok: bool, reason: str) -> None:
@@ -87,6 +88,8 @@ def distinct_pairs(pairs):
 def parse_json(data: bytes, reason: str):
     try:
         return json.loads(data.decode("utf-8"), object_pairs_hook=distinct_pairs)
+    except Blocked:
+        raise
     except (UnicodeError, ValueError) as exc:
         raise Blocked(reason) from exc
 
@@ -112,6 +115,13 @@ def read_file(dirfd: int, filename: str, ceiling: int) -> bytes:
         raise Blocked("file-open-failed") from exc
 
 
+def identity_digest(filename, mime, folder_id, content_type, media_sha256,
+                    media_md5, media_size, request_sha256):
+    fields = [filename, mime, folder_id, content_type, media_sha256,
+              media_md5, str(media_size), request_sha256]
+    return sha("\x00".join(fields).encode("ascii"))
+
+
 def multipart(filename: str, mime: str, media: bytes, folder_id: str) -> Request:
     boundary = "ausmalwiese-" + sha(filename.encode("ascii") + media)[:32]
     delim = ("\r\n--" + boundary).encode("ascii")
@@ -124,8 +134,11 @@ def multipart(filename: str, mime: str, media: bytes, folder_id: str) -> Request
         + media + delim + b"--"
     )
     require(len(body) <= LIMIT, "multipart-over-5mb")
-    return Request(filename, mime, folder_id, body, "multipart/related; boundary=" + boundary,
-                   sha(media), md5(media), len(media), sha(body))
+    content_type = "multipart/related; boundary=" + boundary
+    fingerprint = identity_digest(filename, mime, folder_id, content_type,
+                                  sha(media), md5(media), len(media), sha(body))
+    return Request(filename, mime, folder_id, body, content_type,
+                   sha(media), md5(media), len(media), sha(body), fingerprint)
 
 
 def freeze(prepared_dir: Path, pending_folder_id: str) -> tuple[Request, ...]:
@@ -205,7 +218,13 @@ def send_once(frozen: tuple[Request, ...], sender):
             png.filename.endswith(".png") and manifest.filename == png.filename[:-4] + ".json"
             and png.mime == "image/png" and manifest.mime == "application/json"
             and png.folder_id == manifest.folder_id
-            and all(sha(r.body) == r.request_sha256 for r in (png, manifest)),
+            and all(
+                sha(r.body) == r.request_sha256
+                and identity_digest(r.filename, r.mime, r.folder_id, r.content_type,
+                                    r.media_sha256, r.media_md5, r.media_size,
+                                    r.request_sha256) == r.identity_sha256
+                for r in (png, manifest)
+            ),
             "frozen-identity-or-order",
         )
     ids = []
@@ -229,6 +248,8 @@ def send_once(frozen: tuple[Request, ...], sender):
         )
         if not valid:
             raise UncertainUpload("response-identity-uncertain", attempt)
+        if reply["id"] in ids:
+            raise UncertainUpload("duplicate-provider-file-id", attempt)
         ids.append(reply["id"])
     return tuple(ids)  # Still NOT proof of RPi5 ingest or public publication.
 
