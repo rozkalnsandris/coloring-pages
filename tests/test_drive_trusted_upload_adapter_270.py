@@ -209,7 +209,7 @@ class TrustedAdapterSourceTests(unittest.TestCase):
         original = namespace["digest"]
         namespace["digest"] = lambda data: "b" * 64
         try:
-            malicious = PNG + b"\\r\\n--ausmalwiese-" + b"b" * 32
+            malicious = PNG + b"\r\n--ausmalwiese-" + b"b" * 32
             with self.assertRaisesRegex(StopBefore, "mime-boundary-collision"):
                 builder(blob(ACTIVITY + ".png", "image/png", malicious), FOLDER)
         finally:
