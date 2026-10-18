@@ -2,7 +2,7 @@
 
 **Status (2026-10-17): SOURCE/DOCS ONLY — jaunais sikspārņa kandidāts nav publicēts.** Šis ir ilgtermiņa *authoring + QA playbook* visiem sezonu tēliem, nevis pierādījums, ka rīks autonomi izpilda katru soli. Šīs lapas autorēšana/merge nekad nepiešķir `PUBLISH`, Drive, RPi5/LIVE, DNS/Cloudflare, permissions vai secrets tiesības.
 
-**Publikācijas gate:** globāls Cut & Paste `PUBLISH` HOLD vairs nav spēkā. Katrai precīzajai divu lapu versijai joprojām vajag obligāto art/geometry/print/physical QA, īpašnieka apstiprinājumu un pēc tam svaigu `PUBLISH` komandu, kas autorizē tikai šo exact version. Vecs QA, iepriekšējs `PUBLISH`, GitHub merge vai HTTP pieejamība nav publikācijas atļauja citai versijai.
+**Publikācijas gate:** globāls Cut & Paste `PUBLISH` HOLD vairs nav spēkā. Katrai precīzajai divu lapu versijai joprojām vajag obligāto art/geometry/print/physical QA, īpašnieka apstiprinājumu un pēc tam svaigu `PUBLISH` komandu, kas autorizē tikai šo exact version. `PHYSICAL_QA` var balstīties uz īpašnieka skaidru apstiprinājumu par reāli izdrukātu, izgrieztu un salīmētu exact version; foto/izmēri nav obligāti. Vecs QA, iepriekšējs `PUBLISH`, GitHub merge vai HTTP pieejamība nav publikācijas atļauja citai versijai.
 
 ## 1. Komandas un nepārprotamas robežas
 
@@ -125,7 +125,7 @@ Katrai precīzajai versijai glabā pārskatu ar:
 - `ART_REVIEW` — `PENDING|PASS|FAIL` + īpašnieka vērtējums; figurālās kvalitātes pārbaude.
 - `GEOMETRY_QA` — `PENDING|PASS|FAIL`; 1:1 part ID/izmēri, līmēšanas laukumi, pretējās puses, full-body extent, no overlap, kontūras un 4 mm scissor separation.
 - `PRINT_QA` — `PENDING|PASS|FAIL`; A4, RGB, ~300 DPI, 15 mm exact-white, x/y 17..193/17..256 mm, site-render scale=1, footer/QR nav oriģinālajā PNG.
-- `PHYSICAL_QA` — `PENDING|PASS|FAIL`; īsts 100% A4 izdrukāts, izgriezts, salīmēts (sikspārnis un cits tēls pirms foundation #221 slēgšanas), foto/izmēri, atbilstība paredzētajam salikumam.
+- `PHYSICAL_QA` — `PENDING|PASS|FAIL`; īsts 100% A4 izdrukāts, izgriezts un salīmēts. Īpašnieka skaidrs apstiprinājums, ka precīzā versija tika fiziski pārbaudīta un viss ir kārtībā, ir pietiekams `PASS` pierādījums. Foto un lineāla izmēri ir izvēles papildu evidence, ja tie ir pieejami; to trūkums pats par sevi nedrīkst bloķēt `PUBLISH`. Tas neaizstāj atsevišķo obligāto `ASSEMBLED_FIT` mm ģeometrijas pārbaudi.
 - `OWNER_APPROVAL` — `PENDING|PASS|FAIL`; precīzajai divu lapu SHA identitātei, nevis abstraktai idejai.
 - `PUBLISH` — `NOT_REQUESTED|STOP|PASS`. `PASS` ir iespējams tikai pēc svaigas exact-version īpašnieka `PUBLISH` komandas un visu obligāto QA gate izpildes.
 
