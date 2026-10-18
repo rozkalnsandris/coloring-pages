@@ -46,6 +46,12 @@ class SitemapPublisherHandoffTests(unittest.TestCase):
             [
                 "https://ausmalwiese.de/",
                 "https://ausmalwiese.de/kita",
+                "https://ausmalwiese.de/tiere",
+                "https://ausmalwiese.de/fahrzeuge",
+                "https://ausmalwiese.de/alphabet",
+                "https://ausmalwiese.de/lernen",
+                "https://ausmalwiese.de/figuren",
+                "https://ausmalwiese.de/jahreszeiten",
             ],
         )
 

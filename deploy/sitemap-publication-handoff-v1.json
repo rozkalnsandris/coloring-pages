@@ -6,7 +6,7 @@
   "canonical_origin": "https://ausmalwiese.de",
   "generator": {
     "source_path": "tools/coloring-pages-sitemap",
-    "git_blob_sha1": "49c8ba34cf0a4c4ab100463df9adacc4c6e90c2c",
+    "git_blob_sha1": "5d1d37c32573aa8ac0d91f45b73938638fd183e9",
     "input_argument": "--catalog",
     "snapshot_argument": "--expected-catalog-sha256",
     "candidate_verify_argument": "--verify-sitemap",
@@ -14,7 +14,13 @@
   },
   "static_urls": [
     "https://ausmalwiese.de/",
-    "https://ausmalwiese.de/kita"
+    "https://ausmalwiese.de/kita",
+    "https://ausmalwiese.de/tiere",
+    "https://ausmalwiese.de/fahrzeuge",
+    "https://ausmalwiese.de/alphabet",
+    "https://ausmalwiese.de/lernen",
+    "https://ausmalwiese.de/figuren",
+    "https://ausmalwiese.de/jahreszeiten"
   ],
   "publisher_requirements": [
     "trusted-host-owned-fixed-paths-not-consumer-CLI",

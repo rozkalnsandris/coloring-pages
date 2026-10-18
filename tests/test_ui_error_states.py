@@ -386,6 +386,12 @@ class SEOPreflightTests(unittest.TestCase):
         self.assertEqual(urls, [
             "https://ausmalwiese.de/",
             "https://ausmalwiese.de/kita",
+            "https://ausmalwiese.de/tiere",
+            "https://ausmalwiese.de/fahrzeuge",
+            "https://ausmalwiese.de/alphabet",
+            "https://ausmalwiese.de/lernen",
+            "https://ausmalwiese.de/figuren",
+            "https://ausmalwiese.de/jahreszeiten",
         ])
         self.assertEqual(len(urls), len(set(urls)), "Duplicate URLs in sitemap")
         self.assertFalse(any("?" in item or "detail.html" in item for item in urls))

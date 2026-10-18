@@ -17,6 +17,7 @@ USER 101
 
 COPY deploy/nginx.conf /etc/nginx/nginx.conf
 COPY index.html detail.html print.html /usr/share/nginx/html/
+COPY tiere.html fahrzeuge.html alphabet.html lernen.html figuren.html jahreszeiten.html /usr/share/nginx/html/
 COPY stats.html traffic.html kita.html /usr/share/nginx/html/
 COPY robots.txt sitemap.xml /usr/share/nginx/html/
 COPY google7e69cee667102729.html /usr/share/nginx/html/
