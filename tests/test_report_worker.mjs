@@ -51,18 +51,24 @@ async function captureErrorLogs(run) {
   }
 }
 
-test("all five allowed reasons send one plain-text email through EMAIL binding", async () => {
+test("all five allowed reasons send one fixed RFC 5322 email through EMAIL binding", async () => {
   for (const reason of REASONS) {
     const { env, mail } = setup();
     const { status, body } = await call(env, { ...defaults, reason, page: 2 });
     assert.equal(status, 200);
     assert.deepEqual(body, { ok: true });
     assert.equal(mail.length, 1);
-    assert.equal(mail[0].to, undefined);
-    assert.deepEqual(mail[0].from, { email: "info@ausmalwiese.de", name: "Ausmalwiese" });
-    assert.equal(mail[0].subject, "[Ausmalwiese] Fehler gemeldet: 1234567");
-    assert.match(mail[0].text, /Seite: 2/);
-    assert.match(mail[0].text, /https:\/\/ausmalwiese.de\/detail.html\?id=1234567&page=2/);
+    assert.equal(mail[0].from, "info@ausmalwiese.de");
+    assert.equal(mail[0].to, "INFO@ausmalwiese.de");
+    const raw = mail[0].raw;
+    assert.match(raw, /^From: Ausmalwiese <info@ausmalwiese\.de>\r\n/);
+    assert.match(raw, /\r\nTo: INFO@ausmalwiese\.de\r\n/);
+    assert.match(raw, /\r\nSubject: \[Ausmalwiese\] Fehler gemeldet: 1234567\r\n/);
+    assert.match(raw, /\r\nContent-Type: text\/plain; charset=UTF-8\r\n/);
+    assert.match(raw, /\r\n\r\nNeue Fehlermeldung\r\n/);
+    assert.match(raw, /\r\nSeite: 2\r\n/);
+    assert.match(raw, /https:\/\/ausmalwiese.de\/detail.html\?id=1234567&page=2\r\n$/);
+    assert.doesNotMatch(raw, /\r\n(?:Cc|Bcc|Reply-To):/i);
   }
 });
 
@@ -70,6 +76,7 @@ test("invalid id, page, reason, extra data and contact parameters are denied", a
   const { env, mail } = setup();
   const cases = [
     { ...defaults, id: "../admin" },
+    { ...defaults, id: "1234567\r\nBcc: attacker@example.test" },
     { ...defaults, page: 0 },
     { ...defaults, page: "1" },
     { ...defaults, reason: "unknown" },
@@ -199,7 +206,9 @@ test("worker has no Brevo, Turnstile, rate-limit, catalog or recipient input pat
     assert.ok(!source.includes(forbidden), forbidden);
   }
   assert.match(source, /env\.EMAIL\.send/);
-  assert.match(source, /to: undefined/);
+  assert.match(source, /import \{ EmailMessage \} from "cloudflare:email"/);
+  assert.match(source, /new EmailMessage\(REPORT_FROM, FIXED_DESTINATION, raw\)/);
+  assert.doesNotMatch(source, /to: undefined/);
   assert.doesNotMatch(source, /error\.message|error\.stack/);
 });
 

@@ -16,7 +16,7 @@ Success shows **„Danke! Deine Meldung wurde gesendet.“**. Failure shows the 
 
 `cloudflare/report-worker.mjs` has one function only:
 
-`POST /api/report` -> validate bounded JSON -> send one plain-text email through `env.EMAIL.send()`.
+`POST /api/report` -> validate bounded JSON -> build one fixed RFC 5322 plain-text message -> send it through `env.EMAIL.send()` as Cloudflare `EmailMessage`.
 
 The Worker:
 
@@ -40,7 +40,9 @@ The Worker:
 - name: `EMAIL`
 - destination: `INFO@ausmalwiese.de`
 
-The personal mailbox destination is intentionally not committed to GitHub. `INFO@ausmalwiese.de` is the same project destination mailbox, using uppercase local-part casing only as a narrow workaround for the open Cloudflare Email Service lowercase `info@ZONE` rejection reported in `cloudflare/developer-platform#65`. The Worker sender remains `info@ausmalwiese.de`, and no other email behavior changes. LIVE activation must still confirm delivery through the existing Email Routing path.
+The personal mailbox destination is intentionally not committed to GitHub. `INFO@ausmalwiese.de` is the same verified project destination mailbox, using uppercase local-part casing only as a narrow workaround for the open Cloudflare Email Service lowercase `info@ZONE` rejection reported in `cloudflare/developer-platform#65`.
+
+The Worker deliberately uses Cloudflare's legacy `EmailMessage` raw RFC 5322 form for this bounded notification. Cloudflare continues to document this pattern for Worker activity alerts when Email Routing is enabled and a `destination_address` binding points at a verified destination. This keeps the feature on the verified-destination / Email Routing path and does not opt into arbitrary-recipient Email Sending. The envelope sender is fixed to `info@ausmalwiese.de`; the envelope recipient and `To` header are fixed to `INFO@ausmalwiese.de`; visitor input cannot control mail headers or addresses.
 
 Cloudflare documentation reviewed 2026-10-18:
 
@@ -64,11 +66,10 @@ There is no `/api/report/config` endpoint and no wildcard route.
 
 This source does not deploy or send real mail. A separate owner authorization is required to:
 
-1. confirm `ausmalwiese.de` is onboarded for Cloudflare Email Sending;
-2. confirm `INFO@ausmalwiese.de` resolves to the same allowed/verified project destination for the binding;
-3. deploy the exact reviewed Worker/config;
-4. send one approved test report;
-5. verify that the email actually arrives in the intended mailbox.
+1. confirm `INFO@ausmalwiese.de` remains an allowed/verified Email Routing destination for the binding;
+2. deploy the exact reviewed Worker/config;
+3. send one approved test report;
+4. verify that the email actually arrives in the intended mailbox.
 
 No Stats pre/post snapshot is part of this flow.
 
