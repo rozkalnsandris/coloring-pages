@@ -105,6 +105,7 @@ def prepared_entries(directory: Path) -> list[dict]:
         require(
             manifest["schema"] == MANIFEST_SCHEMA and manifest["id"] == ident
             and manifest["sha256"] == item["sha256"] and manifest["size_bytes"] == len(png)
+            and isinstance(manifest["category"], str)
             and manifest["category"] in CATEGORIES
             and manifest["language"] == "de"
             and manifest["age"] in ("3-6", "4-8")
@@ -132,6 +133,11 @@ def multipart_request(name: str, mime: str, data: bytes, folder_id: str,
     )
     require(re.fullmatch(r"[0-9]{7}\.(png|json)", name) is not None, "invalid-filename")
     require(mime in ("image/png", "application/json"), "unsupported-mime")
+    require(
+        (name.endswith(".png") and mime == "image/png")
+        or (name.endswith(".json") and mime == "application/json"),
+        "mime-filename-mismatch",
+    )
     require(isinstance(data, bytes), "invalid-payload")
     if boundary is None:
         boundary = "ausmalwiese-" + sha256(name.encode("ascii") + data)[:32]
