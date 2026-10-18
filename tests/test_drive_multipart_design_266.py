@@ -1,6 +1,8 @@
 """Independent, network-free multipart Drive request design regression tests (#266)."""
 import hashlib
 import json
+import os
+from unittest import mock
 from pathlib import Path
 import runpy
 import subprocess
@@ -111,6 +113,8 @@ class OfflineDriveDesignTests(unittest.TestCase):
         self.assertIn("DRIVE_WRITE=NO", result.stdout)
         self.assertIn("AUTHORIZATION=NOT_AVAILABLE", result.stdout)
         self.assertIn("LIVE_IMPORT=NO", result.stdout)
+        self.assertIn("PNG_PROOF=SIGNATURE_ONLY", result.stdout)
+        self.assertIn("PRINT_VALIDATION=NOT_PERFORMED", result.stdout)
         self.assertNotIn("=PASS", result.stdout)
         payload = json.loads(result.stdout[result.stdout.index("{"):])
         self.assertEqual(payload["request_count"], 10)
@@ -187,6 +191,63 @@ class OfflineDriveDesignTests(unittest.TestCase):
         self.rows = self.rows * 5
         self.write_index()
         self.assert_blocked("invalid-activity-count")
+
+    def test_sparse_oversized_png_rejected_before_bulk_read(self):
+        # Do not allocate a 100 MB payload; fstat rejects it before file.read().
+        p = self.directory / self.rows[0]["png"]
+        with p.open("r+b") as stream:
+            stream.truncate(100_000_000)
+        with mock.patch.object(Path, "read_bytes", side_effect=AssertionError("unsafe read_bytes")):
+            with self.assertRaisesRegex(DesignBlocked, "multipart-over-5mb"):
+                design(self.directory, FOLDER)
+
+    def test_oversized_manifest_is_rejected_without_json_parsing(self):
+        p = self.directory / self.rows[0]["manifest"]
+        with p.open("ab") as stream:
+            stream.write(b" " * API["MANIFEST_LIMIT"])
+        self.assert_blocked("manifest-over-limit")
+
+    def test_oversized_index_is_rejected_before_json_parsing(self):
+        p = self.directory / "preflight-index.json"
+        with p.open("ab") as stream:
+            stream.write(b" " * API["INDEX_LIMIT"])
+        self.assert_blocked("index-over-limit")
+
+    def test_symlinked_prepared_directory_is_rejected(self):
+        link = self.directory.parent / (self.directory.name + "-symlink")
+        link.symlink_to(self.directory, target_is_directory=True)
+        self.addCleanup(link.unlink)
+        with self.assertRaisesRegex(DesignBlocked, "prepared-dir-unavailable"):
+            design(link, FOLDER)
+
+    def test_swap_to_symlink_at_open_is_rejected(self):
+        # Simulate an adversary changing the file *after* path knowledge but
+        # before the read's openat; O_NOFOLLOW must enforce the trust boundary.
+        target = self.directory / self.rows[0]["png"]
+        replacement = self.directory / "untrusted.png"
+        replacement.write_bytes(PNG + b"untrusted")
+        real_open = os.open
+        swapped = [False]
+
+        def swap_on_open(path, *args, **kwargs):
+            if path == target.name and not swapped[0]:
+                swapped[0] = True
+                target.unlink()
+                target.symlink_to(replacement)
+            return real_open(path, *args, **kwargs)
+
+        with mock.patch.object(API["os"], "open", side_effect=swap_on_open):
+            with self.assertRaisesRegex(DesignBlocked, "file-unavailable"):
+                design(self.directory, FOLDER)
+        self.assertTrue(swapped[0])
+
+    def test_png_magic_is_not_a_print_quality_proof(self):
+        # The five 8-byte magic+garbage fixtures deliberately are not
+        # valid, printable A4 masters. A mock request is never an approval.
+        result = self.cli()
+        self.assertEqual(result.returncode, 3)
+        self.assertIn("PNG_PROOF=SIGNATURE_ONLY", result.stdout)
+        self.assertIn("PRINT_VALIDATION=NOT_PERFORMED", result.stdout)
 
     def test_multipart_over_five_mb_is_blocked(self):
         r = self.rows[4]
