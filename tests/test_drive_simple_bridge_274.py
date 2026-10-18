@@ -306,6 +306,77 @@ class SimpleBridgeTests(unittest.TestCase):
         with self.assertRaisesRegex(Blocked, "frozen-identity-or-order"):
             send_once((altered,) + items[1:], lambda *args: self.fail("called sender"))
 
+    def with_forged_manifest(self, index, **replacement_fields):
+        items = list(self.plan)
+        request = items[index]
+        raw = json.loads((self.dir / request.filename).read_text())
+        raw.update(replacement_fields)
+        items[index] = API["multipart"](
+            request.filename, "application/json",
+            json.dumps(raw).encode("utf-8"), FOLDER,
+        )
+        return tuple(items)
+
+    def test_manifest_sha_mismatch_blocks_before_any_callback(self):
+        calls = []
+        forged = self.with_forged_manifest(1, sha256="0" * 64)
+        with self.assertRaisesRegex(Blocked, "manifest-binding"):
+            send_once(forged, lambda *args: calls.append(args))
+        self.assertEqual(calls, [])
+
+    def test_manifest_size_mismatch_blocks_before_any_callback(self):
+        calls = []
+        forged = self.with_forged_manifest(1, size_bytes=1)
+        with self.assertRaisesRegex(Blocked, "manifest-binding"):
+            send_once(forged, lambda *args: calls.append(args))
+        self.assertEqual(calls, [])
+
+    def test_manifest_wrong_id_blocks_before_any_callback(self):
+        calls = []
+        forged = self.with_forged_manifest(1, id="7654321")
+        with self.assertRaisesRegex(Blocked, "manifest-binding"):
+            send_once(forged, lambda *args: calls.append(args))
+        self.assertEqual(calls, [])
+
+    def test_manifest_wrong_category_blocks_before_any_callback(self):
+        calls = []
+        forged = self.with_forged_manifest(1, category="not-a-category")
+        with self.assertRaisesRegex(Blocked, "manifest-binding"):
+            send_once(forged, lambda *args: calls.append(args))
+        self.assertEqual(calls, [])
+
+    def test_invalid_second_activity_manifest_stops_entire_batch(self):
+        calls = []
+        forged = self.with_forged_manifest(3, sha256="f" * 64)
+        with self.assertRaisesRegex(Blocked, "manifest-binding"):
+            send_once(forged, lambda *args: calls.append(args))
+        self.assertEqual(calls, [])
+
+    def test_duplicate_json_manifest_key_blocks_before_sender(self):
+        calls = []
+        items = list(self.plan)
+        request = items[1]
+        raw = (self.dir / request.filename).read_bytes().replace(
+            b'"id":', b'"id":"7654321","id":', 1,
+        )
+        items[1] = API["multipart"](request.filename, request.mime, raw, FOLDER)
+        with self.assertRaisesRegex(Blocked, "duplicate-json-key"):
+            send_once(tuple(items), lambda *args: calls.append(args))
+        self.assertEqual(calls, [])
+
+    def test_missing_manifest_field_blocks_before_any_callback(self):
+        calls = []
+        items = list(self.plan)
+        request = items[1]
+        obj = json.loads((self.dir / request.filename).read_text())
+        obj.pop("size_bytes")
+        items[1] = API["multipart"](
+            request.filename, request.mime, json.dumps(obj).encode(), FOLDER,
+        )
+        with self.assertRaisesRegex(Blocked, "invalid-manifest"):
+            send_once(tuple(items), lambda *args: calls.append(args))
+        self.assertEqual(calls, [])
+
     def test_missing_sender_does_not_attempt_upload(self):
         with self.assertRaisesRegex(Blocked, "invalid-frozen-or-sender"):
             send_once(self.plan, None)
