@@ -234,6 +234,78 @@ class SimpleBridgeTests(unittest.TestCase):
         with self.assertRaisesRegex(Blocked, "frozen-identity-or-order"):
             send_once((first,) + items[1:], lambda *args: self.fail("called sender"))
 
+    def test_forged_media_sha256_and_fingerprint_fail_before_sender(self):
+        items = self.plan
+        altered = dataclasses.replace(items[0], media_sha256="0" * 64)
+        altered = dataclasses.replace(altered, identity_sha256=API["identity_digest"](
+            altered.filename, altered.mime, altered.folder_id,
+            altered.content_type, altered.media_sha256, altered.media_md5,
+            altered.media_size, altered.request_sha256,
+        ))
+        with self.assertRaisesRegex(Blocked, "frozen-identity-or-order"):
+            send_once((altered,) + items[1:], lambda *args: self.fail("called sender"))
+
+    def test_forged_media_md5_and_fingerprint_fail_before_sender(self):
+        items = self.plan
+        altered = dataclasses.replace(items[0], media_md5="0" * 32)
+        altered = dataclasses.replace(altered, identity_sha256=API["identity_digest"](
+            altered.filename, altered.mime, altered.folder_id,
+            altered.content_type, altered.media_sha256, altered.media_md5,
+            altered.media_size, altered.request_sha256,
+        ))
+        with self.assertRaisesRegex(Blocked, "frozen-identity-or-order"):
+            send_once((altered,) + items[1:], lambda *args: self.fail("called sender"))
+
+    def test_forged_media_size_and_fingerprint_fail_before_sender(self):
+        items = self.plan
+        altered = dataclasses.replace(items[0], media_size=items[0].media_size + 1)
+        altered = dataclasses.replace(altered, identity_sha256=API["identity_digest"](
+            altered.filename, altered.mime, altered.folder_id,
+            altered.content_type, altered.media_sha256, altered.media_md5,
+            altered.media_size, altered.request_sha256,
+        ))
+        with self.assertRaisesRegex(Blocked, "frozen-identity-or-order"):
+            send_once((altered,) + items[1:], lambda *args: self.fail("called sender"))
+
+    def test_valid_bodies_in_two_folders_block_entire_batch(self):
+        items = self.plan
+        other_folder = "differentPendingFolder123"
+        second_id = items[2].filename[:-4]
+        png = (self.dir / (second_id + ".png")).read_bytes()
+        manifest = (self.dir / (second_id + ".json")).read_bytes()
+        altered_pair = (
+            API["multipart"](second_id + ".png", "image/png", png, other_folder),
+            API["multipart"](second_id + ".json", "application/json", manifest, other_folder),
+        )
+        calls = []
+        with self.assertRaisesRegex(Blocked, "batch-folder-or-id-mismatch"):
+            send_once(items[:2] + altered_pair, lambda *args: calls.append(args))
+        self.assertEqual(calls, [])
+
+    def test_duplicate_ids_in_distinct_valid_pairs_block_entire_batch(self):
+        items = self.plan
+        calls = []
+        with self.assertRaisesRegex(Blocked, "batch-folder-or-id-mismatch"):
+            send_once(items[:2] + items[:2], lambda *args: calls.append(args))
+        self.assertEqual(calls, [])
+
+    def test_request_body_metadata_mismatch_blocks_before_sender(self):
+        items = self.plan
+        altered = dataclasses.replace(items[0], body=items[0].body.replace(
+            b'"parents":["' + FOLDER.encode() + b'"]',
+            b'"parents":["otherPendingFolder123"]',
+        ))
+        altered = dataclasses.replace(
+            altered, request_sha256=make_hash(altered.body),
+            identity_sha256=API["identity_digest"](
+                altered.filename, altered.mime, altered.folder_id,
+                altered.content_type, altered.media_sha256, altered.media_md5,
+                altered.media_size, altered.request_sha256,
+            ),
+        )
+        with self.assertRaisesRegex(Blocked, "frozen-identity-or-order"):
+            send_once((altered,) + items[1:], lambda *args: self.fail("called sender"))
+
     def test_missing_sender_does_not_attempt_upload(self):
         with self.assertRaisesRegex(Blocked, "invalid-frozen-or-sender"):
             send_once(self.plan, None)
