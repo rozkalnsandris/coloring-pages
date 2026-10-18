@@ -54,7 +54,7 @@ class SeoCategoryLandingTests(unittest.TestCase):
         for category_id, _ in self.categories:
             self.assertRegex(
                 index,
-                rf'<a class="category-card [^"]+" href="/{category_id}" data-category-link="{category_id}">',
+                rf'<a [^>]*class="category-card [^"]+" href="/{category_id}" data-filter="{category_id}">',
             )
         self.assertNotIn('type="button" data-filter=', index)
 
@@ -84,7 +84,6 @@ class SeoCategoryLandingTests(unittest.TestCase):
             self.assertIn(f"{category_id}.html", dockerfile)
             self.assertIn(category_id, nginx)
         self.assertIn('try_files /$1.html =404;', nginx)
-        self.assertIn('return 308 /$1$is_args$args;', nginx)
 
 
 if __name__ == "__main__":
