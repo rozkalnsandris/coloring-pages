@@ -72,6 +72,21 @@ class CutPastePlaybookTests(unittest.TestCase):
         self.assertIn("never printed on page 1", placement)
 
 
+    def test_physical_qa_accepts_owner_confirmation_without_photo(self):
+        agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        playbook = (ROOT / "docs/CUT_PASTE_PLAYBOOK_V1.md").read_text(encoding="utf-8")
+        qa = (ROOT / "docs/CUT_PASTE_QA_V1.md").read_text(encoding="utf-8")
+        art = (ROOT / "docs/CUT_PASTE_ART_DIRECTION_V1.md").read_text(encoding="utf-8")
+        for source in (agents, playbook, qa, art):
+            self.assertIn("owner", source.lower())
+        self.assertIn("photo and ruler measurements are optional", agents.lower())
+        self.assertIn("foto un lineāla izmēri ir izvēles", playbook.lower())
+        self.assertIn("photo or ruler measurements", qa.lower())
+        self.assertIn("photo/measurements are optional", art.lower())
+        self.assertIn("ASSEMBLED_FIT", agents)
+        self.assertIn("ASSEMBLED_FIT", playbook)
+
+
     def test_playbook_separates_machine_from_physical_and_publish(self):
         s = (ROOT / "docs/CUT_PASTE_PLAYBOOK_V1.md").read_text(encoding="utf-8")
         for token in (
