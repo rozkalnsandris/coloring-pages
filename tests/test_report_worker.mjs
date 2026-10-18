@@ -207,7 +207,7 @@ test("worker has no Brevo, Turnstile, rate-limit, catalog or recipient input pat
   }
   assert.match(source, /env\.EMAIL\.send/);
   assert.match(source, /import \{ EmailMessage \} from "cloudflare:email"/);
-  assert.match(source, /new EmailMessage\(REPORT_FROM, REPORT_TO, raw\)/);
+  assert.match(source, /new EmailMessage\(REPORT_FROM, FIXED_DESTINATION, raw\)/);
   assert.doesNotMatch(source, /to: undefined/);
   assert.doesNotMatch(source, /error\.message|error\.stack/);
 });

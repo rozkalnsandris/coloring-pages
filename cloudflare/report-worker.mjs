@@ -13,7 +13,7 @@ const REASONS = Object.freeze({
 const PAGE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/i;
 const URL_BASE = "https://ausmalwiese.de";
 const REPORT_FROM = "info@ausmalwiese.de";
-const REPORT_TO = "INFO@ausmalwiese.de";
+const FIXED_DESTINATION = "INFO@ausmalwiese.de";
 const EMAIL_ERROR_CODE = /^E_[A-Z0-9_]{1,62}$/;
 
 function json(payload, status = 200) {
@@ -65,7 +65,7 @@ function buildRawEmail(payload, reason, link) {
   const subject = "[Ausmalwiese] Fehler gemeldet: " + payload.id;
   return [
     "From: Ausmalwiese <" + REPORT_FROM + ">",
-    "To: " + REPORT_TO,
+    "To: " + FIXED_DESTINATION,
     "Subject: " + subject,
     "MIME-Version: 1.0",
     "Content-Type: text/plain; charset=UTF-8",
@@ -98,7 +98,7 @@ async function submit(request, env, url) {
   const reason = REASONS[payload.reason];
   try {
     const raw = buildRawEmail(payload, reason, link);
-    await env.EMAIL.send(new EmailMessage(REPORT_FROM, REPORT_TO, raw));
+    await env.EMAIL.send(new EmailMessage(REPORT_FROM, FIXED_DESTINATION, raw));
     return json({ ok: true }, 200);
   } catch (error) {
     console.error({
