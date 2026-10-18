@@ -203,30 +203,77 @@ def freeze(prepared_dir: Path, pending_folder_id: str) -> tuple[Request, ...]:
         os.close(dirfd)
 
 
+def check_frozen_request(request: Request) -> None:
+    """Rebuild the exact multipart body to bind metadata to actual media bytes."""
+    bad = "frozen-identity-or-order"
+    require(
+        isinstance(request, Request)
+        and isinstance(request.filename, str)
+        and re.fullmatch(r"[0-9]{7}\\.(png|json)", request.filename) is not None
+        and request.mime in ("image/png", "application/json")
+        and ((request.filename.endswith(".png") and request.mime == "image/png")
+             or (request.filename.endswith(".json") and request.mime == "application/json"))
+        and isinstance(request.folder_id, str)
+        and FOLDER.fullmatch(request.folder_id) is not None
+        and isinstance(request.content_type, str)
+        and isinstance(request.body, bytes),
+        bad,
+    )
+    bound = re.fullmatch(
+        r"multipart/related; boundary=(ausmalwiese-[0-9a-f]{32})",
+        request.content_type,
+    )
+    require(bound is not None, bad)
+    boundary = bound.group(1)
+    meta = json.dumps(
+        {"name": request.filename, "mimeType": request.mime,
+         "parents": [request.folder_id]},
+        separators=(",", ":"),
+    ).encode("ascii")
+    prefix = (
+        ("--" + boundary + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n").encode()
+        + meta
+        + ("\r\n--" + boundary + "\r\nContent-Type: " + request.mime + "\r\n\r\n").encode()
+    )
+    suffix = ("\r\n--" + boundary + "--").encode()
+    require(
+        len(request.body) >= len(prefix) + len(suffix)
+        and request.body.startswith(prefix)
+        and request.body.endswith(suffix),
+        bad,
+    )
+    media = request.body[len(prefix):-len(suffix)]
+    # A matching fingerprint alone is self-asserted: all SHA/MD5, length,
+    # filename, MIME, folder, and boundary must match these extracted bytes.
+    require(multipart(request.filename, request.mime, media, request.folder_id) == request, bad)
+
+
 def send_once(frozen: tuple[Request, ...], sender):
     """Integration hook ONLY. Caller must prove owner, OAuth, folder, LIVE gates.
 
     The sender is the sole future transport surface. Do not call this from CLI.
     One failed/ambiguous response after a send => stop, never retry/rollback.
     """
-    require(isinstance(frozen, tuple) and len(frozen) >= 2
+    require(isinstance(frozen, tuple) and 2 <= len(frozen) <= 40
             and len(frozen) % 2 == 0 and callable(sender), "invalid-frozen-or-sender")
     require(all(isinstance(r, Request) for r in frozen), "invalid-request")
+    # Validate the ENTIRE batch before the first callback, including the real
+    # body bytes; checking hashes/fingerprints supplied by callers is not proof.
+    folder = frozen[0].folder_id
+    seen_ids = set()
     for i in range(0, len(frozen), 2):
         png, manifest = frozen[i:i+2]
+        check_frozen_request(png)
+        check_frozen_request(manifest)
+        ident = png.filename[:-4]
         require(
-            png.filename.endswith(".png") and manifest.filename == png.filename[:-4] + ".json"
-            and png.mime == "image/png" and manifest.mime == "application/json"
-            and png.folder_id == manifest.folder_id
-            and all(
-                sha(r.body) == r.request_sha256
-                and identity_digest(r.filename, r.mime, r.folder_id, r.content_type,
-                                    r.media_sha256, r.media_md5, r.media_size,
-                                    r.request_sha256) == r.identity_sha256
-                for r in (png, manifest)
-            ),
-            "frozen-identity-or-order",
+            ID.fullmatch(ident) is not None and ident not in seen_ids
+            and png.filename == ident + ".png"
+            and manifest.filename == ident + ".json"
+            and png.folder_id == folder and manifest.folder_id == folder,
+            "batch-folder-or-id-mismatch",
         )
+        seen_ids.add(ident)
     ids = []
     for attempt, request in enumerate(frozen, 1):
         try:
