@@ -6,7 +6,7 @@ const surpriseButton = document.querySelector("[data-surprise-button]");
 const surpriseStatus = document.querySelector("[data-surprise-status]");
 const headerSearch = document.querySelector("[data-header-search]");
 const gallery = document.querySelector("[data-gallery]");
-const categoryButtons = [...document.querySelectorAll("[data-filter]")];
+const categoryLinks = [...document.querySelectorAll("[data-category-link]")];
 const resultCount = document.querySelector("[data-result-count]");
 const totalCount = document.querySelector("[data-total-count]");
 const emptyState = document.querySelector("[data-empty-state]");
@@ -102,9 +102,9 @@ function updateCatalogCounts(entries = null) {
     counts.set(category, (counts.get(category) || 0) + 1);
   });
 
-  categoryButtons.forEach((button) => {
-    const category = normalize(button.dataset.filter ?? "");
-    const value = button.querySelector("[data-category-count]");
+  categoryLinks.forEach((link) => {
+    const category = normalize(link.dataset.categoryLink ?? "");
+    const value = link.querySelector("[data-category-count]");
     if (value) value.textContent = String(counts.get(category) || 0);
   });
 
@@ -425,31 +425,9 @@ loadMoreButton?.addEventListener("click", () => {
   renderCatalog();
 });
 
-categoryButtons.forEach((button) => {
-  button.setAttribute("aria-pressed", "false");
-  button.addEventListener("click", () => {
-    const category = normalize(button.dataset.filter ?? "");
-    activeCategory = activeCategory === category ? "" : category;
-
-    categoryButtons.forEach((candidate) => {
-      const selected = normalize(candidate.dataset.filter) === activeCategory;
-      candidate.classList.toggle("is-active", selected);
-      candidate.setAttribute("aria-pressed", String(selected));
-    });
-
-    applyFilters();
-    updateNavigation("#neu");
-    document.querySelector("#neu")?.scrollIntoView({ block: "start" });
-  });
-});
-
 document.querySelector("[data-reset-filters]")?.addEventListener("click", () => {
   activeCategory = "";
   if (searchInput) searchInput.value = "";
-  categoryButtons.forEach((button) => {
-    button.classList.remove("is-active");
-    button.setAttribute("aria-pressed", "false");
-  });
   applyFilters();
 });
 

@@ -195,7 +195,7 @@ a { color: inherit; }
 .category-card {
   position: relative; min-height: 148px; display: grid; grid-template-columns: 1fr auto; grid-template-rows: 1fr auto;
   gap: 4px 8px; align-items: end; padding: 18px; border: 1px solid transparent;
-  border-radius: var(--radius-card); color: var(--text); cursor: pointer; text-align: left;
+  border-radius: var(--radius-card); color: var(--text); cursor: pointer; text-align: left; text-decoration: none;
 }
 .category-card:hover { border-color: rgb(16 40 77 / 24%); transform: translateY(-2px); }
 .category-card.is-active { border-color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue); }
