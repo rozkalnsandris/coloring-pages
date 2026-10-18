@@ -212,6 +212,21 @@ class OfflineDriveDesignTests(unittest.TestCase):
         with self.assertRaisesRegex(DesignBlocked, "unsupported-mime"):
             multipart_request("1234567.png", "text/html", PNG, FOLDER)
 
+    def test_png_name_must_have_png_mime(self):
+        with self.assertRaisesRegex(DesignBlocked, "mime-filename-mismatch"):
+            multipart_request("1234567.png", "application/json", PNG, FOLDER)
+
+    def test_json_name_must_have_json_mime(self):
+        with self.assertRaisesRegex(DesignBlocked, "mime-filename-mismatch"):
+            multipart_request("1234567.json", "image/png", PNG, FOLDER)
+
+    def test_unhashable_manifest_category_is_rejected(self):
+        p = self.directory / self.rows[0]["manifest"]
+        j = json.loads(p.read_text())
+        j["category"] = ["jahreszeiten"]
+        p.write_text(json.dumps(j))
+        self.assert_blocked("manifest-identity-mismatch")
+
     def test_bad_name_with_slash_rejected(self):
         with self.assertRaisesRegex(DesignBlocked, "invalid-filename"):
             multipart_request("../1234567.png", "image/png", PNG, FOLDER)
