@@ -50,7 +50,16 @@ class SitemapRouteTests(unittest.TestCase):
         urls = [x.text for x in root.findall("s:url/s:loc", ns)]
         self.assertEqual(
             urls,
-            ["https://ausmalwiese.de/", "https://ausmalwiese.de/kita"],
+            [
+                "https://ausmalwiese.de/",
+                "https://ausmalwiese.de/kita",
+                "https://ausmalwiese.de/tiere",
+                "https://ausmalwiese.de/fahrzeuge",
+                "https://ausmalwiese.de/alphabet",
+                "https://ausmalwiese.de/lernen",
+                "https://ausmalwiese.de/figuren",
+                "https://ausmalwiese.de/jahreszeiten",
+            ],
         )
 
     def test_runtime_content_mount_stays_read_only(self):
