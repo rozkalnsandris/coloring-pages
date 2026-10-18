@@ -209,7 +209,7 @@ def check_frozen_request(request: Request) -> None:
     require(
         isinstance(request, Request)
         and isinstance(request.filename, str)
-        and re.fullmatch(r"[0-9]{7}\\.(png|json)", request.filename) is not None
+        and re.fullmatch(r"[0-9]{7}\.(png|json)", request.filename) is not None
         and request.mime in ("image/png", "application/json")
         and ((request.filename.endswith(".png") and request.mime == "image/png")
              or (request.filename.endswith(".json") and request.mime == "application/json"))
