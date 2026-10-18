@@ -141,6 +141,30 @@ def multipart(filename: str, mime: str, media: bytes, folder_id: str) -> Request
                    sha(media), md5(media), len(media), sha(body), fingerprint)
 
 
+def check_manifest_binding(raw_manifest: bytes, ident: str,
+                           expected_sha: str, expected_size: int) -> None:
+    """One strict v1 manifest check, shared by freeze and the sender gate."""
+    manifest = parse_json(raw_manifest, "invalid-manifest")
+    require(isinstance(manifest, dict) and set(manifest) == MANIFEST_KEYS,
+            "invalid-manifest")
+    require(
+        manifest["schema"] == MANIFEST_SCHEMA and manifest["id"] == ident
+        and manifest["sha256"] == expected_sha
+        and type(manifest["size_bytes"]) is int
+        and manifest["size_bytes"] == expected_size
+        and isinstance(manifest["category"], str)
+        and manifest["category"] in CATEGORIES
+        and isinstance(manifest["title"], str) and bool(manifest["title"].strip())
+        and isinstance(manifest["character"], str)
+        and manifest["age"] in ("3-6", "4-8")
+        and manifest["difficulty"] in ("easy", "normal", "detailed")
+        and manifest["language"] == "de"
+        and manifest["source_kind"] == "chatgpt-generated-png"
+        and manifest["approval_class"] == "explicit-owner-chat-approval",
+        "manifest-binding",
+    )
+
+
 def freeze(prepared_dir: Path, pending_folder_id: str) -> tuple[Request, ...]:
     """Validate and freeze ALL local bytes before a hypothetical first mutation."""
     require(isinstance(pending_folder_id, str)
@@ -175,25 +199,8 @@ def freeze(prepared_dir: Path, pending_folder_id: str) -> tuple[Request, ...]:
             require(png.startswith(PNG_MAGIC) and len(png) == row["size_bytes"]
                     and sha(png) == row["sha256"], "png-hash-or-signature")
             raw_manifest = read_file(dirfd, json_name, JSON_LIMIT)
-            manifest = parse_json(raw_manifest, "invalid-manifest")
-            require(isinstance(manifest, dict) and set(manifest) == MANIFEST_KEYS,
-                    "invalid-manifest")
-            require(
-                manifest["schema"] == MANIFEST_SCHEMA and manifest["id"] == ident
-                and manifest["sha256"] == row["sha256"]
-                and type(manifest["size_bytes"]) is int
-                and manifest["size_bytes"] == row["size_bytes"]
-                and isinstance(manifest["category"], str)
-                and manifest["category"] in CATEGORIES
-                and isinstance(manifest["title"], str) and bool(manifest["title"].strip())
-                and isinstance(manifest["character"], str)
-                and manifest["age"] in ("3-6", "4-8")
-                and manifest["difficulty"] in ("easy", "normal", "detailed")
-                and manifest["language"] == "de"
-                and manifest["source_kind"] == "chatgpt-generated-png"
-                and manifest["approval_class"] == "explicit-owner-chat-approval",
-                "manifest-binding",
-            )
+            check_manifest_binding(raw_manifest, ident, row["sha256"],
+                                   row["size_bytes"])
             frozen.extend((
                 multipart(png_name, "image/png", png, pending_folder_id),
                 multipart(json_name, "application/json", raw_manifest, pending_folder_id),
@@ -203,7 +210,7 @@ def freeze(prepared_dir: Path, pending_folder_id: str) -> tuple[Request, ...]:
         os.close(dirfd)
 
 
-def check_frozen_request(request: Request) -> None:
+def check_frozen_request(request: Request) -> bytes:
     """Rebuild the exact multipart body to bind metadata to actual media bytes."""
     bad = "frozen-identity-or-order"
     require(
@@ -246,6 +253,7 @@ def check_frozen_request(request: Request) -> None:
     # A matching fingerprint alone is self-asserted: all SHA/MD5, length,
     # filename, MIME, folder, and boundary must match these extracted bytes.
     require(multipart(request.filename, request.mime, media, request.folder_id) == request, bad)
+    return media
 
 
 def send_once(frozen: tuple[Request, ...], sender):
@@ -263,8 +271,8 @@ def send_once(frozen: tuple[Request, ...], sender):
     seen_ids = set()
     for i in range(0, len(frozen), 2):
         png, manifest = frozen[i:i+2]
-        check_frozen_request(png)
-        check_frozen_request(manifest)
+        png_bytes = check_frozen_request(png)
+        manifest_bytes = check_frozen_request(manifest)
         ident = png.filename[:-4]
         require(
             png.filename == ident + ".png" and manifest.filename == ident + ".json"
@@ -276,6 +284,11 @@ def send_once(frozen: tuple[Request, ...], sender):
             and png.folder_id == folder and manifest.folder_id == folder,
             "batch-folder-or-id-mismatch",
         )
+        # A valid MIME envelope is not enough: its JSON must attest to the
+        # exact paired PNG bytes. Validate every pair before the first send.
+        require(png_bytes.startswith(PNG_MAGIC), "png-hash-or-signature")
+        check_manifest_binding(manifest_bytes, ident, png.media_sha256,
+                               png.media_size)
         seen_ids.add(ident)
     ids = []
     for attempt, request in enumerate(frozen, 1):
