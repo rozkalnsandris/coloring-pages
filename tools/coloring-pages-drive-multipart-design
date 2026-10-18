@@ -9,8 +9,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
+import stat
 import sys
 
 UPLOAD_URL = (
@@ -21,6 +23,8 @@ INDEX_SCHEMA = "rozkalns.coloring-pages.publish-preflight-result.v1"
 MANIFEST_SCHEMA = "rozkalns.coloring-pages.drive-staging-manifest.v1"
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 LIMIT = 5_000_000  # conservative <=5 MB Drive multipart guidance; includes framing
+INDEX_LIMIT = 64 * 1024
+MANIFEST_LIMIT = 64 * 1024
 IDENTIFIER = re.compile(r"[0-9]{7}\Z")
 FOLDER_ID = re.compile(r"[A-Za-z0-9_-]{10,128}\Z")
 HASH = re.compile(r"[0-9a-f]{64}\Z")
@@ -44,25 +48,69 @@ def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def json_file(path: Path):
+def open_prepared_dir(directory: Path) -> int:
+    # The Linux/POSIX descriptor is anchored once for the entire planned batch.
+    require(hasattr(os, "O_NOFOLLOW") and hasattr(os, "O_DIRECTORY"), "safe-open-unavailable")
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-        raise DesignBlocked("invalid-json") from exc
+        return os.open(
+            directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+        )
+    except OSError as exc:
+        raise DesignBlocked("prepared-dir-unavailable") from exc
 
 
-def local_bytes(directory: Path, filename: str) -> bytes:
-    path = directory / filename
-    require(not path.is_symlink() and path.is_file(), "file-unavailable")
-    require(path.resolve().parent == directory.resolve(), "path-escape")
+def local_bytes(dirfd: int, filename: str, limit: int, too_large: str) -> bytes:
+    """Read from a no-follow regular-file descriptor, never by re-opening a checked path.
+
+    Bound both fstat size *before* allocation and actual read length, and reject
+    detected concurrent changes. This is not an immutable-file snapshot proof.
+    """
+    require(
+        isinstance(filename, str) and filename not in (".", "..")
+        and "/" not in filename and "\\" not in filename,
+        "file-unavailable",
+    )
     try:
-        return path.read_bytes()
+        fd = os.open(
+            filename, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK,
+            dir_fd=dirfd,
+        )
+        with os.fdopen(fd, "rb", buffering=0) as stream:
+            before = os.fstat(stream.fileno())
+            require(stat.S_ISREG(before.st_mode), "file-unavailable")
+            require(before.st_size <= limit, too_large)
+            data = stream.read(limit + 1)
+            after = os.fstat(stream.fileno())
+            require(len(data) <= limit, too_large)
+            identity = lambda st: (
+                st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns
+            )
+            require(
+                len(data) == before.st_size and identity(before) == identity(after),
+                "file-changed-during-read",
+            )
+            return data
     except OSError as exc:
         raise DesignBlocked("file-unavailable") from exc
 
 
+def json_file(dirfd: int, filename: str):
+    try:
+        return json.loads(local_bytes(dirfd, filename, INDEX_LIMIT, "index-over-limit"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise DesignBlocked("invalid-json") from exc
+
+
 def prepared_entries(directory: Path) -> list[dict]:
-    index = json_file(directory / "preflight-index.json")
+    dirfd = open_prepared_dir(directory)
+    try:
+        return _prepared_entries_from_dirfd(dirfd)
+    finally:
+        os.close(dirfd)
+
+
+def _prepared_entries_from_dirfd(dirfd: int) -> list[dict]:
+    index = json_file(dirfd, "preflight-index.json")
     require(
         isinstance(index, dict) and set(index) == {"schema", "activities"}
         and index["schema"] == INDEX_SCHEMA, "invalid-index"
@@ -90,13 +138,14 @@ def prepared_entries(directory: Path) -> list[dict]:
             and isinstance(item["sha256"], str) and bool(HASH.fullmatch(item["sha256"])),
             "invalid-index-identity",
         )
-        png = local_bytes(directory, png_name)
+        require(item["size_bytes"] <= LIMIT, "multipart-over-5mb")
+        png = local_bytes(dirfd, png_name, LIMIT, "multipart-over-5mb")
         require(png.startswith(PNG_MAGIC), "not-png")
         require(
             len(png) == item["size_bytes"] and sha256(png) == item["sha256"],
             "png-identity-mismatch",
         )
-        manifest_data = local_bytes(directory, json_name)
+        manifest_data = local_bytes(dirfd, json_name, MANIFEST_LIMIT, "manifest-over-limit")
         try:
             manifest = json.loads(manifest_data)
         except (UnicodeError, json.JSONDecodeError) as exc:
@@ -196,6 +245,8 @@ def main() -> int:
     print("DRIVE_WRITE=NO")
     print("AUTHORIZATION=NOT_AVAILABLE")
     print("LIVE_IMPORT=NO")
+    print("PNG_PROOF=SIGNATURE_ONLY")
+    print("PRINT_VALIDATION=NOT_PERFORMED")
     print(json.dumps({"request_count": len(plans), "requests": plans}, indent=2))
     return 3  # Nonzero: never allow a normal publication gate to treat this as PASS.
 
