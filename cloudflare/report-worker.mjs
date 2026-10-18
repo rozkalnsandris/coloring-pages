@@ -11,6 +11,7 @@ const REASONS = Object.freeze({
 const PAGE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/i;
 const URL_BASE = "https://ausmalwiese.de";
 const REPORT_FROM = "info@ausmalwiese.de";
+const EMAIL_ERROR_CODE = /^E_[A-Z0-9_]{1,62}$/;
 
 function json(payload, status = 200) {
   return new Response(JSON.stringify(payload), {
@@ -26,6 +27,19 @@ function json(payload, status = 200) {
 
 function configured(env) {
   return Boolean(env?.EMAIL && typeof env.EMAIL.send === "function");
+}
+
+function sanitizedEmailErrorCode(error) {
+  if (!error || typeof error !== "object") return "UNKNOWN";
+  let code;
+  try {
+    code = error.code;
+  } catch {
+    return "UNKNOWN";
+  }
+  return typeof code === "string" && code.length <= 64 && EMAIL_ERROR_CODE.test(code)
+    ? code
+    : "UNKNOWN";
 }
 
 async function readPayload(request) {
@@ -74,7 +88,11 @@ async function submit(request, env, url) {
       ].join("\n"),
     });
     return json({ ok: true }, 200);
-  } catch {
+  } catch (error) {
+    console.error({
+      event: "report_email_send_failed",
+      code: sanitizedEmailErrorCode(error),
+    });
     return json({ ok: false }, 503);
   }
 }
