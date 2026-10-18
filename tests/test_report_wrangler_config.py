@@ -10,14 +10,14 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "cloudflare" / "wrangler.report.json"
 WORKER = ROOT / "cloudflare" / "report-worker.mjs"
-EXPECTED_WORKER_SHA256 = "226332be3d16ba7e4cb17e58cb1fe3aabd9f84f1089eaf59463f211132556817"
+EXPECTED_WORKER_SHA256 = "4f57944d4d7ba89d86edcc83bff8899666a93d964855be83c8bfc3fc91e84bce"
 
 ROUTES = [
     {"pattern": "ausmalwiese.de/api/report", "zone_name": "ausmalwiese.de"},
     {"pattern": "www.ausmalwiese.de/api/report", "zone_name": "ausmalwiese.de"},
 ]
 EMAIL_BINDING = [
-    {"name": "EMAIL", "destination_address": "INFO@ausmalwiese.de"},
+    {"name": "EMAIL", "destination_address": "info@ausmalwiese.de"},
 ]
 OBSERVABILITY = {
     "logs": {"enabled": True},
@@ -86,7 +86,7 @@ class ReportWranglerConfigTests(unittest.TestCase):
         self.assertEqual(self.config["send_email"], EMAIL_BINDING)
         binding = self.config["send_email"][0]
         self.assertEqual(binding["name"], "EMAIL")
-        self.assertEqual(binding["destination_address"], "INFO@ausmalwiese.de")
+        self.assertEqual(binding["destination_address"], "info@ausmalwiese.de")
         serialized = json.dumps(self.config, sort_keys=True)
         self.assertNotIn("gmail.com", serialized.lower())
         self.assertNotIn("api-key", serialized.lower())

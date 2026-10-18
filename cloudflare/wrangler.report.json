@@ -26,7 +26,7 @@
   "send_email": [
     {
       "name": "EMAIL",
-      "destination_address": "INFO@ausmalwiese.de"
+      "destination_address": "info@ausmalwiese.de"
     }
   ]
 }

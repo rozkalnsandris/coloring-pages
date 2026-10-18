@@ -1,5 +1,3 @@
-import { EmailMessage } from "cloudflare:email";
-
 // Minimal source-only Worker for Ausmalwiese error reporting (#264).
 // One same-origin POST endpoint, one Cloudflare Email Service binding.
 const ORIGINS = new Set(["https://ausmalwiese.de", "https://www.ausmalwiese.de"]);
@@ -13,7 +11,7 @@ const REASONS = Object.freeze({
 const PAGE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/i;
 const URL_BASE = "https://ausmalwiese.de";
 const REPORT_FROM = "info@ausmalwiese.de";
-const FIXED_DESTINATION = "INFO@ausmalwiese.de";
+const FIXED_DESTINATION = "info@ausmalwiese.de";
 const EMAIL_ERROR_CODE = /^E_[A-Z0-9_]{1,62}$/;
 
 function json(payload, status = 200) {
@@ -61,23 +59,20 @@ async function readPayload(request) {
   }
 }
 
-function buildRawEmail(payload, reason, link) {
-  const subject = "[Ausmalwiese] Fehler gemeldet: " + payload.id;
-  return [
-    "From: Ausmalwiese <" + REPORT_FROM + ">",
-    "To: " + FIXED_DESTINATION,
-    "Subject: " + subject,
-    "MIME-Version: 1.0",
-    "Content-Type: text/plain; charset=UTF-8",
-    "Content-Transfer-Encoding: 8bit",
-    "",
-    "Neue Fehlermeldung",
-    "Grund: " + reason,
-    "ID: " + payload.id,
-    "Seite: " + payload.page,
-    "Link: " + link,
-    "",
-  ].join("\r\n");
+function buildEmail(payload, reason, link) {
+  return {
+    to: FIXED_DESTINATION,
+    from: { email: REPORT_FROM, name: "Ausmalwiese" },
+    subject: "[Ausmalwiese] Fehler gemeldet: " + payload.id,
+    text: [
+      "Neue Fehlermeldung",
+      "Grund: " + reason,
+      "ID: " + payload.id,
+      "Seite: " + payload.page,
+      "Link: " + link,
+      "",
+    ].join("\n"),
+  };
 }
 
 async function submit(request, env, url) {
@@ -97,8 +92,7 @@ async function submit(request, env, url) {
   const link = URL_BASE + "/detail.html?id=" + encodeURIComponent(payload.id) + "&page=" + payload.page;
   const reason = REASONS[payload.reason];
   try {
-    const raw = buildRawEmail(payload, reason, link);
-    await env.EMAIL.send(new EmailMessage(REPORT_FROM, FIXED_DESTINATION, raw));
+    await env.EMAIL.send(buildEmail(payload, reason, link));
     return json({ ok: true }, 200);
   } catch (error) {
     console.error({
