@@ -234,6 +234,10 @@ test("detail UI has five radio choices and no Turnstile dependency", () => {
   assert.doesNotMatch(client, /turnstile|\/api\/report\/config|activity_unavailable/i);
   assert.doesNotMatch(css, /turnstile/i);
   assert.match(css, /:focus-visible/);
+  assert.match(client, /say\("✓ Danke! Deine Meldung wurde gesendet\.", "success"\)/);
+  assert.match(client, /say\("Die Meldung konnte nicht gesendet werden\. Bitte versuche es später erneut\.", "error"\)/);
+  assert.match(css, /\.report-status\[data-state="success"\]/);
+  assert.match(css, /\.report-status\[data-state="error"\]/);
 });
 
 test("all report JavaScript is syntactically valid", () => {
