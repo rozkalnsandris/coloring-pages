@@ -5,6 +5,14 @@
   "workers_dev": false,
   "preview_urls": false,
   "no_bundle": true,
+  "observability": {
+    "logs": {
+      "enabled": true
+    },
+    "traces": {
+      "enabled": false
+    }
+  },
   "routes": [
     {
       "pattern": "ausmalwiese.de/api/report",
