@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class CutPastePlaybookTests(unittest.TestCase):
-    def test_command_alias_and_owner_hold_have_canonical_links(self):
+    def test_command_alias_and_publish_gate_have_canonical_links(self):
         files = (
             "AGENTS.md",
             "README.md",
@@ -24,6 +24,9 @@ class CutPastePlaybookTests(unittest.TestCase):
         self.assertIn("CUT <subject>", a)
         self.assertIn("CUT <subject>", c)
         self.assertIn("PUBLISH", a)
+        self.assertNotIn("active owner hold", a.lower())
+        self.assertNotIn("currently active owner publication hold", (ROOT / "README.md").read_text(encoding="utf-8").lower())
+        self.assertIn("fresh owner `PUBLISH`", (ROOT / "docs/CHAT_IMAGE_COMMANDS_V1.md").read_text(encoding="utf-8"))
 
     def test_assembled_fit_gate_precedes_a4_print_approval(self):
         checks = {
@@ -35,7 +38,7 @@ class CutPastePlaybookTests(unittest.TestCase):
                 "## 3A.", "assembled_bbox_mm", "assembled_width_mm",
                 "assembled_width_mm <= 176 mm", "fitA4InkBounds",
                 "2026-10-17", "ASSEMBLED_FIT=PASS",
-                "ASSEMBLED_FIT=FAIL", "HOLD",
+                "ASSEMBLED_FIT=FAIL", "PUBLISH",
             ),
             "docs/CUT_PASTE_A4_PLACEMENT_V1.md": (
                 "Strict pre-export gate", "x=17..193 mm",
@@ -83,7 +86,6 @@ class CutPastePlaybookTests(unittest.TestCase):
             "FOOTER",
             "PHYSICAL_QA",
             "PUBLISH",
-            "HOLD",
             "d79b4a8bb4fae0284d1d777ef7b5238ed7708ef7b2747e3a2c7ad6c1f35837be",
             "f2e19fbb836accd108ef8ec1b49c33049a3baa0acbac2355eef8f6d282fcd240",
         ):
