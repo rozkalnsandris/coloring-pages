@@ -16,7 +16,7 @@ Success shows **„Danke! Deine Meldung wurde gesendet.“**. Failure shows the 
 
 `cloudflare/report-worker.mjs` has one function only:
 
-`POST /api/report` -> validate bounded JSON -> build one fixed RFC 5322 plain-text message -> send it through `env.EMAIL.send()` as Cloudflare `EmailMessage`.
+`POST /api/report` -> validate bounded JSON -> build one fixed structured plain-text email -> send it through `env.EMAIL.send({...})`.
 
 The Worker:
 
@@ -25,6 +25,7 @@ The Worker:
 - limits JSON body size;
 - builds the detail link from validated `id` and `page`;
 - uses fixed sender `info@ausmalwiese.de`;
+- uses fixed recipient `info@ausmalwiese.de`;
 - never accepts sender or recipient from the visitor;
 - returns `200 {"ok":true}` only after the Email Service binding resolves;
 - returns `503 {"ok":false}` if the binding is missing or sending fails;
@@ -38,17 +39,18 @@ The Worker:
 `cloudflare/wrangler.report.json` declares one Cloudflare Email Service binding:
 
 - name: `EMAIL`
-- destination: `INFO@ausmalwiese.de`
+- destination: `info@ausmalwiese.de`
 
-The personal mailbox destination is intentionally not committed to GitHub. `INFO@ausmalwiese.de` is the same verified project destination mailbox, using uppercase local-part casing only as a narrow workaround for the open Cloudflare Email Service lowercase `info@ZONE` rejection reported in `cloudflare/developer-platform#65`.
+The binding destination exactly matches the verified project destination observed in Cloudflare. The personal forwarding mailbox is intentionally not committed to GitHub.
 
-The Worker deliberately uses Cloudflare's legacy `EmailMessage` raw RFC 5322 form for this bounded notification. Cloudflare continues to document this pattern for Worker activity alerts when Email Routing is enabled and a `destination_address` binding points at a verified destination. This keeps the feature on the verified-destination / Email Routing path and does not opt into arbitrary-recipient Email Sending. The envelope sender is fixed to `info@ausmalwiese.de`; the envelope recipient and `To` header are fixed to `INFO@ausmalwiese.de`; visitor input cannot control mail headers or addresses.
+The Worker uses Cloudflare's structured email builder with fixed `to`, `from`, `subject` and `text` fields. Cloudflare documents this structured `send()` form as the recommended API for new code; the legacy raw `EmailMessage` form remains supported only for backward compatibility. Because `destination_address` restricts the binding to one verified destination, visitor input cannot select any recipient. Verified-destination sends are documented as free on both Workers Free and Workers Paid plans; this flow does not enable arbitrary-recipient sending.
 
-Cloudflare documentation reviewed 2026-10-18:
+Cloudflare documentation reviewed 2026-10-19:
 
 - https://developers.cloudflare.com/email-service/api/send-emails/workers-api/
 - https://developers.cloudflare.com/email-service/configuration/send-bindings/
 - https://developers.cloudflare.com/email-service/configuration/email-routing-addresses/
+- https://developers.cloudflare.com/email-service/platform/pricing/
 - https://developers.cloudflare.com/workers/observability/logs/workers-logs/
 
 The Email Service Workers API documents thrown errors with machine-readable `code` and human-readable `message`. This Worker deliberately records only the sanitized code. Workers Logs recommends structured JSON objects so the fixed `event` and `code` fields remain queryable without storing provider messages or visitor-derived report data.
@@ -61,8 +63,6 @@ The Email Service Workers API documents thrown errors with machine-readable `cod
 - Workers Traces: disabled
 
 The config uses `observability.logs.enabled = true` and `observability.traces.enabled = false` so a later reviewed Wrangler deploy does not implicitly drift those settings. This source pin does not itself change LIVE state and does not authorize a deploy.
-
-Cloudflare Wrangler documentation reviewed 2026-10-18 documents both keys and recommends treating Wrangler configuration as the Worker configuration source of truth.
 
 ## Routes
 
@@ -77,9 +77,9 @@ There is no `/api/report/config` endpoint and no wildcard route.
 
 This source does not deploy or send real mail. A separate owner authorization is required to:
 
-1. confirm `INFO@ausmalwiese.de` remains an allowed/verified Email Routing destination for the binding;
+1. confirm `info@ausmalwiese.de` remains the verified destination for the binding;
 2. deploy the exact reviewed Worker/config;
-3. send one approved test report;
+3. send at most one approved test report;
 4. verify that the email actually arrives in the intended mailbox.
 
 No Stats pre/post snapshot is part of this flow.
