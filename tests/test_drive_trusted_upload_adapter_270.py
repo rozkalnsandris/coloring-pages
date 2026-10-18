@@ -203,17 +203,17 @@ class TrustedAdapterSourceTests(unittest.TestCase):
             self.plan()
 
     def test_multipart_boundary_collision_rejected(self):
-        name = self.png.name
-        prefix = "ausmalwiese-" + API["digest"](name.encode("ascii") + self.png.data)[:32]
-        # Exercise the direct builder with a contrived immutable blob that
-        # embeds a derived delimiter using the only externally supplied data.
-        # The collision guard stays defensive, even if a SHA collision is rare.
-        boundary_blob = dataclasses.replace(
-            self.png, data=self.png.data + ("\r\n--" + prefix).encode()
-        )
-        # Invalid sha has to fail before MIME body construction.
-        with self.assertRaisesRegex(StopBefore, "blob-hash-size-mismatch"):
-            self.assertIsNotNone(self.plan())
+        # Force a deterministic boundary to exercise the defensive branch.
+        builder = API["make_request"]
+        namespace = builder.__globals__
+        original = namespace["digest"]
+        namespace["digest"] = lambda data: "b" * 64
+        try:
+            malicious = PNG + b"\\r\\n--ausmalwiese-" + b"b" * 32
+            with self.assertRaisesRegex(StopBefore, "mime-boundary-collision"):
+                builder(blob(ACTIVITY + ".png", "image/png", malicious), FOLDER)
+        finally:
+            namespace["digest"] = original
 
     def test_missing_mock_reply_prewrite_stop(self):
         with self.assertRaisesRegex(StopBefore, "missing-scripted-replies"):
