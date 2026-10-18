@@ -19,6 +19,10 @@ ROUTES = [
 EMAIL_BINDING = [
     {"name": "EMAIL", "destination_address": "INFO@ausmalwiese.de"},
 ]
+OBSERVABILITY = {
+    "logs": {"enabled": True},
+    "traces": {"enabled": False},
+}
 
 
 class ReportWranglerConfigTests(unittest.TestCase):
@@ -36,6 +40,7 @@ class ReportWranglerConfigTests(unittest.TestCase):
                 "workers_dev",
                 "preview_urls",
                 "no_bundle",
+                "observability",
                 "routes",
                 "send_email",
             },
@@ -68,6 +73,14 @@ class ReportWranglerConfigTests(unittest.TestCase):
             self.assertNotIn("#", pattern)
             self.assertNotIn("/api/stats", pattern)
             self.assertTrue(pattern.endswith("/api/report"))
+
+    def test_observability_exactly_preserves_live_logs_without_traces(self):
+        self.assertEqual(self.config["observability"], OBSERVABILITY)
+        self.assertEqual(set(self.config["observability"]), {"logs", "traces"})
+        self.assertEqual(set(self.config["observability"]["logs"]), {"enabled"})
+        self.assertEqual(set(self.config["observability"]["traces"]), {"enabled"})
+        self.assertIs(self.config["observability"]["logs"]["enabled"], True)
+        self.assertIs(self.config["observability"]["traces"]["enabled"], False)
 
     def test_one_fixed_email_binding_and_no_personal_recipient(self):
         self.assertEqual(self.config["send_email"], EMAIL_BINDING)

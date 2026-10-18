@@ -53,6 +53,17 @@ Cloudflare documentation reviewed 2026-10-18:
 
 The Email Service Workers API documents thrown errors with machine-readable `code` and human-readable `message`. This Worker deliberately records only the sanitized code. Workers Logs recommends structured JSON objects so the fixed `event` and `code` fields remain queryable without storing provider messages or visitor-derived report data.
 
+## Observability
+
+`cloudflare/wrangler.report.json` explicitly pins the already-observed production state:
+
+- Workers Logs: enabled
+- Workers Traces: disabled
+
+The config uses `observability.logs.enabled = true` and `observability.traces.enabled = false` so a later reviewed Wrangler deploy does not implicitly drift those settings. This source pin does not itself change LIVE state and does not authorize a deploy.
+
+Cloudflare Wrangler documentation reviewed 2026-10-18 documents both keys and recommends treating Wrangler configuration as the Worker configuration source of truth.
+
 ## Routes
 
 Only these Worker routes are configured:
