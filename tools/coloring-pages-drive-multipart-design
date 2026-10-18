@@ -130,7 +130,7 @@ def multipart_request(name: str, mime: str, data: bytes, folder_id: str,
         isinstance(folder_id, str) and bool(FOLDER_ID.fullmatch(folder_id)),
         "invalid-folder-id",
     )
-    require(re.fullmatch(r"[0-9]{7}\\.(png|json)", name) is not None, "invalid-filename")
+    require(re.fullmatch(r"[0-9]{7}\.(png|json)", name) is not None, "invalid-filename")
     require(mime in ("image/png", "application/json"), "unsupported-mime")
     require(isinstance(data, bytes), "invalid-payload")
     if boundary is None:
