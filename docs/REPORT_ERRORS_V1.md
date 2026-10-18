@@ -38,9 +38,9 @@ The Worker:
 `cloudflare/wrangler.report.json` declares one Cloudflare Email Service binding:
 
 - name: `EMAIL`
-- destination: `info@ausmalwiese.de`
+- destination: `INFO@ausmalwiese.de`
 
-The personal mailbox destination is intentionally not committed to GitHub. `info@ausmalwiese.de` is the project address; LIVE activation must confirm that Cloudflare Email Service can deliver to this address and that the existing Email Routing path forwards it to the owner's verified mailbox.
+The personal mailbox destination is intentionally not committed to GitHub. `INFO@ausmalwiese.de` is the same project destination mailbox, using uppercase local-part casing only as a narrow workaround for the open Cloudflare Email Service lowercase `info@ZONE` rejection reported in `cloudflare/developer-platform#65`. The Worker sender remains `info@ausmalwiese.de`, and no other email behavior changes. LIVE activation must still confirm delivery through the existing Email Routing path.
 
 Cloudflare documentation reviewed 2026-10-18:
 
@@ -65,7 +65,7 @@ There is no `/api/report/config` endpoint and no wildcard route.
 This source does not deploy or send real mail. A separate owner authorization is required to:
 
 1. confirm `ausmalwiese.de` is onboarded for Cloudflare Email Sending;
-2. confirm `info@ausmalwiese.de` is an allowed/verified destination for the binding;
+2. confirm `INFO@ausmalwiese.de` resolves to the same allowed/verified project destination for the binding;
 3. deploy the exact reviewed Worker/config;
 4. send one approved test report;
 5. verify that the email actually arrives in the intended mailbox.

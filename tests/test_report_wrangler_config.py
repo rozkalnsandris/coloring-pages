@@ -17,7 +17,7 @@ ROUTES = [
     {"pattern": "www.ausmalwiese.de/api/report", "zone_name": "ausmalwiese.de"},
 ]
 EMAIL_BINDING = [
-    {"name": "EMAIL", "destination_address": "info@ausmalwiese.de"},
+    {"name": "EMAIL", "destination_address": "INFO@ausmalwiese.de"},
 ]
 
 
@@ -73,7 +73,7 @@ class ReportWranglerConfigTests(unittest.TestCase):
         self.assertEqual(self.config["send_email"], EMAIL_BINDING)
         binding = self.config["send_email"][0]
         self.assertEqual(binding["name"], "EMAIL")
-        self.assertEqual(binding["destination_address"], "info@ausmalwiese.de")
+        self.assertEqual(binding["destination_address"], "INFO@ausmalwiese.de")
         serialized = json.dumps(self.config, sort_keys=True)
         self.assertNotIn("gmail.com", serialized.lower())
         self.assertNotIn("api-key", serialized.lower())
