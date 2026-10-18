@@ -13,7 +13,11 @@
   let page = 1;
   let busy = false;
 
-  function say(message) { status.textContent = message; }
+  function say(message, state = "") {
+    status.textContent = message;
+    if (state) status.dataset.state = state;
+    else delete status.dataset.state;
+  }
 
   function close() {
     if (busy) return;
@@ -70,10 +74,10 @@
       if (!response.ok || result?.ok !== true) throw new Error("not sent");
       panel.hidden = true;
       openButton.setAttribute("aria-expanded", "false");
-      say("Danke! Deine Meldung wurde gesendet.");
+      say("✓ Danke! Deine Meldung wurde gesendet.", "success");
       openButton.focus();
     } catch {
-      say("Die Meldung konnte nicht gesendet werden. Bitte versuche es später erneut.");
+      say("Die Meldung konnte nicht gesendet werden. Bitte versuche es später erneut.", "error");
     } finally {
       busy = false;
       submit.disabled = false;
