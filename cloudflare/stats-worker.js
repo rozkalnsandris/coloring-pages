@@ -658,6 +658,74 @@ async function cookieLikeRoutes(env, request, path) {
   if (!stillActive) return json({error:"like_cookie_expired"},403);
   return json(await likeCookieState(env,body.page_id,hash));
 }
+
+// Aggregate reactions (#256): no visitor credential, session or per-vote row.
+async function aggregateLikeBody(request) {
+  const declared = request.headers.get("content-length");
+  if (declared !== null && (!/^\d+$/.test(declared) || Number(declared) > 256))
+    return null;
+  if (!request.body) return null;
+  const reader = request.body.getReader();
+  const decoder = new TextDecoder("utf-8", {fatal:true});
+  let size = 0;
+  let raw = "";
+  try {
+    while (true) {
+      const {done,value} = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > 256) {
+        await reader.cancel();
+        return null;
+      }
+      raw += decoder.decode(value, {stream:true});
+    }
+    raw += decoder.decode();
+    const body = JSON.parse(raw);
+    return body && typeof body === "object" && !Array.isArray(body)
+      && Object.keys(body).length === 1 && validPageId(body.page_id) ? body : null;
+  } catch {
+    return null;
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+async function recordAggregateLike(env, request) {
+  if (!strictWrite(request)) return json({error:"forbidden"},403);
+  if (new URL(request.url).search) return json({error:"invalid_request"},400);
+  const body = await aggregateLikeBody(request);
+  if (!body) return json({error:"invalid_request"},400);
+  const ip = request.headers.get("CF-Connecting-IP");
+  if (!ip || !env.RATE_LIMITER) return json({error:"like_unavailable"},503);
+  try {
+    // Transient abuse control only. Never bind the IP or a cookie to D1.
+    if (!(await rateLimit(env,ip,"aggregate-like")))
+      return json({error:"rate_limited"},429);
+    const result = await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO page_stats(page_id,like_count,updated_at) VALUES (?,1,datetime('now')) ON CONFLICT(page_id) DO UPDATE SET like_count=like_count+1,updated_at=datetime('now')"
+      ).bind(body.page_id),
+      env.DB.prepare(
+        "SELECT p.print_count,p.like_count+COALESCE(a.like_count,0) AS like_count FROM page_stats p LEFT JOIN archived_like_totals a ON a.page_id=p.page_id WHERE p.page_id=?"
+      ).bind(body.page_id),
+    ]);
+    const stats = result?.[1]?.results?.[0];
+    if (!Array.isArray(result) || result.length !== 2
+        || result.some(row=>row?.success !== true)
+        || result[0]?.meta?.changes !== 1
+        || result[1]?.results?.length !== 1
+        || !Number.isSafeInteger(stats?.like_count) || stats.like_count < 1
+        || !Number.isSafeInteger(stats?.print_count) || stats.print_count < 0)
+      return json({error:"like_unconfirmed"},503);
+    return json({page_id:body.page_id,reacted:true,
+      like_count:stats.like_count,print_count:stats.print_count},201);
+  } catch {
+    // The write may have committed. Do not retry or expose D1/request details.
+    return json({error:"like_unconfirmed"},503);
+  }
+}
+
 async function recordAggregatePrint(env, request) {
   if (!strictWrite(request)) return json({error:"forbidden"},403);
   const body = await boundedLikeJson(request,["page_id","campaign"]);
@@ -726,6 +794,7 @@ export default {
       if (request.method === "HEAD") return printQrRedirect();
       return new Response(null, {status:405, headers:{"allow":"GET, HEAD","cache-control":"no-store"}});
     }
+    if (request.method==="POST" && path==="/api/stats/like-aggregate") return recordAggregateLike(env,request);
     if (path.startsWith("/api/stats/like/")) return cookieLikeRoutes(env,request,path);
     if (request.method==="POST" && path==="/api/stats/print-aggregate") return recordAggregatePrint(env,request);
     if (request.method==="GET" && path==="/api/stats/rankings") return rankings(env,request);
