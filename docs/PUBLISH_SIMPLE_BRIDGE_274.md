@@ -22,6 +22,8 @@ The helper accepts 1–20 independent v1 activity pairs only, checks unique seve
 
 The source integration interface is send_once(frozen_requests, sender_callback), where the injected sender receives (fixed Drive files.create upload URL, multipart content-type, exact body bytes). It is not connected to HTTP here. A future owner-authorized runner must independently prove live PUBLISH intent, OAuth identity/permission, actual exact pending folder binding, fresh LIVE ID absence, operator/importer alignment, no duplicate Drive names, and immutable prepared source bytes. No such runner has been built, trusted or authorized in this issue. Adopting a direct API sender requires separate review of the current stable upload source-ref contract.
 
+Before any sender call, the bridge now re-extracts the actual media bytes from each frozen multipart body, reconstructs the canonical request, and checks exact equality against all stored metadata, SHA-256, MD5 and byte counts. Recalculating a caller-supplied fingerprint is insufficient: the actual body must match. It also rejects a batch containing mixed pending-folder IDs or repeated seven-digit activity IDs, and checks all these conditions across the entire batch before its first hypothetical mutation. The existing PNG-before-prebuilt-JSON order is unchanged.
+
 The intended Google v3 call is files.create with uploadType=multipart. Returned metadata must match the file name, MIME, actual parent, decimal-string size and binary md5Checksum, and return distinct file IDs. This is an additional transport identity check, not proof of RPi5 import or published content. On any first or later sender ambiguity/response mismatch, STOP without retry, rollback, overwrite, cleanup or switching to another uploader. Host-side rclone push remains forbidden.
 
 References: https://developers.google.com/workspace/drive/api/guides/manage-uploads ;
@@ -32,6 +34,6 @@ https://developers.google.com/workspace/drive/api/guides/api-specific-auth
 
     python3 -m unittest discover -s tests -p 'test_drive_simple_bridge_274.py' -v
 
-Tests exercise independent v1 pairs, ordering, SHA/size/manifest mismatches, duplicate JSON keys and IDs, unreadable/symlink/oversized files, mock provider response checks, failures after any write attempt and no retry. No real OAuth, Drive or LIVE access is performed.
+Tests exercise independent v1 pairs, ordering, SHA/size/manifest mismatches, forged media SHA-256/MD5/size with recalculated fingerprints, body-embedded folder tampering, mixed destination folder IDs, repeated activity IDs, duplicate JSON keys, unreadable/symlink/oversized files, mock provider responses, failures after any write attempt and no retry. No real OAuth, Drive or LIVE access is performed.
 
 Other Draft experiments (#259, #267, #273) are unchanged; this implementation does not depend on them. The next blocker is one authorized provider bytes upload connection, not additional mock frameworks.
