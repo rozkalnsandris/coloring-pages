@@ -50,11 +50,11 @@ class HomeRankingLayoutTests(unittest.TestCase):
         self.assertIn('.ranking-tabs {', css)
         self.assertIn('.ranking-tab.is-active', css)
         self.assertIn('grid-template-columns: repeat(2, minmax(0, 1fr))', css)
-def test_detail_tracks_print_intent_and_reversible_like():
+def test_detail_tracks_print_intent_and_aggregate_like():
     html=read("detail.html"); js=read("js/detail.js")
     assert 'data-action-like' in html
     assert 'ColoringStats?.trackPrint?.(loadedEntryId)' in js
-    assert 'ColoringStats.toggleLike(loadedEntryId)' in js
+    assert 'ColoringStats.addLike(loadedEntryId)' in js
     assert 'aria-pressed' in html
 def test_cloudflare_stats_contract_keeps_rpi5_out_of_state():
     worker=read("cloudflare/stats-worker.js"); schema=read("cloudflare/stats-schema.sql"); docs=read("docs/CLOUDFLARE_STATS_V1.md")
@@ -69,12 +69,12 @@ def test_cloudflare_stats_contract_keeps_rpi5_out_of_state():
     assert "PRIMARY KEY (page_id, visitor_hash)" in schema
     assert "Raspberry Pi" in docs
     assert "print intent" in docs
-def test_stats_frontend_uses_first_party_random_id_only_on_engagement():
+def test_stats_frontend_uses_aggregate_endpoints_without_persistent_identity():
     js=read("js/stats.js")
-    assert 'getVisitorId(false)' in js
-    assert 'getVisitorId(true)' in js
-    assert 'localStorage.getItem(VISITOR_KEY)' in js
-    assert 'crypto?.randomUUID?.()' in js
+    assert '"/like-aggregate"' in js
+    assert '${API_BASE}/print-aggregate' in js
+    for forbidden in ('getVisitorId', 'visitor_id', 'localStorage', 'sessionStorage', 'randomUUID'):
+        assert forbidden not in js
 
 
 class TrendingSqlRegressionTests(unittest.TestCase):

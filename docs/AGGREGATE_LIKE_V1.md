@@ -1,6 +1,7 @@
 # Aggregate Like API (#256)
 
-Source-only backend step toward [simple privacy rules](SIMPLE_PRIVACY_RULES_V1.md).
+Source contract for the backend and frontend steps toward
+[simple privacy rules](SIMPLE_PRIVACY_RULES_V1.md). Source is not deployment evidence.
 
 ## Request and result
 
@@ -42,3 +43,29 @@ Offline tests execute the real Worker handler with SQLite-backed D1-shaped batch
 results. They cover request bounds, all three hosts, identifier rejection, rate
 limits, counter preservation, transaction rollback and uncertain outcomes.
 Production D1/runtime behavior still requires separately authorized verification.
+
+## Frontend cutover candidate
+
+The updated shared client sends only the page ID to aggregate Like and only the
+page ID plus an allowlisted campaign to aggregate Print. These writes and the
+public page-total read omit credentials. Internal admin reads retain credentials
+for Cloudflare Access. The client no longer reads or creates a persistent visitor
+ID and does not fall back to the personalized endpoints.
+
+The heart shows the total, accepts one attempt per page view, and shows `Danke!`
+only after a confirmed result. In-flight clicks, success, timeout and uncertain
+results all leave it disabled until reload. An initial failed count read may be
+retried safely before any reaction. Reload can allow another reaction; these are
+action totals, not unique people. Printing still opens if telemetry fails.
+
+Old browser storage and historical server records are left untouched, including
+any legacy erasure proof. This is not a data cleanup or a claim of completed
+retirement. Legacy personalized-write fencing and #158 reconciliation remain
+part of the coordinated release.
+
+**Merge/release hold:** the repository's existing SIMPLE-DEPLOY workflow triggers
+on changes to `js/**`, `index.html` and `detail.html` on main, builds an image and
+advances its production pointer. Do not merge this frontend candidate on source
+CI alone: first verify the aggregate backend/schema is live and obtain separate
+owner authorization for the application release. A merge-only command does not
+authorize deployment. No workflow, runtime, DB or settings change is made here.

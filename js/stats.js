@@ -1,6 +1,7 @@
 (() => {
   const API_BASE = "/api/stats";
-  const VISITOR_KEY = "coloring-pages-visitor-v1";
+  // One attempt per page ID during this document lifetime; nothing is persisted.
+  const attemptedLikes = new Set();
   const CAMPAIGN_IDS = new Set(["dortmund-01"]);
   const INSTAGRAM_UTM_CAMPAIGNS = new Set(["profile", "story", "reel"]);
 
@@ -34,20 +35,7 @@
     return CAMPAIGN_IDS.has(value) ? value : "";
   }
 
-  function getVisitorId(create = false) {
-    try {
-      let value = localStorage.getItem(VISITOR_KEY);
-      if (!value && create) {
-        value = globalThis.crypto?.randomUUID?.() || `v-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        localStorage.setItem(VISITOR_KEY, value);
-      }
-      return value || "";
-    } catch {
-      return "";
-    }
-  }
-
-  async function requestJson(path, options = {}) {
+  async function requestJson(path, options = {}, expectedStatus) {
     const response = await fetch(`${API_BASE}${path}`, {
       cache: "no-store",
       credentials: "same-origin",
@@ -58,7 +46,9 @@
         ...(options.headers || {}),
       },
     });
-    if (!response.ok) throw new Error(`stats request failed: ${response.status}`);
+    if (!response.ok || (expectedStatus && response.status !== expectedStatus)) {
+      throw new Error(`stats request failed: ${response.status}`);
+    }
     return response.json();
   }
 
@@ -81,19 +71,39 @@
     return requestJson(`/campaigns?days=${safeDays}`);
   }
 
-  async function getPage(pageId) {
-    const visitorId = getVisitorId(false);
-    const query = new URLSearchParams({page_id: pageId});
-    if (visitorId) query.set("visitor_id", visitorId);
-    return requestJson(`/page?${query}`);
+  function validPageCounts(data, pageId) {
+    return data?.page_id === pageId
+      && Number.isSafeInteger(data.like_count) && data.like_count >= 0
+      && Number.isSafeInteger(data.print_count) && data.print_count >= 0;
   }
 
-  async function toggleLike(pageId) {
-    const visitorId = getVisitorId(true);
-    return requestJson("/like", {
-      method: "POST",
-      body: JSON.stringify({page_id: pageId, visitor_id: visitorId}),
-    });
+  async function getPage(pageId) {
+    const query = new URLSearchParams({page_id: pageId});
+    const data = await requestJson(`/page?${query}`, {credentials: "omit"});
+    if (!validPageCounts(data, pageId)) throw new Error("invalid page totals");
+    return {page_id: pageId, like_count: data.like_count, print_count: data.print_count};
+  }
+
+  async function addLike(pageId) {
+    if (attemptedLikes.has(pageId)) throw new Error("reaction already attempted");
+    attemptedLikes.add(pageId);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+      const data = await requestJson("/like-aggregate", {
+        method: "POST",
+        credentials: "omit",
+        signal: controller.signal,
+        body: JSON.stringify({page_id: pageId}),
+      }, 201);
+      if (!validPageCounts(data, pageId) || data.reacted !== true || data.like_count < 1) {
+        throw new Error("reaction unconfirmed");
+      }
+      return data;
+    } finally {
+      clearTimeout(timeout);
+      // Never unlock or resend: an unconfirmed write may have committed.
+    }
   }
 
   function trackVisit() {
@@ -133,27 +143,25 @@
   }
 
   function trackPrint(pageId) {
-    const visitorId = getVisitorId(true);
-    const payload = {page_id: pageId, visitor_id: visitorId};
+    const payload = {page_id: pageId};
     const campaign = currentCampaign();
     if (campaign) payload.campaign = campaign;
     const body = JSON.stringify(payload);
-    if (navigator.sendBeacon) {
-      try {
-        const blob = new Blob([body], {type: "application/json"});
-        if (navigator.sendBeacon(`${API_BASE}/print`, blob)) return;
-      } catch {}
+    try {
+      // Fetch lets this request explicitly omit cookies; no beacon/fallback resend.
+      fetch(`${API_BASE}/print-aggregate`, {
+        method: "POST",
+        credentials: "omit",
+        keepalive: true,
+        headers: {"Content-Type": "application/json"},
+        body,
+      }).catch(() => {});
+    } catch {
+      // Telemetry must never prevent the print dialog from opening.
     }
-    fetch(`${API_BASE}/print`, {
-      method: "POST",
-      credentials: "same-origin",
-      keepalive: true,
-      headers: {"Content-Type": "application/json"},
-      body,
-    }).catch(() => {});
   }
 
-  window.ColoringStats = {getRankings, getOverview, getTraffic, getCampaigns, getPage, toggleLike, trackVisit, trackView, trackPrint};
+  window.ColoringStats = {getRankings, getOverview, getTraffic, getCampaigns, getPage, addLike, trackVisit, trackView, trackPrint};
 
   const homePath = location.pathname === "/" || location.pathname === "/index.html";
   const detailPath = location.pathname === "/detail.html";
