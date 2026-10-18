@@ -21,7 +21,6 @@
   flex: 0 0 auto; margin: 3px 0 0; width: 18px; height: 18px;
   accent-color: var(--blue);
 }
-.report-panel [data-report-turnstile] { min-height: 68px; margin-top: 14px; }
 .report-panel-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
 .report-panel-actions button {
   min-height: 44px; padding: 10px 20px; border-radius: 11px;
