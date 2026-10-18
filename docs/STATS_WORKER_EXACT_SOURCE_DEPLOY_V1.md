@@ -6,6 +6,15 @@ This document defines the source-side deployment contract after merged privacy b
 PR #183. It does not deploy Cloudflare, mutate D1, install a Cron Trigger, read
 credentials, change routes, or authorize LIVE.
 
+## Aggregate Like addition (#256)
+
+This source candidate adds `POST /api/stats/like-aggregate` as described in
+[the aggregate Like API](AGGREGATE_LIKE_V1.md). It reuses existing page totals
+and the existing archive table; it adds no migration, route or binding. The
+frontend remains on its existing endpoints until a coordinated cutover.
+The revised Worker digest below identifies source only, not an approved deployment.
+Cookie/legacy compatibility and their historical data remain unchanged.
+
 ## Immutable source set
 
 Canonical repository: `rozkalnsandris/coloring-pages`.
@@ -15,7 +24,7 @@ The machine contract is
 
 | Artifact | Git blob SHA-1 |
 | --- | --- |
-| `cloudflare/stats-worker.js` | `94e802ce145dd75f5701c4c9274a4ac7959c7f5e` |
+| `cloudflare/stats-worker.js` | `c2ac9da6e0701103e0041b30db7dfbea4298f96c` |
 | `cloudflare/wrangler.stats-worker.jsonc` | `3733263a391274f2b6b0f2023c8656565bde8e1a` |
 | `cloudflare/stats-cookie-like-migration.sql` | `b5346c05cb27de1010dab2027b0b923e999af775` |
 | `cloudflare/stats-remove-daily-visitor-hmac.sql` | `a7cffb110adfceb5c1ff4dcd17a7009c549976a5` |
@@ -122,7 +131,7 @@ After the exact version is at 100% traffic, independently verify:
 - expected Stats GET behavior on the three public hosts;
 - `HEAD https://ausmalwiese.de/q` remains a no-count redirect with
   `Location: https://ausmalwiese.de/` and `Cache-Control: no-store`;
-- new Like-cookie and aggregate-Print routes are reachable only as designed.
+- new aggregate-Like, Like-cookie and aggregate-Print routes are reachable only as designed.
 
 Do not use write endpoints merely as a read-only proof. Any test that changes engagement
 or analytics counters needs separately scoped write authority.

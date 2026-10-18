@@ -22,7 +22,7 @@ ADDITIVE_MIGRATION_PATH = "cloudflare/stats-cookie-like-migration.sql"
 CLEANUP_MIGRATION_PATH = "cloudflare/stats-remove-daily-visitor-hmac.sql"
 
 WORKER = "coloring-pages-stats-v1"
-BLOB = "94e802ce145dd75f5701c4c9274a4ac7959c7f5e"
+BLOB = "c2ac9da6e0701103e0041b30db7dfbea4298f96c"
 CONFIG_BLOB = "3733263a391274f2b6b0f2023c8656565bde8e1a"
 ADDITIVE_MIGRATION_BLOB = "b5346c05cb27de1010dab2027b0b923e999af775"
 CLEANUP_MIGRATION_BLOB = "a7cffb110adfceb5c1ff4dcd17a7009c549976a5"
