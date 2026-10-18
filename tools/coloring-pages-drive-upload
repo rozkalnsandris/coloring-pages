@@ -1,0 +1,252 @@
+#!/usr/bin/env python3
+"""Simple PUBLISH -> Google Drive multipart bridge, source-only (#274).
+
+Prepare and freeze existing preflight output; supply one externally authorized
+sender in a *separately approved* integration. This tool has NO OAuth or HTTP.
+Its CLI is check-only and NEVER uploads.
+"""
+from __future__ import annotations
+
+import argparse
+from dataclasses import dataclass
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import stat
+import sys
+
+INDEX_SCHEMA = "rozkalns.coloring-pages.publish-preflight-result.v1"
+MANIFEST_SCHEMA = "rozkalns.coloring-pages.drive-staging-manifest.v1"
+URL = ("https://www.googleapis.com/upload/drive/v3/files"
+       "?uploadType=multipart&fields=id,name,mimeType,parents,size,md5Checksum")
+LIMIT = 5_000_000  # Conservative cap on the complete multipart HTTP body
+JSON_LIMIT = 64 * 1024
+ID = re.compile(r"[0-9]{7}\Z")
+FOLDER = re.compile(r"[A-Za-z0-9_-]{10,128}\Z")
+DRIVE_ID = re.compile(r"[A-Za-z0-9_-]{10,128}\Z")
+SHA = re.compile(r"[0-9a-f]{64}\Z")
+MD5 = re.compile(r"[0-9a-f]{32}\Z")
+PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+CATEGORIES = frozenset(("tiere", "fahrzeuge", "alphabet", "lernen", "figuren", "jahreszeiten"))
+MANIFEST_KEYS = frozenset((
+    "schema", "id", "sha256", "size_bytes", "title", "character",
+    "category", "age", "difficulty", "language", "source_kind", "approval_class",
+))
+INDEX_KEYS = frozenset(("id", "png", "manifest", "sha256", "size_bytes"))
+
+
+class Blocked(ValueError):
+    """No upload was attempted."""
+
+
+class UncertainUpload(Exception):
+    """Upload attempt MAY have persisted remotely: STOP with no retry or cleanup."""
+
+    def __init__(self, reason: str, attempt: int):
+        super().__init__(reason)
+        self.reason, self.attempt = reason, attempt
+
+
+@dataclass(frozen=True)
+class Request:
+    filename: str
+    mime: str
+    folder_id: str
+    body: bytes
+    content_type: str
+    media_sha256: str
+    media_md5: str
+    media_size: int
+    request_sha256: str
+
+
+def require(ok: bool, reason: str) -> None:
+    if not ok:
+        raise Blocked(reason)
+
+
+def sha(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def md5(data: bytes) -> str:
+    # Drive's returned md5Checksum is only an additional transport check.
+    return hashlib.md5(data, usedforsecurity=False).hexdigest()
+
+
+def distinct_pairs(pairs):
+    result = {}
+    for key, value in pairs:
+        require(key not in result, "duplicate-json-key")
+        result[key] = value
+    return result
+
+
+def parse_json(data: bytes, reason: str):
+    try:
+        return json.loads(data.decode("utf-8"), object_pairs_hook=distinct_pairs)
+    except (UnicodeError, ValueError) as exc:
+        raise Blocked(reason) from exc
+
+
+def read_file(dirfd: int, filename: str, ceiling: int) -> bytes:
+    require(re.fullmatch(r"(?:preflight-index\.json|[0-9]{7}\.(?:png|json))", filename)
+            is not None, "invalid-filename")
+    require(hasattr(os, "O_NOFOLLOW"), "nofollow-unavailable")
+    try:
+        fd = os.open(filename, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK,
+                     dir_fd=dirfd)
+        with os.fdopen(fd, "rb", buffering=0) as stream:
+            before = os.fstat(stream.fileno())
+            require(stat.S_ISREG(before.st_mode), "not-regular-file")
+            require(0 < before.st_size <= ceiling, "file-size-limit")
+            data = stream.read(ceiling + 1)
+            after = os.fstat(stream.fileno())
+            identity = lambda s: (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+            require(len(data) == before.st_size and identity(before) == identity(after),
+                    "file-changed")
+            return data
+    except OSError as exc:
+        raise Blocked("file-open-failed") from exc
+
+
+def multipart(filename: str, mime: str, media: bytes, folder_id: str) -> Request:
+    boundary = "ausmalwiese-" + sha(filename.encode("ascii") + media)[:32]
+    delim = ("\r\n--" + boundary).encode("ascii")
+    require(delim not in media, "multipart-boundary-collision")
+    meta = json.dumps({"name": filename, "mimeType": mime, "parents": [folder_id]},
+                      separators=(",", ":")).encode("ascii")
+    body = (
+        ("--" + boundary + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n").encode()
+        + meta + delim + ("\r\nContent-Type: " + mime + "\r\n\r\n").encode()
+        + media + delim + b"--"
+    )
+    require(len(body) <= LIMIT, "multipart-over-5mb")
+    return Request(filename, mime, folder_id, body, "multipart/related; boundary=" + boundary,
+                   sha(media), md5(media), len(media), sha(body))
+
+
+def freeze(prepared_dir: Path, pending_folder_id: str) -> tuple[Request, ...]:
+    """Validate and freeze ALL local bytes before a hypothetical first mutation."""
+    require(isinstance(pending_folder_id, str)
+            and FOLDER.fullmatch(pending_folder_id) is not None, "invalid-folder-id")
+    require(hasattr(os, "O_DIRECTORY") and hasattr(os, "O_NOFOLLOW"), "safe-dir-unavailable")
+    try:
+        dirfd = os.open(prepared_dir, os.O_RDONLY | os.O_DIRECTORY
+                        | os.O_NOFOLLOW | os.O_CLOEXEC)
+    except OSError as exc:
+        raise Blocked("prepared-dir-unavailable") from exc
+    try:
+        index = parse_json(read_file(dirfd, "preflight-index.json", JSON_LIMIT), "invalid-index")
+        require(isinstance(index, dict) and set(index) == {"schema", "activities"}
+                and index["schema"] == INDEX_SCHEMA, "invalid-index")
+        rows = index["activities"]
+        require(isinstance(rows, list) and 1 <= len(rows) <= 20, "invalid-count")
+        seen = set()
+        frozen = []
+        for row in rows:
+            require(isinstance(row, dict) and set(row) == INDEX_KEYS, "invalid-index-row")
+            ident = row["id"]
+            require(isinstance(ident, str) and ID.fullmatch(ident) is not None
+                    and ident not in seen, "invalid-or-duplicate-id")
+            seen.add(ident)
+            png_name, json_name = ident + ".png", ident + ".json"
+            require(row["png"] == png_name and row["manifest"] == json_name,
+                    "filename-mismatch")
+            require(type(row["size_bytes"]) is int and 0 < row["size_bytes"] <= LIMIT
+                    and isinstance(row["sha256"], str)
+                    and SHA.fullmatch(row["sha256"]) is not None, "index-hash-or-size")
+            png = read_file(dirfd, png_name, LIMIT)
+            require(png.startswith(PNG_MAGIC) and len(png) == row["size_bytes"]
+                    and sha(png) == row["sha256"], "png-hash-or-signature")
+            raw_manifest = read_file(dirfd, json_name, JSON_LIMIT)
+            manifest = parse_json(raw_manifest, "invalid-manifest")
+            require(isinstance(manifest, dict) and set(manifest) == MANIFEST_KEYS,
+                    "invalid-manifest")
+            require(
+                manifest["schema"] == MANIFEST_SCHEMA and manifest["id"] == ident
+                and manifest["sha256"] == row["sha256"]
+                and type(manifest["size_bytes"]) is int
+                and manifest["size_bytes"] == row["size_bytes"]
+                and isinstance(manifest["category"], str)
+                and manifest["category"] in CATEGORIES
+                and isinstance(manifest["title"], str) and bool(manifest["title"].strip())
+                and isinstance(manifest["character"], str)
+                and manifest["age"] in ("3-6", "4-8")
+                and manifest["difficulty"] in ("easy", "normal", "detailed")
+                and manifest["language"] == "de"
+                and manifest["source_kind"] == "chatgpt-generated-png"
+                and manifest["approval_class"] == "explicit-owner-chat-approval",
+                "manifest-binding",
+            )
+            frozen.extend((
+                multipart(png_name, "image/png", png, pending_folder_id),
+                multipart(json_name, "application/json", raw_manifest, pending_folder_id),
+            ))
+        return tuple(frozen)
+    finally:
+        os.close(dirfd)
+
+
+def send_once(frozen: tuple[Request, ...], sender):
+    """Integration hook ONLY. Caller must prove owner, OAuth, folder, LIVE gates.
+
+    The sender is the sole future transport surface. Do not call this from CLI.
+    One failed/ambiguous response after a send => stop, never retry/rollback.
+    """
+    require(isinstance(frozen, tuple) and len(frozen) >= 2
+            and len(frozen) % 2 == 0 and callable(sender), "invalid-frozen-or-sender")
+    require(all(isinstance(r, Request) for r in frozen), "invalid-request")
+    for i in range(0, len(frozen), 2):
+        png, manifest = frozen[i:i+2]
+        require(
+            png.filename.endswith(".png") and manifest.filename == png.filename[:-4] + ".json"
+            and png.mime == "image/png" and manifest.mime == "application/json"
+            and png.folder_id == manifest.folder_id
+            and all(sha(r.body) == r.request_sha256 for r in (png, manifest)),
+            "frozen-identity-or-order",
+        )
+    ids = []
+    for attempt, request in enumerate(frozen, 1):
+        try:
+            reply = sender(URL, request.content_type, request.body)
+        except BaseException as exc:
+            raise UncertainUpload("sender-ambiguous-or-failed", attempt) from exc
+        # Google files.create returns size as a DECIMAL STRING, not a JSON integer.
+        valid = (
+            isinstance(reply, dict)
+            and isinstance(reply.get("id"), str)
+            and DRIVE_ID.fullmatch(reply["id"]) is not None
+            and reply.get("name") == request.filename
+            and reply.get("mimeType") == request.mime
+            and reply.get("parents") == [request.folder_id]
+            and reply.get("size") == str(request.media_size)
+            and isinstance(reply.get("md5Checksum"), str)
+            and MD5.fullmatch(reply["md5Checksum"]) is not None
+            and reply["md5Checksum"] == request.media_md5
+        )
+        if not valid:
+            raise UncertainUpload("response-identity-uncertain", attempt)
+        ids.append(reply["id"])
+    return tuple(ids)  # Still NOT proof of RPi5 ingest or public publication.
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Read-only PUBLISH Drive bridge check (no upload)")
+    parser.add_argument("--prepared-dir", type=Path, required=True)
+    parser.add_argument("--folder-id", required=True)
+    args = parser.parse_args()
+    try:
+        requests = freeze(args.prepared_dir, args.folder_id)
+    except Blocked as exc:
+        print("BRIDGE=BLOCKED\nUPLOAD_PERFORMED=NO\nREASON=" + str(exc), file=sys.stderr)
+        return 2
+    print("BRIDGE=OFFLINE_ONLY\nUPLOAD_PERFORMED=NO\nPUBLISH=NOT_PERFORMED")
+    print("FROZEN_FILES=" + str(len(requests)))
+    return 3  # Never publish or return production PASS from the CLI.
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
