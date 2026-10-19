@@ -6,7 +6,7 @@ Build a simple, fast, mobile-first coloring-page website whose primary journey i
 
 **open → find → preview → print A4**
 
-Public hostname: `https://coloring.rozkalns.net`.
+Canonical hostname in application source: `https://ausmalwiese.de/`. The legacy `coloring.rozkalns.net` redirect is separately owner-gated; actual routing and availability require fresh LIVE verification.
 
 ## Technology
 
@@ -21,7 +21,18 @@ V1 remains intentionally small:
 - `nginx-unprivileged`
 - Raspberry Pi 5 runtime
 
-No framework, CMS or RPi5-hosted database/backend API is required. The only approved analytics exception is a small Cloudflare edge layer: Web Analytics for aggregate traffic plus Worker/D1 for print-intent counts, reversible likes, Popular and 7-day Trending.
+No framework, CMS or RPi5-hosted database/backend API is required. The only approved analytics exception is a small Cloudflare edge layer: Web Analytics for aggregate traffic plus Worker/D1 for print-intent counts, aggregate hearts (the owner-selected new frontend target), Popular and 7-day Trending. Historical reversible likes and visitor-recognition paths must be reconciled separately; this source direction alone is not LIVE proof.
+
+## Current continuity handoff (audited 2026-10-19)
+
+This section is a **dated source-work locator**, not a durable SHA, CI, Cloudflare, or RPi5 runtime receipt. On every continuation, re-read current `main`, the exact active PR head/checks/reviews/threads, and independently authorized LIVE evidence where relevant.
+
+- **PUBLISH transport:** merged PR [#275](https://github.com/rozkalnsandris/coloring-pages/pull/275) supplies an **offline-only** prepared-file bridge, not a working Google Drive sender. Open [#258 / Draft PR #259](https://github.com/rozkalnsandris/coloring-pages/issues/258), [#266 / Draft PR #267](https://github.com/rozkalnsandris/coloring-pages/issues/266), and [#270 / Draft PR #273](https://github.com/rozkalnsandris/coloring-pages/issues/270) explore alternative source-only handoff/transport gates. Do not claim `PUBLISH` is unblocked until exact prepared bytes can reach an authorized supported upload surface and the fresh host/operator/importer preflight passes. See `docs/PUBLISH_SIMPLE_BRIDGE_274.md`.
+- **Privacy and engagement:** [#256](https://github.com/rozkalnsandris/coloring-pages/issues/256) supersedes the proposed 18+ and persistent Like-ID target. Backend PR [#262](https://github.com/rozkalnsandris/coloring-pages/pull/262) is merged; frontend PR [#263](https://github.com/rozkalnsandris/coloring-pages/pull/263) remains open with a **merge/release hold** pending actual Worker/schema readiness and separately authorized application release. Legal PR [#158](https://github.com/rozkalnsandris/coloring-pages/pull/158) is an unreconciled draft. Preserve legacy totals/data until a separately authorized transition; no source merge proves LIVE/D1 state.
+- **Fehler melden:** source improvements [#285](https://github.com/rozkalnsandris/coloring-pages/pull/285) and [#286](https://github.com/rozkalnsandris/coloring-pages/pull/286) have merged; [#240](https://github.com/rozkalnsandris/coloring-pages/issues/240) remains the feature tracker. Source/config and mocked tests do **not** prove an active Cloudflare Email Service binding or real delivered mail. See `docs/REPORT_ERRORS_V1.md`.
+- **Domain and SEO:** `ausmalwiese.de` is the canonical source target. The RPi5 sitemap/Worker and old-host 301 steps follow `docs/DOMAIN_CANONICAL_CUTOVER_V1.md` and [RPi5_main#996](https://github.com/rozkalnsandris/RPi5_main/issues/996); none is declared LIVE-complete by this document.
+- **Cut & Paste:** the current art/export/physical QA gates are in `AGENTS.md` and `docs/CUT_PASTE_PLAYBOOK_V1.md`. Source or printable geometry checks are not owner `PUBLISH` approval for an exact version.
+- **AUTO-RUN FULL:** controller [#5](https://github.com/rozkalnsandris/coloring-pages/issues/5) is the live GitHub lock/pointer; it is not a stored release or CI/authorization receipt.
 
 ## Source/content architecture
 
