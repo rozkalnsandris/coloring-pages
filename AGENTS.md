@@ -173,7 +173,7 @@ Default V1 source artwork standard:
 
 - This repository owns the application origin.
 - `rozkalnsandris/RPi5_main` owns shared RPi5 ingress/tunnel policy and runtime coordination.
-- Configured public hostname: `coloring.rozkalns.net`.
+- Canonical hostname in current application source: `ausmalwiese.de`; the former `coloring.rozkalns.net` hostname is a separately gated legacy redirect. Its actual LIVE/301 state must be verified through RPi5/Cloudflare evidence, not inferred from GitHub.
 - Expected public origin class: loopback.
 - Source records configuration intent only; current LIVE deployment, health and deployed revision must always be read fresh from RPi5/runtime evidence.
 
