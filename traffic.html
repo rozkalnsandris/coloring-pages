@@ -48,7 +48,7 @@
       <div class="container stats-kpi-grid traffic-kpi-grid">
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">👤</span>
-          <div><span class="stats-kpi-label" data-stats-unique-visitors-label>Approx. unique visitors · latest day</span><strong data-stats-unique-visitors>–</strong></div>
+          <div><span class="stats-kpi-label" data-stats-unique-visitors-label>Approx. daily unique IPs · latest available day</span><strong data-stats-unique-visitors>–</strong></div>
         </article>
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">↪</span>
@@ -69,7 +69,7 @@
       </div>
       <div class="container">
         <p class="stats-note" data-traffic-visits-note>
-          “Approx. unique visitors” is Cloudflare’s latest available daily Unique Visitors metric (unique IPs) for this hostname. It is not an exact people count, and Free-plan traffic analytics can include crawlers and threats. “Crawler requests” is a separate request count and must not be subtracted from Website visits.
+          Approx. daily unique IPs, when available, is a historical hostname-scoped Stats Worker D1/IP-HMAC estimate, not an exact count of people. This metric may be unavailable after the privacy cutover. Website visits are separate Cloudflare analytics, not unique people, and may be sampled. Crawler requests use a User-Agent heuristic and must not be subtracted from Website visits.
         </p>
       </div>
     </section>
@@ -166,12 +166,12 @@
           </button>
         </div>
         <p class="stats-empty" data-traffic-table-empty hidden>No matching coloring page found.</p>
-        <p class="stats-note">Exact unique people are not available from this dashboard. Approx. unique visitors is a privacy-preserving daily unique-IP count from the Stats Worker; Website visits is a separate Cloudflare metric and may be sampled.</p>
+        <p class="stats-note">Exact unique people are not available from this dashboard. The historical daily unique-IP estimate is shown only if the Stats Worker provides it; otherwise N/A is displayed, not zero. Website visits are a separate Cloudflare metric and may be sampled.</p>
       </div>
     </section>
   </main>
 
   <script src="js/stats.js?v=a4c560562b9267fe" defer></script>
-  <script src="js/traffic-admin.js?v=instagram-216" defer></script>
+  <script src="js/traffic-admin.js?v=instagram-216-ip-basis-v1" defer></script>
 </body>
 </html>
