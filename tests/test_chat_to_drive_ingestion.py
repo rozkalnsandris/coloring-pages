@@ -31,6 +31,8 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertTrue(
             authority["host_operator_and_importer_alignment_required_before_first_mutation"]
         )
+        self.assertFalse(authority["stage_sender_runtime_alignment_required_before_first_mutation"])
+        self.assertTrue(authority["drive_connector_file_materialization_required_before_first_mutation"])
         self.assertEqual(authority["publication_command"], "PUBLISH")
         self.assertFalse(authority["ok_is_publication_authority"])
 
@@ -66,13 +68,21 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertTrue(staging["folder_name_is_not_authority"])
         self.assertTrue(staging["upload_surface_selection_required_before_first_mutation"])
         self.assertTrue(staging["single_upload_surface_per_publication"])
-        self.assertEqual(staging["upload_surface_must_accept"], ["validated-rpi5-stage-envelope"])
-        self.assertEqual(staging["staging_surface"], "trusted-rpi5-drive-stage-sender")
-        self.assertFalse(staging["provider_owned_source_file_ref_required"])
-        self.assertTrue(staging["trusted_host_stage_sender_upload_allowed"])
+        self.assertEqual(staging["upload_surface_must_accept"], ["runtime-materialized-file-uri"])
+        self.assertEqual(staging["staging_surface"], "google-drive-connector-upload-file")
+        self.assertTrue(staging["runtime_materialized_file_uri_required"])
+        self.assertTrue(staging["raw_local_path_at_connector_boundary_forbidden"])
+        self.assertTrue(staging["bare_file_id_forbidden"])
+        self.assertTrue(staging["inline_base64_forbidden"])
+        self.assertTrue(staging["arbitrary_url_file_handoff_forbidden"])
+        self.assertFalse(staging["trusted_host_stage_sender_upload_allowed"])
+        self.assertTrue(staging["direct_google_drive_connector_upload_allowed"])
         self.assertTrue(staging["arbitrary_host_rclone_upload_forbidden"])
-        self.assertTrue(staging["envelope_materialization_required_before_first_mutation"])
-        self.assertTrue(staging["envelope_validation_required_before_first_mutation"])
+        self.assertFalse(staging["envelope_materialization_required_before_first_mutation"])
+        self.assertFalse(staging["envelope_validation_required_before_first_mutation"])
+        self.assertEqual(staging["connector_upload_action"], "Google_Drive.upload_file")
+        self.assertEqual(staging["connector_expected_input"], "file_uri")
+        self.assertTrue(staging["connector_response_readback_required"])
         self.assertEqual(staging["publish_order"], ["image", "manifest"])
         self.assertTrue(staging["manifest_is_readiness_signal"])
         self.assertTrue(staging["exact_source_bytes_required"])
@@ -87,9 +97,9 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
                 "freeze-id-sha256-size-category-and-metadata",
                 "materialize-manifest-locally",
                 "validate-manifest-locally",
-                "materialize-and-validate-rpi5-stage-envelope",
-                "verify-stage-sender-runtime",
-                "invoke-trusted-stage-sender-image-then-manifest",
+                "materialize-runtime-file-references-for-all-artifacts",
+                "verify-ingest-operator-runtime",
+                "invoke-google-drive-connector-image-then-manifest",
             ],
         )
 
@@ -154,8 +164,21 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         )
         self.assertEqual(sender["production_namespace"], "pending")
         self.assertFalse(sender["publish_uses_canary_mode"])
-        self.assertTrue(sender["fresh_runtime_identity_preflight_required"])
+        self.assertFalse(sender["fresh_runtime_identity_preflight_required"])
+        self.assertFalse(sender["production_upload_allowed"])
         self.assertTrue(sender["arbitrary_rclone_forbidden"])
+        connector = self.contract["direct_drive_connector"]
+        self.assertEqual(connector["action"], "Google_Drive.upload_file")
+        self.assertEqual(connector["destination_namespace"], "pending")
+        self.assertTrue(connector["exact_folder_id_required"])
+        self.assertEqual(connector["top_level_file_parameter"], "file_uri")
+        self.assertTrue(connector["runtime_materialization_required"])
+        self.assertTrue(connector["raw_local_path_at_connector_boundary_forbidden"])
+        self.assertTrue(connector["bare_file_id_forbidden"])
+        self.assertTrue(connector["inline_base64_forbidden"])
+        self.assertEqual(connector["order"], ["png-pages-ascending", "manifest-last"])
+        self.assertEqual(connector["accepted_input_expected"], "file_uri")
+        self.assertTrue(connector["read_only_readback_required"])
         self.assertTrue(host["credential_values_must_not_be_read_or_emitted"])
         self.assertFalse(host["fresh_pending_fast_list_allowed"])
         self.assertEqual(

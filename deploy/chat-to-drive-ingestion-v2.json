@@ -24,7 +24,8 @@
     "host_operator_activation_must_be_verified_fresh_before_publish": true,
     "host_importer_alignment_must_be_verified_fresh_before_publish": true,
     "historical_activation_evidence_is_not_current_runtime_authority": true,
-    "stage_sender_runtime_alignment_required_before_first_mutation": true
+    "stage_sender_runtime_alignment_required_before_first_mutation": false,
+    "drive_connector_file_materialization_required_before_first_mutation": true
   },
   "canonical_domains": {
     "application_source": "github",
@@ -59,21 +60,34 @@
     "upload_surface_selection_required_before_first_mutation": true,
     "single_upload_surface_per_publication": true,
     "upload_surface_must_accept": [
-      "validated-rpi5-stage-envelope"
+      "runtime-materialized-file-uri"
     ],
-    "staging_surface": "trusted-rpi5-drive-stage-sender",
+    "staging_surface": "google-drive-connector-upload-file",
     "staging_sender_contract_ref": "deploy/publish-trusted-rpi5-stage-sender-v1.json",
     "sender_envelope_schema": "rozkalns.rpi5-main.coloring-pages-drive-stage-envelope.v1",
     "sender_production_namespace": "pending",
     "provider_owned_source_file_ref_required": false,
     "ephemeral_local_path_is_remote_upload_ref": false,
     "exact_local_artifacts_required_before_first_mutation": true,
-    "envelope_materialization_required_before_first_mutation": true,
-    "envelope_validation_required_before_first_mutation": true,
-    "trusted_host_stage_sender_upload_allowed": true,
+    "envelope_materialization_required_before_first_mutation": false,
+    "envelope_validation_required_before_first_mutation": false,
+    "trusted_host_stage_sender_upload_allowed": false,
     "arbitrary_host_rclone_upload_forbidden": true,
     "sender_success_signal": "COLORING_PAGES_DRIVE_STAGE=PASS",
-    "sender_pass_is_staging_only": true
+    "sender_pass_is_staging_only": true,
+    "runtime_materialized_file_uri_required": true,
+    "raw_local_path_at_connector_boundary_forbidden": true,
+    "bare_file_id_forbidden": true,
+    "inline_base64_forbidden": true,
+    "arbitrary_url_file_handoff_forbidden": true,
+    "direct_google_drive_connector_upload_allowed": true,
+    "connector_upload_action": "Google_Drive.upload_file",
+    "connector_response_readback_required": true,
+    "connector_expected_input": "file_uri",
+    "connector_success_is_staging_only": true,
+    "connector_first_mutation": "first-google-drive-upload-file-attempt",
+    "connector_after_first_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation",
+    "legacy_stage_sender_available_but_not_production_default": true
   },
   "manifest": {
     "schema": "rozkalns.coloring-pages.drive-staging-manifest.v2",
@@ -260,8 +274,35 @@
     "runtime_owner_repository": "rozkalnsandris/RPi5_main",
     "production_namespace": "pending",
     "publish_uses_canary_mode": false,
-    "fresh_runtime_identity_preflight_required": true,
+    "fresh_runtime_identity_preflight_required": false,
     "arbitrary_rclone_forbidden": true,
-    "staging_pass_is_not_publication_success": true
+    "production_upload_allowed": false,
+    "staging_pass_is_not_publication_success": true,
+    "role": "legacy-reviewed-fallback-not-authorized-as-alternate-path"
+  },
+  "direct_drive_connector": {
+    "action": "Google_Drive.upload_file",
+    "destination_namespace": "pending",
+    "exact_folder_id_required": true,
+    "top_level_file_parameter": "file_uri",
+    "runtime_materialization_required": true,
+    "raw_local_path_at_connector_boundary_forbidden": true,
+    "bare_file_id_forbidden": true,
+    "inline_base64_forbidden": true,
+    "arbitrary_url_forbidden": true,
+    "single_upload_surface_per_publication": true,
+    "order": "all-pages-in-ascending-index-then-manifest",
+    "response_fields_required": [
+      "success",
+      "accepted_input",
+      "id",
+      "file_name",
+      "mime_type",
+      "parent_id"
+    ],
+    "accepted_input_expected": "file_uri",
+    "read_only_readback_required": true,
+    "first_mutation": "first-upload-file-attempt",
+    "after_first_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation"
   }
 }
