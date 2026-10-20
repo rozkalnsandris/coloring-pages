@@ -14,7 +14,7 @@ Historical repin evidence from 2026-10-05 records `RPi5_main@7e3e6b6d6574c1dc519
 
 ## Current runtime eligibility preflight
 
-Before the first Drive mutation, `PUBLISH` must read fresh `RPi5_main/main` and LIVE evidence for both host roles. First, the trusted stage sender defined by `deploy/publish-trusted-rpi5-stage-sender-v1.json` must match current sender/wrapper source, reviewed sudoers/state-lock metadata and fixed production namespace `pending`; `canary` remains non-production and PUBLISH must never invoke it. Then the existing ingest/import alignment must prove all of the following:
+Before the first Drive mutation, `PUBLISH` must read fresh `RPi5_main/main` and LIVE evidence for the existing ingest/import role. The legacy stage sender is not part of the normal production staging path. The ingest/import alignment must prove all of the following:
 
 - the installed `/usr/local/bin/coloring-pages-drive-ingest` Git blob matches the current `RPi5_main` `ops/bin/coloring-pages-drive-ingest` blob;
 - the current `RPi5_main` operator contract `ops/contracts/coloring-pages-drive-ingest-operator-v1.json` resolves its pinned Coloring Pages consumer source revision;
@@ -34,7 +34,7 @@ One activity stays one catalogue item:
 <id>.json
 ```
 
-The manifest is uploaded last and is the readiness signal. Before the first Drive mutation, `PUBLISH` has prepared and validated every page locally, frozen every per-page SHA-256/byte size, and validated the complete manifest. `tools/coloring-pages-drive-stage-envelope --v2-manifest <id>.json` then re-validates the ordered page set and emits the exact RPi5 sender envelope. Provider-owned file-reference handoff is not required; local paths are local inputs only, not remote proof.
+The manifest is uploaded last and is the readiness signal. Before the first Drive mutation, `PUBLISH` has prepared and validated every page locally, frozen every per-page SHA-256/byte size, and validated the complete manifest. Every exact PNG and the manifest are then materialized as top-level connector `file_uri` inputs. Bare file IDs, inline Base64, arbitrary URLs and raw local paths at the connector boundary are forbidden.
 
 The manifest carries the ordered page identities:
 
@@ -71,9 +71,9 @@ Page indexes start at 1 and must be contiguous. Filename order is print order.
 
 For new Chat publications, the authoring layer follows `metadata/id-policy.json` and allocates an opaque random seven-digit decimal ID independently for each activity. The candidate must be absent from fresh LIVE catalogue state before the first mutation and distinct from any other candidate in the same local publish batch. The v2 ingestion schema continues to accept historical descriptive and sequential IDs for backward compatibility; published IDs are immutable.
 
-## Trusted host flow
+## Staging and trusted host flow
 
-Staging and ingestion are separate reviewed host roles. The stage sender accepts only the validated envelope and, in production/default mode, writes through its fixed wrapper only to `pending/`, ordered page PNGs first and the prebuilt manifest last. `COLORING_PAGES_DRIVE_STAGE=PASS` proves staging only; arbitrary host `rclone` and sender canary mode are not production PUBLISH paths.
+Normal staging uses one connected Google Drive `upload_file` surface bound to the exact production `pending/` folder ID: ordered page PNGs first and the prebuilt manifest last. Connector response/readback verifies filename, MIME type and parent folder. After the first upload attempt, any uncertainty is STOP with no retry, cleanup or alternate staging route. Arbitrary host `rclone`, Base64-over-RDC and the legacy stage sender are not normal production PUBLISH paths.
 
 The activated `RPi5_main` ingest operator stays small and remains Drive→RPi5 pull-only:
 
