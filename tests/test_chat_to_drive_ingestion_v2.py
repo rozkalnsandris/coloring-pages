@@ -47,6 +47,12 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
         self.assertTrue(
             self.v2["authority"]["historical_activation_evidence_is_not_current_runtime_authority"]
         )
+        self.assertFalse(
+            self.v2["authority"]["stage_sender_runtime_alignment_required_before_first_mutation"]
+        )
+        self.assertTrue(
+            self.v2["authority"]["drive_connector_file_materialization_required_before_first_mutation"]
+        )
         preflight = host["current_runtime_preflight"]
         self.assertTrue(preflight["required_before_first_drive_mutation"])
         self.assertEqual(preflight["runtime_owner_repository"], "rozkalnsandris/RPi5_main")
@@ -152,13 +158,20 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
         self.assertTrue(staging["manifest_is_readiness_signal"])
         self.assertTrue(staging["upload_surface_selection_required_before_first_mutation"])
         self.assertTrue(staging["single_upload_surface_per_publication"])
-        self.assertEqual(staging["upload_surface_must_accept"], ["validated-rpi5-stage-envelope"])
-        self.assertEqual(staging["staging_surface"], "trusted-rpi5-drive-stage-sender")
-        self.assertFalse(staging["provider_owned_source_file_ref_required"])
-        self.assertTrue(staging["trusted_host_stage_sender_upload_allowed"])
+        self.assertEqual(staging["upload_surface_must_accept"], ["runtime-materialized-file-uri"])
+        self.assertEqual(staging["staging_surface"], "google-drive-connector-upload-file")
+        self.assertTrue(staging["runtime_materialized_file_uri_required"])
+        self.assertTrue(staging["raw_local_path_at_connector_boundary_forbidden"])
+        self.assertTrue(staging["bare_file_id_forbidden"])
+        self.assertTrue(staging["inline_base64_forbidden"])
+        self.assertFalse(staging["trusted_host_stage_sender_upload_allowed"])
+        self.assertTrue(staging["direct_google_drive_connector_upload_allowed"])
         self.assertTrue(staging["arbitrary_host_rclone_upload_forbidden"])
-        self.assertTrue(staging["envelope_materialization_required_before_first_mutation"])
-        self.assertTrue(staging["envelope_validation_required_before_first_mutation"])
+        self.assertFalse(staging["envelope_materialization_required_before_first_mutation"])
+        self.assertFalse(staging["envelope_validation_required_before_first_mutation"])
+        self.assertEqual(staging["connector_upload_action"], "Google_Drive.upload_file")
+        self.assertEqual(staging["connector_expected_input"], "file_uri")
+        self.assertTrue(staging["connector_response_readback_required"])
         self.assertTrue(staging["all_page_bytes_and_manifest_must_exist_before_first_mutation"])
         self.assertTrue(staging["all_page_sha256_and_size_must_be_frozen_before_first_mutation"])
         self.assertTrue(staging["manifest_validation_required_before_first_mutation"])
@@ -175,8 +188,19 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
         )
         self.assertEqual(sender["production_namespace"], "pending")
         self.assertFalse(sender["publish_uses_canary_mode"])
-        self.assertTrue(sender["fresh_runtime_identity_preflight_required"])
+        self.assertFalse(sender["fresh_runtime_identity_preflight_required"])
+        self.assertFalse(sender["production_upload_allowed"])
         self.assertTrue(sender["arbitrary_rclone_forbidden"])
+        connector = self.v2["direct_drive_connector"]
+        self.assertEqual(connector["action"], "Google_Drive.upload_file")
+        self.assertEqual(connector["destination_namespace"], "pending")
+        self.assertEqual(
+            connector["order"],
+            "all-pages-in-ascending-index-then-manifest",
+        )
+        self.assertTrue(connector["runtime_materialization_required"])
+        self.assertEqual(connector["accepted_input_expected"], "file_uri")
+        self.assertTrue(connector["read_only_readback_required"])
         self.assertIn("sha256", host["verify_all_pages_before_first_inbox_publish"])
         self.assertIn("size-bytes", host["verify_all_pages_before_first_inbox_publish"])
         self.assertIn("contiguous-page-indexes", host["verify_all_pages_before_first_inbox_publish"])
