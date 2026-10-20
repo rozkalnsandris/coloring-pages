@@ -87,8 +87,9 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
                 "freeze-id-sha256-size-category-and-metadata",
                 "materialize-manifest-locally",
                 "validate-manifest-locally",
-                "upload-image",
-                "upload-manifest",
+                "materialize-and-validate-rpi5-stage-envelope",
+                "verify-stage-sender-runtime",
+                "invoke-trusted-stage-sender-image-then-manifest",
             ],
         )
 
