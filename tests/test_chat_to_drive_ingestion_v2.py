@@ -152,8 +152,13 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
         self.assertTrue(staging["manifest_is_readiness_signal"])
         self.assertTrue(staging["upload_surface_selection_required_before_first_mutation"])
         self.assertTrue(staging["single_upload_surface_per_publication"])
-        self.assertEqual(staging["upload_surface_must_accept"], ["prepared-png-pages", "prebuilt-manifest"])
-        self.assertTrue(staging["host_rclone_upload_forbidden"])
+        self.assertEqual(staging["upload_surface_must_accept"], ["validated-rpi5-stage-envelope"])
+        self.assertEqual(staging["staging_surface"], "trusted-rpi5-drive-stage-sender")
+        self.assertFalse(staging["provider_owned_source_file_ref_required"])
+        self.assertTrue(staging["trusted_host_stage_sender_upload_allowed"])
+        self.assertTrue(staging["arbitrary_host_rclone_upload_forbidden"])
+        self.assertTrue(staging["envelope_materialization_required_before_first_mutation"])
+        self.assertTrue(staging["envelope_validation_required_before_first_mutation"])
         self.assertTrue(staging["all_page_bytes_and_manifest_must_exist_before_first_mutation"])
         self.assertTrue(staging["all_page_sha256_and_size_must_be_frozen_before_first_mutation"])
         self.assertTrue(staging["manifest_validation_required_before_first_mutation"])
@@ -163,6 +168,15 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
         self.assertEqual(host["runtime_owner"], "rozkalnsandris/RPi5_main")
         self.assertEqual(host["transport_direction"], "drive-to-rpi5-pull-only")
         self.assertFalse(host["host_rclone_upload_allowed"])
+        sender = self.v2["staging_sender"]
+        self.assertEqual(
+            sender["contract_ref"],
+            "deploy/publish-trusted-rpi5-stage-sender-v1.json",
+        )
+        self.assertEqual(sender["production_namespace"], "pending")
+        self.assertFalse(sender["publish_uses_canary_mode"])
+        self.assertTrue(sender["fresh_runtime_identity_preflight_required"])
+        self.assertTrue(sender["arbitrary_rclone_forbidden"])
         self.assertIn("sha256", host["verify_all_pages_before_first_inbox_publish"])
         self.assertIn("size-bytes", host["verify_all_pages_before_first_inbox_publish"])
         self.assertIn("contiguous-page-indexes", host["verify_all_pages_before_first_inbox_publish"])
