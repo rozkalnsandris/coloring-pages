@@ -131,5 +131,48 @@ console.log(JSON.stringify({printed,prevented}));
         self.assertEqual(json.loads(result.stdout), {'printed':1,'prevented':1})
 
 
+    def test_view_telemetry_exception_keeps_detail_and_print_available(self):
+        # Execute the real detail hydration rather than only checking source text.
+        harness = r"""
+const fs = require('node:fs'), vm = require('node:vm');
+const source = fs.readFileSync('js/detail.js','utf8');
+const start = source.indexOf('async function loadDetail()');
+const end = source.lastIndexOf('loadDetail();');
+if (start < 0 || end <= start) throw Error('detail loader not found');
+const title = {textContent:''}, description = {textContent:''}, printLink = {href:''};
+const ctx = {
+  window:{
+    location:{search:'?id=sample'},
+    ColoringStats:{trackView(){throw Error('blocked view telemetry');}},
+  },
+  document:{querySelector(){return null;},dispatchEvent(){}},
+  URLSearchParams, encodeURIComponent,
+  detailRoot:{setAttribute(){}}, detailTitle:title, detailDescription:description,
+  detailCategory:null, detailCharacter:null, detailAge:null,
+  detailDifficulty:null, detailPagesBadge:null, printLink,
+  printLabel:null, pngLink:null, pngLabel:null, loadedEntryId:'',
+  addVerifiedDetailCanonical(){}, markMissingDetailNoindex(){},
+  entryPages(entry){return [{preview:entry.preview,print:entry.print}];},
+  setAction(link,url){if(link) link.href=url;},
+  renderPageSwitcher(){}, selectPage(){}, hydrateLikeState:async()=>{},
+  fetch:async()=>({ok:true,json:async()=>[{
+    id:'sample',title:'Beispiel',category:'tiere',age:'3-6',difficulty:'easy',
+    preview:'/media/sample/preview.webp',print:'/media/sample/print.png'
+  }]}),
+};
+vm.runInNewContext(source.slice(start,end) +
+  '\nloadDetail().then(()=>console.log(JSON.stringify({title:detailTitle.textContent,' +
+  'print:printLink.href,status:detailDescription.textContent}))).catch(e=>{console.error(e);process.exitCode=1;});',
+  ctx);
+"""
+        result = subprocess.run(['node', '-e', harness], cwd=ROOT, text=True,
+                                capture_output=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+        data = json.loads(result.stdout)
+        self.assertEqual(data['title'], 'Beispiel')
+        self.assertEqual(data['print'], 'print.html?id=sample')
+        self.assertIn('A4-Druck', data['status'])
+
+
 if __name__ == '__main__':
     unittest.main()
