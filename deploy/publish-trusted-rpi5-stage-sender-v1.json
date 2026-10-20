@@ -1,0 +1,101 @@
+{
+  "schema": "rozkalns.coloring-pages.publish-trusted-rpi5-stage-sender.v1",
+  "repository": "rozkalnsandris/coloring-pages",
+  "issue": 288,
+  "status": "canary-proven-fresh-runtime-preflight-required",
+  "purpose": "Bind PUBLISH staging to the reviewed RPi5 Drive stage sender without depending on connector-owned source_file_ref values.",
+  "authority": {
+    "source_merge_authorizes_live": false,
+    "source_merge_authorizes_drive_write": false,
+    "source_merge_authorizes_ingest": false,
+    "source_merge_authorizes_publish": false,
+    "source_merge_authorizes_credentials": false,
+    "explicit_owner_publish_required": true
+  },
+  "adapter": {
+    "source": "tools/coloring-pages-drive-stage-envelope",
+    "envelope_schema": "rozkalns.rpi5-main.coloring-pages-drive-stage-envelope.v1",
+    "modes": {
+      "v1": "--v1-prepared-dir",
+      "v2": "--v2-manifest"
+    },
+    "network_access": false,
+    "credential_access": false,
+    "drive_write": false,
+    "rpi5_execution": false,
+    "ingest": false,
+    "publish": false,
+    "maximum_activities": 20,
+    "maximum_pages_per_activity": 12,
+    "maximum_png_bytes": 20971520,
+    "maximum_manifest_bytes": 65536,
+    "maximum_total_raw_bytes": 268435456,
+    "manifest_last_per_activity": true
+  },
+  "staging_sender": {
+    "runtime_owner_repository": "rozkalnsandris/RPi5_main",
+    "sender_source_path": "ops/bin/coloring-pages-drive-stage-sender",
+    "wrapper_source_path": "ops/libexec/coloring-pages-drive-stage-rcat",
+    "sender_contract_path": "ops/contracts/coloring-pages-drive-stage-sender-v1.json",
+    "installed_sender_path": "/usr/local/bin/coloring-pages-drive-stage-sender",
+    "installed_wrapper_path": "/usr/local/libexec/coloring-pages-drive-stage-rcat",
+    "production_invocation": "default-no-flag",
+    "production_namespace": "pending",
+    "canary_namespace": "canary",
+    "canary_mode_forbidden_for_publish": true,
+    "arbitrary_namespace_forbidden": true,
+    "arbitrary_rclone_forbidden": true,
+    "fixed_wrapper_only": true,
+    "sender_success_signal": "COLORING_PAGES_DRIVE_STAGE=PASS",
+    "sender_pass_is_staging_only": true,
+    "expected_namespace_output": "pending",
+    "first_drive_mutation": "first-rclone-upload-attempt-inside-reviewed-wrapper",
+    "after_first_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation"
+  },
+  "runtime_preflight": {
+    "required_before_first_drive_mutation": true,
+    "fresh_rpi5_main_required": true,
+    "installed_sender_blob_must_match_fresh_source": true,
+    "installed_wrapper_blob_must_match_fresh_source": true,
+    "installed_sudoers_identity_must_match_reviewed_contract": true,
+    "state_lock_identity_must_match_reviewed_contract": true,
+    "sender_contract_must_bind_production_namespace_pending": true,
+    "sender_contract_must_keep_canary_outside_production_ingest": true,
+    "credential_content_read_forbidden": true,
+    "mismatch_disposition": "stop-before-first-drive-mutation"
+  },
+  "handoff": {
+    "exact_local_artifacts_required": true,
+    "complete_manifest_required": true,
+    "envelope_materialization_required": true,
+    "envelope_validation_required": true,
+    "provider_owned_source_file_ref_required": false,
+    "ephemeral_local_path_is_remote_ref": false,
+    "single_staging_surface_per_publication": true,
+    "png_before_manifest": true,
+    "v2_pages_ascending_before_manifest": true
+  },
+  "canary_evidence": {
+    "observed_at": "2026-10-20",
+    "rpi5_main_revision": "b7dce379d48c7214ccabe14f28ce5dbdc998d781",
+    "sender_source_blob": "d89af3ae433cba34f53536bea1ec8b866cca48d8",
+    "wrapper_source_blob": "8315829c627345c8b980c86038c6422d27eee43c",
+    "activity_id": "1132001",
+    "namespace": "canary",
+    "artifacts_staged": 2,
+    "png_size_bytes": 68,
+    "manifest_size_bytes": 376,
+    "pending_same_id_absent": true,
+    "drive_readback_verified": true,
+    "ingest_executed": false,
+    "publish_executed": false,
+    "historical_only": true
+  },
+  "downstream_ingest": {
+    "unchanged": true,
+    "contract_v1": "deploy/chat-to-drive-ingestion.json",
+    "contract_v2": "deploy/chat-to-drive-ingestion-v2.json",
+    "operator_success_signal": "COLORING_PAGES_DRIVE_INGEST=PASS",
+    "operator_pass_is_terminal_publication_success": true
+  }
+}
