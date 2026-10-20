@@ -1,0 +1,258 @@
+#!/usr/bin/env python3
+"""Build one validated RPi5 Drive-stage envelope from prepared PUBLISH artifacts.
+
+This adapter is offline only. It reads already-prepared exact PNG/manifest bytes,
+validates their cross-file identities, and emits the reviewed sender envelope.
+It performs no network, Drive, RPi5, credential, ingest, or publication action.
+"""
+
+from __future__ import annotations
+
+import argparse
+import base64
+import hashlib
+import json
+from pathlib import Path
+import re
+import sys
+from typing import Any
+
+ENVELOPE_SCHEMA = "rozkalns.rpi5-main.coloring-pages-drive-stage-envelope.v1"
+INDEX_SCHEMA = "rozkalns.coloring-pages.publish-preflight-result.v1"
+MANIFEST_V1 = "rozkalns.coloring-pages.drive-staging-manifest.v1"
+MANIFEST_V2 = "rozkalns.coloring-pages.drive-staging-manifest.v2"
+ID_RE = re.compile(r"^[0-9]{7}$")
+SHA_RE = re.compile(r"^[0-9a-f]{64}$")
+ALLOWED_CATEGORIES = {"tiere", "fahrzeuge", "alphabet", "lernen", "figuren", "jahreszeiten"}
+ALLOWED_AGES = {"3-6", "4-8"}
+ALLOWED_DIFFICULTIES = {"easy", "normal", "detailed"}
+MAX_ACTIVITIES = 20
+MAX_PAGES = 12
+MAX_PNG = 20 * 1024 * 1024
+MAX_MANIFEST = 64 * 1024
+MAX_TOTAL = 256 * 1024 * 1024
+
+INDEX_KEYS = {"id", "png", "manifest", "sha256", "size_bytes"}
+COMMON_KEYS = {
+    "title", "character", "category", "age", "difficulty", "language",
+    "source_kind", "approval_class",
+}
+V1_KEYS = {"schema", "id", "sha256", "size_bytes", *COMMON_KEYS}
+V2_KEYS = {"schema", "id", "pages", *COMMON_KEYS}
+PAGE_KEYS = {"index", "file", "sha256", "size_bytes"}
+
+
+class EnvelopeError(RuntimeError):
+    pass
+
+
+def fail(message: str) -> None:
+    raise EnvelopeError(message)
+
+
+def strict_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in out:
+            fail("duplicate-json-key")
+        out[key] = value
+    return out
+
+
+def parse_json(data: bytes, label: str) -> Any:
+    if len(data) > MAX_MANIFEST and label != "index":
+        fail(f"{label}-too-large")
+    try:
+        return json.loads(data.decode("utf-8"), object_pairs_hook=strict_object)
+    except EnvelopeError:
+        raise
+    except Exception as exc:
+        raise EnvelopeError(f"{label}-invalid-json") from exc
+
+
+def safe_bytes(path: Path, *, limit: int, suffix: str) -> bytes:
+    if path.is_symlink() or not path.is_file() or path.suffix.lower() != suffix:
+        fail("artifact-path-invalid")
+    try:
+        size = path.stat().st_size
+    except OSError as exc:
+        raise EnvelopeError("artifact-unreadable") from exc
+    if size <= 0 or size > limit:
+        fail("artifact-size-out-of-range")
+    data = path.read_bytes()
+    if len(data) != size:
+        fail("artifact-size-drift")
+    return data
+
+
+def sha256(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def validate_common(manifest: dict[str, Any]) -> None:
+    for field in ("title", "character", "category", "age", "difficulty", "language"):
+        if not isinstance(manifest.get(field), str):
+            fail("manifest-metadata-invalid")
+    if not manifest["title"].strip() or not manifest["category"].strip():
+        fail("manifest-metadata-invalid")
+    if manifest["category"] not in ALLOWED_CATEGORIES:
+        fail("manifest-category-invalid")
+    if manifest["age"] not in ALLOWED_AGES:
+        fail("manifest-age-invalid")
+    if manifest["difficulty"] not in ALLOWED_DIFFICULTIES:
+        fail("manifest-difficulty-invalid")
+    if manifest["language"] != "de":
+        fail("manifest-language-invalid")
+    if manifest.get("approval_class") != "explicit-owner-chat-approval":
+        fail("manifest-approval-invalid")
+
+
+def artifact(name: str, mime: str, data: bytes) -> dict[str, Any]:
+    return {
+        "name": name,
+        "mime": mime,
+        "sha256": sha256(data),
+        "size_bytes": len(data),
+        "data_b64": base64.b64encode(data).decode("ascii"),
+    }
+
+
+def validate_png(name: str, data: bytes, expected_sha: str, expected_size: int) -> None:
+    if not data.startswith(b"\x89PNG\r\n\x1a\n"):
+        fail("png-signature-invalid")
+    if not isinstance(expected_sha, str) or not SHA_RE.fullmatch(expected_sha):
+        fail("png-sha-invalid")
+    if not isinstance(expected_size, int) or isinstance(expected_size, bool):
+        fail("png-size-invalid")
+    if len(data) != expected_size or sha256(data) != expected_sha:
+        fail("png-sha-or-size-mismatch")
+
+
+def v1_activity(folder: Path, row: dict[str, Any]) -> dict[str, Any]:
+    if set(row) != INDEX_KEYS:
+        fail("index-row-invalid")
+    ident = row.get("id")
+    if not isinstance(ident, str) or not ID_RE.fullmatch(ident):
+        fail("activity-id-invalid")
+    if row.get("png") != f"{ident}.png" or row.get("manifest") != f"{ident}.json":
+        fail("v1-filename-invalid")
+    png_path = folder / row["png"]
+    manifest_path = folder / row["manifest"]
+    if png_path.parent != folder or manifest_path.parent != folder:
+        fail("artifact-path-invalid")
+    png = safe_bytes(png_path, limit=MAX_PNG, suffix=".png")
+    manifest_bytes = safe_bytes(manifest_path, limit=MAX_MANIFEST, suffix=".json")
+    validate_png(row["png"], png, row.get("sha256"), row.get("size_bytes"))
+    manifest = parse_json(manifest_bytes, "manifest")
+    if not isinstance(manifest, dict) or set(manifest) != V1_KEYS:
+        fail("v1-manifest-fields-invalid")
+    if manifest.get("schema") != MANIFEST_V1 or manifest.get("id") != ident:
+        fail("v1-manifest-identity-invalid")
+    if manifest.get("sha256") != sha256(png) or manifest.get("size_bytes") != len(png):
+        fail("v1-manifest-binding-invalid")
+    if manifest.get("source_kind") != "chatgpt-generated-png":
+        fail("v1-source-kind-invalid")
+    validate_common(manifest)
+    return {
+        "id": ident,
+        "artifacts": [
+            artifact(f"{ident}.png", "image/png", png),
+            artifact(f"{ident}.json", "application/json", manifest_bytes),
+        ],
+    }
+
+
+def build_v1(folder: Path) -> dict[str, Any]:
+    folder = folder.resolve()
+    if not folder.is_dir() or folder.is_symlink():
+        fail("prepared-dir-invalid")
+    index_path = folder / "preflight-index.json"
+    index_bytes = safe_bytes(index_path, limit=MAX_MANIFEST, suffix=".json")
+    index = parse_json(index_bytes, "index")
+    if not isinstance(index, dict) or set(index) != {"schema", "activities"}:
+        fail("index-invalid")
+    if index.get("schema") != INDEX_SCHEMA:
+        fail("index-schema-invalid")
+    rows = index.get("activities")
+    if not isinstance(rows, list) or not 1 <= len(rows) <= MAX_ACTIVITIES:
+        fail("activity-count-invalid")
+    activities = [v1_activity(folder, row) for row in rows]
+    ids = [row["id"] for row in activities]
+    if len(set(ids)) != len(ids):
+        fail("duplicate-activity-id")
+    return {"schema": ENVELOPE_SCHEMA, "activities": activities}
+
+
+def build_v2(manifest_path: Path) -> dict[str, Any]:
+    manifest_path = manifest_path.resolve()
+    manifest_bytes = safe_bytes(manifest_path, limit=MAX_MANIFEST, suffix=".json")
+    manifest = parse_json(manifest_bytes, "manifest")
+    if not isinstance(manifest, dict) or set(manifest) != V2_KEYS:
+        fail("v2-manifest-fields-invalid")
+    ident = manifest.get("id")
+    if manifest.get("schema") != MANIFEST_V2 or not isinstance(ident, str) or not ID_RE.fullmatch(ident):
+        fail("v2-manifest-identity-invalid")
+    if manifest.get("source_kind") != "chatgpt-generated-png-set":
+        fail("v2-source-kind-invalid")
+    validate_common(manifest)
+    pages = manifest.get("pages")
+    if not isinstance(pages, list) or not 2 <= len(pages) <= MAX_PAGES:
+        fail("v2-page-count-invalid")
+    folder = manifest_path.parent
+    artifacts: list[dict[str, Any]] = []
+    for expected_index, page in enumerate(pages, start=1):
+        expected_name = f"{ident}-{expected_index}.png"
+        if (
+            not isinstance(page, dict)
+            or set(page) != PAGE_KEYS
+            or page.get("index") != expected_index
+            or page.get("file") != expected_name
+        ):
+            fail("v2-page-order-or-name-invalid")
+        page_path = folder / expected_name
+        if page_path.parent != folder:
+            fail("artifact-path-invalid")
+        data = safe_bytes(page_path, limit=MAX_PNG, suffix=".png")
+        validate_png(expected_name, data, page.get("sha256"), page.get("size_bytes"))
+        artifacts.append(artifact(expected_name, "image/png", data))
+    artifacts.append(artifact(f"{ident}.json", "application/json", manifest_bytes))
+    return {
+        "schema": ENVELOPE_SCHEMA,
+        "activities": [{"id": ident, "artifacts": artifacts}],
+    }
+
+
+def envelope_raw(envelope: dict[str, Any]) -> bytes:
+    raw = json.dumps(envelope, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    total = sum(
+        a["size_bytes"]
+        for activity in envelope["activities"]
+        for a in activity["artifacts"]
+    )
+    if total > MAX_TOTAL:
+        fail("envelope-raw-bytes-too-large")
+    return raw
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--v1-prepared-dir", type=Path)
+    group.add_argument("--v2-manifest", type=Path)
+    args = parser.parse_args()
+    try:
+        envelope = (
+            build_v1(args.v1_prepared_dir)
+            if args.v1_prepared_dir is not None
+            else build_v2(args.v2_manifest)
+        )
+        sys.stdout.buffer.write(envelope_raw(envelope))
+        sys.stdout.buffer.write(b"\n")
+        return 0
+    except (EnvelopeError, OSError) as exc:
+        print(f"DRIVE_STAGE_ENVELOPE=FAIL error={exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
