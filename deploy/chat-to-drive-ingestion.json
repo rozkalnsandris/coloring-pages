@@ -28,7 +28,8 @@
     "category_binding_required_before_first_mutation": true,
     "publication_command": "PUBLISH",
     "ok_is_publication_authority": false,
-    "host_operator_and_importer_alignment_required_before_first_mutation": true
+    "host_operator_and_importer_alignment_required_before_first_mutation": true,
+    "stage_sender_runtime_alignment_required_before_first_mutation": true
   },
   "canonical_domains": {
     "application_source": "github",
@@ -62,25 +63,28 @@
       "freeze-id-sha256-size-category-and-metadata",
       "materialize-manifest-locally",
       "validate-manifest-locally",
-      "upload-image",
-      "upload-manifest"
+      "materialize-and-validate-rpi5-stage-envelope",
+      "verify-stage-sender-runtime",
+      "invoke-trusted-stage-sender-image-then-manifest"
     ],
     "upload_surface_selection_required_before_first_mutation": true,
     "single_upload_surface_per_publication": true,
     "upload_surface_must_accept": [
-      "prepared-png",
-      "prebuilt-manifest"
+      "validated-rpi5-stage-envelope"
     ],
-    "host_rclone_upload_forbidden": true,
-    "stable_upload_source_refs_required_before_first_mutation": true,
-    "stable_upload_source_ref_semantics": "immutable-exported-file-snapshot",
-    "stable_upload_source_ref_required_for": [
-      "prepared-png",
-      "prebuilt-manifest"
-    ],
-    "current_files_surface_source_field": "source_file_ref",
-    "legacy_ephemeral_container_path_upload_forbidden": true,
-    "stable_upload_source_ref_failure_before_first_mutation": "stop"
+    "staging_surface": "trusted-rpi5-drive-stage-sender",
+    "staging_sender_contract_ref": "deploy/publish-trusted-rpi5-stage-sender-v1.json",
+    "sender_envelope_schema": "rozkalns.rpi5-main.coloring-pages-drive-stage-envelope.v1",
+    "sender_production_namespace": "pending",
+    "provider_owned_source_file_ref_required": false,
+    "ephemeral_local_path_is_remote_upload_ref": false,
+    "exact_local_artifacts_required_before_first_mutation": true,
+    "envelope_materialization_required_before_first_mutation": true,
+    "envelope_validation_required_before_first_mutation": true,
+    "trusted_host_stage_sender_upload_allowed": true,
+    "arbitrary_host_rclone_upload_forbidden": true,
+    "sender_success_signal": "COLORING_PAGES_DRIVE_STAGE=PASS",
+    "sender_pass_is_staging_only": true
   },
   "manifest": {
     "schema": "rozkalns.coloring-pages.drive-staging-manifest.v1",
@@ -229,5 +233,14 @@
     "https://developers.google.com/workspace/drive/api/guides/manage-uploads",
     "https://developers.google.com/workspace/drive/api/guides/manage-downloads",
     "https://rclone.org/drive/"
-  ]
+  ],
+  "staging_sender": {
+    "contract_ref": "deploy/publish-trusted-rpi5-stage-sender-v1.json",
+    "runtime_owner_repository": "rozkalnsandris/RPi5_main",
+    "production_namespace": "pending",
+    "publish_uses_canary_mode": false,
+    "fresh_runtime_identity_preflight_required": true,
+    "arbitrary_rclone_forbidden": true,
+    "staging_pass_is_not_publication_success": true
+  }
 }
