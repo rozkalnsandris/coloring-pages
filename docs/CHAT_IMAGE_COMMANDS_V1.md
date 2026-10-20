@@ -218,13 +218,13 @@ The `PUBLISH` chain is sequential and fail-closed:
 5. read fresh LIVE catalogue state and allocate one random seven-digit new-publication ID from `metadata/id-policy.json`; the candidate must be absent from the LIVE catalogue and distinct from any other candidate already allocated in the same local publish batch before any mutation;
 6. freeze that activity/page ID, the ordered page count, SHA-256 and exact byte size of every validated print master, category and required catalogue metadata;
 7. fully materialize and locally validate the complete v1/v2 manifest;
-8. run the fresh host-runtime alignment preflight from `deploy/chat-to-drive-ingestion.json` / `deploy/chat-to-drive-ingestion-v2.json`: installed operator blob must match current `RPi5_main` source, the operator contract’s pinned consumer source revision must resolve, and its `tools/coloring-pages-import` blob must match current `coloring-pages/main`; mismatch means STOP before the first Drive write and requires a separately reviewed `RPi5_main` repin/install;
-9. before the first Drive write, select one Drive upload surface that can accept every locally prepared PNG plus the already-built manifest; materialize/export every prepared PNG and the manifest as stable exact upload snapshots/refs accepted by that surface (for the current Files uploader, concrete `source_file_ref` snapshots are required and legacy ephemeral `container_path` sources are forbidden); if any stable ref cannot be produced, STOP before mutation; then stage the exact prepared PNG(s) followed by the manifest through that same surface;
-10. run the trusted RPi5 verify/import operator once; RPi5-side `rclone` is Drive-to-RPi5 pull-only and is not a Chat staging upload path;
-11. let that trusted operator perform the contract-required post-import catalogue, derivative and public-HTTP proof internally;
-12. when the operator returns `COLORING_PAGES_DRIVE_INGEST=PASS`, treat it as terminal publication success, immediately report `PASS`, and stop.
+8. run both fresh runtime-alignment preflights before the first Drive mutation: (a) the installed trusted stage sender and fixed wrapper must match current `RPi5_main/main` source plus `ops/contracts/coloring-pages-drive-stage-sender-v1.json`; (b) the installed Drive ingest operator and its pinned `tools/coloring-pages-import` consumer blob must match the current ingestion/importer contracts; any mismatch means STOP before the first Drive write and requires separately reviewed source/LIVE repair for the affected runtime;
+9. materialize and validate one exact `rozkalns.rpi5-main.coloring-pages-drive-stage-envelope.v1` with `tools/coloring-pages-drive-stage-envelope`: use `--v1-prepared-dir` for one or more independent single-page activities or `--v2-manifest` for one ordered 2–12 page activity; all exact local PNG bytes and the already-built manifest must be present and cross-bound before the first Drive mutation;
+10. invoke only the trusted RPi5 stage sender in its production/default mode. It may upload through its reviewed fixed `rclone` wrapper only to `pending/`, with PNG page(s) first and the already-built manifest last. `COLORING_PAGES_DRIVE_STAGE=PASS` proves staging only. Provider-owned `source_file_ref` values are not required for this path, and local/container paths are never treated as remote references or publication proof;
+11. run the trusted RPi5 Drive verify/import operator once. That ingest operator remains Drive-to-RPi5 pull-only and performs the contract-required catalogue, derivative and public-HTTP proof internally;
+12. when the ingest operator returns `COLORING_PAGES_DRIVE_INGEST=PASS`, treat it as terminal publication success, immediately report `PASS`, and stop.
 
-Do not begin the first Drive mutation while any upload source still depends on a transient local/container path; every prepared PNG and the prebuilt manifest must already have a stable exact upload snapshot/ref. Do not switch Drive upload surfaces after the first mutation. A staging/file-handoff/tool error after mutation begins is a fail-closed STOP, not permission to try host-side `rclone`, a second uploader, overwrite, retry, rollback or cleanup. Do not run discretionary post-success diagnostics, repeated health checks, external/public HTTP rechecks, extra catalogue scans, Drive archive/delete, cleanup or unrelated runtime verification after trusted operator PASS.
+Do not invoke arbitrary host `rclone`, the sender canary mode, a second staging surface, or direct connector upload as an alternate production path. After the first sender upload attempt, any staging/file-handoff/operator error is a fail-closed STOP without retry, rollback, overwrite, cleanup or surface switching. Do not run discretionary post-success diagnostics, repeated health checks, external/public HTTP rechecks, extra catalogue scans, Drive archive/delete, cleanup or unrelated runtime verification after trusted ingest-operator PASS.
 
 The category is selected from the canonical registry in `metadata/categories.json`. Current category IDs are:
 
@@ -368,17 +368,25 @@ This **offline, source-only helper** creates all `<id>.png` and
 invocation, using the reviewed print-master helper for preparation and validation.
 It does **not** connect to Drive or RPi5, and its output alone is **not**
 publication eligibility or a LIVE-state proof. The caller remains responsible
-for fresh runtime operator/importer alignment, current LIVE-catalog ID
-non-collision, manifest and media integrity, and exact stable uploaded-file refs
-for **every** PNG and JSON before the first Drive mutation.
+for fresh stage-sender + ingest-operator/importer alignment, current LIVE-catalog
+ID non-collision, and manifest/media integrity before the first Drive mutation.
 
-Export/materialize all pairs as stable provider-supported source refs **before
-any** upload; use one upload surface for the full batch. For each independent
-item stage PNG then its prebuilt manifest, then invoke the already-authorized
-trusted RPi5 importer once per item, observing each terminal PASS. This does
-not grant retry, alternate staging, overwrite or rollback; after any mutation
-failure, STOP and report the exact succeeded subset, with no automatic
-continuation of the rest.
+After preparation, build one complete sender envelope locally:
+
+```bash
+python3 tools/coloring-pages-drive-stage-envelope \
+  --v1-prepared-dir /tmp/approved-pages/prepared \
+  > /tmp/approved-pages/stage-envelope.json
+```
+
+The adapter validates every prepared PNG/manifest pair again and emits only the
+reviewed sender envelope; it performs no network or Drive action. Send that
+complete envelope once through the trusted RPi5 stage sender production mode.
+For each independent activity the sender stages PNG then its prebuilt manifest,
+then the trusted RPi5 importer is invoked once per activity, observing each
+terminal ingest PASS. This does not grant retry, alternate staging, overwrite
+or rollback; after any mutation failure, STOP and report the exact succeeded
+subset, with no automatic continuation of the rest.
 
 Normal user-facing outcome is **one compact status** for the whole set: PASS
 with number published, or a precise STOP with whether any mutation happened,

@@ -66,8 +66,13 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertTrue(staging["folder_name_is_not_authority"])
         self.assertTrue(staging["upload_surface_selection_required_before_first_mutation"])
         self.assertTrue(staging["single_upload_surface_per_publication"])
-        self.assertEqual(staging["upload_surface_must_accept"], ["prepared-png", "prebuilt-manifest"])
-        self.assertTrue(staging["host_rclone_upload_forbidden"])
+        self.assertEqual(staging["upload_surface_must_accept"], ["validated-rpi5-stage-envelope"])
+        self.assertEqual(staging["staging_surface"], "trusted-rpi5-drive-stage-sender")
+        self.assertFalse(staging["provider_owned_source_file_ref_required"])
+        self.assertTrue(staging["trusted_host_stage_sender_upload_allowed"])
+        self.assertTrue(staging["arbitrary_host_rclone_upload_forbidden"])
+        self.assertTrue(staging["envelope_materialization_required_before_first_mutation"])
+        self.assertTrue(staging["envelope_validation_required_before_first_mutation"])
         self.assertEqual(staging["publish_order"], ["image", "manifest"])
         self.assertTrue(staging["manifest_is_readiness_signal"])
         self.assertTrue(staging["exact_source_bytes_required"])
@@ -82,8 +87,9 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
                 "freeze-id-sha256-size-category-and-metadata",
                 "materialize-manifest-locally",
                 "validate-manifest-locally",
-                "upload-image",
-                "upload-manifest",
+                "materialize-and-validate-rpi5-stage-envelope",
+                "verify-stage-sender-runtime",
+                "invoke-trusted-stage-sender-image-then-manifest",
             ],
         )
 
@@ -141,6 +147,15 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertEqual(host["transport_client"], "rclone")
         self.assertEqual(host["transport_direction"], "drive-to-rpi5-pull-only")
         self.assertFalse(host["host_rclone_upload_allowed"])
+        sender = self.contract["staging_sender"]
+        self.assertEqual(
+            sender["contract_ref"],
+            "deploy/publish-trusted-rpi5-stage-sender-v1.json",
+        )
+        self.assertEqual(sender["production_namespace"], "pending")
+        self.assertFalse(sender["publish_uses_canary_mode"])
+        self.assertTrue(sender["fresh_runtime_identity_preflight_required"])
+        self.assertTrue(sender["arbitrary_rclone_forbidden"])
         self.assertTrue(host["credential_values_must_not_be_read_or_emitted"])
         self.assertFalse(host["fresh_pending_fast_list_allowed"])
         self.assertEqual(

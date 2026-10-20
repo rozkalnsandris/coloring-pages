@@ -28,7 +28,7 @@ Canonical ownership remains unchanged:
 - `/srv/coloring-pages-content/originals/` owns production source PNG masters.
 - `/srv/coloring-pages-content/public/catalog.json` and `public/media/` own the published catalogue and derivatives.
 - Google Drive is a temporary transport/staging surface.
-- `rozkalnsandris/RPi5_main` owns host-side rclone binding, credentials, trusted execution and runtime coordination.
+- `rozkalnsandris/RPi5_main` owns two separately reviewed host roles: the fixed Drive stage sender may upload only to the contract-bound production `pending/` namespace, while the existing Drive ingest operator remains Drive→RPi5 pull-only for verify/import/public proof. Arbitrary host `rclone` is not an authorized staging path.
 
 This content-contract source does not itself authorize a content import. The owner's explicit `PUBLISH` command for one exact latest generated draft authorizes one bounded chain that first prepares and validates a fresh A4 print master, then freezes that prepared master's page ID, SHA-256, byte size and one valid category before the first Drive/content mutation. Any preparation/validation failure stops before the first Drive mutation. A plain `OK` is not publication authority. Category selection must happen before the first Drive mutation. That authority is limited to Drive staging, the reviewed RPi5 verify/import path and required public verification; archive/delete, overwrite and unrelated runtime actions remain outside it.
 
@@ -62,7 +62,9 @@ The visible folder name is convenience only. The trusted LIVE operator must bind
 
 Before the first Drive mutation, both staging artifacts must already be ready locally: the exact PNG identity/metadata must be frozen, the complete `<id>.json` manifest must be materialized, and that manifest must be parsed/validated against this contract. Manifest preparation after the PNG upload is forbidden.
 
-Only after that preflight passes are Drive writes allowed. The PNG is still uploaded first and the already-prepared matching JSON manifest is uploaded last. The manifest therefore remains the readiness signal, while file-generation or JSON-validation failures happen before any Drive mutation.
+`tools/coloring-pages-drive-stage-envelope --v1-prepared-dir ...` then re-validates the exact PNG/manifest pair(s) and emits the reviewed RPi5 sender envelope. Provider-owned `source_file_ref` or `file_uri` values are not required for this staging path; a local path remains only a local input and is never remote proof.
+
+Only after the full envelope and both runtime preflights pass are Drive writes allowed. The trusted RPi5 stage sender production mode writes only to fixed `pending/`: PNG first and the already-prepared matching JSON manifest last. `COLORING_PAGES_DRIVE_STAGE=PASS` proves staging only. The manifest remains the readiness signal, while file-generation, manifest-validation or envelope-validation failures happen before any Drive mutation.
 
 ## Manifest
 
@@ -99,9 +101,11 @@ The canonical category registry is `metadata/categories.json`. The current allow
 
 ## Current runtime eligibility preflight
 
-Production activation is historical capability evidence, not proof that the currently installed host operator still matches the current Coloring Pages importer contract.
+Production activation and sender canary results are historical capability evidence, not proof that the currently installed host runtimes still match current source.
 
-Before the first Drive mutation, `PUBLISH` must freshly verify:
+Before the first Drive mutation, `PUBLISH` must first verify the staging sender defined by `deploy/publish-trusted-rpi5-stage-sender-v1.json`: current `RPi5_main/main`, installed sender/wrapper blob identity, reviewed sudoers/state-lock metadata, fixed production namespace `pending`, and separation of `canary` from production ingest. A mismatch is a STOP before Drive mutation.
+
+It must also freshly verify the existing ingest/import runtime:
 
 - the installed `/usr/local/bin/coloring-pages-drive-ingest` Git blob matches current `RPi5_main/main` `ops/bin/coloring-pages-drive-ingest`;
 - the current `RPi5_main` operator contract `ops/contracts/coloring-pages-drive-ingest-operator-v1.json` resolves its pinned Coloring Pages consumer source revision;
