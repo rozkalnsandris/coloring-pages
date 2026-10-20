@@ -141,6 +141,7 @@ const end = source.lastIndexOf('loadDetail();');
 if (start < 0 || end <= start) throw Error('detail loader not found');
 const title = {textContent:''}, description = {textContent:''}, printLink = {href:''};
 const ctx = {
+  console, process,
   window:{
     location:{search:'?id=sample'},
     ColoringStats:{trackView(){throw Error('blocked view telemetry');}},
