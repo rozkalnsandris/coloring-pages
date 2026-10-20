@@ -2,15 +2,16 @@
   "schema": "rozkalns.coloring-pages.publish-trusted-rpi5-stage-sender.v1",
   "repository": "rozkalnsandris/coloring-pages",
   "issue": 288,
-  "status": "canary-proven-fresh-runtime-preflight-required",
-  "purpose": "Bind PUBLISH staging to the reviewed RPi5 Drive stage sender without depending on connector-owned source_file_ref values.",
+  "status": "legacy-reviewed-fallback-not-production-default",
+  "purpose": "Preserve the reviewed RPi5 Drive stage sender as a legacy fallback contract. Normal PUBLISH stages through the connected Google Drive upload_file surface and must not switch to this sender as an alternate path after a mutation.",
   "authority": {
     "source_merge_authorizes_live": false,
     "source_merge_authorizes_drive_write": false,
     "source_merge_authorizes_ingest": false,
     "source_merge_authorizes_publish": false,
     "source_merge_authorizes_credentials": false,
-    "explicit_owner_publish_required": true
+    "explicit_owner_publish_required": true,
+    "production_publish_default": false
   },
   "adapter": {
     "source": "tools/coloring-pages-drive-stage-envelope",
@@ -39,7 +40,7 @@
     "sender_contract_path": "ops/contracts/coloring-pages-drive-stage-sender-v1.json",
     "installed_sender_path": "/usr/local/bin/coloring-pages-drive-stage-sender",
     "installed_wrapper_path": "/usr/local/libexec/coloring-pages-drive-stage-rcat",
-    "production_invocation": "default-no-flag",
+    "production_invocation": "legacy-only-not-normal-publish",
     "production_namespace": "pending",
     "canary_namespace": "canary",
     "canary_mode_forbidden_for_publish": true,
@@ -53,7 +54,7 @@
     "after_first_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation"
   },
   "runtime_preflight": {
-    "required_before_first_drive_mutation": true,
+    "required_before_first_drive_mutation": false,
     "fresh_rpi5_main_required": true,
     "installed_sender_blob_must_match_fresh_source": true,
     "installed_wrapper_blob_must_match_fresh_source": true,
@@ -62,7 +63,7 @@
     "sender_contract_must_bind_production_namespace_pending": true,
     "sender_contract_must_keep_canary_outside_production_ingest": true,
     "credential_content_read_forbidden": true,
-    "mismatch_disposition": "stop-before-first-drive-mutation"
+    "mismatch_disposition": "not-a-normal-publish-gate"
   },
   "handoff": {
     "exact_local_artifacts_required": true,
@@ -73,7 +74,8 @@
     "ephemeral_local_path_is_remote_ref": false,
     "single_staging_surface_per_publication": true,
     "png_before_manifest": true,
-    "v2_pages_ascending_before_manifest": true
+    "v2_pages_ascending_before_manifest": true,
+    "legacy_sender_must_not_be_used_as_alternate_after_connector_attempt": true
   },
   "canary_evidence": {
     "observed_at": "2026-10-20",
