@@ -156,6 +156,13 @@ class TrustedStageEnvelopeTests(unittest.TestCase):
         with self.assertRaisesRegex(EnvelopeError, "duplicate-activity-id"):
             build_v1(self.dir)
 
+    def test_v2_manifest_filename_must_match_id(self):
+        path = self.write_v2()
+        wrong = self.dir / "other.json"
+        path.rename(wrong)
+        with self.assertRaisesRegex(EnvelopeError, "v2-manifest-filename-invalid"):
+            build_v2(wrong)
+
     def test_v2_page_order_or_name_mismatch_fails(self):
         path = self.write_v2()
         manifest = json.loads(path.read_text())
