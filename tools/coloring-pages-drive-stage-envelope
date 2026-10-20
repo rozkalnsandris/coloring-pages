@@ -163,7 +163,7 @@ def v1_activity(folder: Path, row: dict[str, Any]) -> dict[str, Any]:
 
 
 def build_v1(folder: Path) -> dict[str, Any]:
-    folder = folder.resolve()
+    folder = folder.absolute()
     if not folder.is_dir() or folder.is_symlink():
         fail("prepared-dir-invalid")
     index_path = folder / "preflight-index.json"
@@ -184,7 +184,7 @@ def build_v1(folder: Path) -> dict[str, Any]:
 
 
 def build_v2(manifest_path: Path) -> dict[str, Any]:
-    manifest_path = manifest_path.resolve()
+    manifest_path = manifest_path.absolute()
     manifest_bytes = safe_bytes(manifest_path, limit=MAX_MANIFEST, suffix=".json")
     manifest = parse_json(manifest_bytes, "manifest")
     if not isinstance(manifest, dict) or set(manifest) != V2_KEYS:
@@ -192,6 +192,8 @@ def build_v2(manifest_path: Path) -> dict[str, Any]:
     ident = manifest.get("id")
     if manifest.get("schema") != MANIFEST_V2 or not isinstance(ident, str) or not ID_RE.fullmatch(ident):
         fail("v2-manifest-identity-invalid")
+    if manifest_path.name != f"{ident}.json":
+        fail("v2-manifest-filename-invalid")
     if manifest.get("source_kind") != "chatgpt-generated-png-set":
         fail("v2-source-kind-invalid")
     validate_common(manifest)
