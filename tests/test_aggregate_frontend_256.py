@@ -148,6 +148,8 @@ const ctx = {
   },
   document:{querySelector(){return null;},dispatchEvent(){}},
   URLSearchParams, encodeURIComponent,
+  DETAIL_CATEGORY_LABELS:{tiere:'Tiere'},
+  DETAIL_DIFFICULTY_LABELS:{easy:'Einfach'},
   detailRoot:{setAttribute(){}}, detailTitle:title, detailDescription:description,
   detailCategory:null, detailCharacter:null, detailAge:null,
   detailDifficulty:null, detailPagesBadge:null, printLink,
