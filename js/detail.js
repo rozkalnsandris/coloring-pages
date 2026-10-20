@@ -327,7 +327,11 @@ async function loadDetail() {
     }
     detailRoot?.setAttribute("data-loaded-id",entry.id);
     loadedEntryId=entry.id;
-    window.ColoringStats?.trackView?.(entry.id);
+    try {
+      window.ColoringStats?.trackView?.(entry.id);
+    } catch {
+      // Optional view telemetry must never block the preview or A4 printing.
+    }
     if (detailTitle) detailTitle.textContent = entry.title;
     const detailBadges = document.querySelector(".detail-badges");
     if (detailBadges) detailBadges.hidden = false;
