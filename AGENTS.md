@@ -24,6 +24,16 @@ This repository owns the Coloring Pages application source, importer contract an
 - Use RPi5-local/remote-desktop tooling only when host-local execution or observation is genuinely required and is not supported through GitHub.
 - If runtime state is uncertain, do not infer it from source; stop and require fresh authorized evidence.
 
+## GitHub-first / bounded RDC fallback v1 — mandatory tool priority
+
+Reviewed shared source: `rozkalnsandris/ops-workflows@4e89b75d7f496dfb43fd9c1eb10a995fad53fdd8`, `docs/GITHUB_FIRST_RDC_FALLBACK_V1.md` and `policy/github-first-rdc-fallback-v1.json`. Local adapter: `.github/github-first-rdc-v1.json`; local explanation: `docs/GITHUB_FIRST_RDC_ADOPTION_V1.md`.
+
+- Decide **per work step**, not once per task. Use connected GitHub tools for source/files, branches/commits, issues/PRs, CI and reviews, repository-state and canonical continuity when they can give equivalent correctness, permissions and durable evidence. Prefer GitHub-hosted Actions for equivalent safe source validation. RDC `git`/`gh`/`curl`, a host checkout or shell scripts must not substitute for GitHub-native work merely for convenience, speed or habit.
+- An RDC exception requires an actual host-local necessity, proof that connected GitHub operations and applicable GitHub-hosted CI cannot provide equivalent results, existing authority for the exact host/target/read or mutation class, and the **smallest necessary** action. Before RDC, write only public-safe exception evidence for `STEP`, `REPOSITORY_AND_TARGET`, `GITHUB_CAPABILITY_CHECKED`, `PRECISE_CAPABILITY_GAP`, `GITHUB_CI_NOT_EQUIVALENT_REASON`, `MINIMAL_RDC_OPERATION`, `EXISTING_AUTHORIZATION` and `GITHUB_RETURN_EVIDENCE`; return to GitHub for source/PR/CI/continuity afterward.
+- GitHub access denied, 403/429, rate limits, tool error, timeout, missing owner authority or an uncertain dispatched mutation means **STOP**. Such failures never authorize an RDC duplicate source write, alternate transport, automatic retry, rollback or cleanup.
+- This is mandatory tool priority, **not** a new command mode or extra authority. Keep the deliberately lightweight FAST-LANE v2.3 profile; do not add a fleet bootstrap manifest solely for uniformity, activate FULL/Queue/GITHUB-ONLY automatically, or change source/content ownership.
+- **Existing separate owner boundaries are unchanged:** `MERGE coloring-pages #N` is still the required exact PR approval; an approved app-input merge may use only its already-defined bounded SIMPLE-DEPLOY auto-LIVE flow; `PUBLISH` still requires exact current-draft owner approval and its separately bounded content chain. No merge, PUBLISH, RPi5 media store, import, runtime/deploy, Cloudflare, credential, permission, settings, protected-data, or LIVE authority is granted by this tool-selection rule.
+
 ## FAST-LANE v2.3 — lightweight adoption
 
 This repository adopts the shared FAST-LANE v2.3 / Agent Work Cycle behavior from
