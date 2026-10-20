@@ -14,7 +14,7 @@ Historical repin evidence from 2026-10-05 records `RPi5_main@7e3e6b6d6574c1dc519
 
 ## Current runtime eligibility preflight
 
-Before the first Drive mutation, `PUBLISH` must read fresh `RPi5_main/main` and LIVE operator evidence and prove all of the following:
+Before the first Drive mutation, `PUBLISH` must read fresh `RPi5_main/main` and LIVE evidence for both host roles. First, the trusted stage sender defined by `deploy/publish-trusted-rpi5-stage-sender-v1.json` must match current sender/wrapper source, reviewed sudoers/state-lock metadata and fixed production namespace `pending`; `canary` remains non-production and PUBLISH must never invoke it. Then the existing ingest/import alignment must prove all of the following:
 
 - the installed `/usr/local/bin/coloring-pages-drive-ingest` Git blob matches the current `RPi5_main` `ops/bin/coloring-pages-drive-ingest` blob;
 - the current `RPi5_main` operator contract `ops/contracts/coloring-pages-drive-ingest-operator-v1.json` resolves its pinned Coloring Pages consumer source revision;
@@ -34,7 +34,7 @@ One activity stays one catalogue item:
 <id>.json
 ```
 
-The manifest is uploaded last and is the readiness signal. Before the first Drive mutation, `PUBLISH` has prepared and validated every page locally, frozen every per-page SHA-256/byte size, and validated the complete manifest.
+The manifest is uploaded last and is the readiness signal. Before the first Drive mutation, `PUBLISH` has prepared and validated every page locally, frozen every per-page SHA-256/byte size, and validated the complete manifest. `tools/coloring-pages-drive-stage-envelope --v2-manifest <id>.json` then re-validates the ordered page set and emits the exact RPi5 sender envelope. Provider-owned file-reference handoff is not required; local paths are local inputs only, not remote proof.
 
 The manifest carries the ordered page identities:
 
@@ -73,7 +73,9 @@ For new Chat publications, the authoring layer follows `metadata/id-policy.json`
 
 ## Trusted host flow
 
-The activated `RPi5_main` operator stays small:
+Staging and ingestion are separate reviewed host roles. The stage sender accepts only the validated envelope and, in production/default mode, writes through its fixed wrapper only to `pending/`, ordered page PNGs first and the prebuilt manifest last. `COLORING_PAGES_DRIVE_STAGE=PASS` proves staging only; arbitrary host `rclone` and sender canary mode are not production PUBLISH paths.
+
+The activated `RPi5_main` ingest operator stays small and remains Drive→RPi5 pull-only:
 
 1. read one v2 manifest from the exact bound Drive pending folder;
 2. validate the complete manifest and page count;
