@@ -1,41 +1,121 @@
-# PUBLISH simple bridge (#274): one missing upload helper
+# PUBLISH staging bridge (#274 → #288)
 
-**Goal:** user workflow stays MAKE → PUBLISH. Do not build another publication system.
+**Goal:** keep the human workflow as `MAKE → PUBLISH`. Do not add a second
+publication system.
 
-## Keep only three existing steps
+## Canonical three-step flow
 
-1. PREPARE (existing): tools/coloring-pages-publish-preflight invokes tools/coloring-pages-print-master to prepare/validate A4 PNG, allocate a fresh random 7-digit ID against LIVE catalogue evidence, freeze SHA-256/bytes/category, and construct the full v1 manifest **before** staging.
-2. UPLOAD (one new source helper): tools/coloring-pages-drive-upload checks prebuilt preflight-index.json, corresponding PNG and manifest files, freezes all request bodies and exposes a single sender callback for a *future separately authorized* API integration.
-3. IMPORT (existing): trusted RPi5_main Drive importer checks exact hashes and publishes + verifies the public result.
+1. **PREPARE** — existing `tools/coloring-pages-publish-preflight` /
+   `tools/coloring-pages-print-master` prepare and validate exact A4 PNG
+   master(s), allocate fresh seven-digit IDs against fresh LIVE catalogue
+   evidence, freeze SHA-256/bytes/category/metadata, and fully materialize the
+   v1/v2 manifest before any Drive mutation.
+2. **STAGE** — `tools/coloring-pages-drive-stage-envelope` validates those
+   exact local PNG/manifest bytes and emits
+   `rozkalns.rpi5-main.coloring-pages-drive-stage-envelope.v1`. The reviewed
+   trusted RPi5 stage sender consumes that complete envelope and may write only
+   through its fixed wrapper to production `pending/`, PNG page(s) first and
+   the already-built manifest last.
+3. **IMPORT** — the existing trusted RPi5 Drive ingest operator pulls from
+   `pending/`, verifies exact hashes/metadata, invokes the immutable importer,
+   and performs required public verification.
 
-**Current result: SOURCE-ONLY, no provider connected.** The ChatGPT Google Drive upload action requires a provider-owned file_uri, not a local PNG path. The helper neither generates file_uri nor accesses Google OAuth, Drive, network, LIVE or RPi5. Source merge alone cannot activate PUBLISH.
+`COLORING_PAGES_DRIVE_STAGE=PASS` proves staging only.
+`COLORING_PAGES_DRIVE_INGEST=PASS` remains terminal publication success.
 
-## Offline command: check only
+## Why #274 is no longer the production blocker
 
-    python3 tools/coloring-pages-drive-upload --prepared-dir /path/to/preflight-output --folder-id EXACT_PINNED_PENDING_ID
+Issue #274 added `tools/coloring-pages-drive-upload`, a source-only multipart
+validator with an injected callback. Its CLI intentionally remains offline and
+returns no production PASS. It was useful for validating exact v1 request bytes,
+but the connected Files/Drive surfaces required provider-owned file references
+that Chat-local prepared PNGs could not reliably materialize.
 
-This does not upload. Folder ID syntax does not prove access or ownership. Valid input returns exit **3**, BRIDGE=OFFLINE_ONLY / UPLOAD_PERFORMED=NO / PUBLISH=NOT_PERFORMED. Invalid input returns exit **2**, BRIDGE=BLOCKED. No PASS can be returned by the CLI.
+Issue #288 adopts the separately reviewed and canary-proven trusted RPi5 stage
+sender instead. Production PUBLISH therefore no longer depends on
+`source_file_ref` / `file_uri` handoff from Chat-local files.
 
-The helper accepts 1–20 independent v1 activity pairs only, checks unique seven-digit IDs, exact SHA-256/bytes, canonical metadata/category, the complete prebuilt manifest and symlink/path hazards, and refuses oversized files before unbounded reads. All PNG+JSON request bytes are frozen before the first hypothetical write. Per activity, PNG is sent first and its **already prepared** JSON manifest last. Full A4 print validation remains the job of the existing print helper; testing the PNG magic bytes is not enough.
+The #274 helper remains a regression/diagnostic utility. It is not the canonical
+production uploader and it must not be wired to a second HTTP/OAuth sender.
 
-## Only one future sender callback, no OAuth framework
+## Offline envelope adapter
 
-The source integration interface is send_once(frozen_requests, sender_callback), where the injected sender receives (fixed Drive files.create upload URL, multipart content-type, exact body bytes). It is not connected to HTTP here. A future owner-authorized runner must independently prove live PUBLISH intent, OAuth identity/permission, actual exact pending folder binding, fresh LIVE ID absence, operator/importer alignment, no duplicate Drive names, and immutable prepared source bytes. No such runner has been built, trusted or authorized in this issue. Adopting a direct API sender requires separate review of the current stable upload source-ref contract.
+Independent v1 activities prepared by the existing preflight helper:
 
-Before any sender call, the bridge now re-extracts the actual media bytes from each frozen multipart body, reconstructs the canonical request, and checks exact equality against all stored metadata, SHA-256, MD5 and byte counts. Recalculating a caller-supplied fingerprint is insufficient: the actual body must match. It also rejects a batch containing mixed pending-folder IDs or repeated seven-digit activity IDs, and checks all these conditions across the entire batch before its first hypothetical mutation. The existing PNG-before-prebuilt-JSON order is unchanged.
+```bash
+python3 tools/coloring-pages-drive-stage-envelope \
+  --v1-prepared-dir /path/to/prepared
+```
 
-Before calling the sender, the same strict v1 manifest validator used by the offline `freeze()` gate checks each JSON payload extracted from its immutable multipart request against its paired PNG: ID, SHA-256, exact byte size, schema and approved metadata. Duplicate JSON keys, missing fields, unrecognized categories and malformed manifests block the **entire** batch before the first callback. A valid multipart envelope or a matching request fingerprint does not bypass the cross-file binding. This is source-only: it does not replace full A4 print validation or prove actual Drive permissions.
+One ordered v2 activity whose fully materialized manifest is next to its exact
+page PNGs:
 
-The intended Google v3 call is files.create with uploadType=multipart. Returned metadata must match the file name, MIME, actual parent, decimal-string size and binary md5Checksum, and return distinct file IDs. This is an additional transport identity check, not proof of RPi5 import or published content. On any first or later sender ambiguity/response mismatch, STOP without retry, rollback, overwrite, cleanup or switching to another uploader. Host-side rclone push remains forbidden.
+```bash
+python3 tools/coloring-pages-drive-stage-envelope \
+  --v2-manifest /path/to/7654321.json
+```
 
-References: https://developers.google.com/workspace/drive/api/guides/manage-uploads ;
-https://developers.google.com/workspace/drive/api/reference/rest/v3/files/create ;
-https://developers.google.com/workspace/drive/api/guides/api-specific-auth
+The adapter:
 
-## Tests and decisions
+- accepts only seven-digit new-publication IDs;
+- validates exact filenames, PNG signature, SHA-256 and byte size;
+- validates strict v1/v2 manifest fields, approved category/age/difficulty/
+  language/source-kind/approval-class and page bindings;
+- rejects duplicate JSON keys and duplicate v1 activity IDs;
+- requires v2 indexes to be contiguous from 1 and filenames to follow that
+  exact order;
+- emits PNG page(s) before the manifest for every activity;
+- bounds activities/pages/file sizes/aggregate raw bytes;
+- performs no network, Drive, RPi5, credential, rclone, ingest or publish
+  operation.
 
-    python3 -m unittest discover -s tests -p 'test_drive_simple_bridge_274.py' -v
+Full A4 geometry validation remains the job of the existing reviewed print
+helper before envelope construction.
 
-Tests exercise independent v1 pairs, ordering, SHA/size/manifest mismatches, forged media SHA-256/MD5/size with recalculated fingerprints, **forged valid multipart manifests with incorrect PNG SHA-256, byte size, ID or category**, duplicate/missing JSON keys including the later activity in a batch, body-embedded folder tampering, mixed destination folder IDs, repeated activity IDs, unreadable/symlink/oversized files, mock provider responses, failures after any write attempt and no retry. No real OAuth, Drive or LIVE access is performed.
+## Trusted stage sender boundary
 
-Other Draft experiments (#259, #267, #273) are unchanged; this implementation does not depend on them. The next blocker is one authorized provider bytes upload connection, not additional mock frameworks.
+Canonical machine contract:
+`deploy/publish-trusted-rpi5-stage-sender-v1.json`.
+
+Before the first Drive mutation, PUBLISH must freshly prove:
+
+- current `RPi5_main/main`;
+- installed `/usr/local/bin/coloring-pages-drive-stage-sender` matches current
+  sender source;
+- installed `/usr/local/libexec/coloring-pages-drive-stage-rcat` matches current
+  wrapper source;
+- reviewed sudoers/state-lock identities match the sender contract;
+- production namespace remains exactly `pending`;
+- canary namespace remains separate and is never used by PUBLISH;
+- the existing ingest operator/importer alignment preflight also passes.
+
+Arbitrary host `rclone` remains forbidden. The exception is narrow: the
+reviewed stage sender may invoke only its fixed privileged wrapper, whose remote,
+root folder and namespace are contract-bound. The Drive ingest operator remains
+Drive→RPi5 pull-only.
+
+The 2026-10-20 `canary/` result proves only that the sender→fixed-wrapper→Drive
+transport can preserve the exact bounded activity without writing the same ID
+to `pending/`. Historical canary evidence never replaces the fresh runtime
+identity preflight.
+
+## Failure rule
+
+All PNG bytes and complete manifest bytes must be prepared, cross-bound and
+wrapped into one validated envelope before the first Drive mutation.
+
+After the first sender upload attempt, any error or ambiguity is a terminal
+STOP for that authorized publication chain. No retry, rollback, overwrite,
+cleanup, archive/delete, arbitrary rclone, direct connector fallback or second
+staging surface is implied.
+
+## Tests
+
+```bash
+python3 -m unittest tests.test_publish_trusted_rpi5_stage_sender_288 -v
+python3 -m unittest tests.test_publish_stable_upload_source_refs -v
+python3 -m unittest tests.test_chat_to_drive_ingestion tests.test_chat_to_drive_ingestion_v2 -v
+```
+
+The older `test_drive_simple_bridge_274.py` remains because the #274 helper is
+still expected to be safe and offline.
