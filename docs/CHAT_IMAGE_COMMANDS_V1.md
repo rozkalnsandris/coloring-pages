@@ -218,11 +218,11 @@ The `PUBLISH` chain is sequential and fail-closed:
 5. read fresh LIVE catalogue state and allocate one random seven-digit new-publication ID from `metadata/id-policy.json`; the candidate must be absent from the LIVE catalogue and distinct from any other candidate already allocated in the same local publish batch before any mutation;
 6. freeze that activity/page ID, the ordered page count, SHA-256 and exact byte size of every validated print master, category and required catalogue metadata;
 7. fully materialize and locally validate the complete v1/v2 manifest;
-8. before the first Drive mutation, freshly verify only the existing Drive ingest/import runtime: the installed Drive ingest operator must match current `RPi5_main/main` source and its pinned `tools/coloring-pages-import` consumer blob must match the current ingestion/importer contracts; any mismatch means STOP before the first Drive write and requires separately reviewed source/LIVE repair;
+8. before the first Drive mutation, freshly verify the existing Drive ingest/import runtime and the bounded publish-request bridge runtime: the installed Drive ingest operator must match current `RPi5_main/main`, its pinned `tools/coloring-pages-import` consumer blob must match the current ingestion/importer contracts, and `/usr/local/bin/coloring-pages-publish-request-dispatcher` plus the bridge path/service must match the reviewed RPi5 request-bridge source/contract; any mismatch means STOP before the first Drive write and requires separately reviewed source/LIVE repair;
 9. materialize the exact prepared PNG page(s) and already-built manifest as runtime-generated top-level file references for the connected Google Drive upload action. The connector boundary must receive `file_uri` references; bare file IDs, inline Base64, arbitrary URLs and raw local paths at the connector boundary are forbidden. All required local artifacts must exist and be frozen before the first Drive mutation;
 10. use exactly one staging surface: the connected Google Drive `upload_file` action to the exact bound `pending/` folder ID. Dispatch exactly one explicit connector mutation per artifact; do not put multiple mutating `upload_file` calls inside one code-mode loop/batch. Upload PNG page(s) first in order and the prebuilt manifest last. After each call, verify `accepted_input=file_uri`, requested filename/MIME, and exact folder identity from the upload response `parent_id` or metadata readback `parent_ids` before dispatching the next artifact. Connector success proves staging only;
-11. run the trusted RPi5 Drive verify/import operator once per activity with the source-defined CLI shape: v1 `/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-sha256 <sha256> --expected-size <bytes>`; v2 `/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-page <index>:<sha256>:<bytes>` with one repeated `--expected-page` per ordered page. Do not infer or shorten this CLI. The ingest operator remains Drive-to-RPi5 pull-only and performs the contract-required catalogue, derivative and public-HTTP proof internally;
-12. when the ingest operator returns `COLORING_PAGES_DRIVE_INGEST=PASS`, treat it as terminal publication success, immediately report `PASS`, and stop.
+11. after the complete approved set is staged, generate one random 32-lowercase-hex batch ID and materialize one strict `rozkalns.rpi5-main.coloring-pages-publish-request.v1` JSON containing every requested activity and its frozen v1/v2 identity. Write the complete request JSON first to `/srv/coloring-pages-content/state/publish-request-bridge/incoming/batch-<batch_id>.json`, then write the matching ready marker containing only the batch ID to the sibling `.ready` path using bounded Remote Desktop Commander file-write actions. Do not invoke the ingest operator through `start_process`, do not transfer media through RDC, and do not use shell interpolation. Read only the exact matching result JSON from the fixed `results/` path;
+12. PASS only when that result has the exact batch ID and every requested activity appears exactly once with status `PASS` or `ALREADY_PROCESSED`; otherwise STOP with the exact succeeded subset. A request/ready/result error after staging is fail-closed with no retry, rollback, cleanup, requeue or alternate execution path.
 
 Do not invoke arbitrary host `rclone`, the legacy RPi5 stage sender, a second staging surface, or Base64-over-RDC as an alternate production path. After the first Google Drive upload attempt, any staging/file-handoff/operator error is a fail-closed STOP without retry, rollback, overwrite, cleanup or surface switching. Do not run discretionary post-success diagnostics, repeated health checks, external/public HTTP rechecks, extra catalogue scans, Drive archive/delete, cleanup or unrelated runtime verification after trusted ingest-operator PASS.
 
@@ -377,10 +377,12 @@ publication. Dispatch one explicit `upload_file` mutation per artifact rather th
 a mutating connector loop/batch. For each independent activity upload its prepared
 PNG and then its already-built manifest to the exact bound `pending/` folder;
 validate exact folder identity after each call before sending the next artifact and
-do not mix upload surfaces. The trusted RPi5 importer is then invoked once per activity, observing
-each terminal ingest PASS. This does not grant retry, alternate staging,
-overwrite or rollback; after any mutation failure, STOP and report the exact
-succeeded subset, with no automatic continuation of the rest.
+do not mix upload surfaces. After the full set is staged, write one tiny bounded
+request JSON for the whole set, then its ready marker, and read the exact matching
+result JSON. The RPi5 bridge invokes the existing trusted ingest operator internally;
+the Chat happy path must not use `start_process` for ingest. This does not grant retry,
+alternate staging, overwrite or rollback; after any mutation failure, STOP and report
+the exact succeeded subset, with no automatic continuation of the rest.
 
 Normal user-facing outcome is **one compact status** for the whole set: PASS
 with number published, or a precise STOP with whether any mutation happened,
