@@ -99,6 +99,7 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
                 "validate-manifest-locally",
                 "materialize-runtime-file-references-for-all-artifacts",
                 "verify-ingest-operator-runtime",
+                "verify-publish-request-bridge-runtime",
                 "invoke-google-drive-connector-image-then-manifest",
             ],
         )
