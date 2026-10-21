@@ -22,7 +22,7 @@ generate or edit PNG draft page(s) in ChatGPT
 → allocate and freeze one random seven-digit activity ID
 → freeze every prepared print-master SHA-256 + byte size
 → fully materialize + validate the manifest before any Drive write
-→ stage exact PNG page(s), then the prebuilt manifest last in Google Drive
+→ stage exact PNG page(s) only in Google Drive; keep the prebuilt manifest inline in the tiny RPi5 request
 → trusted RPi5 publish operator pulls and verifies every page
 → publish the verified activity into /srv/coloring-pages-content/inbox/
 → directly run the immutable importer image once
@@ -42,7 +42,7 @@ PUBLISH           # approve latest draft/set; prepare, validate, bind and ingest
 
 `UPSCALE-PRINT` and `VALIDATE-PRINT` remain optional manual inspection/debug commands. They are not required owner steps in the normal publication path because `PUBLISH` performs both gates internally before any Drive/content mutation.
 
-For multiple separately approved coloring pages, one `PUBLISH` can prepare all independent v1 PNG+manifest pairs using the offline `tools/coloring-pages-publish-preflight` helper and a fresh LIVE-catalog snapshot; each pair still undergoes separate trusted import. This reduces repetitive preparation but does not skip stable upload-file references, operator identity alignment or the owner gate. No new RPi5 or Drive authority is created.
+For multiple separately approved coloring pages, one `PUBLISH` can prepare all independent v1 PNG+manifest pairs using the offline `tools/coloring-pages-publish-preflight` helper and a fresh LIVE-catalog snapshot; only the PNGs are uploaded to Drive, while every validated manifest is carried inline in the bounded RPi5 request. Each activity still undergoes separate trusted import. This reduces repetitive preparation but does not skip stable upload-file references, operator identity alignment or the owner gate. No new RPi5 or Drive authority is created.
 
 Two-page `CUT <subject>` / `MAKE Cut & Paste <subject>` activities follow the [Cut & Paste production playbook](docs/CUT_PASTE_PLAYBOOK_V1.md), including one SVG source, two no-footer A4 masters, physical cut-and-glue QA and a fresh exact-version owner `PUBLISH` gate. There is no global Cut & Paste publication hold; a print-dimension PASS alone is not content, physical or publication approval.
 
