@@ -866,9 +866,18 @@ a { color: inherit; }
 /* Internal engagement statistics dashboard */
 .stats-page { min-height: 100vh; background: #f7faff; }
 .stats-header-inner { grid-template-columns: 1fr auto 1fr; }
-.stats-header-title {
-  justify-self: center; color: var(--blue-deep); font-family: var(--font-display);
-  font-size: 20px; font-weight: 800;
+.stats-dashboard-nav {
+  display: flex; align-items: stretch; justify-self: center; height: 70px; gap: 28px;
+}
+.stats-dashboard-nav a {
+  position: relative; display: grid; place-items: center; color: #1d2f4d;
+  text-decoration: none; font-size: 14px; font-weight: 800;
+}
+.stats-dashboard-nav a:hover { color: var(--blue-deep); }
+.stats-dashboard-nav a.is-active { color: var(--blue-deep); }
+.stats-dashboard-nav a.is-active::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 10px;
+  height: 2px; border-radius: 999px; background: var(--blue);
 }
 .stats-home-link { justify-self: end; }
 .stats-hero { padding: 44px 0 26px; background: linear-gradient(180deg, #eef6ff 0%, #f7faff 100%); }
@@ -978,9 +987,14 @@ a { color: inherit; }
 }
 
 @media (max-width: 620px) {
-  .stats-header-inner { grid-template-columns: 1fr auto; gap: 12px; }
-  .stats-header-title { display: none; }
-  .stats-home-link { min-height: 40px; padding: 8px 11px; font-size: 13px; }
+  .stats-header-inner { grid-template-columns: 1fr auto; gap: 10px; padding-top: 8px; }
+  .stats-dashboard-nav {
+    grid-column: 1 / -1; grid-row: 2; width: 100%; height: 42px;
+    justify-content: center; gap: 22px; border-top: 1px solid var(--line);
+  }
+  .stats-dashboard-nav a { font-size: 13px; }
+  .stats-dashboard-nav a.is-active::after { bottom: 3px; }
+  .stats-home-link { min-height: 38px; padding: 7px 10px; font-size: 12px; }
   .stats-page .brand { font-size: clamp(18px, 4.7vw, 24px); }
   .stats-page .brand-paw { flex-basis: 30px; width: 30px; transform: scale(.8); transform-origin: left center; margin-right: -5px; }
   .stats-hero { padding-top: 30px; }
