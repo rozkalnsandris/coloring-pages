@@ -27,6 +27,7 @@ POST_WHITE_SPREAD = 10
 SHARPEN_RADIUS = 0.45
 SHARPEN_PERCENT = 35
 SHARPEN_THRESHOLD = 3
+PNG_COMPRESS_LEVEL = 6
 
 
 class PrintMasterError(ValueError):
@@ -218,7 +219,7 @@ def prepare(source_path: Path, output_path: Path) -> dict[str, object]:
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
-    canvas.save(output, format="PNG", optimize=True, dpi=TARGET_DPI)
+    canvas.save(output, format="PNG", compress_level=PNG_COMPRESS_LEVEL, dpi=TARGET_DPI)
     return validate_print_master(output)
 
 
