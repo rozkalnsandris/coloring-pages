@@ -149,13 +149,19 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
         self.assertIsNotNone(re.fullmatch(pages["sha256_pattern"], "a" * 64))
         self.assertIsNotNone(re.fullmatch(manifest["id_pattern"], "8152047"))
 
-    def test_manifest_is_last_and_all_page_identities_are_frozen_first(self):
+    def test_manifest_is_inline_and_all_page_identities_are_frozen_first(self):
         staging = self.v2["drive_staging"]
         self.assertEqual(
             staging["upload_order"],
-            "all-pages-in-ascending-index-then-manifest",
+            "all-pages-in-ascending-index",
         )
-        self.assertTrue(staging["manifest_is_readiness_signal"])
+        self.assertFalse(staging["manifest_is_readiness_signal"])
+        self.assertTrue(staging["bridge_ready_marker_is_readiness_signal"])
+        self.assertFalse(staging["normal_publish_manifest_upload"])
+        self.assertEqual(
+            staging["manifest_transport"],
+            "publish-request-bridge-inline",
+        )
         self.assertTrue(staging["upload_surface_selection_required_before_first_mutation"])
         self.assertTrue(staging["single_upload_surface_per_publication"])
         self.assertEqual(staging["upload_surface_must_accept"], ["runtime-materialized-file-uri"])
@@ -196,7 +202,12 @@ class ChatToDriveIngestionV2ContractTests(unittest.TestCase):
         self.assertEqual(connector["destination_namespace"], "pending")
         self.assertEqual(
             connector["order"],
-            "all-pages-in-ascending-index-then-manifest",
+            "all-pages-in-ascending-index",
+        )
+        self.assertFalse(connector["manifest_upload_allowed_in_normal_publish"])
+        self.assertEqual(
+            connector["manifest_transport"],
+            "publish-request-bridge-inline",
         )
         self.assertTrue(connector["runtime_materialization_required"])
         self.assertEqual(connector["accepted_input_expected"], "file_uri")
