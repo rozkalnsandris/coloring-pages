@@ -220,8 +220,8 @@ The `PUBLISH` chain is sequential and fail-closed:
 7. fully materialize and locally validate the complete v1/v2 manifest;
 8. before the first Drive mutation, freshly verify only the existing Drive ingest/import runtime: the installed Drive ingest operator must match current `RPi5_main/main` source and its pinned `tools/coloring-pages-import` consumer blob must match the current ingestion/importer contracts; any mismatch means STOP before the first Drive write and requires separately reviewed source/LIVE repair;
 9. materialize the exact prepared PNG page(s) and already-built manifest as runtime-generated top-level file references for the connected Google Drive upload action. The connector boundary must receive `file_uri` references; bare file IDs, inline Base64, arbitrary URLs and raw local paths at the connector boundary are forbidden. All required local artifacts must exist and be frozen before the first Drive mutation;
-10. use exactly one staging surface: the connected Google Drive `upload_file` action to the exact bound `pending/` folder ID. Upload PNG page(s) first in order and the prebuilt manifest last. Verify each successful response/readback against the requested filename, MIME type and parent folder. Connector success proves staging only;
-11. run the trusted RPi5 Drive verify/import operator once. That ingest operator remains Drive-to-RPi5 pull-only and performs the contract-required catalogue, derivative and public-HTTP proof internally;
+10. use exactly one staging surface: the connected Google Drive `upload_file` action to the exact bound `pending/` folder ID. Dispatch exactly one explicit connector mutation per artifact; do not put multiple mutating `upload_file` calls inside one code-mode loop/batch. Upload PNG page(s) first in order and the prebuilt manifest last. After each call, verify `accepted_input=file_uri`, requested filename/MIME, and exact folder identity from the upload response `parent_id` or metadata readback `parent_ids` before dispatching the next artifact. Connector success proves staging only;
+11. run the trusted RPi5 Drive verify/import operator once per activity with the source-defined CLI shape: v1 `/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-sha256 <sha256> --expected-size <bytes>`; v2 `/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-page <index>:<sha256>:<bytes>` with one repeated `--expected-page` per ordered page. Do not infer or shorten this CLI. The ingest operator remains Drive-to-RPi5 pull-only and performs the contract-required catalogue, derivative and public-HTTP proof internally;
 12. when the ingest operator returns `COLORING_PAGES_DRIVE_INGEST=PASS`, treat it as terminal publication success, immediately report `PASS`, and stop.
 
 Do not invoke arbitrary host `rclone`, the legacy RPi5 stage sender, a second staging surface, or Base64-over-RDC as an alternate production path. After the first Google Drive upload attempt, any staging/file-handoff/operator error is a fail-closed STOP without retry, rollback, overwrite, cleanup or surface switching. Do not run discretionary post-success diagnostics, repeated health checks, external/public HTTP rechecks, extra catalogue scans, Drive archive/delete, cleanup or unrelated runtime verification after trusted ingest-operator PASS.
@@ -373,9 +373,11 @@ non-collision, manifest/media integrity, and runtime materialization of every
 local artifact into a connector `file_uri` before the first Drive mutation.
 
 After preparation, use one connected Google Drive upload surface for the whole
-publication. For each independent activity upload its prepared PNG and then its
-already-built manifest to the exact bound `pending/` folder; do not mix upload
-surfaces. The trusted RPi5 importer is then invoked once per activity, observing
+publication. Dispatch one explicit `upload_file` mutation per artifact rather than
+a mutating connector loop/batch. For each independent activity upload its prepared
+PNG and then its already-built manifest to the exact bound `pending/` folder;
+validate exact folder identity after each call before sending the next artifact and
+do not mix upload surfaces. The trusted RPi5 importer is then invoked once per activity, observing
 each terminal ingest PASS. This does not grant retry, alternate staging,
 overwrite or rollback; after any mutation failure, STOP and report the exact
 succeeded subset, with no automatic continuation of the rest.

@@ -169,6 +169,7 @@
     "immutable_importer_image_digest_required_at_live": true,
     "application_redeploy_required": false,
     "transport_direction": "drive-to-rpi5-pull-only",
+    "operator_invocation": "/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-sha256 <sha256> --expected-size <bytes>",
     "host_rclone_upload_allowed": false,
     "current_runtime_preflight": {
       "required_before_first_drive_mutation": true,
@@ -283,6 +284,11 @@
     ],
     "accepted_input_expected": "file_uri",
     "read_only_readback_required": true,
+    "mutating_dispatch_mode": "one-explicit-upload-call-per-artifact",
+    "mutating_connector_loop_or_batch_dispatch_forbidden": true,
+    "upload_response_parent_field": "parent_id",
+    "metadata_readback_parent_field": "parent_ids",
+    "parent_identity_acceptance": "exact-pending-folder-id-only",
     "first_mutation": "first-upload-file-attempt",
     "after_first_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation"
   }
