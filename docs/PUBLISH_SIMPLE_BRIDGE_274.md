@@ -20,6 +20,8 @@
 Drive staging success is not publication success.
 `COLORING_PAGES_DRIVE_INGEST=PASS` remains terminal publication success.
 
+For v1, invoke the trusted operator exactly as `/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-sha256 <sha256> --expected-size <bytes>`. For v2, use `--id <id>` plus one repeated `--expected-page <index>:<sha256>:<bytes>` per ordered page. Do not derive a shorter CLI from memory.
+
 ## Why this is the normal path
 
 The older #274 helper proved the direct multipart model offline but did not own
@@ -46,9 +48,12 @@ Before the first Drive mutation:
 - the exact `pending/` folder ID is bound;
 - the ingest operator/importer runtime alignment passes.
 
-Use one staging surface for the entire publication. Upload page PNGs in the
-required order and the manifest last. Verify successful connector response /
-readback for filename, MIME type and parent folder.
+Use one staging surface for the entire publication. Dispatch one explicit
+`Google_Drive.upload_file` mutation per artifact; do not place multiple mutating
+uploads inside one code-mode loop/batch. Upload page PNGs in the required order
+and the manifest last. Verify `accepted_input=file_uri`, filename and MIME type,
+then require the exact pending folder from upload `parent_id` or metadata readback
+`parent_ids` before dispatching the next artifact.
 
 ## Legacy stage sender
 
