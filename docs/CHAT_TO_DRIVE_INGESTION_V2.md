@@ -14,14 +14,15 @@ Historical repin evidence from 2026-10-05 records `RPi5_main@7e3e6b6d6574c1dc519
 
 ## Current runtime eligibility preflight
 
-Before the first Drive mutation, `PUBLISH` must read fresh `RPi5_main/main` and LIVE evidence for the existing ingest/import role. The legacy stage sender is not part of the normal production staging path. The ingest/import alignment must prove all of the following:
+Before the first Drive mutation, `PUBLISH` must read fresh `RPi5_main/main` and LIVE evidence for the existing ingest/import role and bounded publish-request bridge. The legacy stage sender is not part of the normal production staging path. The ingest/import alignment must prove all of the following:
 
 - the installed `/usr/local/bin/coloring-pages-drive-ingest` Git blob matches the current `RPi5_main` `ops/bin/coloring-pages-drive-ingest` blob;
 - the current `RPi5_main` operator contract `ops/contracts/coloring-pages-drive-ingest-operator-v1.json` resolves its pinned Coloring Pages consumer source revision;
 - the `tools/coloring-pages-import` blob at that pinned consumer revision matches the current `coloring-pages/main` `tools/coloring-pages-import` blob;
-- the exact immutable importer image required by the current operator contract is locally available before invocation.
+- the exact immutable importer image required by the current operator contract is locally available before invocation;
+- the installed `/usr/local/bin/coloring-pages-publish-request-dispatcher` and active bridge path/service match current `RPi5_main/main` `ops/contracts/coloring-pages-publish-request-bridge-v1.json`.
 
-Any mismatch is a fail-closed STOP before the first Drive/content mutation and requires a separately reviewed `RPi5_main` source repin plus explicit LIVE install/update authority. Historical activation or repin evidence never overrides this fresh preflight.
+Any mismatch is a fail-closed STOP before the first Drive/content mutation and requires a separately reviewed `RPi5_main` runtime repair plus explicit LIVE install/update authority. Historical activation or repin evidence never overrides this fresh preflight.
 
 ## Simple model
 
@@ -34,7 +35,7 @@ One activity stays one catalogue item:
 <id>.json
 ```
 
-The manifest is uploaded last and is the readiness signal. Before the first Drive mutation, `PUBLISH` has prepared and validated every page locally, frozen every per-page SHA-256/byte size, and validated the complete manifest. Every exact PNG and the manifest are then materialized as top-level connector `file_uri` inputs. Bare file IDs, inline Base64, arbitrary URLs and raw local paths at the connector boundary are forbidden.
+The manifest is uploaded last and is the readiness signal. Before the first Drive mutation, `PUBLISH` has prepared and validated every page locally, frozen every per-page SHA-256/byte size, and validated the complete manifest. Every exact PNG and the manifest are then materialized as top-level connector `file_uri` inputs. Bare file IDs, inline Base64, arbitrary URLs and raw local paths at the connector boundary are forbidden. After staging completes, Chat sends only one tiny strict request JSON plus its ready marker to the fixed RPi5 request bridge; the bridge invokes the existing ingest operator with ordered `--expected-page` argv values and writes one tiny result JSON. No media bytes use RDC and the happy path does not use generic `start_process`.
 
 The manifest carries the ordered page identities:
 
@@ -75,7 +76,7 @@ For new Chat publications, the authoring layer follows `metadata/id-policy.json`
 
 Normal staging uses one connected Google Drive `upload_file` surface bound to the exact production `pending/` folder ID: ordered page PNGs first and the prebuilt manifest last. Connector response/readback verifies filename, MIME type and parent folder. After the first upload attempt, any uncertainty is STOP with no retry, cleanup or alternate staging route. Arbitrary host `rclone`, Base64-over-RDC and the legacy stage sender are not normal production PUBLISH paths.
 
-The activated `RPi5_main` ingest operator stays small and remains Drive→RPi5 pull-only:
+After Drive staging, the bounded request bridge atomically claims the tiny request and invokes the activated `RPi5_main` ingest operator with a fixed argv array. The operator stays small and remains Drive→RPi5 pull-only:
 
 1. read one v2 manifest from the exact bound Drive pending folder;
 2. validate the complete manifest and page count;
