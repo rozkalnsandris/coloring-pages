@@ -32,6 +32,15 @@ class SupportHeaderTests(unittest.TestCase):
             for payment in ("ko-fi.com/", "paypal.me/", "buymeacoffee.com/", "stripe.com/", "iban"):
                 self.assertNotIn(payment, html)
 
+    def test_internal_dashboards_use_home_body_font_for_content(self):
+        rule = '.stats-page main h1, .stats-page main h2, .stats-page main h3, .stats-page main strong { font-family: var(--font-body); }'
+        for name in ("stats.html", "traffic.html"):
+            html = (ROOT / name).read_text(encoding="utf-8")
+            self.assertIn(rule, html)
+        css = (ROOT / "css/app.css").read_text(encoding="utf-8")
+        self.assertIn(".brand {", css)
+        self.assertIn("font-family: var(--font-display);", css)
+
     def test_css_versions(self):
         css_version = hashlib.sha256((ROOT / "css/app.css").read_bytes()).hexdigest()[:16]
         for name in ("index.html", "detail.html", "print.html", "kita.html", "stats.html", "traffic.html"):
