@@ -3,6 +3,7 @@ import importlib.util
 import json
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 from PIL import Image
@@ -208,6 +209,26 @@ class ImportPageTests(unittest.TestCase):
         self.assertNotIn("2480", source)
         self.assertNotIn("3508", source)
         self.assertNotIn("PRINT_DPI", source)
+
+    def test_webp_derivatives_use_balanced_encoder_method(self):
+        calls = []
+        original_save = Image.Image.save
+
+        def capture_save(image, fp, format=None, **params):
+            calls.append((Path(fp).name, format, dict(params)))
+            return original_save(image, fp, format=format, **params)
+
+        target = self.root / "derivatives"
+        image = Image.new("RGB", (1024, 1536), "white")
+        with mock.patch.object(Image.Image, "save", new=capture_save):
+            importer.build_derivatives([image], target)
+
+        webp_calls = [call for call in calls if call[1] == "WEBP"]
+        self.assertEqual(len(webp_calls), 2)
+        for _, _, params in webp_calls:
+            self.assertTrue(params["lossless"])
+            self.assertEqual(params["quality"], 100)
+            self.assertEqual(params["method"], 4)
 
     def test_invalid_aspect_rejected(self):
         Image.new("L", (1200, 1200), 255).save(self.source, format="PNG")
