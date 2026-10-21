@@ -10,8 +10,8 @@ generate PNG draft in ChatGPT
 → PUBLISH prepares the exact A4 print master
 → PUBLISH validates it read-only and freezes SHA-256 + byte size
 → bind one valid category from metadata/categories.json
-→ upload the exact PNG blob plus a small SHA-256 manifest to Google Drive
-→ write one tiny bounded RPi5 publish-request JSON and matching ready marker
+→ upload the exact PNG blob only to Google Drive
+→ write one tiny bounded RPi5 publish-request JSON containing the validated manifest, then its matching ready marker
 → the installed request bridge invokes the trusted RPi5 operator
 → immutable coloring-pages importer publishes it
 → read the matching tiny result JSON and accept PASS only after operator verification
@@ -29,7 +29,7 @@ Canonical ownership remains unchanged:
 - `/srv/coloring-pages-content/originals/` owns production source PNG masters.
 - `/srv/coloring-pages-content/public/catalog.json` and `public/media/` own the published catalogue and derivatives.
 - Google Drive is a temporary transport/staging surface.
-- The connected Google Drive upload surface owns Chat→Drive staging into the exact contract-bound `pending/` folder. `rozkalnsandris/RPi5_main` keeps the existing Drive→RPi5 ingest/verify/import/public-proof role and exposes a separately reviewed tiny request-file bridge for triggering that fixed operator without a generic shell command. The bridge carries only IDs, hashes and sizes; image bytes never traverse RDC. The reviewed host stage sender remains legacy fallback source and is not an authorized alternate production path.
+- The connected Google Drive upload surface owns Chat→Drive PNG staging into the exact contract-bound `pending/` folder. `rozkalnsandris/RPi5_main` keeps the existing Drive→RPi5 ingest/verify/import/public-proof role and exposes a separately reviewed tiny request-file bridge for triggering that fixed operator without a generic shell command. The bridge carries IDs, hashes, sizes and the already-validated manifest metadata; image bytes never traverse RDC. The reviewed host stage sender remains legacy fallback source and is not an authorized alternate production path.
 
 This content-contract source does not itself authorize a content import. The owner's explicit `PUBLISH` command for one exact latest generated draft authorizes one bounded chain that first prepares and validates a fresh A4 print master, then freezes that prepared master's page ID, SHA-256, byte size and one valid category before the first Drive/content mutation. Any preparation/validation failure stops before the first Drive mutation. A plain `OK` is not publication authority. Category selection must happen before the first Drive mutation. That authority is limited to Drive staging, the reviewed RPi5 verify/import path and required public verification; archive/delete, overwrite and unrelated runtime actions remain outside it.
 
@@ -54,18 +54,19 @@ The logical Drive layout is:
 ```text
 Coloring_pages/
 ├── pending/
-│   ├── <id>.png
-│   └── <id>.json
+│   └── <id>.png
 └── processed/   # optional; used only after separately authorized archive
+
+The validated `<id>.json` manifest exists locally/request-side and is carried inline through the bounded RPi5 publish request; it is not a normal Drive staging object.
 ```
 
 The visible folder name is convenience only. The trusted LIVE operator must bind an exact Drive folder ID in `RPi5_main` configuration. Runtime selection by folder title alone is forbidden.
 
-Before the first Drive mutation, both staging artifacts must already be ready locally: the exact PNG identity/metadata must be frozen, the complete `<id>.json` manifest must be materialized, and that manifest must be parsed/validated against this contract. Manifest preparation after the PNG upload is forbidden.
+Before the first Drive mutation, the exact PNG identity/metadata must be frozen, the complete `<id>.json` manifest must already be materialized locally, and that manifest must be parsed/validated against this contract. Manifest preparation after the PNG upload is forbidden.
 
-Normal PUBLISH then materializes each exact local artifact into the connected Google Drive action's top-level `file_uri` input. Bare file IDs, inline Base64, arbitrary URLs and raw local paths at the connector boundary are forbidden. The exact `pending/` folder ID, destination filename and MIME type are supplied explicitly.
+Normal PUBLISH materializes only the exact PNG into the connected Google Drive action's top-level `file_uri` input. Bare file IDs, inline Base64, arbitrary URLs and raw local paths at the connector boundary are forbidden. The exact `pending/` folder ID, destination filename and MIME type are supplied explicitly. The validated manifest remains structured request data and is never converted to a Drive upload in the normal path.
 
-Only after local media/manifest validation, runtime file-reference materialization and the ingest/import runtime preflight pass are Drive writes allowed. Use one Google Drive `upload_file` surface for the entire publication: PNG first and the already-prepared matching JSON manifest last. The manifest remains the readiness signal. After the first upload attempt, any connector or readback uncertainty is a fail-closed STOP with no retry, cleanup or alternate staging surface.
+Only after local media/manifest validation, PNG runtime file-reference materialization and the ingest/import/request-bridge runtime preflight pass are Drive writes allowed. Use one Google Drive `upload_file` surface and upload only the PNG. After successful PNG staging, write the tiny request JSON containing the complete validated manifest and only then its matching ready marker; the ready marker is the execution readiness signal. After the first upload attempt, any connector or readback uncertainty is a fail-closed STOP with no retry, cleanup or alternate staging surface.
 
 ## Manifest
 
@@ -148,11 +149,11 @@ This is historical activation evidence, not reusable authorization. Every future
 
 The host implementation belongs in `RPi5_main`, not this repository.
 
-For one manifest, normal Chat PUBLISH first writes one strict tiny request JSON to the fixed request-bridge `incoming/` path, then writes the matching `.ready` marker. The bridge atomically claims that request and invokes the already-installed operator with a fixed argv array. The operator then:
+For one activity, normal Chat PUBLISH first stages the PNG, then writes one strict tiny request JSON containing the complete validated v1 manifest to the fixed request-bridge `incoming/` path, and finally writes the matching `.ready` marker. The bridge atomically claims that request, validates the inline manifest, and invokes the already-installed operator with a fixed argv array including bounded `--manifest-json` data. The operator then:
 
-1. resolves only the pre-bound exact Drive staging folder;
-2. download the PNG to `/srv/coloring-pages-content/state/drive-ingest/<id>.png.partial`;
-3. validate manifest shape, ID, byte size and SHA-256;
+1. validates the inline manifest shape, ID, byte size, SHA-256 and metadata;
+2. resolves only the pre-bound exact Drive staging folder and lists/downloads the PNG only to `/srv/coloring-pages-content/state/drive-ingest/<id>.png.partial`;
+3. persists the exact validated manifest locally for receipt/idempotency proof;
 4. atomically rename the verified file to `/srv/coloring-pages-content/inbox/<id>.png`;
 5. invoke the exact immutable importer runtime defined by `deploy/importer-runtime.json`;
 6. write a success receipt under `state/drive-ingest/`;
@@ -186,7 +187,7 @@ Once every required post-import proof item above passes, publication is complete
 
 ## Drive post-success handling
 
-Moving the PNG+manifest pair from `pending/` to `processed/` is optional queue hygiene and is a separate Drive mutation requiring fresh authority. A successfully imported pair may therefore remain in `pending/`; the matching success receipt and SHA-256 make a repeat import idempotent.
+Moving a staged PNG from `pending/` to `processed/` is optional queue hygiene and is a separate Drive mutation requiring fresh authority. A successfully imported PNG may therefore remain in `pending/`; the matching success receipt, preserved local manifest and SHA-256 make a repeat import idempotent.
 
 A Drive archive failure or an intentionally deferred archive must not rewrite or roll back a production import that has already passed. Production remains canonical on RPi5.
 
@@ -201,7 +202,8 @@ ChatGPT:
 → validate it and freeze exact SHA-256 + byte size
 → determine one allowed category
 → prebuild/validate manifest
-→ Drive staging
+→ Drive staging of the PNG only
+→ inline validated manifest request + ready marker
 → RPi5 pull + SHA verification
 → immutable import
 → required public verification

@@ -140,27 +140,47 @@ class DirectDriveConnectorContractTest(unittest.TestCase):
         self.assertFalse(bridge["request_contains_media_bytes"])
         self.assertTrue(bridge["base64_media_transfer_forbidden"])
         self.assertTrue(bridge["runtime_alignment_required_before_first_drive_mutation"])
+        self.assertTrue(bridge["request_contains_manifest_metadata"])
+        self.assertEqual(bridge["manifest_transport"], "inline-json-object")
+        self.assertTrue(bridge["manifest_must_match_activity_identity"])
+        self.assertFalse(bridge["normal_publish_drive_manifest_upload"])
+        self.assertEqual(bridge["operator_manifest_argument"], "--manifest-json")
         self.assertEqual(
             bridge["terminal_success"],
             "every-requested-activity-status-is-PASS-or-ALREADY_PROCESSED",
         )
 
-    def test_v1_uses_direct_connector_and_preserves_manifest_last(self):
+    def test_v1_uses_direct_connector_for_png_only_and_inline_manifest(self):
         data = contract(1)
         self.assert_common_prewrite_guards(data)
         staging = data["drive_staging"]
-        self.assertEqual(staging["publish_order"], ["image", "manifest"])
-        self.assertTrue(staging["manifest_is_readiness_signal"])
+        self.assertEqual(staging["publish_order"], ["image"])
+        self.assertFalse(staging["manifest_is_readiness_signal"])
+        self.assertTrue(staging["bridge_ready_marker_is_readiness_signal"])
+        self.assertFalse(staging["normal_publish_manifest_upload"])
+        self.assertEqual(
+            staging["manifest_transport"],
+            "publish-request-bridge-inline",
+        )
         self.assertIn(
-            "materialize-runtime-file-references-for-all-artifacts",
+            "materialize-runtime-file-reference-for-image",
             staging["preflight_order"],
         )
         self.assertIn("verify-ingest-operator-runtime", staging["preflight_order"])
         self.assertIn("verify-publish-request-bridge-runtime", staging["preflight_order"])
-        self.assertNotIn("verify-stage-sender-runtime", staging["preflight_order"])
+        self.assertIn("write-request-with-inline-manifest", staging["preflight_order"])
+        self.assertIn("write-ready-marker", staging["preflight_order"])
+        self.assertNotIn("invoke-google-drive-connector-image-then-manifest", staging["preflight_order"])
         self.assertEqual(
             data["host_ingestion"]["operator_invocation"],
-            "/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-sha256 <sha256> --expected-size <bytes>",
+            "/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-sha256 <sha256> --expected-size <bytes> --manifest-json <validated-v1-manifest-json>",
+        )
+        connector = data["direct_drive_connector"]
+        self.assertEqual(connector["order"], ["png-page-only"])
+        self.assertFalse(connector["manifest_upload_allowed_in_normal_publish"])
+        self.assertEqual(
+            connector["manifest_transport"],
+            "publish-request-bridge-inline",
         )
 
     def test_v2_uses_direct_connector_and_preserves_page_order(self):
@@ -171,11 +191,17 @@ class DirectDriveConnectorContractTest(unittest.TestCase):
         self.assertEqual(data["activity"]["max_pages"], 12)
         self.assertEqual(
             staging["upload_order"],
-            "all-pages-in-ascending-index-then-manifest",
+            "all-pages-in-ascending-index",
         )
+        self.assertFalse(staging["manifest_is_readiness_signal"])
+        self.assertTrue(staging["bridge_ready_marker_is_readiness_signal"])
+        self.assertFalse(staging["normal_publish_manifest_upload"])
         self.assertEqual(
             data["direct_drive_connector"]["order"],
-            "all-pages-in-ascending-index-then-manifest",
+            "all-pages-in-ascending-index",
+        )
+        self.assertFalse(
+            data["direct_drive_connector"]["manifest_upload_allowed_in_normal_publish"]
         )
         self.assertTrue(
             staging["all_page_bytes_and_manifest_must_exist_before_first_mutation"]
@@ -183,7 +209,7 @@ class DirectDriveConnectorContractTest(unittest.TestCase):
         self.assertTrue(staging["manifest_validation_required_before_first_mutation"])
         self.assertEqual(
             data["host_ingestion"]["operator_invocation"],
-            "/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-page <index>:<sha256>:<bytes> [repeat --expected-page per page]",
+            "/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-page <index>:<sha256>:<bytes> [repeat --expected-page per page] --manifest-json <validated-v2-manifest-json>",
         )
 
     def test_pull_only_ingest_remains_separate(self):
