@@ -13,14 +13,20 @@
    exact prepared PNG page(s) through runtime-materialized top-level `file_uri`
    references, then the already-built manifest last, all to the exact bound
    production `pending/` folder ID.
-3. **IMPORT** — the existing trusted RPi5 Drive ingest operator pulls from
-   `pending/`, verifies exact hashes/metadata, invokes the immutable importer,
-   and performs required public verification.
+3. **IMPORT** — after the whole approved set is staged, Chat writes one tiny
+   strict request JSON and then its matching ready marker to the fixed RPi5
+   publish-request bridge. The bridge invokes the existing trusted Drive ingest
+   operator, which pulls from `pending/`, verifies exact hashes/metadata,
+   invokes the immutable importer, performs required public verification and
+   writes one tiny matching result JSON.
 
-Drive staging success is not publication success.
-`COLORING_PAGES_DRIVE_INGEST=PASS` remains terminal publication success.
+Drive staging success is not publication success. The request-bridge result is
+terminal PASS only when every requested activity reports `PASS` or
+`ALREADY_PROCESSED` from the trusted ingest path.
 
-For v1, invoke the trusted operator exactly as `/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-sha256 <sha256> --expected-size <bytes>`. For v2, use `--id <id>` plus one repeated `--expected-page <index>:<sha256>:<bytes>` per ordered page. Do not derive a shorter CLI from memory.
+The normal Chat happy path does not invoke `coloring-pages-drive-ingest`
+through generic `start_process`; the bridge owns the fixed argv construction.
+No PNG bytes or Base64 media pass through RDC.
 
 ## Why this is the normal path
 
@@ -46,14 +52,17 @@ Before the first Drive mutation:
 - bare file IDs, inline Base64, arbitrary URLs and raw local paths at the
   connector boundary are forbidden;
 - the exact `pending/` folder ID is bound;
-- the ingest operator/importer runtime alignment passes.
+- the ingest operator/importer runtime alignment passes;
+- the installed bounded publish-request dispatcher plus active path/service match current `RPi5_main/main`.
 
 Use one staging surface for the entire publication. Dispatch one explicit
 `Google_Drive.upload_file` mutation per artifact; do not place multiple mutating
 uploads inside one code-mode loop/batch. Upload page PNGs in the required order
 and the manifest last. Verify `accepted_input=file_uri`, filename and MIME type,
 then require the exact pending folder from upload `parent_id` or metadata readback
-`parent_ids` before dispatching the next artifact.
+`parent_ids` before dispatching the next artifact. After the final artifact,
+write the tiny request JSON first and the matching ready marker second, then
+read only the exact matching result JSON.
 
 ## Legacy stage sender
 

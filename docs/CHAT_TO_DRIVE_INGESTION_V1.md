@@ -11,9 +11,10 @@ generate PNG draft in ChatGPT
 → PUBLISH validates it read-only and freezes SHA-256 + byte size
 → bind one valid category from metadata/categories.json
 → upload the exact PNG blob plus a small SHA-256 manifest to Google Drive
-→ trusted RPi5 operator pulls and verifies it
+→ write one tiny bounded RPi5 publish-request JSON and matching ready marker
+→ the installed request bridge invokes the trusted RPi5 operator
 → immutable coloring-pages importer publishes it
-→ verify catalog, derivatives and public URLs
+→ read the matching tiny result JSON and accept PASS only after operator verification
 ```
 
 Google Drive is transport only. It is not the production source of truth and it does not replace the RPi5 content store.
@@ -28,7 +29,7 @@ Canonical ownership remains unchanged:
 - `/srv/coloring-pages-content/originals/` owns production source PNG masters.
 - `/srv/coloring-pages-content/public/catalog.json` and `public/media/` own the published catalogue and derivatives.
 - Google Drive is a temporary transport/staging surface.
-- The connected Google Drive upload surface owns Chat→Drive staging into the exact contract-bound `pending/` folder. `rozkalnsandris/RPi5_main` keeps only the existing Drive→RPi5 ingest/verify/import/public-proof role for normal PUBLISH. The reviewed host stage sender remains legacy fallback source and is not an authorized alternate production path.
+- The connected Google Drive upload surface owns Chat→Drive staging into the exact contract-bound `pending/` folder. `rozkalnsandris/RPi5_main` keeps the existing Drive→RPi5 ingest/verify/import/public-proof role and exposes a separately reviewed tiny request-file bridge for triggering that fixed operator without a generic shell command. The bridge carries only IDs, hashes and sizes; image bytes never traverse RDC. The reviewed host stage sender remains legacy fallback source and is not an authorized alternate production path.
 
 This content-contract source does not itself authorize a content import. The owner's explicit `PUBLISH` command for one exact latest generated draft authorizes one bounded chain that first prepares and validates a fresh A4 print master, then freezes that prepared master's page ID, SHA-256, byte size and one valid category before the first Drive/content mutation. Any preparation/validation failure stops before the first Drive mutation. A plain `OK` is not publication authority. Category selection must happen before the first Drive mutation. That authority is limited to Drive staging, the reviewed RPi5 verify/import path and required public verification; archive/delete, overwrite and unrelated runtime actions remain outside it.
 
@@ -103,14 +104,15 @@ The canonical category registry is `metadata/categories.json`. The current allow
 
 Historical stage-sender and canary results are capability evidence only; the stage sender is no longer the normal PUBLISH upload surface.
 
-Before the first Drive mutation, `PUBLISH` must freshly verify the existing ingest/import runtime:
+Before the first Drive mutation, `PUBLISH` must freshly verify the existing ingest/import runtime and the bounded publish-request bridge:
 
 - the installed `/usr/local/bin/coloring-pages-drive-ingest` Git blob matches current `RPi5_main/main` `ops/bin/coloring-pages-drive-ingest`;
 - the current `RPi5_main` operator contract `ops/contracts/coloring-pages-drive-ingest-operator-v1.json` resolves its pinned Coloring Pages consumer source revision;
 - the `tools/coloring-pages-import` blob at that pinned revision matches current `coloring-pages/main` `tools/coloring-pages-import`;
-- the exact immutable importer image required by the current operator contract is locally available before invocation.
+- the exact immutable importer image required by the current operator contract is locally available before invocation;
+- the installed `/usr/local/bin/coloring-pages-publish-request-dispatcher` and active bridge path/service match current `RPi5_main/main` `ops/contracts/coloring-pages-publish-request-bridge-v1.json`.
 
-Any mismatch is a STOP before the first Drive/content mutation and requires a separately reviewed `RPi5_main` repin plus explicit LIVE install/update authority. Historical activation evidence below is never reusable current runtime authority.
+Any mismatch is a STOP before the first Drive/content mutation and requires a separately reviewed `RPi5_main` runtime repair plus explicit LIVE install/update authority. Historical activation evidence below is never reusable current runtime authority.
 
 ## Historical activation canary
 
@@ -146,15 +148,17 @@ This is historical activation evidence, not reusable authorization. Every future
 
 The host implementation belongs in `RPi5_main`, not this repository.
 
-For one manifest it must:
+For one manifest, normal Chat PUBLISH first writes one strict tiny request JSON to the fixed request-bridge `incoming/` path, then writes the matching `.ready` marker. The bridge atomically claims that request and invokes the already-installed operator with a fixed argv array. The operator then:
 
-1. resolve only the pre-bound exact Drive staging folder;
+1. resolves only the pre-bound exact Drive staging folder;
 2. download the PNG to `/srv/coloring-pages-content/state/drive-ingest/<id>.png.partial`;
 3. validate manifest shape, ID, byte size and SHA-256;
 4. atomically rename the verified file to `/srv/coloring-pages-content/inbox/<id>.png`;
 5. invoke the exact immutable importer runtime defined by `deploy/importer-runtime.json`;
 6. write a success receipt under `state/drive-ingest/`;
 7. verify production originals, catalogue, derivatives and public URLs.
+
+Chat reads only the exact matching request-bridge result JSON. It does not invoke the operator through generic `start_process`, and the bridge never carries PNG bytes.
 
 The importer itself remains networkless and does not gain Drive credentials. rclone performs transport before importer execution.
 

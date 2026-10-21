@@ -30,7 +30,8 @@
     "ok_is_publication_authority": false,
     "host_operator_and_importer_alignment_required_before_first_mutation": true,
     "stage_sender_runtime_alignment_required_before_first_mutation": false,
-    "drive_connector_file_materialization_required_before_first_mutation": true
+    "drive_connector_file_materialization_required_before_first_mutation": true,
+    "publish_request_bridge_runtime_alignment_required_before_first_mutation": true
   },
   "canonical_domains": {
     "application_source": "github",
@@ -66,6 +67,7 @@
       "validate-manifest-locally",
       "materialize-runtime-file-references-for-all-artifacts",
       "verify-ingest-operator-runtime",
+      "verify-publish-request-bridge-runtime",
       "invoke-google-drive-connector-image-then-manifest"
     ],
     "upload_surface_selection_required_before_first_mutation": true,
@@ -182,6 +184,32 @@
       "operator_pinned_importer_blob_must_match_current_consumer_importer_blob": true,
       "consumer_importer_path": "tools/coloring-pages-import",
       "mismatch_disposition": "stop-before-first-drive-mutation-requires-rpi5-main-repin"
+    },
+    "request_bridge": {
+      "runtime_owner_repository": "rozkalnsandris/RPi5_main",
+      "contract_path": "ops/contracts/coloring-pages-publish-request-bridge-v1.json",
+      "dispatcher_source_path": "ops/bin/coloring-pages-publish-request-dispatcher",
+      "installed_dispatcher_path": "/usr/local/bin/coloring-pages-publish-request-dispatcher",
+      "path_unit": "coloring-pages-publish-request-bridge.path",
+      "service_unit": "coloring-pages-publish-request-bridge.service",
+      "state_root": "/srv/coloring-pages-content/state/publish-request-bridge",
+      "incoming_request": "/srv/coloring-pages-content/state/publish-request-bridge/incoming/batch-<batch_id>.json",
+      "incoming_ready": "/srv/coloring-pages-content/state/publish-request-bridge/incoming/batch-<batch_id>.ready",
+      "result_path": "/srv/coloring-pages-content/state/publish-request-bridge/results/batch-<batch_id>.result.json",
+      "request_schema": "rozkalns.rpi5-main.coloring-pages-publish-request.v1",
+      "result_schema": "rozkalns.rpi5-main.coloring-pages-publish-request-result.v1",
+      "batch_id_pattern": "^[0-9a-f]{32}$",
+      "maximum_activities": 20,
+      "request_write_action": "Remote_Desktop_Commander.write_file",
+      "ready_write_action": "Remote_Desktop_Commander.write_file",
+      "result_read_action": "Remote_Desktop_Commander.read_file",
+      "request_before_ready": true,
+      "generic_start_process_ingest_forbidden": true,
+      "request_contains_media_bytes": false,
+      "base64_media_transfer_forbidden": true,
+      "runtime_alignment_required_before_first_drive_mutation": true,
+      "terminal_success": "every-requested-activity-status-is-PASS-or-ALREADY_PROCESSED",
+      "after_request_or_ready_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation"
     }
   },
   "idempotency": {

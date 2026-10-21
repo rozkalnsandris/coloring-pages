@@ -84,6 +84,66 @@ class DirectDriveConnectorContractTest(unittest.TestCase):
         self.assertTrue(
             authority["drive_connector_file_materialization_required_before_first_mutation"]
         )
+        self.assertTrue(
+            authority["publish_request_bridge_runtime_alignment_required_before_first_mutation"]
+        )
+
+        bridge = data["host_ingestion"]["request_bridge"]
+        self.assertEqual(
+            bridge["runtime_owner_repository"],
+            "rozkalnsandris/RPi5_main",
+        )
+        self.assertEqual(
+            bridge["contract_path"],
+            "ops/contracts/coloring-pages-publish-request-bridge-v1.json",
+        )
+        self.assertEqual(
+            bridge["installed_dispatcher_path"],
+            "/usr/local/bin/coloring-pages-publish-request-dispatcher",
+        )
+        self.assertEqual(
+            bridge["incoming_request"],
+            "/srv/coloring-pages-content/state/publish-request-bridge/incoming/batch-<batch_id>.json",
+        )
+        self.assertEqual(
+            bridge["incoming_ready"],
+            "/srv/coloring-pages-content/state/publish-request-bridge/incoming/batch-<batch_id>.ready",
+        )
+        self.assertEqual(
+            bridge["result_path"],
+            "/srv/coloring-pages-content/state/publish-request-bridge/results/batch-<batch_id>.result.json",
+        )
+        self.assertEqual(
+            bridge["request_schema"],
+            "rozkalns.rpi5-main.coloring-pages-publish-request.v1",
+        )
+        self.assertEqual(
+            bridge["result_schema"],
+            "rozkalns.rpi5-main.coloring-pages-publish-request-result.v1",
+        )
+        self.assertEqual(bridge["batch_id_pattern"], "^[0-9a-f]{32}$")
+        self.assertEqual(bridge["maximum_activities"], 20)
+        self.assertEqual(
+            bridge["request_write_action"],
+            "Remote_Desktop_Commander.write_file",
+        )
+        self.assertEqual(
+            bridge["ready_write_action"],
+            "Remote_Desktop_Commander.write_file",
+        )
+        self.assertEqual(
+            bridge["result_read_action"],
+            "Remote_Desktop_Commander.read_file",
+        )
+        self.assertTrue(bridge["request_before_ready"])
+        self.assertTrue(bridge["generic_start_process_ingest_forbidden"])
+        self.assertFalse(bridge["request_contains_media_bytes"])
+        self.assertTrue(bridge["base64_media_transfer_forbidden"])
+        self.assertTrue(bridge["runtime_alignment_required_before_first_drive_mutation"])
+        self.assertEqual(
+            bridge["terminal_success"],
+            "every-requested-activity-status-is-PASS-or-ALREADY_PROCESSED",
+        )
 
     def test_v1_uses_direct_connector_and_preserves_manifest_last(self):
         data = contract(1)
@@ -96,6 +156,7 @@ class DirectDriveConnectorContractTest(unittest.TestCase):
             staging["preflight_order"],
         )
         self.assertIn("verify-ingest-operator-runtime", staging["preflight_order"])
+        self.assertIn("verify-publish-request-bridge-runtime", staging["preflight_order"])
         self.assertNotIn("verify-stage-sender-runtime", staging["preflight_order"])
         self.assertEqual(
             data["host_ingestion"]["operator_invocation"],
