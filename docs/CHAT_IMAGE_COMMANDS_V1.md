@@ -4,25 +4,24 @@
 
 Make the normal owner workflow for creating and publishing one coloring activity as short as possible while preserving the existing media and content-ingest trust boundaries.
 
-Normal happy path:
+Preferred normal happy path:
 
 ```text
 MAKE lapsa
 → ChatGPT generates one coloring-page PNG draft
-PUBLISH
-→ owner approves the exact latest draft
-→ deterministic CPU/Pillow white cleanup + A4 print-master preparation
-→ read-only validation with exact print-master SHA-256 + byte size
-→ determine one valid category
-→ freeze page ID + validated print-master SHA-256 + byte size + category
-→ prebuild + validate manifest
-→ Drive staging
-→ trusted RPi5 verify/import
-→ required public verification
-→ PASS and stop
+EDIT / REMAKE as needed
+ZIP
+→ ChatGPT packages the exact accepted draft(s) as one PNG-only ZIP
+→ owner opens the protected admin.ausmalwiese.de publisher
+→ private preview + editable title + explicit category selection
+→ owner presses Sākt publicēšanu
+→ ADMIN prepares every A4 print master
+→ ADMIN validates every prepared master
+→ only after all validation PASS: ID allocation + import + public verification
+→ PASS and direct published links
 ```
 
-`UPSCALE-PRINT` and `VALIDATE-PRINT` remain available as optional manual inspection/debug commands, but they are no longer required owner steps in the normal publication path.
+`ZIP` does not create print masters and does not publish. The protected ADMIN publisher owns the mandatory technical print gate: exact A4 geometry, white normalization/background, 15 mm exact-white safe margin, RGB/no alpha and approximately 300 DPI before any ID allocation/import. `UPSCALE-PRINT` and `VALIDATE-PRINT` remain optional manual inspection/debug commands. The direct Chat `PUBLISH` path remains supported as an alternate path until separately retired.
 The commands below are a project conversation convention. They do not replace GitHub policy, the media standard, or the Chat-to-Drive ingestion contract.
 
 ## Commands
@@ -157,11 +156,31 @@ EDIT noņem mākoni labajā augšējā stūrī
 
 The edited result becomes the latest draft candidate. Preserve its current exact `1024×1536` portrait or `1536×1024` landscape canvas unless the owner requests an orientation change; do not use automatic output sizing. `EDIT` is not publication approval and invalidates any earlier manually prepared/validated print master.
 
-`REMAKE` likewise invalidates any earlier manually prepared/validated print master for the affected page/set. A later `PUBLISH` always prepares and validates fresh print master(s) from the exact latest draft/set.
+`REMAKE` likewise invalidates any earlier manually prepared/validated print master for the affected page/set. A later `ZIP` packages only the exact latest accepted draft/set; a direct Chat `PUBLISH` still prepares and validates fresh print master(s) from that exact latest draft/set.
+
+### `ZIP` / `ZIP <descriptor>`
+
+Use `ZIP` after the owner has visually accepted the latest draft or an unambiguous set of independent drafts. `ZIP <descriptor>` may identify a specific accepted draft/set in the current conversation.
+
+The ZIP handoff contract is intentionally minimal:
+
+- package 1–20 independent approved PNG drafts;
+- place every PNG at the ZIP root; no folders or nested paths;
+- preserve the approved PNG artwork bytes exactly; do not redraw, upscale, resize, add A4 margins, normalize whites, sharpen or otherwise alter artwork while building the ZIP;
+- use unique visible filenames, preferably ordered names such as `01-reh.png`, `02-fuchs.png`; the ADMIN UI derives an editable initial title from each filename;
+- include no hidden files, JSON manifests, category metadata, IDs, PDFs, previews, thumbnails, checksums or other members;
+- do not choose a category or allocate IDs in Chat; both happen in the protected ADMIN workflow;
+- `ZIP` is local artifact preparation only. It grants no content publication, Drive, RPi5, Cloudflare or other LIVE authority.
+
+The current ADMIN v1 ZIP publisher treats each PNG as an independent single-page activity. Ordered multi-page activities such as a two-page Cut & Paste activity are not represented as one activity by this ZIP v1 contract and must continue to use a publication path that preserves ordered multi-page identity until ADMIN gains an explicit reviewed multi-page ZIP contract.
+
+After ZIP upload, the owner reviews private previews/titles, selects one canonical category and presses **Sākt publicēšanu**. ADMIN must then prepare **every** uploaded draft with the pinned `coloring-pages-print-master prepare`, validate **every** prepared master with `validate`, and STOP before ID allocation/import if any page fails. The prepared master requirements are the canonical media contract: exact `2480×3508` portrait or `3508×2480` landscape A4 raster, RGB/no alpha, approximately 300×300 DPI, exact `#FFFFFF` outer border/background bands, complete 15 mm / 177 px exact-white artwork-safe margin on every edge, aspect-ratio-preserving centered fit, canonical near-white normalization, LANCZOS resampling and reviewed conservative sharpening.
+
+Editorial correctness stays outside that deterministic print gate: wrong anatomy, wrong text, unwanted decoration, non-coloring artwork or other visual/content defects must be rejected during `MAKE / EDIT / REMAKE` review before `ZIP`.
 
 ### `UPSCALE-PRINT` (optional manual inspection)
 
-This command is optional. Transform the exact latest generated draft/page set without asking the image model to generate or redraw anything. Normal publication invokes the same preparation automatically inside `PUBLISH`.
+This command is optional. Transform the exact latest generated draft/page set without asking the image model to generate or redraw anything. The preferred ZIP/ADMIN flow invokes the same preparation automatically inside ADMIN before publication; direct Chat `PUBLISH` also invokes it.
 
 Use `tools/coloring-pages-print-master prepare <draft.png> <print-master.png>` or an exact equivalent execution of that reviewed helper. The helper:
 
@@ -182,7 +201,7 @@ For an ordered multi-page activity, every page must receive its own print master
 
 ### `VALIDATE-PRINT` (optional manual inspection)
 
-This command is optional. Read-only validate the latest manually prepared print master(s) with `tools/coloring-pages-print-master validate <print-master.png>`. Normal publication invokes this validation automatically inside `PUBLISH`.
+This command is optional. Read-only validate the latest manually prepared print master(s) with `tools/coloring-pages-print-master validate <print-master.png>`. The preferred ZIP/ADMIN flow invokes this validation automatically inside ADMIN before publication; direct Chat `PUBLISH` also invokes it.
 
 PASS requires:
 
@@ -193,13 +212,13 @@ PASS requires:
 - approximately 300×300 DPI metadata;
 - exact `#FFFFFF` across the complete outer page border.
 
-The validator prints exact byte size and SHA-256. A manual validation failure is diagnostic only and grants no publication authority; normal `PUBLISH` still prepares and validates fresh print master(s) itself. A later `EDIT` or `REMAKE` invalidates any earlier manual PASS, but no manual `UPSCALE-PRINT → VALIDATE-PRINT` rerun is required before `PUBLISH`.
+The validator prints exact byte size and SHA-256. A manual validation failure is diagnostic only and grants no publication authority. In the preferred ZIP/ADMIN flow, ADMIN prepares and validates fresh print master(s) after upload; direct Chat `PUBLISH` does the same internally. A later `EDIT` or `REMAKE` invalidates any earlier manual PASS.
 
 `OK` is intentionally not a publication command. It is treated only as a normal conversational acknowledgement so it cannot accidentally authorize content ingestion.
 
 ### `PUBLISH`
 
-`PUBLISH` is the single normal publication command. It is explicit owner approval of the exact latest generated draft page or exact ordered draft set in the current conversation. The lower-resolution generation draft is never the published byte identity: `PUBLISH` first derives and validates fresh A4 print master(s) deterministically.
+`PUBLISH` is the supported direct Chat publication command. The preferred normal workflow for newly accepted drafts is `ZIP` followed by the protected ADMIN publisher. It is explicit owner approval of the exact latest generated draft page or exact ordered draft set in the current conversation. The lower-resolution generation draft is never the published byte identity: `PUBLISH` first derives and validates fresh A4 print master(s) deterministically.
 
 `PUBLISH` is self-bootstrapping. It must not require `START coloring-pages`, `SYNC coloring-pages`, a second generic `PUBLISH`, or a new conversation/session as a routine prerequisite. The command itself performs the minimum-sufficient fresh repository/rules/runtime preflight needed for publication and then continues immediately when the required capabilities are available.
 
@@ -282,42 +301,28 @@ If there is ambiguity about which page/page set is approved, if any approved pag
 
 ## Conversation behavior
 
-The intended human interaction is deliberately terse:
+The preferred human interaction is deliberately terse:
 
 ```text
-User: `PUBLISH`
-ChatGPT:
-→ derive fresh exact A4 print master(s) without generating new artwork
-→ validate and freeze exact SHA-256 + byte size
-→ determine one allowed category
-→ prebuild/validate manifest
-→ one preselected Drive staging upload surface for PNG(s) only
-→ inline validated manifest in the bounded RPi5 request + ready marker
-→ trusted RPi5 pull + SHA verification + immutable import + required public verification
-→ operator PASS is terminal: report PASS and stop
+User: MAKE ...
+ChatGPT: → generates the draft
+User: EDIT ... / REMAKE   # only when needed
+User: ZIP
+ChatGPT: → returns one ZIP containing the exact accepted PNG draft(s)
+Owner: → uploads ZIP at admin.ausmalwiese.de
+Owner: → checks preview/title, chooses category, presses Sākt publicēšanu
+ADMIN: → prepare all → validate all → ID/import only after PASS → public verify
 ```
 
-If the image needs work before publication:
+If the image needs work before ZIP handoff, continue with `REMAKE` or `EDIT`. `ZIP` must never repair or silently modify artwork.
+
+The preferred commands to remember are:
 
 ```text
-User: REMAKE
+MAKE / REMAKE / EDIT → ZIP → ADMIN
 ```
 
-or:
-
-```text
-User: EDIT vienkāršāks fons
-```
-
-Because the image-generation surface may return the generated draft without an additional text message, the stable next command for an accepted draft is simply `PUBLISH`. Preparation and validation remain mandatory gates, but they run inside that one command.
-
-The normal publication commands to remember are:
-
-```text
-MAKE / REMAKE / EDIT → PUBLISH
-```
-
-Optional troubleshooting/inspection remains available as `UPSCALE-PRINT` and `VALIDATE-PRINT`.
+Direct Chat `PUBLISH` remains a supported alternate path with its existing explicit owner authority and fail-closed Drive/RPi5 contract. Optional troubleshooting/inspection remains available as `UPSCALE-PRINT` and `VALIDATE-PRINT`.
 ## Relationship to existing contracts
 
 This command layer is intentionally thin:
