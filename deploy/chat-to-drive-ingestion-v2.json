@@ -302,6 +302,12 @@
     ],
     "accepted_input_expected": "file_uri",
     "read_only_readback_required": true,
+    "mutating_dispatch_mode": "one-explicit-upload-call-per-artifact",
+    "mutating_connector_loop_or_batch_dispatch_forbidden": true,
+    "upload_response_parent_field": "parent_id",
+    "metadata_readback_parent_field": "parent_ids",
+    "parent_identity_acceptance": "exact-pending-folder-id-only",
+    "v2_ingest_invocation": "/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-page <index>:<sha256>:<bytes> [repeat --expected-page per page]",
     "first_mutation": "first-upload-file-attempt",
     "after_first_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation"
   }
