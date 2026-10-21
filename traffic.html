@@ -175,6 +175,12 @@
     </section>
   </main>
 
+  <script>
+    addEventListener("pageshow", () => {
+      const skip = document.querySelector(".skip-link");
+      if (document.activeElement === skip) skip.blur();
+    }, { once: true });
+  </script>
   <script src="js/stats.js?v=kita-campaign-v1" defer></script>
   <script src="js/traffic-admin.js?v=instagram-216" defer></script>
 </body>
