@@ -15,6 +15,12 @@ const rankingRoot = document.querySelector("[data-ranking-root]");
 const rankingStatus = document.querySelector("[data-ranking-status]");
 const rankingTabs = [...document.querySelectorAll("[data-ranking-tab]")];
 const rankingDescription = document.querySelector("[data-ranking-description]");
+const topicExplorer = document.querySelector("[data-topic-explorer]");
+const topicCurrentBlock = document.querySelector("[data-topic-current-block]");
+const currentTopics = document.querySelector("[data-current-topics]");
+const topicMainBlock = document.querySelector("[data-topic-main-block]");
+const topicList = document.querySelector("[data-topic-list]");
+const topicClear = document.querySelector("[data-topic-clear]");
 const rankingSections = new Map(
   [...document.querySelectorAll("[data-ranking-section]")].map((section)=>[section.dataset.rankingSection,section])
 );
@@ -42,6 +48,8 @@ const DIFFICULTY_LABELS = {
 };
 
 let activeCategory = "";
+let activeTopic = "";
+let topicRegistry = [];
 let catalogEntries = null;
 let visibleLimit = CATALOG_PAGE_SIZE;
 let catalogIssueText = "";
@@ -85,6 +93,118 @@ function normalize(value) {
   return String(value || "").trim().toLocaleLowerCase("de");
 }
 
+function normalizeTopicText(value) {
+  return normalize(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replaceAll("ß", "ss");
+}
+
+function parseMonthDay(value) {
+  const match = /^(\\d{2})-(\\d{2})$/.exec(String(value || ""));
+  if (!match) return null;
+  const month = Number(match[1]);
+  const day = Number(match[2]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return month * 100 + day;
+}
+
+function topicIsCurrent(topic, date = new Date()) {
+  const start = parseMonthDay(topic.active_from);
+  const end = parseMonthDay(topic.active_to);
+  if (!start || !end) return false;
+  const current = (date.getMonth() + 1) * 100 + date.getDate();
+  return start <= end ? current >= start && current <= end : current >= start || current <= end;
+}
+
+function entryTopicIds(entry) {
+  const known = new Set(topicRegistry.map((topic) => topic.id));
+  if (Array.isArray(entry?.topics)) {
+    return [...new Set(entry.topics.map((value) => normalize(value)).filter((value) => known.has(value)))];
+  }
+
+  const haystack = normalizeTopicText(`${entry?.title || ""} ${entry?.character || ""}`);
+  if (!haystack) return [];
+  return topicRegistry
+    .filter((topic) => Array.isArray(topic.legacy_terms) && topic.legacy_terms.some((term) => haystack.includes(normalizeTopicText(term))))
+    .map((topic) => topic.id);
+}
+
+function topicCounts(entries) {
+  const counts = new Map();
+  entries.forEach((entry) => {
+    entryTopicIds(entry).forEach((topicId) => counts.set(topicId, (counts.get(topicId) || 0) + 1));
+  });
+  return counts;
+}
+
+function updateTopicButtons() {
+  document.querySelectorAll("[data-topic-chip]").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.topicChip === activeTopic));
+  });
+  if (topicClear) topicClear.hidden = !activeTopic;
+}
+
+function selectTopic(topicId) {
+  activeTopic = activeTopic === topicId ? "" : topicId;
+  updateTopicButtons();
+  applyFilters();
+  updateNavigation("#neu");
+  document.querySelector("#neu")?.scrollIntoView({ block: "start" });
+}
+
+function createTopicButton(topic) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "topic-chip";
+  button.dataset.topicChip = topic.id;
+  button.setAttribute("aria-pressed", "false");
+
+  if (topic.icon) {
+    const icon = document.createElement("span");
+    icon.className = "topic-chip-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = topic.icon;
+    button.append(icon);
+  }
+  button.append(document.createTextNode(topic.label));
+  button.addEventListener("click", () => selectTopic(topic.id));
+  return button;
+}
+
+function renderTopicExplorer(entries) {
+  if (!topicExplorer || !Array.isArray(entries) || !topicRegistry.length) {
+    if (topicExplorer) topicExplorer.hidden = true;
+    return;
+  }
+
+  const counts = topicCounts(entries);
+  const current = topicRegistry.filter((topic) => topic.kind === "seasonal" && topicIsCurrent(topic) && (counts.get(topic.id) || 0) > 0);
+  const evergreen = topicRegistry.filter((topic) => topic.kind === "evergreen" && (counts.get(topic.id) || 0) > 0);
+
+  if (activeTopic && (counts.get(activeTopic) || 0) === 0) activeTopic = "";
+  if (currentTopics) currentTopics.replaceChildren(...current.map(createTopicButton));
+  if (topicList) topicList.replaceChildren(...evergreen.map(createTopicButton));
+  if (topicCurrentBlock) topicCurrentBlock.hidden = current.length === 0;
+  if (topicMainBlock) topicMainBlock.hidden = evergreen.length === 0;
+  topicExplorer.hidden = current.length === 0 && evergreen.length === 0;
+  updateTopicButtons();
+}
+
+async function loadTopicRegistry() {
+  try {
+    const response = await fetch("/topics.json", { cache: "no-store" });
+    if (!response.ok) throw new Error("topic registry unavailable");
+    const payload = await response.json();
+    if (payload?.schema !== "rozkalns.coloring-pages.topics.v1" || !Array.isArray(payload.topics)) {
+      throw new Error("invalid topic registry");
+    }
+    topicRegistry = payload.topics.filter((topic) =>
+      topic && typeof topic.id === "string" && typeof topic.label === "string" && ["seasonal", "evergreen"].includes(topic.kind)
+    );
+  } catch {
+    topicRegistry = [];
+    if (topicExplorer) topicExplorer.hidden = true;
+  }
+}
+
 function currentCards() {
   return [...document.querySelectorAll(".coloring-card")];
 }
@@ -121,20 +241,21 @@ function updateCount(totalMatches) {
   }
 }
 
-function matchesFilters(titleValue, categoryValue) {
+function matchesFilters(titleValue, categoryValue, topicValues = []) {
   const query = normalize(searchInput?.value ?? "");
   const title = normalize(titleValue ?? "");
   const category = normalize(categoryValue ?? "");
   const categoryLabel = normalize(CATEGORY_LABELS[category] || category);
   const matchesQuery = !query || title.includes(query) || category.includes(query) || categoryLabel.includes(query);
   const matchesCategory = !activeCategory || category === activeCategory;
-  return matchesQuery && matchesCategory;
+  const matchesTopic = !activeTopic || topicValues.includes(activeTopic);
+  return matchesQuery && matchesCategory && matchesTopic;
 }
 
 function renderCatalog() {
   if (!gallery || !Array.isArray(catalogEntries)) return;
 
-  const matches = catalogEntries.filter((entry) => matchesFilters(entry.title, entry.category));
+  const matches = catalogEntries.filter((entry) => matchesFilters(entry.title, entry.category, entryTopicIds(entry)));
   const visibleEntries = matches.slice(0, visibleLimit);
   const fragment = document.createDocumentFragment();
 
@@ -345,6 +466,7 @@ async function hydrateCatalog() {
   if (!gallery) return;
 
   try {
+    await loadTopicRegistry();
     const response = await fetch("catalog.json", { cache: "no-store" });
     if (!response.ok) throw new Error("catalog unavailable");
 
@@ -357,6 +479,7 @@ async function hydrateCatalog() {
     updateSurpriseButton(entries.length ? "" : "Zurzeit sind keine Malvorlagen für die Zufallsauswahl verfügbar.");
     visibleLimit = CATALOG_PAGE_SIZE;
     updateCatalogCounts(catalogEntries);
+    renderTopicExplorer(catalogEntries);
     renderCatalog();
     if (entries.length) await hydrateRankings(catalogEntries);
     else rankingsUnavailable();
@@ -367,6 +490,7 @@ async function hydrateCatalog() {
     updateSurpriseButton("Die Zufallsauswahl ist gerade nicht verfügbar.");
     visibleLimit = CATALOG_PAGE_SIZE;
     updateCatalogCounts(catalogEntries);
+    renderTopicExplorer(catalogEntries);
     renderCatalog();
     rankingsUnavailable();
   }
@@ -419,6 +543,12 @@ searchForm?.addEventListener("submit", (event) => {
 
 searchInput?.addEventListener("input", applyFilters);
 
+topicClear?.addEventListener("click", () => {
+  activeTopic = "";
+  updateTopicButtons();
+  applyFilters();
+});
+
 loadMoreButton?.addEventListener("click", () => {
   if (!Array.isArray(catalogEntries)) return;
   visibleLimit += CATALOG_PAGE_SIZE;
@@ -445,11 +575,13 @@ categoryButtons.forEach((button) => {
 
 document.querySelector("[data-reset-filters]")?.addEventListener("click", () => {
   activeCategory = "";
+  activeTopic = "";
   if (searchInput) searchInput.value = "";
   categoryButtons.forEach((button) => {
     button.classList.remove("is-active");
     button.setAttribute("aria-pressed", "false");
   });
+  updateTopicButtons();
   applyFilters();
 });
 
