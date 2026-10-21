@@ -50,7 +50,8 @@ The prepared publication master must be:
 - aspect-ratio-preserving artwork centered on the A4 canvas;
 - near-neutral white AI noise normalized to exact white;
 - resized with Pillow `Resampling.LANCZOS`;
-- sharpened only with the reviewed conservative `UnsharpMask` values in the helper.
+- sharpened only with the reviewed conservative `UnsharpMask` values in the helper;
+- written as lossless PNG with the reviewed balanced ZLIB compression level `6`. Encoder compression changes storage/CPU cost only; it does not change decoded artwork pixels, A4 geometry, DPI, safe margins, resampling or sharpening.
 
 The validator is read-only and fails closed if any required property is missing. In the preferred ZIP/ADMIN flow, ADMIN prepares every uploaded draft and validates every prepared master before ID allocation/import; any failure stops before publication mutation. ADMIN records the prepared master SHA-256 and exact byte size only after validation PASS. Direct Chat `PUBLISH` follows the same canonical print-master rules. `REMAKE` or `EDIT` invalidates any earlier manually prepared/validated master; a later ZIP packages the revised draft bytes and ADMIN prepares/validates again after upload.
 
