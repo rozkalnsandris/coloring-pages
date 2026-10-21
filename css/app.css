@@ -883,7 +883,7 @@ a { color: inherit; }
   content: ""; position: absolute; left: 0; right: 0; bottom: 10px;
   height: 2px; border-radius: 999px; background: var(--blue);
 }
-.dashboard-home-link { justify-self: end; }
+.dashboard-home-link { justify-self: end; gap: 9px; min-height: 42px; padding: 8px 15px; }
 .stats-hero { padding: 44px 0 26px; background: linear-gradient(180deg, #eef6ff 0%, #f7faff 100%); }
 .stats-eyebrow, .stats-panel-kicker {
   display: inline-block; color: var(--blue-deep); font-size: 12px; font-weight: 800;

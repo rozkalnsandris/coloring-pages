@@ -37,7 +37,7 @@ class SupportHeaderTests(unittest.TestCase):
         self.assertIn(".dashboard-nav {", css)
         self.assertIn("height: 70px; gap: 36px;", css)
         self.assertIn("text-decoration: none; font-size: 15px; font-weight: 700;", css)
-        self.assertIn(".dashboard-home-link { justify-self: end; }", css)
+        self.assertIn(".dashboard-home-link { justify-self: end; gap: 9px; min-height: 42px; padding: 8px 15px; }", css)
         self.assertNotIn(".stats-dashboard-nav", css)
         self.assertNotIn(".stats-header-inner", css)
         self.assertIn(".skip-link:focus-visible { transform: translateY(0); }", css)
@@ -56,6 +56,7 @@ class SupportHeaderTests(unittest.TestCase):
             self.assertNotIn("stats-header-inner", html)
             self.assertNotIn("<style>\\n", html)
             self.assertNotIn("\\n</head>", html)
+            self.assertIn('if (document.activeElement === skip) skip.blur();', html)
 
     def test_css_versions(self):
         css_version = hashlib.sha256((ROOT / "css/app.css").read_bytes()).hexdigest()[:16]
