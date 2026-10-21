@@ -3,7 +3,7 @@
   "schema_version": 1,
   "status": "production-activated",
   "repository": "rozkalnsandris/coloring-pages",
-  "purpose": "Transfer one owner-approved ChatGPT-generated PNG through Google Drive into the canonical RPi5 content store without changing the application deployment.",
+  "purpose": "Transfer one owner-approved ChatGPT-generated PNG through Google Drive while carrying its already-validated manifest inline through the bounded RPi5 request bridge.",
   "activation_evidence": {
     "activated_at": "2026-10-03",
     "proof_class": "first-owner-authorized-production-import",
@@ -51,10 +51,9 @@
     "image_name": "<id>.png",
     "manifest_name": "<id>.json",
     "publish_order": [
-      "image",
-      "manifest"
+      "image"
     ],
-    "manifest_is_readiness_signal": true,
+    "manifest_is_readiness_signal": false,
     "exact_source_bytes_required": true,
     "preupload_sha256_required": true,
     "category_binding_required_before_upload": true,
@@ -65,10 +64,12 @@
       "freeze-id-sha256-size-category-and-metadata",
       "materialize-manifest-locally",
       "validate-manifest-locally",
-      "materialize-runtime-file-references-for-all-artifacts",
+      "materialize-runtime-file-reference-for-image",
       "verify-ingest-operator-runtime",
       "verify-publish-request-bridge-runtime",
-      "invoke-google-drive-connector-image-then-manifest"
+      "invoke-google-drive-connector-image-only",
+      "write-request-with-inline-manifest",
+      "write-ready-marker"
     ],
     "upload_surface_selection_required_before_first_mutation": true,
     "single_upload_surface_per_publication": true,
@@ -100,7 +101,13 @@
     "connector_success_is_staging_only": true,
     "connector_first_mutation": "first-google-drive-upload-file-attempt",
     "connector_after_first_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation",
-    "legacy_stage_sender_available_but_not_production_default": true
+    "legacy_stage_sender_available_but_not_production_default": true,
+    "normal_publish_drive_objects": [
+      "image"
+    ],
+    "manifest_transport": "publish-request-bridge-inline",
+    "bridge_ready_marker_is_readiness_signal": true,
+    "normal_publish_manifest_upload": false
   },
   "manifest": {
     "schema": "rozkalns.coloring-pages.drive-staging-manifest.v1",
@@ -171,7 +178,7 @@
     "immutable_importer_image_digest_required_at_live": true,
     "application_redeploy_required": false,
     "transport_direction": "drive-to-rpi5-pull-only",
-    "operator_invocation": "/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-sha256 <sha256> --expected-size <bytes>",
+    "operator_invocation": "/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-sha256 <sha256> --expected-size <bytes> --manifest-json <validated-v1-manifest-json>",
     "host_rclone_upload_allowed": false,
     "current_runtime_preflight": {
       "required_before_first_drive_mutation": true,
@@ -209,7 +216,12 @@
       "base64_media_transfer_forbidden": true,
       "runtime_alignment_required_before_first_drive_mutation": true,
       "terminal_success": "every-requested-activity-status-is-PASS-or-ALREADY_PROCESSED",
-      "after_request_or_ready_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation"
+      "after_request_or_ready_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation",
+      "request_contains_manifest_metadata": true,
+      "manifest_transport": "inline-json-object",
+      "manifest_must_match_activity_identity": true,
+      "normal_publish_drive_manifest_upload": false,
+      "operator_manifest_argument": "--manifest-json"
     }
   },
   "idempotency": {
@@ -234,7 +246,7 @@
       "public-preview-http-200",
       "public-print-png-http-200"
     ],
-    "web_origin": "https://coloring.rozkalns.net",
+    "web_origin": "https://ausmalwiese.de",
     "application_restart_required": false,
     "performed_by_trusted_host_operator": true,
     "operator_success_signal": "COLORING_PAGES_DRIVE_INGEST=PASS",
@@ -242,10 +254,11 @@
     "external_repeat_after_operator_pass": false
   },
   "drive_post_success": {
-    "archive_pair_to_processed_allowed_only_with_fresh_authority": true,
-    "archive_requires_image_and_manifest_pair": true,
+    "archive_pair_to_processed_allowed_only_with_fresh_authority": false,
+    "archive_requires_image_and_manifest_pair": false,
     "delete_instead_of_archive": false,
-    "archive_failure_changes_production_import_result": false
+    "archive_failure_changes_production_import_result": false,
+    "archive_staged_image_allowed_only_with_fresh_authority": true
   },
   "fail_closed": {
     "conditions": [
@@ -270,7 +283,8 @@
     "credential-output",
     "host-python-or-pillow-install",
     "application-redeploy-per-import",
-    "automatic-overwrite-of-existing-page-id"
+    "automatic-overwrite-of-existing-page-id",
+    "normal-publish-drive-manifest-upload"
   ],
   "references": [
     "https://developers.google.com/workspace/drive/api/guides/manage-uploads",
@@ -299,8 +313,7 @@
     "arbitrary_url_forbidden": true,
     "single_upload_surface_per_publication": true,
     "order": [
-      "png-pages-ascending",
-      "manifest-last"
+      "png-page-only"
     ],
     "response_fields_required": [
       "success",
@@ -318,6 +331,11 @@
     "metadata_readback_parent_field": "parent_ids",
     "parent_identity_acceptance": "exact-pending-folder-id-only",
     "first_mutation": "first-upload-file-attempt",
-    "after_first_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation"
+    "after_first_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation",
+    "normal_publish_file_classes": [
+      "image/png"
+    ],
+    "manifest_upload_allowed_in_normal_publish": false,
+    "manifest_transport": "publish-request-bridge-inline"
   }
 }
