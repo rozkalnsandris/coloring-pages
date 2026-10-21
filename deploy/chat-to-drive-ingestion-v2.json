@@ -3,7 +3,7 @@
   "schema_version": 2,
   "status": "production-activated",
   "repository": "rozkalnsandris/coloring-pages",
-  "purpose": "Define a backward-compatible transport contract for one owner-approved multi-page activity without changing the active single-page production path.",
+  "purpose": "Define the production multi-page transport contract with direct Drive PNG staging and inline manifest handoff through the bounded RPi5 request bridge.",
   "compatibility": {
     "active_single_page_contract": "deploy/chat-to-drive-ingestion.json",
     "active_single_page_manifest_schema": "rozkalns.coloring-pages.drive-staging-manifest.v1",
@@ -52,8 +52,8 @@
     "pending_subdirectory": "pending",
     "page_name": "<id>-<index>.png",
     "manifest_name": "<id>.json",
-    "upload_order": "all-pages-in-ascending-index-then-manifest",
-    "manifest_is_readiness_signal": true,
+    "upload_order": "all-pages-in-ascending-index",
+    "manifest_is_readiness_signal": false,
     "all_page_bytes_and_manifest_must_exist_before_first_mutation": true,
     "all_page_sha256_and_size_must_be_frozen_before_first_mutation": true,
     "category_binding_required_before_first_mutation": true,
@@ -88,7 +88,13 @@
     "connector_success_is_staging_only": true,
     "connector_first_mutation": "first-google-drive-upload-file-attempt",
     "connector_after_first_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation",
-    "legacy_stage_sender_available_but_not_production_default": true
+    "legacy_stage_sender_available_but_not_production_default": true,
+    "normal_publish_drive_objects": [
+      "page-pngs"
+    ],
+    "manifest_transport": "publish-request-bridge-inline",
+    "bridge_ready_marker_is_readiness_signal": true,
+    "normal_publish_manifest_upload": false
   },
   "manifest": {
     "schema": "rozkalns.coloring-pages.drive-staging-manifest.v2",
@@ -198,7 +204,7 @@
       "systemd_changed": false
     },
     "transport_direction": "drive-to-rpi5-pull-only",
-    "operator_invocation": "/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-page <index>:<sha256>:<bytes> [repeat --expected-page per page]",
+    "operator_invocation": "/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-page <index>:<sha256>:<bytes> [repeat --expected-page per page] --manifest-json <validated-v2-manifest-json>",
     "host_rclone_upload_allowed": false,
     "current_runtime_preflight": {
       "required_before_first_drive_mutation": true,
@@ -236,7 +242,12 @@
       "base64_media_transfer_forbidden": true,
       "runtime_alignment_required_before_first_drive_mutation": true,
       "terminal_success": "every-requested-activity-status-is-PASS-or-ALREADY_PROCESSED",
-      "after_request_or_ready_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation"
+      "after_request_or_ready_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation",
+      "request_contains_manifest_metadata": true,
+      "manifest_transport": "inline-json-object",
+      "manifest_must_match_activity_identity": true,
+      "normal_publish_drive_manifest_upload": false,
+      "operator_manifest_argument": "--manifest-json"
     }
   },
   "idempotency": {
@@ -261,7 +272,7 @@
       "all-public-preview-http-200",
       "all-public-print-png-http-200"
     ],
-    "web_origin": "https://coloring.rozkalns.net",
+    "web_origin": "https://ausmalwiese.de",
     "application_restart_required": false,
     "performed_by_trusted_host_operator": true,
     "operator_success_signal": "COLORING_PAGES_DRIVE_INGEST=PASS",
@@ -295,7 +306,8 @@
     "host-python-or-pillow-install",
     "application-redeploy-per-import",
     "automatic-overwrite-of-existing-page-id",
-    "partial-activity-import-after-page-verification-failure"
+    "partial-activity-import-after-page-verification-failure",
+    "normal-publish-drive-manifest-upload"
   ],
   "staging_sender": {
     "contract_ref": "deploy/publish-trusted-rpi5-stage-sender-v1.json",
@@ -319,7 +331,7 @@
     "inline_base64_forbidden": true,
     "arbitrary_url_forbidden": true,
     "single_upload_surface_per_publication": true,
-    "order": "all-pages-in-ascending-index-then-manifest",
+    "order": "all-pages-in-ascending-index",
     "response_fields_required": [
       "success",
       "accepted_input",
@@ -336,6 +348,11 @@
     "metadata_readback_parent_field": "parent_ids",
     "parent_identity_acceptance": "exact-pending-folder-id-only",
     "first_mutation": "first-upload-file-attempt",
-    "after_first_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation"
+    "after_first_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation",
+    "normal_publish_file_classes": [
+      "image/png"
+    ],
+    "manifest_upload_allowed_in_normal_publish": false,
+    "manifest_transport": "publish-request-bridge-inline"
   }
 }
