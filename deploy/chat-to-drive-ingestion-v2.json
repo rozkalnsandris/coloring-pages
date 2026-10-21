@@ -3,7 +3,7 @@
   "schema_version": 2,
   "status": "production-activated",
   "repository": "rozkalnsandris/coloring-pages",
-  "purpose": "Define a backward-compatible transport contract for one owner-approved multi-page activity without changing the active single-page production path.",
+  "purpose": "Define the production multi-page transport contract with direct Drive PNG staging and inline manifest handoff through the bounded RPi5 request bridge.",
   "compatibility": {
     "active_single_page_contract": "deploy/chat-to-drive-ingestion.json",
     "active_single_page_manifest_schema": "rozkalns.coloring-pages.drive-staging-manifest.v1",
@@ -23,7 +23,10 @@
     "ok_is_publication_authority": false,
     "host_operator_activation_must_be_verified_fresh_before_publish": true,
     "host_importer_alignment_must_be_verified_fresh_before_publish": true,
-    "historical_activation_evidence_is_not_current_runtime_authority": true
+    "historical_activation_evidence_is_not_current_runtime_authority": true,
+    "stage_sender_runtime_alignment_required_before_first_mutation": false,
+    "drive_connector_file_materialization_required_before_first_mutation": true,
+    "publish_request_bridge_runtime_alignment_required_before_first_mutation": true
   },
   "canonical_domains": {
     "application_source": "github",
@@ -49,8 +52,8 @@
     "pending_subdirectory": "pending",
     "page_name": "<id>-<index>.png",
     "manifest_name": "<id>.json",
-    "upload_order": "all-pages-in-ascending-index-then-manifest",
-    "manifest_is_readiness_signal": true,
+    "upload_order": "all-pages-in-ascending-index",
+    "manifest_is_readiness_signal": false,
     "all_page_bytes_and_manifest_must_exist_before_first_mutation": true,
     "all_page_sha256_and_size_must_be_frozen_before_first_mutation": true,
     "category_binding_required_before_first_mutation": true,
@@ -58,20 +61,40 @@
     "upload_surface_selection_required_before_first_mutation": true,
     "single_upload_surface_per_publication": true,
     "upload_surface_must_accept": [
-      "prepared-png-pages",
-      "prebuilt-manifest"
+      "runtime-materialized-file-uri"
     ],
-    "host_rclone_upload_forbidden": true,
-    "stable_upload_source_refs_required_before_first_mutation": true,
-    "stable_upload_source_ref_semantics": "immutable-exported-file-snapshot",
-    "stable_upload_source_ref_required_for": [
-      "prepared-png-pages",
-      "prebuilt-manifest"
+    "staging_surface": "google-drive-connector-upload-file",
+    "staging_sender_contract_ref": "deploy/publish-trusted-rpi5-stage-sender-v1.json",
+    "sender_envelope_schema": "rozkalns.rpi5-main.coloring-pages-drive-stage-envelope.v1",
+    "sender_production_namespace": "pending",
+    "provider_owned_source_file_ref_required": false,
+    "ephemeral_local_path_is_remote_upload_ref": false,
+    "exact_local_artifacts_required_before_first_mutation": true,
+    "envelope_materialization_required_before_first_mutation": false,
+    "envelope_validation_required_before_first_mutation": false,
+    "trusted_host_stage_sender_upload_allowed": false,
+    "arbitrary_host_rclone_upload_forbidden": true,
+    "sender_success_signal": "COLORING_PAGES_DRIVE_STAGE=PASS",
+    "sender_pass_is_staging_only": true,
+    "runtime_materialized_file_uri_required": true,
+    "raw_local_path_at_connector_boundary_forbidden": true,
+    "bare_file_id_forbidden": true,
+    "inline_base64_forbidden": true,
+    "arbitrary_url_file_handoff_forbidden": true,
+    "direct_google_drive_connector_upload_allowed": true,
+    "connector_upload_action": "Google_Drive.upload_file",
+    "connector_response_readback_required": true,
+    "connector_expected_input": "file_uri",
+    "connector_success_is_staging_only": true,
+    "connector_first_mutation": "first-google-drive-upload-file-attempt",
+    "connector_after_first_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation",
+    "legacy_stage_sender_available_but_not_production_default": true,
+    "normal_publish_drive_objects": [
+      "page-pngs"
     ],
-    "stable_upload_source_ref_required_for_every_page": true,
-    "current_files_surface_source_field": "source_file_ref",
-    "legacy_ephemeral_container_path_upload_forbidden": true,
-    "stable_upload_source_ref_failure_before_first_mutation": "stop"
+    "manifest_transport": "publish-request-bridge-inline",
+    "bridge_ready_marker_is_readiness_signal": true,
+    "normal_publish_manifest_upload": false
   },
   "manifest": {
     "schema": "rozkalns.coloring-pages.drive-staging-manifest.v2",
@@ -181,6 +204,7 @@
       "systemd_changed": false
     },
     "transport_direction": "drive-to-rpi5-pull-only",
+    "operator_invocation": "/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-page <index>:<sha256>:<bytes> [repeat --expected-page per page] --manifest-json <validated-v2-manifest-json>",
     "host_rclone_upload_allowed": false,
     "current_runtime_preflight": {
       "required_before_first_drive_mutation": true,
@@ -193,6 +217,37 @@
       "operator_pinned_importer_blob_must_match_current_consumer_importer_blob": true,
       "consumer_importer_path": "tools/coloring-pages-import",
       "mismatch_disposition": "stop-before-first-drive-mutation-requires-rpi5-main-repin"
+    },
+    "request_bridge": {
+      "runtime_owner_repository": "rozkalnsandris/RPi5_main",
+      "contract_path": "ops/contracts/coloring-pages-publish-request-bridge-v1.json",
+      "dispatcher_source_path": "ops/bin/coloring-pages-publish-request-dispatcher",
+      "installed_dispatcher_path": "/usr/local/bin/coloring-pages-publish-request-dispatcher",
+      "path_unit": "coloring-pages-publish-request-bridge.path",
+      "service_unit": "coloring-pages-publish-request-bridge.service",
+      "state_root": "/srv/coloring-pages-content/state/publish-request-bridge",
+      "incoming_request": "/srv/coloring-pages-content/state/publish-request-bridge/incoming/batch-<batch_id>.json",
+      "incoming_ready": "/srv/coloring-pages-content/state/publish-request-bridge/incoming/batch-<batch_id>.ready",
+      "result_path": "/srv/coloring-pages-content/state/publish-request-bridge/results/batch-<batch_id>.result.json",
+      "request_schema": "rozkalns.rpi5-main.coloring-pages-publish-request.v1",
+      "result_schema": "rozkalns.rpi5-main.coloring-pages-publish-request-result.v1",
+      "batch_id_pattern": "^[0-9a-f]{32}$",
+      "maximum_activities": 20,
+      "request_write_action": "Remote_Desktop_Commander.write_file",
+      "ready_write_action": "Remote_Desktop_Commander.write_file",
+      "result_read_action": "Remote_Desktop_Commander.read_file",
+      "request_before_ready": true,
+      "generic_start_process_ingest_forbidden": true,
+      "request_contains_media_bytes": false,
+      "base64_media_transfer_forbidden": true,
+      "runtime_alignment_required_before_first_drive_mutation": true,
+      "terminal_success": "every-requested-activity-status-is-PASS-or-ALREADY_PROCESSED",
+      "after_request_or_ready_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation",
+      "request_contains_manifest_metadata": true,
+      "manifest_transport": "inline-json-object",
+      "manifest_must_match_activity_identity": true,
+      "normal_publish_drive_manifest_upload": false,
+      "operator_manifest_argument": "--manifest-json"
     }
   },
   "idempotency": {
@@ -217,7 +272,7 @@
       "all-public-preview-http-200",
       "all-public-print-png-http-200"
     ],
-    "web_origin": "https://coloring.rozkalns.net",
+    "web_origin": "https://ausmalwiese.de",
     "application_restart_required": false,
     "performed_by_trusted_host_operator": true,
     "operator_success_signal": "COLORING_PAGES_DRIVE_INGEST=PASS",
@@ -251,6 +306,53 @@
     "host-python-or-pillow-install",
     "application-redeploy-per-import",
     "automatic-overwrite-of-existing-page-id",
-    "partial-activity-import-after-page-verification-failure"
-  ]
+    "partial-activity-import-after-page-verification-failure",
+    "normal-publish-drive-manifest-upload"
+  ],
+  "staging_sender": {
+    "contract_ref": "deploy/publish-trusted-rpi5-stage-sender-v1.json",
+    "runtime_owner_repository": "rozkalnsandris/RPi5_main",
+    "production_namespace": "pending",
+    "publish_uses_canary_mode": false,
+    "fresh_runtime_identity_preflight_required": false,
+    "arbitrary_rclone_forbidden": true,
+    "production_upload_allowed": false,
+    "staging_pass_is_not_publication_success": true,
+    "role": "legacy-reviewed-fallback-not-authorized-as-alternate-path"
+  },
+  "direct_drive_connector": {
+    "action": "Google_Drive.upload_file",
+    "destination_namespace": "pending",
+    "exact_folder_id_required": true,
+    "top_level_file_parameter": "file_uri",
+    "runtime_materialization_required": true,
+    "raw_local_path_at_connector_boundary_forbidden": true,
+    "bare_file_id_forbidden": true,
+    "inline_base64_forbidden": true,
+    "arbitrary_url_forbidden": true,
+    "single_upload_surface_per_publication": true,
+    "order": "all-pages-in-ascending-index",
+    "response_fields_required": [
+      "success",
+      "accepted_input",
+      "id",
+      "file_name",
+      "mime_type",
+      "parent_id"
+    ],
+    "accepted_input_expected": "file_uri",
+    "read_only_readback_required": true,
+    "mutating_dispatch_mode": "one-explicit-upload-call-per-artifact",
+    "mutating_connector_loop_or_batch_dispatch_forbidden": true,
+    "upload_response_parent_field": "parent_id",
+    "metadata_readback_parent_field": "parent_ids",
+    "parent_identity_acceptance": "exact-pending-folder-id-only",
+    "first_mutation": "first-upload-file-attempt",
+    "after_first_mutation_error": "stop-without-retry-rollback-cleanup-or-alternate-mutation",
+    "normal_publish_file_classes": [
+      "image/png"
+    ],
+    "manifest_upload_allowed_in_normal_publish": false,
+    "manifest_transport": "publish-request-bridge-inline"
+  }
 }

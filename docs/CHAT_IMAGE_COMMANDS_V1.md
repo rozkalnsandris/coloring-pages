@@ -4,25 +4,24 @@
 
 Make the normal owner workflow for creating and publishing one coloring activity as short as possible while preserving the existing media and content-ingest trust boundaries.
 
-Normal happy path:
+Preferred normal happy path:
 
 ```text
 MAKE lapsa
 → ChatGPT generates one coloring-page PNG draft
-PUBLISH
-→ owner approves the exact latest draft
-→ deterministic CPU/Pillow white cleanup + A4 print-master preparation
-→ read-only validation with exact print-master SHA-256 + byte size
-→ determine one valid category
-→ freeze page ID + validated print-master SHA-256 + byte size + category
-→ prebuild + validate manifest
-→ Drive staging
-→ trusted RPi5 verify/import
-→ required public verification
-→ PASS and stop
+EDIT / REMAKE as needed
+ZIP
+→ ChatGPT packages the exact accepted draft(s) as one PNG-only ZIP
+→ owner opens the protected admin.ausmalwiese.de publisher
+→ private preview + editable title + explicit category selection
+→ owner presses Sākt publicēšanu
+→ ADMIN prepares every A4 print master
+→ ADMIN validates every prepared master
+→ only after all validation PASS: ID allocation + import + public verification
+→ PASS and direct published links
 ```
 
-`UPSCALE-PRINT` and `VALIDATE-PRINT` remain available as optional manual inspection/debug commands, but they are no longer required owner steps in the normal publication path.
+`ZIP` does not create print masters and does not publish. The protected ADMIN publisher owns the mandatory technical print gate: exact A4 geometry, white normalization/background, 15 mm exact-white safe margin, RGB/no alpha and approximately 300 DPI before any ID allocation/import. `UPSCALE-PRINT` and `VALIDATE-PRINT` remain optional manual inspection/debug commands. The direct Chat `PUBLISH` path remains supported as an alternate path until separately retired.
 The commands below are a project conversation convention. They do not replace GitHub policy, the media standard, or the Chat-to-Drive ingestion contract.
 
 ## Commands
@@ -157,11 +156,31 @@ EDIT noņem mākoni labajā augšējā stūrī
 
 The edited result becomes the latest draft candidate. Preserve its current exact `1024×1536` portrait or `1536×1024` landscape canvas unless the owner requests an orientation change; do not use automatic output sizing. `EDIT` is not publication approval and invalidates any earlier manually prepared/validated print master.
 
-`REMAKE` likewise invalidates any earlier manually prepared/validated print master for the affected page/set. A later `PUBLISH` always prepares and validates fresh print master(s) from the exact latest draft/set.
+`REMAKE` likewise invalidates any earlier manually prepared/validated print master for the affected page/set. A later `ZIP` packages only the exact latest accepted draft/set; a direct Chat `PUBLISH` still prepares and validates fresh print master(s) from that exact latest draft/set.
+
+### `ZIP` / `ZIP <descriptor>`
+
+Use `ZIP` after the owner has visually accepted the latest draft or an unambiguous set of independent drafts. `ZIP <descriptor>` may identify a specific accepted draft/set in the current conversation.
+
+The ZIP handoff contract is intentionally minimal:
+
+- package 1–20 independent approved PNG drafts;
+- place every PNG at the ZIP root; no folders or nested paths;
+- preserve the approved PNG artwork bytes exactly; do not redraw, upscale, resize, add A4 margins, normalize whites, sharpen or otherwise alter artwork while building the ZIP;
+- use unique visible filenames, preferably ordered names such as `01-reh.png`, `02-fuchs.png`; the ADMIN UI derives an editable initial title from each filename;
+- include no hidden files, JSON manifests, category metadata, IDs, PDFs, previews, thumbnails, checksums or other members;
+- do not choose a category or allocate IDs in Chat; both happen in the protected ADMIN workflow;
+- `ZIP` is local artifact preparation only. It grants no content publication, Drive, RPi5, Cloudflare or other LIVE authority.
+
+The current ADMIN v1 ZIP publisher treats each PNG as an independent single-page activity. Ordered multi-page activities such as a two-page Cut & Paste activity are not represented as one activity by this ZIP v1 contract and must continue to use a publication path that preserves ordered multi-page identity until ADMIN gains an explicit reviewed multi-page ZIP contract.
+
+After ZIP upload, the owner reviews private previews/titles, selects one canonical category and presses **Sākt publicēšanu**. ADMIN must then prepare **every** uploaded draft with the pinned `coloring-pages-print-master prepare`, validate **every** prepared master with `validate`, and STOP before ID allocation/import if any page fails. The prepared master requirements are the canonical media contract: exact `2480×3508` portrait or `3508×2480` landscape A4 raster, RGB/no alpha, approximately 300×300 DPI, exact `#FFFFFF` outer border/background bands, complete 15 mm / 177 px exact-white artwork-safe margin on every edge, aspect-ratio-preserving centered fit, canonical near-white normalization, LANCZOS resampling and reviewed conservative sharpening.
+
+Editorial correctness stays outside that deterministic print gate: wrong anatomy, wrong text, unwanted decoration, non-coloring artwork or other visual/content defects must be rejected during `MAKE / EDIT / REMAKE` review before `ZIP`.
 
 ### `UPSCALE-PRINT` (optional manual inspection)
 
-This command is optional. Transform the exact latest generated draft/page set without asking the image model to generate or redraw anything. Normal publication invokes the same preparation automatically inside `PUBLISH`.
+This command is optional. Transform the exact latest generated draft/page set without asking the image model to generate or redraw anything. The preferred ZIP/ADMIN flow invokes the same preparation automatically inside ADMIN before publication; direct Chat `PUBLISH` also invokes it.
 
 Use `tools/coloring-pages-print-master prepare <draft.png> <print-master.png>` or an exact equivalent execution of that reviewed helper. The helper:
 
@@ -182,7 +201,7 @@ For an ordered multi-page activity, every page must receive its own print master
 
 ### `VALIDATE-PRINT` (optional manual inspection)
 
-This command is optional. Read-only validate the latest manually prepared print master(s) with `tools/coloring-pages-print-master validate <print-master.png>`. Normal publication invokes this validation automatically inside `PUBLISH`.
+This command is optional. Read-only validate the latest manually prepared print master(s) with `tools/coloring-pages-print-master validate <print-master.png>`. The preferred ZIP/ADMIN flow invokes this validation automatically inside ADMIN before publication; direct Chat `PUBLISH` also invokes it.
 
 PASS requires:
 
@@ -193,13 +212,13 @@ PASS requires:
 - approximately 300×300 DPI metadata;
 - exact `#FFFFFF` across the complete outer page border.
 
-The validator prints exact byte size and SHA-256. A manual validation failure is diagnostic only and grants no publication authority; normal `PUBLISH` still prepares and validates fresh print master(s) itself. A later `EDIT` or `REMAKE` invalidates any earlier manual PASS, but no manual `UPSCALE-PRINT → VALIDATE-PRINT` rerun is required before `PUBLISH`.
+The validator prints exact byte size and SHA-256. A manual validation failure is diagnostic only and grants no publication authority. In the preferred ZIP/ADMIN flow, ADMIN prepares and validates fresh print master(s) after upload; direct Chat `PUBLISH` does the same internally. A later `EDIT` or `REMAKE` invalidates any earlier manual PASS.
 
 `OK` is intentionally not a publication command. It is treated only as a normal conversational acknowledgement so it cannot accidentally authorize content ingestion.
 
 ### `PUBLISH`
 
-`PUBLISH` is the single normal publication command. It is explicit owner approval of the exact latest generated draft page or exact ordered draft set in the current conversation. The lower-resolution generation draft is never the published byte identity: `PUBLISH` first derives and validates fresh A4 print master(s) deterministically.
+`PUBLISH` is the supported direct Chat publication command. The preferred normal workflow for newly accepted drafts is `ZIP` followed by the protected ADMIN publisher. It is explicit owner approval of the exact latest generated draft page or exact ordered draft set in the current conversation. The lower-resolution generation draft is never the published byte identity: `PUBLISH` first derives and validates fresh A4 print master(s) deterministically.
 
 `PUBLISH` is self-bootstrapping. It must not require `START coloring-pages`, `SYNC coloring-pages`, a second generic `PUBLISH`, or a new conversation/session as a routine prerequisite. The command itself performs the minimum-sufficient fresh repository/rules/runtime preflight needed for publication and then continues immediately when the required capabilities are available.
 
@@ -218,13 +237,13 @@ The `PUBLISH` chain is sequential and fail-closed:
 5. read fresh LIVE catalogue state and allocate one random seven-digit new-publication ID from `metadata/id-policy.json`; the candidate must be absent from the LIVE catalogue and distinct from any other candidate already allocated in the same local publish batch before any mutation;
 6. freeze that activity/page ID, the ordered page count, SHA-256 and exact byte size of every validated print master, category and required catalogue metadata;
 7. fully materialize and locally validate the complete v1/v2 manifest;
-8. run the fresh host-runtime alignment preflight from `deploy/chat-to-drive-ingestion.json` / `deploy/chat-to-drive-ingestion-v2.json`: installed operator blob must match current `RPi5_main` source, the operator contract’s pinned consumer source revision must resolve, and its `tools/coloring-pages-import` blob must match current `coloring-pages/main`; mismatch means STOP before the first Drive write and requires a separately reviewed `RPi5_main` repin/install;
-9. before the first Drive write, select one Drive upload surface that can accept every locally prepared PNG plus the already-built manifest; materialize/export every prepared PNG and the manifest as stable exact upload snapshots/refs accepted by that surface (for the current Files uploader, concrete `source_file_ref` snapshots are required and legacy ephemeral `container_path` sources are forbidden); if any stable ref cannot be produced, STOP before mutation; then stage the exact prepared PNG(s) followed by the manifest through that same surface;
-10. run the trusted RPi5 verify/import operator once; RPi5-side `rclone` is Drive-to-RPi5 pull-only and is not a Chat staging upload path;
-11. let that trusted operator perform the contract-required post-import catalogue, derivative and public-HTTP proof internally;
-12. when the operator returns `COLORING_PAGES_DRIVE_INGEST=PASS`, treat it as terminal publication success, immediately report `PASS`, and stop.
+8. before the first Drive mutation, freshly verify the existing Drive ingest/import runtime and the bounded publish-request bridge runtime: the installed Drive ingest operator must match current `RPi5_main/main`, its pinned `tools/coloring-pages-import` consumer blob must match the current ingestion/importer contracts, and `/usr/local/bin/coloring-pages-publish-request-dispatcher` plus the bridge path/service must match the reviewed RPi5 request-bridge source/contract; any mismatch means STOP before the first Drive write and requires separately reviewed source/LIVE repair;
+9. materialize only the exact prepared PNG page(s) as runtime-generated top-level file references for the connected Google Drive upload action. The already-built validated manifest remains local structured metadata for the bounded RPi5 request. The connector boundary must receive PNG `file_uri` references; bare file IDs, inline Base64, arbitrary URLs and raw local paths at the connector boundary are forbidden. All required PNG bytes and complete manifests must exist and be frozen before the first Drive mutation;
+10. use exactly one staging surface: the connected Google Drive `upload_file` action to the exact bound `pending/` folder ID. Dispatch exactly one explicit connector mutation per PNG page; do not put multiple mutating `upload_file` calls inside one code-mode loop/batch. Upload only PNG page(s), in order. After each call, verify `accepted_input=file_uri`, requested filename/MIME, and exact folder identity from the upload response `parent_id` or metadata readback `parent_ids` before dispatching the next page. Do not upload the JSON manifest to Drive in normal PUBLISH. Connector success proves staging only;
+11. after the complete approved PNG set is staged, generate one random 32-lowercase-hex batch ID and materialize one strict `rozkalns.rpi5-main.coloring-pages-publish-request.v1` JSON containing every requested activity, its frozen v1/v2 identity, and the complete validated v1/v2 manifest inline. Write the complete request JSON first to `/srv/coloring-pages-content/state/publish-request-bridge/incoming/batch-<batch_id>.json`, then write the matching ready marker containing only the batch ID to the sibling `.ready` path using bounded Remote Desktop Commander file-write actions. The ready marker is the execution readiness signal. Do not invoke the ingest operator through `start_process`, do not transfer media through RDC, and do not use shell interpolation. Read only the exact matching result JSON from the fixed `results/` path;
+12. PASS only when that result has the exact batch ID and every requested activity appears exactly once with status `PASS` or `ALREADY_PROCESSED`; otherwise STOP with the exact succeeded subset. A request/ready/result error after staging is fail-closed with no retry, rollback, cleanup, requeue or alternate execution path.
 
-Do not begin the first Drive mutation while any upload source still depends on a transient local/container path; every prepared PNG and the prebuilt manifest must already have a stable exact upload snapshot/ref. Do not switch Drive upload surfaces after the first mutation. A staging/file-handoff/tool error after mutation begins is a fail-closed STOP, not permission to try host-side `rclone`, a second uploader, overwrite, retry, rollback or cleanup. Do not run discretionary post-success diagnostics, repeated health checks, external/public HTTP rechecks, extra catalogue scans, Drive archive/delete, cleanup or unrelated runtime verification after trusted operator PASS.
+Do not invoke arbitrary host `rclone`, the legacy RPi5 stage sender, a second staging surface, or Base64-over-RDC as an alternate production path. After the first Google Drive upload attempt, any staging/file-handoff/operator error is a fail-closed STOP without retry, rollback, overwrite, cleanup or surface switching. Do not run discretionary post-success diagnostics, repeated health checks, external/public HTTP rechecks, extra catalogue scans, Drive archive/delete, cleanup or unrelated runtime verification after trusted ingest-operator PASS.
 
 The category is selected from the canonical registry in `metadata/categories.json`. Current category IDs are:
 
@@ -249,7 +268,7 @@ A collision found before the first mutation is handled simply by generating anot
 
 When exactly one category clearly fits the approved page, choose it automatically and include it in the frozen manifest metadata. If more than one category is plausible, or none of the current categories fits, STOP before Drive upload and ask the owner to choose an existing category or create a new category through a reviewed source change. Never use a silent default category.
 
-After those values are frozen, the complete JSON manifest must be materialized and validated locally before any Drive write. Do not upload any PNG first and then attempt to construct the manifest. Single-page v1 stages its PNG then manifest. Multi-page v2 stages all 2–12 ordered PNG pages in ascending index order and the single manifest last; only manifest **preparation** moves before the first mutation.
+After those values are frozen, the complete JSON manifest must be materialized and validated locally before any Drive write. Do not upload any PNG first and then attempt to construct the manifest. Normal PUBLISH uploads only the single-page v1 PNG or the ordered 2–12 v2 PNG pages. The complete prebuilt manifest is carried inline in the bounded RPi5 request JSON, and the subsequent ready marker is the execution readiness signal.
 
 Only after the frozen identity, metadata, and prebuilt manifest all pass preflight does the approval bind to the reviewed content-ingest operation.
 
@@ -259,7 +278,8 @@ The authorized path is only:
 
 ```text
 exact approved page or ordered page set
-→ exact PNG page(s) + prebuilt manifest in approved Drive pending/
+→ exact PNG page(s) only in approved Drive pending/
+→ complete prebuilt manifest inline in the bounded RPi5 request
 → trusted RPi5 verification of every page
 → one coloring-pages importer invocation for the activity
 → public catalogue/media verification
@@ -281,41 +301,28 @@ If there is ambiguity about which page/page set is approved, if any approved pag
 
 ## Conversation behavior
 
-The intended human interaction is deliberately terse:
+The preferred human interaction is deliberately terse:
 
 ```text
-User: `PUBLISH`
-ChatGPT:
-→ derive fresh exact A4 print master(s) without generating new artwork
-→ validate and freeze exact SHA-256 + byte size
-→ determine one allowed category
-→ prebuild/validate manifest
-→ one preselected Drive staging upload surface for PNG(s) + manifest
-→ trusted RPi5 pull + SHA verification + immutable import + required public verification
-→ operator PASS is terminal: report PASS and stop
+User: MAKE ...
+ChatGPT: → generates the draft
+User: EDIT ... / REMAKE   # only when needed
+User: ZIP
+ChatGPT: → returns one ZIP containing the exact accepted PNG draft(s)
+Owner: → uploads ZIP at admin.ausmalwiese.de
+Owner: → checks preview/title, chooses category, presses Sākt publicēšanu
+ADMIN: → prepare all → validate all → ID/import only after PASS → public verify
 ```
 
-If the image needs work before publication:
+If the image needs work before ZIP handoff, continue with `REMAKE` or `EDIT`. `ZIP` must never repair or silently modify artwork.
+
+The preferred commands to remember are:
 
 ```text
-User: REMAKE
+MAKE / REMAKE / EDIT → ZIP → ADMIN
 ```
 
-or:
-
-```text
-User: EDIT vienkāršāks fons
-```
-
-Because the image-generation surface may return the generated draft without an additional text message, the stable next command for an accepted draft is simply `PUBLISH`. Preparation and validation remain mandatory gates, but they run inside that one command.
-
-The normal publication commands to remember are:
-
-```text
-MAKE / REMAKE / EDIT → PUBLISH
-```
-
-Optional troubleshooting/inspection remains available as `UPSCALE-PRINT` and `VALIDATE-PRINT`.
+Direct Chat `PUBLISH` remains a supported alternate path with its existing explicit owner authority and fail-closed Drive/RPi5 contract. Optional troubleshooting/inspection remains available as `UPSCALE-PRINT` and `VALIDATE-PRINT`.
 ## Relationship to existing contracts
 
 This command layer is intentionally thin:
@@ -368,17 +375,21 @@ This **offline, source-only helper** creates all `<id>.png` and
 invocation, using the reviewed print-master helper for preparation and validation.
 It does **not** connect to Drive or RPi5, and its output alone is **not**
 publication eligibility or a LIVE-state proof. The caller remains responsible
-for fresh runtime operator/importer alignment, current LIVE-catalog ID
-non-collision, manifest and media integrity, and exact stable uploaded-file refs
-for **every** PNG and JSON before the first Drive mutation.
+for fresh ingest-operator/importer alignment, current LIVE-catalog ID
+non-collision, manifest/media integrity, and runtime materialization of every
+local artifact into a connector `file_uri` before the first Drive mutation.
 
-Export/materialize all pairs as stable provider-supported source refs **before
-any** upload; use one upload surface for the full batch. For each independent
-item stage PNG then its prebuilt manifest, then invoke the already-authorized
-trusted RPi5 importer once per item, observing each terminal PASS. This does
-not grant retry, alternate staging, overwrite or rollback; after any mutation
-failure, STOP and report the exact succeeded subset, with no automatic
-continuation of the rest.
+After preparation, use one connected Google Drive upload surface for the whole
+publication. Dispatch one explicit `upload_file` mutation per artifact rather than
+a mutating connector loop/batch. For each independent activity upload its prepared
+PNG and then its already-built manifest to the exact bound `pending/` folder;
+validate exact folder identity after each call before sending the next artifact and
+do not mix upload surfaces. After the full set is staged, write one tiny bounded
+request JSON for the whole set, then its ready marker, and read the exact matching
+result JSON. The RPi5 bridge invokes the existing trusted ingest operator internally;
+the Chat happy path must not use `start_process` for ingest. This does not grant retry,
+alternate staging, overwrite or rollback; after any mutation failure, STOP and report
+the exact succeeded subset, with no automatic continuation of the rest.
 
 Normal user-facing outcome is **one compact status** for the whole set: PASS
 with number published, or a precise STOP with whether any mutation happened,
