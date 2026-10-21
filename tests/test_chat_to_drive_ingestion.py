@@ -244,7 +244,7 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertNotIn("public-source-http-200", required)
         self.assertEqual(
             self.contract["post_import_verification"]["web_origin"],
-            "https://coloring.rozkalns.net",
+            "https://ausmalwiese.de",
         )
         proof = self.contract["post_import_verification"]
         self.assertTrue(proof["performed_by_trusted_host_operator"])
