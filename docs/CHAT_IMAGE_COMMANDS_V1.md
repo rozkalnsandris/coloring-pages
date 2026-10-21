@@ -219,9 +219,9 @@ The `PUBLISH` chain is sequential and fail-closed:
 6. freeze that activity/page ID, the ordered page count, SHA-256 and exact byte size of every validated print master, category and required catalogue metadata;
 7. fully materialize and locally validate the complete v1/v2 manifest;
 8. before the first Drive mutation, freshly verify the existing Drive ingest/import runtime and the bounded publish-request bridge runtime: the installed Drive ingest operator must match current `RPi5_main/main`, its pinned `tools/coloring-pages-import` consumer blob must match the current ingestion/importer contracts, and `/usr/local/bin/coloring-pages-publish-request-dispatcher` plus the bridge path/service must match the reviewed RPi5 request-bridge source/contract; any mismatch means STOP before the first Drive write and requires separately reviewed source/LIVE repair;
-9. materialize the exact prepared PNG page(s) and already-built manifest as runtime-generated top-level file references for the connected Google Drive upload action. The connector boundary must receive `file_uri` references; bare file IDs, inline Base64, arbitrary URLs and raw local paths at the connector boundary are forbidden. All required local artifacts must exist and be frozen before the first Drive mutation;
-10. use exactly one staging surface: the connected Google Drive `upload_file` action to the exact bound `pending/` folder ID. Dispatch exactly one explicit connector mutation per artifact; do not put multiple mutating `upload_file` calls inside one code-mode loop/batch. Upload PNG page(s) first in order and the prebuilt manifest last. After each call, verify `accepted_input=file_uri`, requested filename/MIME, and exact folder identity from the upload response `parent_id` or metadata readback `parent_ids` before dispatching the next artifact. Connector success proves staging only;
-11. after the complete approved set is staged, generate one random 32-lowercase-hex batch ID and materialize one strict `rozkalns.rpi5-main.coloring-pages-publish-request.v1` JSON containing every requested activity and its frozen v1/v2 identity. Write the complete request JSON first to `/srv/coloring-pages-content/state/publish-request-bridge/incoming/batch-<batch_id>.json`, then write the matching ready marker containing only the batch ID to the sibling `.ready` path using bounded Remote Desktop Commander file-write actions. Do not invoke the ingest operator through `start_process`, do not transfer media through RDC, and do not use shell interpolation. Read only the exact matching result JSON from the fixed `results/` path;
+9. materialize only the exact prepared PNG page(s) as runtime-generated top-level file references for the connected Google Drive upload action. The already-built validated manifest remains local structured metadata for the bounded RPi5 request. The connector boundary must receive PNG `file_uri` references; bare file IDs, inline Base64, arbitrary URLs and raw local paths at the connector boundary are forbidden. All required PNG bytes and complete manifests must exist and be frozen before the first Drive mutation;
+10. use exactly one staging surface: the connected Google Drive `upload_file` action to the exact bound `pending/` folder ID. Dispatch exactly one explicit connector mutation per PNG page; do not put multiple mutating `upload_file` calls inside one code-mode loop/batch. Upload only PNG page(s), in order. After each call, verify `accepted_input=file_uri`, requested filename/MIME, and exact folder identity from the upload response `parent_id` or metadata readback `parent_ids` before dispatching the next page. Do not upload the JSON manifest to Drive in normal PUBLISH. Connector success proves staging only;
+11. after the complete approved PNG set is staged, generate one random 32-lowercase-hex batch ID and materialize one strict `rozkalns.rpi5-main.coloring-pages-publish-request.v1` JSON containing every requested activity, its frozen v1/v2 identity, and the complete validated v1/v2 manifest inline. Write the complete request JSON first to `/srv/coloring-pages-content/state/publish-request-bridge/incoming/batch-<batch_id>.json`, then write the matching ready marker containing only the batch ID to the sibling `.ready` path using bounded Remote Desktop Commander file-write actions. The ready marker is the execution readiness signal. Do not invoke the ingest operator through `start_process`, do not transfer media through RDC, and do not use shell interpolation. Read only the exact matching result JSON from the fixed `results/` path;
 12. PASS only when that result has the exact batch ID and every requested activity appears exactly once with status `PASS` or `ALREADY_PROCESSED`; otherwise STOP with the exact succeeded subset. A request/ready/result error after staging is fail-closed with no retry, rollback, cleanup, requeue or alternate execution path.
 
 Do not invoke arbitrary host `rclone`, the legacy RPi5 stage sender, a second staging surface, or Base64-over-RDC as an alternate production path. After the first Google Drive upload attempt, any staging/file-handoff/operator error is a fail-closed STOP without retry, rollback, overwrite, cleanup or surface switching. Do not run discretionary post-success diagnostics, repeated health checks, external/public HTTP rechecks, extra catalogue scans, Drive archive/delete, cleanup or unrelated runtime verification after trusted ingest-operator PASS.
@@ -249,7 +249,7 @@ A collision found before the first mutation is handled simply by generating anot
 
 When exactly one category clearly fits the approved page, choose it automatically and include it in the frozen manifest metadata. If more than one category is plausible, or none of the current categories fits, STOP before Drive upload and ask the owner to choose an existing category or create a new category through a reviewed source change. Never use a silent default category.
 
-After those values are frozen, the complete JSON manifest must be materialized and validated locally before any Drive write. Do not upload any PNG first and then attempt to construct the manifest. Single-page v1 stages its PNG then manifest. Multi-page v2 stages all 2–12 ordered PNG pages in ascending index order and the single manifest last; only manifest **preparation** moves before the first mutation.
+After those values are frozen, the complete JSON manifest must be materialized and validated locally before any Drive write. Do not upload any PNG first and then attempt to construct the manifest. Normal PUBLISH uploads only the single-page v1 PNG or the ordered 2–12 v2 PNG pages. The complete prebuilt manifest is carried inline in the bounded RPi5 request JSON, and the subsequent ready marker is the execution readiness signal.
 
 Only after the frozen identity, metadata, and prebuilt manifest all pass preflight does the approval bind to the reviewed content-ingest operation.
 
@@ -259,7 +259,8 @@ The authorized path is only:
 
 ```text
 exact approved page or ordered page set
-→ exact PNG page(s) + prebuilt manifest in approved Drive pending/
+→ exact PNG page(s) only in approved Drive pending/
+→ complete prebuilt manifest inline in the bounded RPi5 request
 → trusted RPi5 verification of every page
 → one coloring-pages importer invocation for the activity
 → public catalogue/media verification
@@ -290,7 +291,8 @@ ChatGPT:
 → validate and freeze exact SHA-256 + byte size
 → determine one allowed category
 → prebuild/validate manifest
-→ one preselected Drive staging upload surface for PNG(s) + manifest
+→ one preselected Drive staging upload surface for PNG(s) only
+→ inline validated manifest in the bounded RPi5 request + ready marker
 → trusted RPi5 pull + SHA verification + immutable import + required public verification
 → operator PASS is terminal: report PASS and stop
 ```
