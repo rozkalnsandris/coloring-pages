@@ -98,7 +98,7 @@ class DirectDriveConnectorContractTest(unittest.TestCase):
         self.assertIn("verify-ingest-operator-runtime", staging["preflight_order"])
         self.assertNotIn("verify-stage-sender-runtime", staging["preflight_order"])
         self.assertEqual(
-            data["direct_drive_connector"]["v1_ingest_invocation"],
+            data["host_ingestion"]["operator_invocation"],
             "/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-sha256 <sha256> --expected-size <bytes>",
         )
 
@@ -121,7 +121,7 @@ class DirectDriveConnectorContractTest(unittest.TestCase):
         )
         self.assertTrue(staging["manifest_validation_required_before_first_mutation"])
         self.assertEqual(
-            data["direct_drive_connector"]["v2_ingest_invocation"],
+            data["host_ingestion"]["operator_invocation"],
             "/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-page <index>:<sha256>:<bytes> [repeat --expected-page per page]",
         )
 
