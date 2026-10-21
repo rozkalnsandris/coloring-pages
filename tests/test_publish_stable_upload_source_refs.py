@@ -65,6 +65,17 @@ class DirectDriveConnectorContractTest(unittest.TestCase):
         self.assertTrue(connector["arbitrary_url_forbidden"])
         self.assertEqual(connector["accepted_input_expected"], "file_uri")
         self.assertTrue(connector["read_only_readback_required"])
+        self.assertEqual(
+            connector["mutating_dispatch_mode"],
+            "one-explicit-upload-call-per-artifact",
+        )
+        self.assertTrue(connector["mutating_connector_loop_or_batch_dispatch_forbidden"])
+        self.assertEqual(connector["upload_response_parent_field"], "parent_id")
+        self.assertEqual(connector["metadata_readback_parent_field"], "parent_ids")
+        self.assertEqual(
+            connector["parent_identity_acceptance"],
+            "exact-pending-folder-id-only",
+        )
 
         authority = data["authority"]
         self.assertFalse(
@@ -86,6 +97,10 @@ class DirectDriveConnectorContractTest(unittest.TestCase):
         )
         self.assertIn("verify-ingest-operator-runtime", staging["preflight_order"])
         self.assertNotIn("verify-stage-sender-runtime", staging["preflight_order"])
+        self.assertEqual(
+            data["direct_drive_connector"]["v1_ingest_invocation"],
+            "/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-sha256 <sha256> --expected-size <bytes>",
+        )
 
     def test_v2_uses_direct_connector_and_preserves_page_order(self):
         data = contract(2)
@@ -105,6 +120,10 @@ class DirectDriveConnectorContractTest(unittest.TestCase):
             staging["all_page_bytes_and_manifest_must_exist_before_first_mutation"]
         )
         self.assertTrue(staging["manifest_validation_required_before_first_mutation"])
+        self.assertEqual(
+            data["direct_drive_connector"]["v2_ingest_invocation"],
+            "/usr/local/bin/coloring-pages-drive-ingest --id <id> --expected-page <index>:<sha256>:<bytes> [repeat --expected-page per page]",
+        )
 
     def test_pull_only_ingest_remains_separate(self):
         for version in (1, 2):
