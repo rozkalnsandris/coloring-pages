@@ -11,6 +11,7 @@
   <link rel="preload" href="assets/fonts/nunito-latin-vf-ba344451eab25b21.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/fonts.css?v=e8c09f4e07f0c140">
   <link rel="stylesheet" href="css/app.css?v=e31171a4af4db91a">
+  <link rel="stylesheet" href="css/weekly-feature.css?v=e8b4682820f92a2b">
   <link rel="stylesheet" href="css/surprise.css?v=f16c46180a834f1a">
   <link rel="stylesheet" href="css/metadata-filters.css?v=9ae6a022f03ed049">
   <link rel="stylesheet" href="css/mobile-first.css?v=mobile-hero-size-186">
@@ -165,6 +166,21 @@
       </div>
     </section>
 
+    <section class="weekly-feature" data-weekly-feature aria-labelledby="weekly-title" hidden>
+      <div class="container">
+        <h2 class="weekly-heading" id="weekly-title">Ausmalbild der Woche</h2>
+        <article class="weekly-card">
+          <a class="weekly-preview" data-weekly-preview href="detail.html">
+            <img data-weekly-image alt="" loading="lazy" width="210" height="280">
+          </a>
+          <div class="weekly-copy">
+            <h3><a data-weekly-title href="detail.html"></a></h3>
+            <a class="outline-link" data-weekly-action href="detail.html">Malvorlage ansehen <span aria-hidden="true">→</span></a>
+          </div>
+        </article>
+      </div>
+    </section>
+
     <section id="neu" class="new-pages" aria-labelledby="gallery-title">
       <div class="container">
         <div class="section-heading">
@@ -303,6 +319,7 @@
   </main>
 
   <script src="js/stats.js?v=instagram-216" defer></script>
-  <script src="js/app.js?v=22938b1d9f7ace99" defer></script>
+  <script src="js/weekly-feature.js?v=21d8504424c9ae23" defer></script>
+  <script src="js/app.js?v=55712c80c9bc421e" defer></script>
 </body>
 </html>
