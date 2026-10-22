@@ -68,7 +68,7 @@ class SurpriseMeTests(unittest.TestCase):
         result=self.run_case([{"id":"3147286","title":"Ein Hund","thumb":"media/h.webp"}],random=0.99)
         self.assertFalse(result["disabled"])
         self.assertEqual(result["navigated"],"detail.html?id=3147286")
-        self.assertEqual(result["fetchCalls"],1)
+        self.assertEqual(result["fetchCalls"],2)
         self.assertEqual(result["cardCount"],1)
 
     def test_multi_page_set_is_one_activity_and_preserves_campaign(self):
@@ -78,7 +78,7 @@ class SurpriseMeTests(unittest.TestCase):
              "pages":[{"source":"one"},{"source":"two"}]},
         ],random=.99,campaign=True)
         self.assertEqual(result["navigated"],"detail.html?id=2222222&campaign=dortmund-01")
-        self.assertEqual(result["fetchCalls"],1)
+        self.assertEqual(result["fetchCalls"],2)
         self.assertEqual(result["cardCount"],2)
 
     def test_skips_invalid_items_before_random_selection(self):
@@ -98,4 +98,4 @@ class SurpriseMeTests(unittest.TestCase):
                 self.assertEqual(result["navigated"],"")
                 self.assertFalse(result["statusHidden"])
                 self.assertTrue(result["statusText"])
-                self.assertEqual(result["fetchCalls"],1)
+                self.assertEqual(result["fetchCalls"],2)
