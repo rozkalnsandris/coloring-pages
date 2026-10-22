@@ -8,12 +8,7 @@
       "kind": "seasonal",
       "active_from": "12-01",
       "active_to": "02-29",
-      "legacy_terms": [
-        "winter",
-        "schnee",
-        "schneemann",
-        "schneeflocke"
-      ]
+      "legacy_terms": ["winter", "schnee", "schneemann", "schneeflocke"]
     },
     {
       "id": "fasching",
@@ -22,13 +17,7 @@
       "kind": "seasonal",
       "active_from": "02-01",
       "active_to": "03-15",
-      "legacy_terms": [
-        "fasching",
-        "karneval",
-        "clown",
-        "kostüm",
-        "kostuem"
-      ]
+      "legacy_terms": ["fasching", "karneval", "clown", "kostüm", "kostuem"]
     },
     {
       "id": "fruehling",
@@ -37,13 +26,7 @@
       "kind": "seasonal",
       "active_from": "03-01",
       "active_to": "05-31",
-      "legacy_terms": [
-        "frühling",
-        "fruehling",
-        "blüte",
-        "bluete",
-        "tulpe"
-      ]
+      "legacy_terms": ["frühling", "fruehling", "blüte", "bluete", "tulpe"]
     },
     {
       "id": "ostern",
@@ -52,12 +35,7 @@
       "kind": "seasonal",
       "active_from": "03-15",
       "active_to": "04-30",
-      "legacy_terms": [
-        "ostern",
-        "osterhase",
-        "osterei",
-        "ostereier"
-      ]
+      "legacy_terms": ["ostern", "osterhase", "osterei", "ostereier"]
     },
     {
       "id": "muttertag",
@@ -66,11 +44,7 @@
       "kind": "seasonal",
       "active_from": "05-01",
       "active_to": "05-15",
-      "legacy_terms": [
-        "muttertag",
-        "mama",
-        "mutter"
-      ]
+      "legacy_terms": ["muttertag", "mama", "mutter"]
     },
     {
       "id": "sommer",
@@ -79,12 +53,7 @@
       "kind": "seasonal",
       "active_from": "06-01",
       "active_to": "08-31",
-      "legacy_terms": [
-        "sommer",
-        "sonne",
-        "strand",
-        "urlaub"
-      ]
+      "legacy_terms": ["sommer", "sonne", "strand", "urlaub"]
     },
     {
       "id": "halloween",
@@ -93,17 +62,7 @@
       "kind": "seasonal",
       "active_from": "09-15",
       "active_to": "10-31",
-      "legacy_terms": [
-        "halloween",
-        "kürbis",
-        "kuerbis",
-        "gespenst",
-        "geist",
-        "hexe",
-        "fledermaus",
-        "spinne",
-        "monster"
-      ]
+      "legacy_terms": ["halloween", "kürbis", "kuerbis", "gespenst", "geist", "hexe", "fledermaus", "spinne", "monster"]
     },
     {
       "id": "herbst",
@@ -112,18 +71,7 @@
       "kind": "seasonal",
       "active_from": "09-01",
       "active_to": "11-30",
-      "legacy_terms": [
-        "herbst",
-        "laub",
-        "blatt",
-        "blätter",
-        "blaetter",
-        "eichel",
-        "kastanie",
-        "füllhorn",
-        "fuellhorn",
-        "ernte"
-      ]
+      "legacy_terms": ["herbst", "laub", "blatt", "blätter", "blaetter", "eichel", "kastanie", "füllhorn", "fuellhorn", "ernte"]
     },
     {
       "id": "sankt-martin",
@@ -132,13 +80,7 @@
       "kind": "seasonal",
       "active_from": "10-15",
       "active_to": "11-11",
-      "legacy_terms": [
-        "sankt martin",
-        "martinstag",
-        "martinsgans",
-        "laterne",
-        "laternenumzug"
-      ]
+      "legacy_terms": ["sankt martin", "martinstag", "martinsgans", "laterne", "laternenumzug"]
     },
     {
       "id": "advent",
@@ -147,12 +89,7 @@
       "kind": "seasonal",
       "active_from": "11-20",
       "active_to": "12-24",
-      "legacy_terms": [
-        "advent",
-        "adventskranz",
-        "kerze",
-        "kerzen"
-      ]
+      "legacy_terms": ["advent", "adventskranz", "kerze", "kerzen"]
     },
     {
       "id": "nikolaus",
@@ -161,11 +98,7 @@
       "kind": "seasonal",
       "active_from": "11-20",
       "active_to": "12-06",
-      "legacy_terms": [
-        "nikolaus",
-        "nikolausstiefel",
-        "stiefel"
-      ]
+      "legacy_terms": ["nikolaus", "nikolausstiefel", "stiefel"]
     },
     {
       "id": "weihnachten",
@@ -174,167 +107,70 @@
       "kind": "seasonal",
       "active_from": "11-20",
       "active_to": "12-26",
-      "legacy_terms": [
-        "weihnacht",
-        "weihnachtsmann",
-        "weihnachtsbaum",
-        "tannenbaum",
-        "rentier"
-      ]
+      "legacy_terms": ["weihnacht", "weihnachtsmann", "weihnachtsbaum", "tannenbaum", "rentier"]
     },
     {
       "id": "obst",
       "label": "Obst",
       "icon": "🍎",
       "kind": "evergreen",
-      "legacy_terms": [
-        "obst",
-        "frucht",
-        "früchte",
-        "fruechte",
-        "apfel",
-        "äpfel",
-        "aepfel",
-        "birne",
-        "banane",
-        "erdbeere",
-        "orange",
-        "zitrone",
-        "kirsche",
-        "traube",
-        "ananas",
-        "melone",
-        "pfirsich"
-      ]
+      "legacy_terms": ["obst", "frucht", "früchte", "fruechte", "apfel", "äpfel", "aepfel", "birne", "banane", "erdbeere", "orange", "zitrone", "kirsche", "traube", "ananas", "melone", "pfirsich"]
     },
     {
       "id": "gemuese",
       "label": "Gemüse",
       "icon": "🥕",
       "kind": "evergreen",
-      "legacy_terms": [
-        "gemüse",
-        "gemuese",
-        "karotte",
-        "möhre",
-        "moehre",
-        "tomate",
-        "gurke",
-        "paprika",
-        "brokkoli",
-        "blumenkohl",
-        "kartoffel",
-        "zwiebel",
-        "kürbis",
-        "kuerbis"
-      ]
+      "legacy_terms": ["gemüse", "gemuese", "karotte", "möhre", "moehre", "tomate", "gurke", "paprika", "brokkoli", "blumenkohl", "kartoffel", "zwiebel", "kürbis", "kuerbis"]
     },
     {
       "id": "dinosaurier",
       "label": "Dinosaurier",
       "icon": "🦖",
       "kind": "evergreen",
-      "legacy_terms": [
-        "dinosaurier",
-        "dino",
-        "t-rex",
-        "tyrannosaurus",
-        "triceratops",
-        "stegosaurus"
-      ]
+      "legacy_terms": ["dinosaurier", "dino", "t-rex", "tyrannosaurus", "triceratops", "stegosaurus"]
     },
     {
       "id": "bauernhof",
       "label": "Bauernhof",
       "icon": "🚜",
       "kind": "evergreen",
-      "legacy_terms": [
-        "bauernhof",
-        "traktor",
-        "scheune",
-        "kuh",
-        "schwein",
-        "huhn",
-        "hahn",
-        "schaf",
-        "ziege"
-      ]
+      "legacy_terms": ["bauernhof", "traktor", "scheune", "kuh", "schwein", "huhn", "hahn", "schaf", "ziege"]
     },
     {
       "id": "weltraum",
       "label": "Weltraum",
       "icon": "🚀",
       "kind": "evergreen",
-      "legacy_terms": [
-        "weltraum",
-        "rakete",
-        "astronaut",
-        "planet",
-        "saturn",
-        "mond",
-        "ufo",
-        "raumfahrt"
-      ]
+      "legacy_terms": ["weltraum", "rakete", "astronaut", "planet", "saturn", "mond", "ufo", "raumfahrt"]
     },
     {
       "id": "blumen",
       "label": "Blumen",
       "icon": "🌸",
       "kind": "evergreen",
-      "legacy_terms": [
-        "blume",
-        "blumen",
-        "rose",
-        "tulpe",
-        "sonnenblume",
-        "blüte",
-        "bluete"
-      ]
+      "legacy_terms": ["blume", "blumen", "rose", "tulpe", "sonnenblume", "blüte", "bluete"]
     },
     {
       "id": "meerestiere",
       "label": "Meerestiere",
       "icon": "🐠",
       "kind": "evergreen",
-      "legacy_terms": [
-        "meer",
-        "ozean",
-        "fisch",
-        "delfin",
-        "wal",
-        "hai",
-        "krake",
-        "qualle",
-        "seestern",
-        "seepferd",
-        "meeresschildkröte",
-        "meeresschildkroete"
-      ]
+      "legacy_terms": ["meer", "ozean", "fisch", "delfin", "wal", "hai", "krake", "qualle", "seestern", "seepferd", "meeresschildkröte", "meeresschildkroete"]
     },
     {
       "id": "sport",
       "label": "Sport",
       "icon": "⚽",
       "kind": "evergreen",
-      "legacy_terms": [
-        "sport",
-        "fußball",
-        "fussball",
-        "basketball",
-        "tennis",
-        "volleyball"
-      ]
+      "legacy_terms": ["sport", "fußball", "fussball", "basketball", "tennis", "volleyball"]
     },
     {
       "id": "einhoerner",
       "label": "Einhörner",
       "icon": "🦄",
       "kind": "evergreen",
-      "legacy_terms": [
-        "einhorn",
-        "einhörner",
-        "einhoerner"
-      ]
+      "legacy_terms": ["einhorn", "einhörner", "einhoerner"]
     }
   ]
 }
