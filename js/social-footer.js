@@ -1,12 +1,12 @@
-/* Set these only after confirming the exact official Ausmalwiese profile URLs.
- * While both are empty, no footer or misleading link is shown.
+/* Follow destinations supplied by the Ausmalwiese owner.
+ * The Facebook share URL is accepted as one exact owner-provided exception.
  */
 (() => {
   "use strict";
 
   const profiles = Object.freeze({
-    instagram: "",
-    facebook: ""
+    instagram: "https://www.instagram.com/ausmalwiese/",
+    facebook: "https://www.facebook.com/share/1F6tVwJ7QK/"
   });
   const platforms = [
     {
@@ -29,6 +29,10 @@
       const url = new URL(value);
       if (url.protocol !== "https:" || url.username || url.password || url.port ||
           !platform.hosts.includes(url.hostname) || url.search || url.hash) return null;
+      // The owner supplied this one Facebook share URL as the follow destination.
+      // No other share URL is allowed by the ordinary profile-path rule below.
+      if (platform.key === "facebook" &&
+          url.href === "https://www.facebook.com/share/1F6tVwJ7QK/") return url.href;
       if (!/^\/[a-zA-Z0-9._-]+\/?$/.test(url.pathname)) return null;
       if (["explore", "reel", "reels", "p", "stories", "share", "sharer.php"].includes(url.pathname.split("/")[1])) return null;
       return url.href;
