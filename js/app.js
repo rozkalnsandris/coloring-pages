@@ -481,6 +481,12 @@ async function hydrateCatalog() {
     updateCatalogCounts(catalogEntries);
     renderTopicExplorer(catalogEntries);
     renderCatalog();
+    try {
+      // Editorial feature is optional; never interrupt browse/preview/print.
+      window.AusmalWeekly?.render(catalogEntries);
+    } catch {
+      // A missing/broken optional feature must not block the catalogue.
+    }
     if (entries.length) await hydrateRankings(catalogEntries);
     else rankingsUnavailable();
   } catch {
