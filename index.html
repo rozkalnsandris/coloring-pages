@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="css/surprise.css?v=f16c46180a834f1a">
   <link rel="stylesheet" href="css/metadata-filters.css?v=9ae6a022f03ed049">
   <link rel="stylesheet" href="css/mobile-first.css?v=mobile-hero-size-186">
+  <link rel="stylesheet" href="css/home-discovery.css?v=79d61a2cc6b580b1">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -98,32 +99,48 @@
       </div>
     </section>
 
-    <section id="kategorien" class="categories" aria-label="Kategorien">
+    <section id="kategorien" class="categories" aria-labelledby="category-heading">
       <div class="container">
+        <div class="category-heading">
+          <h2 id="category-heading">Nach Kategorien entdecken</h2>
+          <p>Wähle einen Bereich – die Beispiele zeigen dir, was du dort findest.</p>
+        </div>
         <div class="category-grid" data-category-grid>
           <a style="text-decoration: none;" class="category-card category-figures" href="/figuren" data-filter="figuren">
             <span class="category-icon" aria-hidden="true">🦸</span>
-            <span class="category-name">Figuren &amp; Helden</span><span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
+            <span class="category-name">Figuren &amp; Helden</span>
+            <span class="category-description">Menschen, Helden &amp; Fantasie</span>
+            <span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
           </a>
           <a style="text-decoration: none;" class="category-card category-animals" href="/tiere" data-filter="tiere">
             <span class="category-icon" aria-hidden="true">🐱</span>
-            <span class="category-name">Tiere</span><span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
+            <span class="category-name">Tiere</span>
+            <span class="category-description">Tiere von klein bis groß</span>
+            <span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
           </a>
           <a style="text-decoration: none;" class="category-card category-vehicles" href="/fahrzeuge" data-filter="fahrzeuge">
             <span class="category-icon" aria-hidden="true">🚒</span>
-            <span class="category-name">Fahrzeuge</span><span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
+            <span class="category-name">Fahrzeuge</span>
+            <span class="category-description">Autos, Feuerwehr &amp; mehr</span>
+            <span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
           </a>
           <a style="text-decoration: none;" class="category-card category-alphabet" href="/alphabet" data-filter="alphabet">
             <span class="category-icon category-abc" aria-hidden="true"><b>A</b><b>B</b><b>C</b></span>
-            <span class="category-name">Alphabet</span><span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
+            <span class="category-name">Alphabet</span>
+            <span class="category-description">Buchstaben &amp; Schreibübungen</span>
+            <span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
           </a>
           <a style="text-decoration: none;" class="category-card category-learning" href="/lernen" data-filter="lernen">
             <span class="category-icon" aria-hidden="true">💡</span>
-            <span class="category-name">Lernen</span><span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
+            <span class="category-name">Lernen</span>
+            <span class="category-description">Lernblätter &amp; Übungen</span>
+            <span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
           </a>
           <a style="text-decoration: none;" class="category-card category-seasons" href="/jahreszeiten" data-filter="jahreszeiten">
             <span class="category-icon" aria-hidden="true">🎃</span>
-            <span class="category-name">Jahreszeiten &amp; Feste</span><span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
+            <span class="category-name">Jahreszeiten &amp; Feste</span>
+            <span class="category-description">Halloween, Herbst &amp; Weihnachten</span>
+            <span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
           </a>
         </div>
       </div>
@@ -137,7 +154,10 @@
         </div>
         <div class="topic-block" data-topic-main-block hidden>
           <div class="topic-heading">
-            <h2>Themen entdecken</h2>
+            <div class="topic-heading-copy">
+              <h2 id="topic-explorer-title">Beliebte Themen</h2>
+              <p>Obst, Gemüse, Dinosaurier, Weltraum &amp; mehr direkt auswählen.</p>
+            </div>
             <button class="topic-clear" type="button" data-topic-clear hidden>Alle zeigen</button>
           </div>
           <div class="topic-strip" data-topic-list role="group" aria-label="Malvorlagen nach Thema filtern"></div>
