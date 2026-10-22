@@ -1,0 +1,46 @@
+.weekly-feature {
+  padding: 8px 0 22px;
+}
+.weekly-feature .weekly-heading {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: clamp(21px, 3vw, 28px);
+  line-height: 1.15;
+}
+.weekly-card {
+  display: grid;
+  grid-template-columns: minmax(0, 140px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+  max-width: 670px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: #f5f9ff;
+}
+.weekly-preview {
+  display: block;
+  border: 1px solid #dce8f5;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+.weekly-preview img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+}
+.weekly-copy { min-width: 0; }
+.weekly-copy h3 {
+  margin: 0 0 14px;
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+.weekly-copy h3 a { text-decoration: none; }
+.weekly-copy h3 a:hover { color: var(--blue-deep); }
+.weekly-copy .outline-link { white-space: normal; text-align: center; }
+@media (max-width: 500px) {
+  .weekly-card { grid-template-columns: 110px minmax(0, 1fr); gap: 12px; padding: 10px; }
+  .weekly-copy h3 { font-size: 15px; margin-bottom: 8px; }
+  .weekly-copy .outline-link { font-size: 12px; padding: 8px; }
+}
