@@ -2,6 +2,60 @@
   "schema": "rozkalns.coloring-pages.topics.v1",
   "topics": [
     {
+      "id": "winter",
+      "label": "Winter",
+      "icon": "❄️",
+      "kind": "seasonal",
+      "active_from": "12-01",
+      "active_to": "02-29",
+      "legacy_terms": ["winter", "schnee", "schneemann", "schneeflocke"]
+    },
+    {
+      "id": "fasching",
+      "label": "Fasching",
+      "icon": "🎭",
+      "kind": "seasonal",
+      "active_from": "02-01",
+      "active_to": "03-15",
+      "legacy_terms": ["fasching", "karneval", "clown", "kostüm", "kostuem"]
+    },
+    {
+      "id": "fruehling",
+      "label": "Frühling",
+      "icon": "🌷",
+      "kind": "seasonal",
+      "active_from": "03-01",
+      "active_to": "05-31",
+      "legacy_terms": ["frühling", "fruehling", "blüte", "bluete", "tulpe"]
+    },
+    {
+      "id": "ostern",
+      "label": "Ostern",
+      "icon": "🐰",
+      "kind": "seasonal",
+      "active_from": "03-15",
+      "active_to": "04-30",
+      "legacy_terms": ["ostern", "osterhase", "osterei", "ostereier"]
+    },
+    {
+      "id": "muttertag",
+      "label": "Muttertag",
+      "icon": "💐",
+      "kind": "seasonal",
+      "active_from": "05-01",
+      "active_to": "05-15",
+      "legacy_terms": ["muttertag", "mama", "mutter"]
+    },
+    {
+      "id": "sommer",
+      "label": "Sommer",
+      "icon": "☀️",
+      "kind": "seasonal",
+      "active_from": "06-01",
+      "active_to": "08-31",
+      "legacy_terms": ["sommer", "sonne", "strand", "urlaub"]
+    },
+    {
       "id": "halloween",
       "label": "Halloween",
       "icon": "🎃",

@@ -17,12 +17,16 @@ class MonthParser(HTMLParser):
             self.months.append(int(props["data-calendar-month"]))
 
 class CalendarTests(unittest.TestCase):
-    def test_twelve_months_and_no_invented_links(self):
+    def test_twelve_months_and_visual_topic_shelves(self):
         html = (ROOT / "kalender.html").read_text(encoding="utf-8")
         parser = MonthParser()
         parser.feed(html)
         self.assertEqual(parser.months, list(range(1, 13)))
         self.assertEqual(html.count('data-calendar-topic='), 20)
+        self.assertEqual(html.count('data-calendar-select='), 12)
+        self.assertIn('data-calendar-results', html)
+        self.assertIn('href="index.html?topic=halloween#neu"', html)
+        self.assertIn("Alle Halloween-Ausmalbilder", html)
         self.assertIn("<noscript>", html)
         self.assertNotIn("detail.html?id=", html)
 
@@ -35,15 +39,30 @@ class CalendarTests(unittest.TestCase):
                 html = (ROOT / page).read_text(encoding="utf-8")
                 self.assertEqual(html.count(">Kalender</a>"), 2)
 
-    def test_timezone_calendar_and_read_only_catalog(self):
+    def test_calendar_is_packaged_in_public_image(self):
+        dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+        copy_lines = [line for line in dockerfile.splitlines() if line.startswith("COPY ") and "/usr/share/nginx/html/" in line]
+        self.assertTrue(any("kalender.html" in line.split() for line in copy_lines))
+
+    def test_timezone_complete_collections_and_safe_topic_matching(self):
         js = (ROOT / "js/calendar.js").read_text(encoding="utf-8")
         for needle in ['timeZone: "Europe/Berlin"', "function easterUtc(year)",
                        "movableMonth(today.year, 48)", 'fetch("catalog.json", { cache: "no-store" })',
                        'fetch("/topics.json", { cache: "no-store" })',
-                       "Array.isArray(entry.topics)", "ID_PATTERN.test", "setResult(row, null, true)"]:
+                       "function matchingEntries(entries, topic, registryTopic)",
+                       "return entries.filter((entry) =>", "entry.topics.includes(topic)",
+                       'STRICT_EXPLICIT_TOPICS', '"nikolaus"', "matches.map(createPreviewCard)"]:
             self.assertIn(needle, js)
+        self.assertNotIn("entries.find(", js)
         for forbidden in ["localStorage", "document.cookie", "window.print()", "sendBeacon"]:
             self.assertNotIn(forbidden, js)
+
+    def test_calendar_css_uses_responsive_horizontal_shelves(self):
+        css = (ROOT / "css/calendar.css").read_text(encoding="utf-8")
+        self.assertIn("grid-auto-flow: column", css)
+        self.assertIn("overflow-x: auto", css)
+        self.assertIn("scroll-snap-type: x proximity", css)
+        self.assertIn(".calendar-month.is-selected", css)
 
     @unittest.skipUnless(shutil.which("node"), "Node.js unavailable")
     def test_javascript_syntax(self):
