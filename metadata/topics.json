@@ -1,0 +1,122 @@
+{
+  "schema": "rozkalns.coloring-pages.topics.v1",
+  "topics": [
+    {
+      "id": "halloween",
+      "label": "Halloween",
+      "icon": "🎃",
+      "kind": "seasonal",
+      "active_from": "09-15",
+      "active_to": "10-31",
+      "legacy_terms": ["halloween", "kürbis", "kuerbis", "gespenst", "geist", "hexe", "fledermaus", "spinne", "monster"]
+    },
+    {
+      "id": "herbst",
+      "label": "Herbst",
+      "icon": "🍂",
+      "kind": "seasonal",
+      "active_from": "09-01",
+      "active_to": "11-30",
+      "legacy_terms": ["herbst", "laub", "blatt", "blätter", "blaetter", "eichel", "kastanie", "füllhorn", "fuellhorn", "ernte"]
+    },
+    {
+      "id": "sankt-martin",
+      "label": "Sankt Martin",
+      "icon": "🏮",
+      "kind": "seasonal",
+      "active_from": "10-15",
+      "active_to": "11-11",
+      "legacy_terms": ["sankt martin", "martinstag", "martinsgans", "laterne", "laternenumzug"]
+    },
+    {
+      "id": "advent",
+      "label": "Advent",
+      "icon": "🕯️",
+      "kind": "seasonal",
+      "active_from": "11-20",
+      "active_to": "12-24",
+      "legacy_terms": ["advent", "adventskranz", "kerze", "kerzen"]
+    },
+    {
+      "id": "nikolaus",
+      "label": "Nikolaus",
+      "icon": "👢",
+      "kind": "seasonal",
+      "active_from": "11-20",
+      "active_to": "12-06",
+      "legacy_terms": ["nikolaus", "nikolausstiefel", "stiefel"]
+    },
+    {
+      "id": "weihnachten",
+      "label": "Weihnachten",
+      "icon": "🎄",
+      "kind": "seasonal",
+      "active_from": "11-20",
+      "active_to": "12-26",
+      "legacy_terms": ["weihnacht", "weihnachtsmann", "weihnachtsbaum", "tannenbaum", "rentier"]
+    },
+    {
+      "id": "obst",
+      "label": "Obst",
+      "icon": "🍎",
+      "kind": "evergreen",
+      "legacy_terms": ["obst", "frucht", "früchte", "fruechte", "apfel", "äpfel", "aepfel", "birne", "banane", "erdbeere", "orange", "zitrone", "kirsche", "traube", "ananas", "melone", "pfirsich"]
+    },
+    {
+      "id": "gemuese",
+      "label": "Gemüse",
+      "icon": "🥕",
+      "kind": "evergreen",
+      "legacy_terms": ["gemüse", "gemuese", "karotte", "möhre", "moehre", "tomate", "gurke", "paprika", "brokkoli", "blumenkohl", "kartoffel", "zwiebel", "kürbis", "kuerbis"]
+    },
+    {
+      "id": "dinosaurier",
+      "label": "Dinosaurier",
+      "icon": "🦖",
+      "kind": "evergreen",
+      "legacy_terms": ["dinosaurier", "dino", "t-rex", "tyrannosaurus", "triceratops", "stegosaurus"]
+    },
+    {
+      "id": "bauernhof",
+      "label": "Bauernhof",
+      "icon": "🚜",
+      "kind": "evergreen",
+      "legacy_terms": ["bauernhof", "traktor", "scheune", "kuh", "schwein", "huhn", "hahn", "schaf", "ziege"]
+    },
+    {
+      "id": "weltraum",
+      "label": "Weltraum",
+      "icon": "🚀",
+      "kind": "evergreen",
+      "legacy_terms": ["weltraum", "rakete", "astronaut", "planet", "saturn", "mond", "ufo", "raumfahrt"]
+    },
+    {
+      "id": "blumen",
+      "label": "Blumen",
+      "icon": "🌸",
+      "kind": "evergreen",
+      "legacy_terms": ["blume", "blumen", "rose", "tulpe", "sonnenblume", "blüte", "bluete"]
+    },
+    {
+      "id": "meerestiere",
+      "label": "Meerestiere",
+      "icon": "🐠",
+      "kind": "evergreen",
+      "legacy_terms": ["meer", "ozean", "fisch", "delfin", "wal", "hai", "krake", "qualle", "seestern", "seepferd", "meeresschildkröte", "meeresschildkroete"]
+    },
+    {
+      "id": "sport",
+      "label": "Sport",
+      "icon": "⚽",
+      "kind": "evergreen",
+      "legacy_terms": ["sport", "fußball", "fussball", "basketball", "tennis", "volleyball"]
+    },
+    {
+      "id": "einhoerner",
+      "label": "Einhörner",
+      "icon": "🦄",
+      "kind": "evergreen",
+      "legacy_terms": ["einhorn", "einhörner", "einhoerner"]
+    }
+  ]
+}
