@@ -1,7 +1,19 @@
-# Ausmal-Kalender #196 — source-only implementation
+# Ausmal-Kalender #196 — current source contract
 
-The mobile-first `kalender.html` contains 12 semantic month sections even without JavaScript. Navigation on public catalogue/detail/Kita pages reaches it. JavaScript hydrates links only from validated current `catalog.json` activity records. It respects explicit `topics` arrays first; legacy entries can match `/topics.json` legacy terms or restrained local title keywords. Missing entries become plain non-links, and unavailable catalogues show an error. Only normal detail links are created; the normal A4 print/PNG flow is unchanged.
+The current calendar is a mobile-first visual seasonal browser rather than a one-result-per-theme text list.
 
-Current month/year use `Europe/Berlin`, independent of the device timezone. The Gregorian Easter computus places Easter and Carnival Monday in their actual year-dependent months; no precise country-wide school-start or holiday claims are shown. Mobile navigation, focus states and semantic headings are included. No new API, database, tracking, secrets, host content or external artwork.
+- All 12 months remain directly selectable.
+- The current month is selected using `Europe/Berlin`.
+- Each theme renders the complete set of matching published catalogue entries as a horizontally scrollable preview shelf.
+- Every published preview keeps the normal `detail.html?id=...` → A4 print flow.
+- A theme with results exposes a shareable `index.html?topic=<id>#neu` link to the full catalogue filter.
+- Seasonal matching prefers explicit reviewed `topics` metadata. Ambiguous observances such as Nikolaus, Advent, Sankt Martin, Muttertag, Ostern and Fasching require explicit topic metadata instead of broad title-only guesses.
+- Broader non-ambiguous themes may retain legacy-term fallback for older catalogue entries without `topics`.
+- Missing results stay empty and do not expose a misleading “Alle ansehen” link.
+- Unavailable catalogues fail visibly without demo cards.
 
-GitHub source-only; exact-head CI and review needed. PR merge, deployment and LIVE verification require their normal separate gates.
+The Gregorian Easter computus keeps Easter and Carnival/Fasching in their year-dependent months. The page does not publish state-specific school-holiday dates or imply nationwide German school-calendar accuracy.
+
+The UI uses semantic HTML, plain CSS and vanilla JavaScript only. Responsive card shelves use native CSS Grid plus horizontal overflow/scroll snapping; no carousel framework, new API, database, account, tracking or external artwork is introduced.
+
+GitHub remains canonical for this source. Merge and any resulting LIVE application release still require the normal owner gate and exact-head CI/review checks.
