@@ -87,6 +87,10 @@ function syncCatalogFilterUrl() {
   if (next !== now) history.pushState(null, "", next);
 }
 
+function syncMetadataFilterUrl() {
+  syncCatalogFilterUrl();
+}
+
 function matchesMetadata(age, difficulty) {
   return (!ageFilter?.value || age === ageFilter.value) &&
     (!difficultyFilter?.value || difficulty === difficultyFilter.value);
@@ -586,7 +590,7 @@ searchInput?.addEventListener("input", applyFilters);
 
 [ageFilter, difficultyFilter].forEach((control) => {
   control?.addEventListener("change", () => {
-    syncCatalogFilterUrl();
+    syncMetadataFilterUrl();
     applyFilters();
   });
 });
