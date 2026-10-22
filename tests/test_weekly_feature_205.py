@@ -61,7 +61,7 @@ class WeeklyFeatureTests(unittest.TestCase):
 
     def test_only_explicit_existing_catalogue_id_can_be_featured(self):
         catalog = [{"id":"1234567","title":"Eule","thumb":"/media/1234567/preview.webp"}]
-        for schedule in ({}, {"2026-W43":"1234567"}, {"2026-W43":"1111111"},
+        for schedule in ({}, {"2026-W42":"1234567"}, {"2026-W43":"1111111"},
                          {"2026-W43":"bad-id"}):
             with self.subTest(schedule=schedule):
                 result = run_weekly(instant="2026-10-22T08:00:00Z",
