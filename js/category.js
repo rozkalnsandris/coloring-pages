@@ -1,6 +1,10 @@
 const page = document.body;
 const category = String(page?.dataset.categoryPage || "");
 const categoryLabel = String(page?.dataset.categoryLabel || "");
+const categoryTopics = new Set(
+  String(page?.dataset.categoryTopics || "").split(",").map((value) => value.trim()).filter(Boolean)
+);
+let topicRegistry = [];
 const gallery = document.querySelector("[data-category-gallery]");
 const status = document.querySelector("[data-category-status]");
 const total = document.querySelector("[data-category-total]");
@@ -12,6 +16,30 @@ const DIFFICULTY_LABELS = {
   normal: "Mittel",
   detailed: "Detailliert",
 };
+
+function normalizeTopicText(value) {
+  return String(value || "").trim().toLocaleLowerCase("de")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "").replaceAll("ß", "ss");
+}
+function entryTopicIds(entry) {
+  const known = new Set(topicRegistry.map((topic) => topic.id));
+  if (Array.isArray(entry?.topics)) {
+    return [...new Set(entry.topics.map((value) => String(value || "").trim().toLocaleLowerCase("de")).filter((value) => known.has(value)))];
+  }
+  const haystack = normalizeTopicText(`${entry?.title || ""} ${entry?.character || ""}`);
+  if (!haystack) return [];
+  return topicRegistry.filter((topic) =>
+    Array.isArray(topic.legacy_terms) && topic.legacy_terms.some((term) => haystack.includes(normalizeTopicText(term)))
+  ).map((topic) => topic.id);
+}
+async function loadTopicRegistry() {
+  if (!categoryTopics.size) return;
+  const response = await fetch("/topics.json", { cache: "no-store" });
+  if (!response.ok) throw new Error("topic registry unavailable");
+  const payload = await response.json();
+  if (payload?.schema !== "rozkalns.coloring-pages.topics.v1" || !Array.isArray(payload.topics)) throw new Error("invalid topic registry");
+  topicRegistry = payload.topics.filter((topic) => topic && typeof topic.id === "string" && typeof topic.label === "string");
+}
 
 function entryPageCount(entry) {
   return Array.isArray(entry.pages) && entry.pages.length > 0 ? entry.pages.length : 1;
@@ -64,14 +92,17 @@ function createCard(entry) {
 async function loadCategory() {
   if (!category || !gallery) return;
   try {
+    await loadTopicRegistry();
     const response = await fetch("/catalog.json", { cache: "no-store" });
     if (!response.ok) throw new Error("catalog unavailable");
     const catalog = await response.json();
     if (!Array.isArray(catalog)) throw new Error("invalid catalog");
 
-    const entries = catalog.filter((entry) =>
-      entry && entry.id && entry.title && entry.thumb && entry.category === category
-    );
+    const entries = catalog.filter((entry) => {
+      if (!(entry && entry.id && entry.title && entry.thumb)) return false;
+      if (entry.category === category) return true;
+      return categoryTopics.size > 0 && entryTopicIds(entry).some((topicId) => categoryTopics.has(topicId));
+    });
     const fragment = document.createDocumentFragment();
     entries.forEach((entry) => fragment.append(createCard(entry)));
     gallery.replaceChildren(fragment);

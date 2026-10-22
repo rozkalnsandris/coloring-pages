@@ -37,6 +37,9 @@ class TopicFilterTests(unittest.TestCase):
         self.assertIn("Halloween, Herbst &amp; Weihnachten", page)
         self.assertIn("Beliebte Themen", page)
         self.assertIn("Obst, Gemüse, Dinosaurier, Weltraum &amp; mehr direkt auswählen.", page)
+        self.assertIn("Essen &amp; Natur", page)
+        self.assertIn("Obst, Gemüse, Blumen &amp; Bauernhof", page)
+        self.assertIn('data-collection-filter="essen-natur"', page)
         version = hashlib.sha256((ROOT / "css/home-discovery.css").read_bytes()).hexdigest()[:16]
         self.assertIn(f"css/home-discovery.css?v={version}", page)
 
@@ -47,6 +50,8 @@ class TopicFilterTests(unittest.TestCase):
         self.assertIn("topic.legacy_terms.some", source)
         self.assertIn('button.setAttribute("aria-pressed"', source)
         self.assertIn("matchesTopic", source)
+        self.assertIn('new Set(["obst", "gemuese", "blumen", "bauernhof"])', source)
+        self.assertIn("collectionTopics.has(topicId)", source)
         self.assertIn('new URLSearchParams(location.search).get("topic")', source)
         self.assertIn('url.searchParams.set("topic", activeTopic)', source)
 

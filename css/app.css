@@ -191,7 +191,7 @@ a { color: inherit; }
 .search button:hover, .search button:focus-visible { background: var(--blue-deep); }
 
 .categories { padding: 0 0 24px; }
-.category-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; }
+.category-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; }
 .category-card {
   position: relative; min-height: 148px; display: grid; grid-template-columns: 1fr auto; grid-template-rows: 1fr auto;
   gap: 4px 8px; align-items: end; padding: 18px; border: 1px solid transparent;
@@ -233,6 +233,8 @@ a { color: inherit; }
 .category-figures .category-arrow { background: #ffdce0; color: #ff6571; }
 .category-seasons { background: #eefcf5; }
 .category-seasons .category-arrow { background: #daf6e3; color: #2b9350; }
+.category-food { background: #fff7e8; }
+.category-food .category-arrow { background: #ffe8bb; color: #c97912; }
 .category-abc { display: flex; align-items: center; gap: 1px; font-family: var(--font-display); font-weight: 800; filter: none; }
 .category-abc b:nth-child(1) { color: var(--coral); }
 .category-abc b:nth-child(2) { color: #438ff3; transform: translateY(-8px); }

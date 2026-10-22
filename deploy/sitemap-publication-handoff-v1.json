@@ -6,7 +6,7 @@
   "canonical_origin": "https://ausmalwiese.de",
   "generator": {
     "source_path": "tools/coloring-pages-sitemap",
-    "git_blob_sha1": "5d1d37c32573aa8ac0d91f45b73938638fd183e9",
+    "git_blob_sha1": "979b649818b1de7b4b40dcc5d2326d96f5e553c1",
     "input_argument": "--catalog",
     "snapshot_argument": "--expected-catalog-sha256",
     "candidate_verify_argument": "--verify-sitemap",
@@ -20,7 +20,8 @@
     "https://ausmalwiese.de/alphabet",
     "https://ausmalwiese.de/lernen",
     "https://ausmalwiese.de/figuren",
-    "https://ausmalwiese.de/jahreszeiten"
+    "https://ausmalwiese.de/jahreszeiten",
+    "https://ausmalwiese.de/essen-natur"
   ],
   "publisher_requirements": [
     "trusted-host-owned-fixed-paths-not-consumer-CLI",
