@@ -1,5 +1,18 @@
 # Ausmalbild der Woche — source contract (#205)
 
+## New owner requirement — 2026-10-22 (release HOLD)
+
+The owner now wants **a new pick every Monday at 00:10 Europe/Berlin**, reflecting the coloring pages published daily. The finite 12-week `CURATED_WEEKS` map below was selected before this requirement and **must not be treated as the agreed future behavior or merged as the finished feature**. GitHub PR #317 is held for redesign.
+
+A separate ChatGPT weekly task is scheduled for Mondays at 00:10 Europe/Berlin to read the public catalogue and propose a fresh selection. **It does not and must not write production or GitHub, merge or publish content**. A scheduled proposal sent to the owner is not itself an updated homepage.
+
+Current public `catalog.json` has no `published_at` or equivalent per-entry timestamp. It is newest-first, but that ordering alone does not prove the exact publication date or preserve a once-per-week selection as new pages arrive. An on-page random selection from the current newest entries may change during the same week and is not a correct implementation of the fixed Monday 00:10 cutover.
+
+A fully automatic, consistent homepage needs separately reviewed source support for a **durable weekly choice** and a **trustworthy publication-time boundary** (or another owner-approved source of immutable publication state). The simple future-compatible design is to record immutable UTC `published_at` for newly imported entries and deterministically pick one eligible entry published before the Berlin Monday 00:10 cutoff, using the same already-fetched catalogue. The midnight, DST, ISO week-year, no-new-entries, missing-ID and weekly-consistency cases require tests. Existing entries have no timestamp; do not backfill them by guessing. Importer/ADMIN/catalog contract changes are **outside the frozen current PR #317 source scope** and require a separate scoped source decision before implementation.
+
+Until that contract is reviewed and implemented, keep the existing code as an unmerged candidate, not as a production automatic picker. No direct `main` mutation, cron, runtime/server write or LIVE authorization is inferred.
+
+
 ## Editorial ownership and activation
 
 On 2026-10-22, the owner explicitly delegated random editorial selection for #205. The 12 source-only selections below were drawn without replacement from the read-only public `https://ausmalwiese.de/catalog.json` response (400 entries; 344 records had a seven-digit ID and matching thumb/print paths). `js/weekly-feature.js` now includes those **exact** 12 ISO-week mappings, preserving leading zeroes. This is a curated PR candidate, not a claim that the PR is merged, LIVE is deployed, the thumbnail/print bytes were independently validated or the catalogue will remain unchanged.
