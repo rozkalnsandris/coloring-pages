@@ -1,53 +1,30 @@
-# Ausmalbild der Woche — source contract (#205)
+# Ausmalbild der Woche — publication-time driven contract (#205)
 
-## New owner requirement — 2026-10-22 (release HOLD)
+## Owner requirement and timing
 
-The owner now wants **a new pick every Monday at 00:10 Europe/Berlin**, reflecting the coloring pages published daily. The finite 12-week `CURATED_WEEKS` map below was selected before this requirement and **must not be treated as the agreed future behavior or merged as the finished feature**. GitHub PR #317 is held for redesign.
+The owner requested **automatic weekly selection every Monday at 00:10 in `Europe/Berlin`**, using pages published daily, rather than a fixed 12-week editorial list. This source design uses **no Cron, server scheduler, new API, extra HTTP request or persistent visitor identifier**.
 
-A separate ChatGPT weekly task is scheduled for Mondays at 00:10 Europe/Berlin to read the public catalogue and propose a fresh selection. **It does not and must not write production or GitHub, merge or publish content**. A scheduled proposal sent to the owner is not itself an updated homepage.
+The homepage calculates an effective Berlin ISO week from its existing clock and already-fetched `catalog.json`. The new week starts at **Monday 00:10:00 Berlin civil time**, including CET/CEST transitions and ISO week-year rollover; before that minute the previous choice is still displayed. The weekly highlight updates at the **next homepage load or refresh**, not by a background write at 00:10. An already-open tab does not switch automatically without navigation/reload; a page visit isn't guaranteed at exactly 00:10. The separate ChatGPT weekly read-only reminder does not change the website.
 
-Current public `catalog.json` has no `published_at` or equivalent per-entry timestamp. It is newest-first, but that ordering alone does not prove the exact publication date or preserve a once-per-week selection as new pages arrive. An on-page random selection from the current newest entries may change during the same week and is not a correct implementation of the fixed Monday 00:10 cutover.
+## Publication-time metadata
 
-A fully automatic, consistent homepage needs separately reviewed source support for a **durable weekly choice** and a **trustworthy publication-time boundary** (or another owner-approved source of immutable publication state). The simple future-compatible design is to record immutable UTC `published_at` for newly imported entries and deterministically pick one eligible entry published before the Berlin Monday 00:10 cutoff, using the same already-fetched catalogue. The midnight, DST, ISO week-year, no-new-entries, missing-ID and weekly-consistency cases require tests. Existing entries have no timestamp; do not backfill them by guessing. Importer/ADMIN/catalog contract changes are **outside the frozen current PR #317 source scope** and require a separate scoped source decision before implementation.
+The GitHub-owned `tools/coloring-pages-import` appends an immutable-looking UTC `published_at` value (ISO 8601, e.g. `2026-10-22T07:00:00Z`) to **newly imported** catalogue records, before the normal atomic catalogue publication. It preserves existing records byte-for-byte in meaning and **does not backfill dates** for historical records. Timestamp denotes import/catalogue preparation time, not a separately attested RPi5 audit or proof of exact public visibility to the second. It must never come from a user-editable title/filename, file modification time, or the record's list position.
 
-Until that contract is reviewed and implemented, keep the existing code as an unmerged candidate, not as a production automatic picker. No direct `main` mutation, cron, runtime/server write or LIVE authorization is inferred.
+**Integration gate:** GitHub source tests cannot prove that the protected ADMIN publishing operator and its installed importer actually execute this updated code. Before treating automatic rotation as functional in production, separately verify the *actual* import path emits `published_at` on newly published `catalog.json` records after authorized deployment. If ADMIN uses an independent catalogue writer, this source PR does not change it. Existing public catalogue entries currently lack this field; they cannot be assigned a publication date by guessing.
 
+## Selection algorithm
 
-## Editorial ownership and activation
+- Filter catalogue entries to unique seven-digit string IDs, a nonempty German title, exact `/media/<ID>/thumb.webp` thumbnail path and strictly formatted, parseable UTC `published_at`.
+- Convert each UTC timestamp to **Berlin civil date/time**. For a given Monday 00:10 cutoff, exclude entries published **at or after** the cutoff; this ensures Tuesday/Wednesday/daily additions cannot alter the current week's selection. A page published exactly at Monday 00:10 is eligible only at the *following* Monday cutoff.
+- Prefer candidates published in the **preceding seven-day Berlin-civil window** ending at the current Monday 00:10 cutoff. If none exist, consider all older timestamped catalogue records; when possible avoid the previous week's unfiltered deterministic winner.
+- Select one item using a deterministic week-key-and-ID hash with ID tie-breaker, independent of JSON ordering or the visitor. This is a reproducible pseudo-random editorial choice, **not** a cryptographically random draw. Catalogue entries added after the cutoff do not influence it.
+- Missing, invalid, untimestamped, future-only, withdrawn or unreadable entries lead to a hidden weekly slot when no valid candidate is left. No guessing from catalogue order, no old hard-coded mapping, no duplicate display in the catalogue grid itself.
+- Because no durable weekly state is stored, retroactive mutation of earlier `published_at` values or removal of a previously eligible/winning record **can** change or hide the choice. Normal immutable timestamps and append-only daily publications make the result stable during the week. A stronger freeze despite catalogue deletion would require a separately authorized durable weekly decision store, outside this source-only/no-Cron design.
 
-On 2026-10-22, the owner explicitly delegated random editorial selection for #205. The 12 source-only selections below were drawn without replacement from the read-only public `https://ausmalwiese.de/catalog.json` response (400 entries; 344 records had a seven-digit ID and matching thumb/print paths). `js/weekly-feature.js` now includes those **exact** 12 ISO-week mappings, preserving leading zeroes. This is a curated PR candidate, not a claim that the PR is merged, LIVE is deployed, the thumbnail/print bytes were independently validated or the catalogue will remain unchanged.
+The chosen page uses the published thumbnail, catalogue title, usual `detail.html?id=...` link, and the existing allowlisted campaign. Newest/Popular/Trending, search, filters, activity page counts, source PNG and A4 print stay unchanged. The main homepage fetches `catalog.json` only once, and the weekly code never makes a second request.
 
-Maintain a rolling **8–12 ISO weeks** when the editor wants the feature active; refresh the mapping through reviewed source PRs before it expires. Reusing the same ID in consecutive weeks should be avoided by the editor. Past entries may be retained for provenance until an ordinary approved source change removes them. No scheduled job, remote edit, content import or automatic selection is authorized. If there is no editorial selection or the schedule ends, the slot stays hidden and the normal catalogue remains unchanged.
+## Tests and source/release gates
 
-## Source-only editorial mapping (22 October 2026)
+Source tests cover importer UTC timestamps and untouched legacy entries; Monday 00:09:59/00:10:00 cutovers, autumn/spring DST, cross-year ISO weeks, additions after the cutoff, stable week choice under catalogue reordering, absent/invalid dates, legacy-only and empty catalogue, older-date fallback, and actual HTML/CSS/JS cache hashes.
 
-| Berlin ISO week | Published catalogue ID | Catalogue title |
-|---|---|---|
-| `2026-W43` | `3398005` | Fröhliches Auto |
-| `2026-W44` | `0662291` | Einhorn als Polizist |
-| `2026-W45` | `3589168` | Halloween-Otter mit Schal |
-| `2026-W46` | `3853527` | Alpaka |
-| `2026-W47` | `9823291` | Eishockeyspieler beim Bully |
-| `2026-W48` | `2468053` | Fröhliche Mumie mit Süßigkeiten |
-| `2026-W49` | `3534071` | Gemüsekorb |
-| `2026-W50` | `5755734` | Kind mit Laterne zu Sankt Martin |
-| `2026-W51` | `8367735` | Ente |
-| `2026-W52` | `1291018` | Entchen im Herbstregen |
-| `2026-W53` | `2584849` | Fröhlicher Fuchs |
-| `2027-W01` | `7547459` | Fröhlicher Muldenkipper |
-
-These IDs were chosen randomly from public catalogue **listings**, not by image recognition or by inventing publication status. The current week is `2026-W43`. The feature ends after `2027-W01` unless a new approved source update extends the mapping. The runtime checks the ID against the current catalogue again and hides a missing/unpublished item.
-
-
-## Runtime behavior
-
-- Compute the current ISO week **and ISO week-year** from the calendar date in `Europe/Berlin`, including the local midnight boundary and cross-year weeks.
-- At most one ID can be configured for an ISO week. Show the slot only if that exact ID appears in the already-fetched `catalog.json` array with a nonempty title and thumbnail. Missing, expired, unpublished and invalid mappings all fail closed to a hidden slot; never substitute a random or guessed drawing.
-- Reuse the published catalogue thumbnail, German title and standard `detail.html?id=...` flow, carrying forward only the existing allowlisted `campaign=dortmund-01` parameter. The print/original PNG contract remains untouched.
-- A separate compact callout is used instead of cloning a `coloring-card`. It does not alter Newest, Popular, Trending, search, counts or the number/order of catalogue cards.
-- `js/app.js` calls the small feature module with the **same** catalogue array after its existing fetch. No extra HTTP request, API, cookie, visitor recognition, scheduler or timer.
-- Semantic heading, descriptive links, alt text, focus style, mobile responsive layout and `hidden` ensure accessible fallback. A failed optional feature render must not block the catalogue.
-
-## Release gate
-
-The owner's delegated random selection and read-only public catalogue listing support the editorial source mapping, **not** confirmation of real RPi5 runtime, production image version or ongoing availability. A source PR touching `index.html` or `js/**` requires separately authorized exact-head merge and follows only the existing bounded application release rules. No GitHub merge, LIVE, Cloudflare or RPi5 mutation is part of this source-only change.
+Source-only authorization permits changes to importer, HTML/JS/CSS, documentation and tests for #205. This **does not** authorize any GitHub merge, RPi5/Admin install, publisher invocation, live data edit, migration, Cloudflare setting, secret or permissions change. A future owner-authorized exact-head merge may trigger only the reviewed bounded application SIMPLE-DEPLOY flow for eligible changed files; installed ADMIN/importer and production `published_at` compatibility still need independent read-only evidence. The PR must not be represented as functioning LIVE based solely on CI.
