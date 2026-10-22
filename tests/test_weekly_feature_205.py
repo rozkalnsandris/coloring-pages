@@ -50,7 +50,7 @@ class WeeklyFeatureTests(unittest.TestCase):
         self.assertEqual(run_weekly(instant="2020-12-31T22:30:00Z")["week"], "2020-W53")
         self.assertEqual(run_weekly(instant="2020-12-31T23:30:00Z")["week"], "2020-W53")
         self.assertEqual(run_weekly(instant="2021-01-03T23:15:00Z")["week"], "2021-W01")
-        self.assertEqual(run_weekly(instant="2026-10-25T22:30:00Z")["week"], "2026-W44")
+        self.assertEqual(run_weekly(instant="2026-10-25T23:30:00Z")["week"], "2026-W44")
 
     def test_no_owner_curated_id_means_hidden_not_guessed(self):
         catalog = [{"id":"1234567","title":"Eule","thumb":"/media/1234567/preview.webp"}]
