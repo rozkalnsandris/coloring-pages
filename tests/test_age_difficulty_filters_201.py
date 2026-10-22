@@ -13,7 +13,7 @@ const sample = JSON.parse(process.argv[1]);
 const callbacks = {};
 const makeControl = () => ({value: "", callbacks: {}, addEventListener(name, fn) { this.callbacks[name] = fn; }});
 const age = makeControl(), difficulty = makeControl();
-const search = {value: sample.q || ""};
+const search = makeControl(); search.value = sample.q || "";
 const selectors = {
   "[data-filter-age]": age,
   "[data-filter-difficulty]": difficulty,
