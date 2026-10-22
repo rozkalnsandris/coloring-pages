@@ -27,6 +27,14 @@ class TopicFilterTests(unittest.TestCase):
         self.assertIn("data-topic-list", page)
         self.assertIn("data-topic-clear", page)
 
+    def test_homepage_explains_categories_and_popular_topics(self):
+        page = (ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn("Nach Kategorien entdecken", page)
+        self.assertIn('class="category-description"', page)
+        self.assertIn("Halloween, Herbst &amp; Weihnachten", page)
+        self.assertIn("Beliebte Themen", page)
+        self.assertIn("Obst, Gemüse, Dinosaurier, Weltraum &amp; mehr direkt auswählen.", page)
+
     def test_runtime_prefers_explicit_topics_and_keeps_legacy_fallback(self):
         source = (ROOT / "js/app.js").read_text(encoding="utf-8")
         self.assertIn('fetch("/topics.json"', source)
@@ -41,6 +49,8 @@ class TopicFilterTests(unittest.TestCase):
         self.assertIn("min-height: 48px", css)
         self.assertIn("overflow-x: auto", css)
         self.assertIn("scroll-snap-type: x proximity", css)
+        self.assertIn(".category-description", css)
+        self.assertIn(".topic-heading-copy p", css)
 
     def test_container_serves_topic_registry(self):
         dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
