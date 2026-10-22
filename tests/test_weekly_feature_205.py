@@ -68,7 +68,7 @@ class WeeklyFeatureTests(unittest.TestCase):
         self.assertEqual(run_weekly(instant="2027-01-03T23:10:00Z")["week"], "2027-W01")
 
     def test_new_items_change_only_on_following_monday_cutover(self):
-        older = row("3398005", "2026-10-20T08:00:00Z", "Fröhliches Auto")
+        older = row("3398005", "2026-10-13T08:00:00Z", "Fröhliches Auto")
         fresh = row("0662291", "2026-10-23T10:00:00Z", "Einhorn")
         late = row("2468053", "2026-10-25T23:11:00Z", "Mumie")
         just_before = run_weekly(
