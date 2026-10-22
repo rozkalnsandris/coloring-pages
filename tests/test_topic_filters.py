@@ -13,7 +13,9 @@ class TopicFilterTests(unittest.TestCase):
         self.assertEqual(registry["schema"], "rozkalns.coloring-pages.topics.v1")
         ids = [item["id"] for item in registry["topics"]]
         self.assertEqual(len(ids), len(set(ids)))
-        for expected in ("halloween", "obst", "gemuese", "dinosaurier", "bauernhof", "weltraum", "blumen", "meerestiere", "sport", "einhoerner"):
+        for expected in ("winter", "fasching", "fruehling", "ostern", "muttertag", "sommer",
+                         "halloween", "obst", "gemuese", "dinosaurier", "bauernhof", "weltraum",
+                         "blumen", "meerestiere", "sport", "einhoerner"):
             self.assertIn(expected, ids)
         seasonal = [item for item in registry["topics"] if item["kind"] == "seasonal"]
         self.assertTrue(seasonal)
@@ -45,6 +47,8 @@ class TopicFilterTests(unittest.TestCase):
         self.assertIn("topic.legacy_terms.some", source)
         self.assertIn('button.setAttribute("aria-pressed"', source)
         self.assertIn("matchesTopic", source)
+        self.assertIn('new URLSearchParams(location.search).get("topic")', source)
+        self.assertIn('url.searchParams.set("topic", activeTopic)', source)
 
     def test_topic_chips_keep_mobile_touch_targets_and_horizontal_scroll(self):
         css = (ROOT / "css/app.css").read_text(encoding="utf-8")
