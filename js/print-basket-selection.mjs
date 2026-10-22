@@ -26,17 +26,23 @@ function printPages(entry) {
   if (!urls.length || urls.length > MAX_ACTIVITY_PAGES) return null;
 
   const unique = new Set();
+  const canonicalUrls = [];
   for (const url of urls) {
     if (typeof url !== "string") return null;
     const match = PUBLIC_PRINT_PNG.exec(url);
-    if (!match || match[1] !== entry.id || unique.has(url)) return null;
-    unique.add(url);
+    if (!match || match[1] !== entry.id) return null;
+    // Relative catalogue paths must resolve identically on /tiere, detail.html,
+    // and every other route. Reject both spellings of the same PNG as duplicates.
+    const canonicalUrl = url.startsWith("/") ? url : `/${url}`;
+    if (unique.has(canonicalUrl)) return null;
+    unique.add(canonicalUrl);
+    canonicalUrls.push(canonicalUrl);
   }
-  return urls.map((url, index) => ({
+  return canonicalUrls.map((printUrl, index) => ({
     activityId: entry.id,
     pageIndex: index + 1,
-    pageCount: urls.length,
-    printUrl: url,
+    pageCount: canonicalUrls.length,
+    printUrl,
   }));
 }
 
