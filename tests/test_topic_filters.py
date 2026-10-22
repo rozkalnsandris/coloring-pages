@@ -1,4 +1,5 @@
 """Homepage compact topic-filter contract."""
+import hashlib
 import json
 import unittest
 from pathlib import Path
@@ -34,6 +35,8 @@ class TopicFilterTests(unittest.TestCase):
         self.assertIn("Halloween, Herbst &amp; Weihnachten", page)
         self.assertIn("Beliebte Themen", page)
         self.assertIn("Obst, Gemüse, Dinosaurier, Weltraum &amp; mehr direkt auswählen.", page)
+        version = hashlib.sha256((ROOT / "css/home-discovery.css").read_bytes()).hexdigest()[:16]
+        self.assertIn(f"css/home-discovery.css?v={version}", page)
 
     def test_runtime_prefers_explicit_topics_and_keeps_legacy_fallback(self):
         source = (ROOT / "js/app.js").read_text(encoding="utf-8")
@@ -49,8 +52,9 @@ class TopicFilterTests(unittest.TestCase):
         self.assertIn("min-height: 48px", css)
         self.assertIn("overflow-x: auto", css)
         self.assertIn("scroll-snap-type: x proximity", css)
-        self.assertIn(".category-description", css)
-        self.assertIn(".topic-heading-copy p", css)
+        home_css = (ROOT / "css/home-discovery.css").read_text(encoding="utf-8")
+        self.assertIn(".category-description", home_css)
+        self.assertIn(".topic-heading-copy p", home_css)
 
     def test_container_serves_topic_registry(self):
         dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
