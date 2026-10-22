@@ -35,6 +35,11 @@ class CalendarTests(unittest.TestCase):
                 html = (ROOT / page).read_text(encoding="utf-8")
                 self.assertEqual(html.count(">Kalender</a>"), 2)
 
+    def test_calendar_is_packaged_in_public_image(self):
+        dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+        copy_lines = [line for line in dockerfile.splitlines() if line.startswith("COPY ") and "/usr/share/nginx/html/" in line]
+        self.assertTrue(any("kalender.html" in line.split() for line in copy_lines))
+
     def test_timezone_calendar_and_read_only_catalog(self):
         js = (ROOT / "js/calendar.js").read_text(encoding="utf-8")
         for needle in ['timeZone: "Europe/Berlin"', "function easterUtc(year)",
