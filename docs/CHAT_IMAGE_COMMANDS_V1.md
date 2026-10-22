@@ -167,7 +167,8 @@ The ZIP handoff contract is intentionally minimal:
 - package 1–20 independent approved PNG drafts;
 - place every PNG at the ZIP root; no folders or nested paths;
 - preserve the approved PNG artwork bytes exactly; do not redraw, upscale, resize, add A4 margins, normalize whites, sharpen or otherwise alter artwork while building the ZIP;
-- use unique visible filenames, preferably ordered names such as `01-reh.png`, `02-fuchs.png`; the ADMIN UI derives an editable initial title from each filename;
+- name all new downloadable PNG handoffs (including standalone image exports) and ZIP archives **in German**, accurately describing their subjects. Prefer unique, ordered filenames such as `01-weintrauben.png`, `02-paprika.png`, `03-ananas.png`, `04-karotte.png` and an archive name such as `obst-und-gemuese-ohne-apfel.zip`; the ADMIN UI derives an editable initial title from each PNG filename;
+- keep filenames portable: use lowercase ASCII-safe names, hyphens instead of spaces, and `ae/oe/ue/ss` for `ä/ö/ü/ß`. Do not retroactively rename published assets or add words to the artwork solely because the filename is German;
 - include no hidden files, JSON manifests, category metadata, IDs, PDFs, previews, thumbnails, checksums or other members;
 - do not choose a category or allocate IDs in Chat; both happen in the protected ADMIN workflow;
 - `ZIP` is local artifact preparation only. It grants no content publication, Drive, RPi5, Cloudflare or other LIVE authority.
