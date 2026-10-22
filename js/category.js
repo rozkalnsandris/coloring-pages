@@ -5,6 +5,9 @@ const categoryTopics = new Set(
   String(page?.dataset.categoryTopics || "").split(",").map((value) => value.trim()).filter(Boolean)
 );
 let topicRegistry = [];
+let categoryEntries = [];
+let activeCategoryTopic = "";
+const MAX_CATEGORY_TOPICS = 8;
 const gallery = document.querySelector("[data-category-gallery]");
 const status = document.querySelector("[data-category-status]");
 const total = document.querySelector("[data-category-total]");
@@ -33,12 +36,145 @@ function entryTopicIds(entry) {
   ).map((topic) => topic.id);
 }
 async function loadTopicRegistry() {
-  if (!categoryTopics.size) return;
-  const response = await fetch("/topics.json", { cache: "no-store" });
-  if (!response.ok) throw new Error("topic registry unavailable");
-  const payload = await response.json();
-  if (payload?.schema !== "rozkalns.coloring-pages.topics.v1" || !Array.isArray(payload.topics)) throw new Error("invalid topic registry");
-  topicRegistry = payload.topics.filter((topic) => topic && typeof topic.id === "string" && typeof topic.label === "string");
+  try {
+    const response = await fetch("/topics.json", { cache: "no-store" });
+    if (!response.ok) throw new Error("topic registry unavailable");
+    const payload = await response.json();
+    if (payload?.schema !== "rozkalns.coloring-pages.topics.v1" || !Array.isArray(payload.topics)) throw new Error("invalid topic registry");
+    topicRegistry = payload.topics.filter((topic) => topic && typeof topic.id === "string" && typeof topic.label === "string");
+  } catch (error) {
+    topicRegistry = [];
+    if (categoryTopics.size) throw error;
+  }
+}
+
+function categoryTopicCandidates(entries) {
+  const counts = new Map();
+  entries.forEach((entry) => {
+    entryTopicIds(entry).forEach((topicId) => counts.set(topicId, (counts.get(topicId) || 0) + 1));
+  });
+
+  if (categoryTopics.size) {
+    return [...categoryTopics]
+      .map((topicId) => topicRegistry.find((topic) => topic.id === topicId))
+      .filter((topic) => topic && (counts.get(topic.id) || 0) > 0)
+      .map((topic) => ({ ...topic, count: counts.get(topic.id) || 0 }));
+  }
+
+  const kind = category === "jahreszeiten" ? "seasonal" : "evergreen";
+  return topicRegistry
+    .filter((topic) => topic.kind === kind && (counts.get(topic.id) || 0) > 0)
+    .map((topic) => ({ ...topic, count: counts.get(topic.id) || 0 }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "de"))
+    .slice(0, MAX_CATEGORY_TOPICS);
+}
+
+function ensureCategoryTopicFilter(entries) {
+  const section = document.querySelector(".category-results .container");
+  const heading = section?.querySelector(".section-heading");
+  if (!section || !heading) return;
+
+  const topics = categoryTopicCandidates(entries);
+  const shouldShow = categoryTopics.size ? topics.length > 0 : topics.length > 1;
+  let root = section.querySelector("[data-category-topic-filter]");
+
+  if (!shouldShow) {
+    activeCategoryTopic = "";
+    root?.remove();
+    return;
+  }
+
+  if (!topics.some((topic) => topic.id === activeCategoryTopic)) activeCategoryTopic = "";
+
+  if (!root) {
+    root = document.createElement("div");
+    root.className = "category-topic-filter";
+    root.dataset.categoryTopicFilter = "";
+
+    const label = document.createElement("p");
+    label.className = "category-topic-filter-label";
+    label.textContent = "Themen";
+
+    const strip = document.createElement("div");
+    strip.className = "category-topic-strip";
+    strip.setAttribute("role", "group");
+    strip.setAttribute("aria-label", "Malvorlagen nach Thema filtern");
+
+    root.append(label, strip);
+    heading.after(root);
+  }
+
+  const strip = root.querySelector(".category-topic-strip");
+  if (!strip) return;
+
+  const makeButton = (id, label, count, icon = "") => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "category-topic-chip";
+    button.dataset.categoryTopic = id;
+    button.setAttribute("aria-pressed", String(activeCategoryTopic === id));
+
+    if (icon) {
+      const iconNode = document.createElement("span");
+      iconNode.className = "category-topic-icon";
+      iconNode.textContent = icon;
+      iconNode.setAttribute("aria-hidden", "true");
+      button.append(iconNode);
+    }
+
+    const text = document.createElement("span");
+    text.textContent = label;
+
+    const badge = document.createElement("span");
+    badge.className = "category-topic-count";
+    badge.textContent = String(count);
+    badge.setAttribute("aria-hidden", "true");
+
+    button.append(text, badge);
+    button.addEventListener("click", () => {
+      activeCategoryTopic = id;
+      ensureCategoryTopicFilter(categoryEntries);
+      renderCategoryEntries(categoryEntries);
+    });
+    return button;
+  };
+
+  const allButton = makeButton("", "Alle", entries.length);
+  allButton.setAttribute("aria-pressed", String(activeCategoryTopic === ""));
+  strip.replaceChildren(
+    allButton,
+    ...topics.map((topic) => makeButton(topic.id, topic.label, topic.count, topic.icon))
+  );
+}
+
+function renderCategoryEntries(entries) {
+  const activeTopic = activeCategoryTopic
+    ? topicRegistry.find((topic) => topic.id === activeCategoryTopic)
+    : null;
+  const visibleEntries = activeTopic
+    ? entries.filter((entry) => entryTopicIds(entry).includes(activeTopic.id))
+    : entries;
+
+  const fragment = document.createDocumentFragment();
+  visibleEntries.forEach((entry) => fragment.append(createCard(entry)));
+  gallery.replaceChildren(fragment);
+
+  if (total) total.textContent = String(visibleEntries.length);
+
+  const galleryTitle = document.querySelector("#category-gallery-title");
+  if (galleryTitle) {
+    galleryTitle.textContent = activeTopic
+      ? activeTopic.label + " entdecken"
+      : categoryLabel + " entdecken";
+  }
+
+  if (status) {
+    const label = activeTopic?.label || categoryLabel;
+    status.textContent = visibleEntries.length
+      ? visibleEntries.length + " " + (visibleEntries.length === 1 ? "Malvorlage" : "Malvorlagen") + " in " + label + "."
+      : "Zurzeit sind in diesem Thema keine Malvorlagen verfügbar.";
+    status.hidden = visibleEntries.length > 0;
+  }
 }
 
 function entryPageCount(entry) {
@@ -103,16 +239,9 @@ async function loadCategory() {
       if (entry.category === category) return true;
       return categoryTopics.size > 0 && entryTopicIds(entry).some((topicId) => categoryTopics.has(topicId));
     });
-    const fragment = document.createDocumentFragment();
-    entries.forEach((entry) => fragment.append(createCard(entry)));
-    gallery.replaceChildren(fragment);
-    if (total) total.textContent = String(entries.length);
-    if (status) {
-      status.textContent = entries.length
-        ? entries.length + " " + (entries.length === 1 ? "Malvorlage" : "Malvorlagen") + " in " + categoryLabel + "."
-        : "Zurzeit sind in dieser Kategorie keine Malvorlagen verfügbar.";
-      status.hidden = entries.length > 0;
-    }
+    categoryEntries = entries;
+    ensureCategoryTopicFilter(entries);
+    renderCategoryEntries(entries);
   } catch {
     if (status) {
       status.textContent = "Die Malvorlagen konnten nicht geladen werden. Bitte versuche es später erneut.";

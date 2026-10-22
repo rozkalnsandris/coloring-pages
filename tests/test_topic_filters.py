@@ -65,6 +65,43 @@ class TopicFilterTests(unittest.TestCase):
         self.assertIn(".category-description", home_css)
         self.assertIn(".topic-heading-copy p", home_css)
 
+    def test_category_landings_use_accessible_in_page_topic_filters(self):
+        source = (ROOT / "js" / "category.js").read_text(encoding="utf-8")
+        self.assertIn("categoryTopicCandidates", source)
+        self.assertIn("ensureCategoryTopicFilter", source)
+        self.assertIn("renderCategoryEntries", source)
+        self.assertIn('button.type = "button"', source)
+        self.assertIn('button.setAttribute("aria-pressed"', source)
+        self.assertIn('"Malvorlagen nach Thema filtern"', source)
+        self.assertIn('activeTopic.label + " entdecken"', source)
+
+    def test_essen_natur_keeps_exact_curated_topic_scope(self):
+        page = (ROOT / "essen-natur.html").read_text(encoding="utf-8")
+        self.assertIn(
+            'data-category-topics="obst,gemuese,blumen,bauernhof"',
+            page,
+        )
+        source = (ROOT / "js" / "category.js").read_text(encoding="utf-8")
+        self.assertIn("if (categoryTopics.size)", source)
+        self.assertIn("return [...categoryTopics]", source)
+
+    def test_canonical_category_filters_do_not_create_facet_urls(self):
+        source = (ROOT / "js" / "category.js").read_text(encoding="utf-8")
+        self.assertNotIn("URLSearchParams", source)
+        self.assertNotIn("history.pushState", source)
+        self.assertNotIn("location.search", source)
+        self.assertIn("MAX_CATEGORY_TOPICS = 8", source)
+        self.assertIn('category === "jahreszeiten" ? "seasonal" : "evergreen"', source)
+
+    def test_category_topic_strip_is_mobile_first(self):
+        css = (ROOT / "css" / "category.css").read_text(encoding="utf-8")
+        self.assertIn(".category-topic-strip", css)
+        self.assertIn("overflow-x: auto", css)
+        self.assertIn("scroll-snap-type: x proximity", css)
+        self.assertIn(".category-topic-chip", css)
+        self.assertIn("min-height: 44px", css)
+        self.assertIn("min-height: 48px", css)
+
     def test_container_serves_topic_registry(self):
         dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
         self.assertIn("COPY metadata/topics.json /usr/share/nginx/html/topics.json", dockerfile)
