@@ -68,13 +68,20 @@ function readMetadataFiltersFromUrl() {
   if (difficultyFilter) difficultyFilter.value = DIFFICULTY_LABELS[difficulty] ? difficulty : "";
 }
 
-function syncMetadataFilterUrl() {
-  if (!ageFilter && !difficultyFilter) return;
+function readTopicFilterFromUrl() {
+  const requested = normalize(new URLSearchParams(location.search).get("topic"));
+  const known = new Set(topicRegistry.map((topic) => topic.id));
+  activeTopic = known.has(requested) ? requested : "";
+}
+
+function syncCatalogFilterUrl() {
   const url = new URL(location.href);
   if (ageFilter?.value) url.searchParams.set("age", ageFilter.value);
   else url.searchParams.delete("age");
   if (difficultyFilter?.value) url.searchParams.set("difficulty", difficultyFilter.value);
   else url.searchParams.delete("difficulty");
+  if (activeTopic) url.searchParams.set("topic", activeTopic);
+  else url.searchParams.delete("topic");
   const next = url.pathname + url.search + url.hash;
   const now = location.pathname + location.search + location.hash;
   if (next !== now) history.pushState(null, "", next);
@@ -176,6 +183,7 @@ function updateTopicButtons() {
 
 function selectTopic(topicId) {
   activeTopic = activeTopic === topicId ? "" : topicId;
+  syncCatalogFilterUrl();
   updateTopicButtons();
   applyFilters();
   updateNavigation("#neu");
@@ -211,7 +219,6 @@ function renderTopicExplorer(entries) {
   const current = topicRegistry.filter((topic) => topic.kind === "seasonal" && topicIsCurrent(topic) && (counts.get(topic.id) || 0) > 0);
   const evergreen = topicRegistry.filter((topic) => topic.kind === "evergreen" && (counts.get(topic.id) || 0) > 0);
 
-  if (activeTopic && (counts.get(activeTopic) || 0) === 0) activeTopic = "";
   if (currentTopics) currentTopics.replaceChildren(...current.map(createTopicButton));
   if (topicList) topicList.replaceChildren(...evergreen.map(createTopicButton));
   if (topicCurrentBlock) topicCurrentBlock.hidden = current.length === 0;
@@ -500,6 +507,7 @@ async function hydrateCatalog() {
 
   try {
     await loadTopicRegistry();
+    readTopicFilterFromUrl();
     const response = await fetch("catalog.json", { cache: "no-store" });
     if (!response.ok) throw new Error("catalog unavailable");
 
@@ -578,17 +586,20 @@ searchInput?.addEventListener("input", applyFilters);
 
 [ageFilter, difficultyFilter].forEach((control) => {
   control?.addEventListener("change", () => {
-    syncMetadataFilterUrl();
+    syncCatalogFilterUrl();
     applyFilters();
   });
 });
 window.addEventListener("popstate", () => {
   readMetadataFiltersFromUrl();
+  readTopicFilterFromUrl();
+  updateTopicButtons();
   applyFilters();
 });
 
 topicClear?.addEventListener("click", () => {
   activeTopic = "";
+  syncCatalogFilterUrl();
   updateTopicButtons();
   applyFilters();
 });
@@ -623,7 +634,7 @@ document.querySelector("[data-reset-filters]")?.addEventListener("click", () => 
   if (searchInput) searchInput.value = "";
   if (ageFilter) ageFilter.value = "";
   if (difficultyFilter) difficultyFilter.value = "";
-  syncMetadataFilterUrl();
+  syncCatalogFilterUrl();
   categoryButtons.forEach((button) => {
     button.classList.remove("is-active");
     button.setAttribute("aria-pressed", "false");
