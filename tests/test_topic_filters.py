@@ -17,7 +17,7 @@ class TopicFilterTests(unittest.TestCase):
         seasonal = [item for item in registry["topics"] if item["kind"] == "seasonal"]
         self.assertTrue(seasonal)
         for item in seasonal:
-            self.assertRegex(item["active_from"], r"^\\d{2}-\\d{2}$")
+            self.assertRegex(item["active_from"], r"^\d{2}-\d{2}$")
             self.assertRegex(item["active_to"], r"^\\d{2}-\\d{2}$")
 
     def test_homepage_has_compact_topic_mount_points(self):
