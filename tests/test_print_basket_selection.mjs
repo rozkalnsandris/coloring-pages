@@ -153,3 +153,35 @@ test("the export expansion returns ordered URLs without mutating anything", () =
   assert.deepEqual(pages.map((p) => p.activityId), ["cut-1", "cut-1", "1"]);
   assert.deepEqual(input, ["cut-1", "1"]);
 });
+
+test("relative print URLs normalize to site root without reordering pages", () => {
+  const catalog = [
+    { id: "legacy-42", title: "Einzelseite", print: "media/legacy-42/print.png" },
+    {
+      id: "cut-1", title: "Zweiteilig",
+      pages: [
+        { print: "media/cut-1/print-1.png" },
+        { print: "/media/cut-1/print-2.png" },
+      ],
+    },
+  ];
+  const selection = reconcileBasket(["cut-1", "legacy-42"], catalog);
+  assert.equal(selection.sheetCount, 3);
+  assert.deepEqual(selection.pages.map((page) => page.printUrl), [
+    "/media/cut-1/print-1.png",
+    "/media/cut-1/print-2.png",
+    "/media/legacy-42/print.png",
+  ]);
+  // The catalogue itself stays immutable and suitable for other clients.
+  assert.equal(catalog[0].print, "media/legacy-42/print.png");
+  assert.equal(catalog[1].pages[0].print, "media/cut-1/print-1.png");
+});
+
+test("same print PNG with slash and without slash rejects whole multi-page item", () => {
+  const aliased = multi("cut-1");
+  aliased.pages[0].print = "media/cut-1/print-1.png";
+  aliased.pages[1].print = "/media/cut-1/print-1.png";
+  assert.deepEqual(reconcileBasket(["cut-1"], [aliased]).ids, []);
+  assert.equal(addBasketActivity([], "cut-1", [aliased]).reason, "unavailable");
+  assert.throws(() => expandBasketForExport(["cut-1"], [aliased]));
+});
