@@ -23,6 +23,7 @@ class BasketSelectionJavaScriptTests(unittest.TestCase):
                 "--test",
                 "tests/test_print_basket_selection.mjs",
                 "tests/test_print_basket_storage.mjs",
+                "tests/test_print_zip_store.mjs",
             ],
             cwd=ROOT,
             capture_output=True,
