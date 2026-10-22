@@ -97,7 +97,7 @@ class ImportPageTests(unittest.TestCase):
         after = datetime.now(timezone.utc)
 
         published = entry.get("published_at", "")
-        self.assertRegex(published, r"^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$")
+        self.assertRegex(published, r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
         moment = datetime.fromisoformat(published.replace("Z", "+00:00"))
         self.assertLessEqual(before.replace(microsecond=0), moment)
         self.assertLessEqual(moment, after)
