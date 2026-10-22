@@ -63,9 +63,14 @@ any legacy erasure proof. This is not a data cleanup or a claim of completed
 retirement. Legacy personalized-write fencing and #158 reconciliation remain
 part of the coordinated release.
 
-**Merge/release hold:** the repository's existing SIMPLE-DEPLOY workflow triggers
-on changes to `js/**`, `index.html` and `detail.html` on main, builds an image and
-advances its production pointer. Do not merge this frontend candidate on source
-CI alone: first verify the aggregate backend/schema is live and obtain separate
-owner authorization for the application release. A merge-only command does not
-authorize deployment. No workflow, runtime, DB or settings change is made here.
+**Merge/release hold — not release ready:** source CI alone does not prove
+that the aggregate Stats Worker endpoint and the required `archived_like_totals`
+D1 schema are active in production. Obtain separately authorized, exact-runtime
+read-only evidence of both before requesting a merge. Changes to `js/**`,
+`index.html` or `detail.html` are eligible application-image inputs under
+`AGENTS.md`: a later, explicitly owner-authorized exact-head `MERGE` may trigger
+only the repository's bounded GHCR → `:production` → RPi5 SIMPLE-DEPLOY →
+`/health` + `/ready` flow for `coloring-pages-public-rpi5`. This does not grant
+a separate manual LIVE, Worker/D1, migration, permissions or settings action.
+Reconcile legal Draft PR #158 and stale personalized writes separately; this
+source-only PR does not perform any release or data cleanup.
