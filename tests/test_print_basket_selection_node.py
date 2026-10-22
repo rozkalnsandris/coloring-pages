@@ -18,7 +18,12 @@ class BasketSelectionJavaScriptTests(unittest.TestCase):
         node = shutil.which("node")
         self.assertIsNotNone(node, "Node.js required to exercise the basket model")
         completed = subprocess.run(
-            [node, "--test", "tests/test_print_basket_selection.mjs"],
+            [
+                node,
+                "--test",
+                "tests/test_print_basket_selection.mjs",
+                "tests/test_print_basket_storage.mjs",
+            ],
             cwd=ROOT,
             capture_output=True,
             text=True,
