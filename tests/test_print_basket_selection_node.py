@@ -25,6 +25,7 @@ class BasketSelectionJavaScriptTests(unittest.TestCase):
                 "tests/test_print_basket_storage.mjs",
                 "tests/test_print_zip_store.mjs",
                 "tests/test_print_basket_zip_fetch.mjs",
+                "tests/test_print_basket_zip_link.mjs",
             ],
             cwd=ROOT,
             capture_output=True,
