@@ -8,7 +8,7 @@ const surpriseButton = document.querySelector("[data-surprise-button]");
 const surpriseStatus = document.querySelector("[data-surprise-status]");
 const headerSearch = document.querySelector("[data-header-search]");
 const gallery = document.querySelector("[data-gallery]");
-const categoryButtons = [...document.querySelectorAll("[data-filter]")];
+const categoryButtons = [...document.querySelectorAll("[data-filter], [data-collection-filter]")];
 const resultCount = document.querySelector("[data-result-count]");
 const totalCount = document.querySelector("[data-total-count]");
 const emptyState = document.querySelector("[data-empty-state]");
@@ -42,7 +42,16 @@ const CATEGORY_LABELS = {
   figuren: "Figuren & Helden",
   jahreszeiten: "Jahreszeiten & Feste",
   seasonal: "Jahreszeiten & Feste",
+  "essen-natur": "Essen & Natur",
 };
+
+const DISCOVERY_COLLECTION_TOPICS = {
+  "essen-natur": new Set(["obst", "gemuese", "blumen", "bauernhof"]),
+};
+
+function categoryButtonId(button) {
+  return normalize(button?.dataset.filter ?? button?.dataset.collectionFilter ?? "");
+}
 
 const DIFFICULTY_LABELS = {
   easy: "Einfach",
@@ -266,9 +275,17 @@ function updateCatalogCounts(entries = null) {
   });
 
   categoryButtons.forEach((button) => {
-    const category = normalize(button.dataset.filter ?? "");
+    const category = categoryButtonId(button);
     const value = button.querySelector("[data-category-count]");
-    if (value) value.textContent = String(counts.get(category) || 0);
+    if (!value) return;
+    const collectionTopics = DISCOVERY_COLLECTION_TOPICS[category];
+    if (Array.isArray(entries) && collectionTopics) {
+      value.textContent = String(entries.filter((entry) =>
+        entryTopicIds(entry).some((topicId) => collectionTopics.has(topicId))
+      ).length);
+      return;
+    }
+    value.textContent = String(counts.get(category) || 0);
   });
 
   if (totalCount) totalCount.textContent = String(Array.isArray(entries) ? entries.length : cards.length);
@@ -290,7 +307,11 @@ function matchesFilters(titleValue, categoryValue, topicValues = [], ageValue = 
   const category = normalize(categoryValue ?? "");
   const categoryLabel = normalize(CATEGORY_LABELS[category] || category);
   const matchesQuery = !query || title.includes(query) || category.includes(query) || categoryLabel.includes(query);
-  const matchesCategory = !activeCategory || category === activeCategory;
+  const collectionTopics = DISCOVERY_COLLECTION_TOPICS[activeCategory];
+  const matchesCategory = !activeCategory ||
+    (collectionTopics
+      ? topicValues.some((topicId) => collectionTopics.has(topicId))
+      : category === activeCategory);
   const matchesTopic = !activeTopic || topicValues.includes(activeTopic);
   return matchesQuery && matchesCategory && matchesTopic && matchesMetadata(ageValue, difficultyValue);
 }
@@ -623,11 +644,11 @@ loadMoreButton?.addEventListener("click", () => {
 categoryButtons.forEach((button) => {
   button.setAttribute("aria-pressed", "false");
   button.addEventListener("click", () => {
-    const category = normalize(button.dataset.filter ?? "");
+    const category = categoryButtonId(button);
     activeCategory = activeCategory === category ? "" : category;
 
     categoryButtons.forEach((candidate) => {
-      const selected = normalize(candidate.dataset.filter) === activeCategory;
+      const selected = categoryButtonId(candidate) === activeCategory;
       candidate.classList.toggle("is-active", selected);
       candidate.setAttribute("aria-pressed", String(selected));
     });
