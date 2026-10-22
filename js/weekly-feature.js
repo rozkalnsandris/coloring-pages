@@ -1,10 +1,23 @@
 (() => {
   "use strict";
 
-  // Owner-curated, reviewed, already-published catalogue IDs only.
-  // No default pick: an unapproved or expired week must not display a feature.
-  // Example after separate editorial approval: "2026-W44": "1234567"
-  const CURATED_WEEKS = Object.freeze({});
+  // Owner delegated random editorial selection on 2026-10-22 (#205).
+  // IDs were drawn from the public https://ausmalwiese.de/catalog.json snapshot.
+  // New/unlisted/expired IDs never fall back to other content.
+  const CURATED_WEEKS = Object.freeze({
+    "2026-W43": "3398005",
+    "2026-W44": "0662291",
+    "2026-W45": "3589168",
+    "2026-W46": "3853527",
+    "2026-W47": "9823291",
+    "2026-W48": "2468053",
+    "2026-W49": "3534071",
+    "2026-W50": "5755734",
+    "2026-W51": "8367735",
+    "2026-W52": "1291018",
+    "2026-W53": "2584849",
+    "2027-W01": "7547459",
+  });
 
   const section = document.querySelector("[data-weekly-feature]");
   const preview = document.querySelector("[data-weekly-preview]");
