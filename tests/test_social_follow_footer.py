@@ -1,4 +1,5 @@
 """Regression coverage for privacy-friendly, shared social follow footer."""
+import hashlib
 import unittest
 from pathlib import Path
 
@@ -12,11 +13,13 @@ PUBLIC = (
 
 class SocialFollowFooterTests(unittest.TestCase):
     def test_all_public_pages_use_same_assets(self):
+        css_version = hashlib.sha256((ROOT / "css/social-footer.css").read_bytes()).hexdigest()[:16]
+        js_version = hashlib.sha256((ROOT / "js/social-footer.js").read_bytes()).hexdigest()[:16]
         for name in PUBLIC:
             with self.subTest(page=name):
                 page = (ROOT / name).read_text(encoding="utf-8")
-                self.assertEqual(page.count('/css/social-footer.css?v=social-follow-20261022'), 1)
-                self.assertEqual(page.count('/js/social-footer.js?v=social-follow-20261022'), 1)
+                self.assertEqual(page.count(f'href="css/social-footer.css?v={css_version}"'), 1)
+                self.assertEqual(page.count(f'src="js/social-footer.js?v={js_version}"'), 1)
 
     def test_print_and_dashboards_unchanged(self):
         for name in ("print.html", "stats.html", "traffic.html"):
