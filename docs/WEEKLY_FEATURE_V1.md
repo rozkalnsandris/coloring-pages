@@ -2,11 +2,29 @@
 
 ## Editorial ownership and activation
 
-The feature is deliberately **inactive by default**. `js/weekly-feature.js` contains a finite `CURATED_WEEKS` object, initially empty. No publication ID is inferred from a title, image, test fixture or GitHub source. A responsible Ausmalwiese editor must separately confirm each exact 7-digit ID against the **currently published** catalogue, approve its title/preview, and submit the dated week-to-ID mapping for normal source review. An issue or this scaffold is not editorial approval.
+On 2026-10-22, the owner explicitly delegated random editorial selection for #205. The 12 source-only selections below were drawn without replacement from the read-only public `https://ausmalwiese.de/catalog.json` response (400 entries; 344 records had a seven-digit ID and matching thumb/print paths). `js/weekly-feature.js` now includes those **exact** 12 ISO-week mappings, preserving leading zeroes. This is a curated PR candidate, not a claim that the PR is merged, LIVE is deployed, the thumbnail/print bytes were independently validated or the catalogue will remain unchanged.
 
 Maintain a rolling **8–12 ISO weeks** when the editor wants the feature active; refresh the mapping through reviewed source PRs before it expires. Reusing the same ID in consecutive weeks should be avoided by the editor. Past entries may be retained for provenance until an ordinary approved source change removes them. No scheduled job, remote edit, content import or automatic selection is authorized. If there is no editorial selection or the schedule ends, the slot stays hidden and the normal catalogue remains unchanged.
 
-Example format only (not an approved published ID): `"2026-W44": "1234567"`. **Do not copy this placeholder into the live curated map.**
+## Source-only editorial mapping (22 October 2026)
+
+| Berlin ISO week | Published catalogue ID | Catalogue title |
+|---|---|---|
+| `2026-W43` | `3398005` | Fröhliches Auto |
+| `2026-W44` | `0662291` | Einhorn als Polizist |
+| `2026-W45` | `3589168` | Halloween-Otter mit Schal |
+| `2026-W46` | `3853527` | Alpaka |
+| `2026-W47` | `9823291` | Eishockeyspieler beim Bully |
+| `2026-W48` | `2468053` | Fröhliche Mumie mit Süßigkeiten |
+| `2026-W49` | `3534071` | Gemüsekorb |
+| `2026-W50` | `5755734` | Kind mit Laterne zu Sankt Martin |
+| `2026-W51` | `8367735` | Ente |
+| `2026-W52` | `1291018` | Entchen im Herbstregen |
+| `2026-W53` | `2584849` | Fröhlicher Fuchs |
+| `2027-W01` | `7547459` | Fröhlicher Muldenkipper |
+
+These IDs were chosen randomly from public catalogue **listings**, not by image recognition or by inventing publication status. The current week is `2026-W43`. The feature ends after `2027-W01` unless a new approved source update extends the mapping. The runtime checks the ID against the current catalogue again and hides a missing/unpublished item.
+
 
 ## Runtime behavior
 
@@ -19,4 +37,4 @@ Example format only (not an approved published ID): `"2026-W44": "1234567"`. **D
 
 ## Release gate
 
-Source work and offline tests do not prove any specific ID is published or authorize an editorial choice. A source PR touching `index.html` or `js/**` requires separately authorized exact-head merge and follows only the existing bounded application release rules. No GitHub merge, LIVE, Cloudflare or RPi5 mutation is part of the feature's source preparation.
+The owner's delegated random selection and read-only public catalogue listing support the editorial source mapping, **not** confirmation of real RPi5 runtime, production image version or ongoing availability. A source PR touching `index.html` or `js/**` requires separately authorized exact-head merge and follows only the existing bounded application release rules. No GitHub merge, LIVE, Cloudflare or RPi5 mutation is part of this source-only change.
