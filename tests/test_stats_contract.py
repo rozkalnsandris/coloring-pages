@@ -276,146 +276,91 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertNotIn("clientIP", traffic)
         self.assertNotIn("visitor_hash", traffic)
 
-    def test_traffic_analytics_are_split_into_a_separate_internal_page(self):
-        stats_html = read("stats.html")
-        traffic_html = read("traffic.html")
+    def test_traffic_uses_only_cloudflare_aggregates(self):
+        html = read("traffic.html")
+        js = read("js/traffic-admin.js")
+        worker = read("cloudflare/stats-worker.js")
+        stats = read("stats.html")
         shared = read("js/stats.js")
-        stats_admin = read("js/stats-admin.js")
-        traffic_admin = read("js/traffic-admin.js")
-        css = read("css/app.css")
-        dockerfile = read("Dockerfile")
-        public_home = read("index.html")
-        docs = read("docs/CLOUDFLARE_STATS_V1.md")
-
-        self.assertIn('href="traffic.html"', stats_html)
-        self.assertNotIn("data-stats-visits", stats_html)
-        self.assertNotIn("data-stats-crawlers", stats_html)
-        self.assertNotIn("getTraffic(7)", stats_admin)
-
-        self.assertIn('name="robots" content="noindex,nofollow,noarchive"', traffic_html)
-        self.assertIn('href="stats.html"', traffic_html)
-        self.assertIn("data-stats-unique-visitors", traffic_html)
-        self.assertIn("Approx. daily unique IPs", traffic_html)
-        self.assertIn("historical hostname-scoped Stats Worker D1/IP-HMAC estimate", traffic_html)
-        self.assertNotIn("Cloudflare’s latest available daily Unique Visitors", traffic_html)
-        self.assertIn("data-stats-visits", traffic_html)
-        self.assertIn("Website visits in the last 7 days", traffic_html)
-        self.assertIn("not unique people", traffic_html)
-        self.assertIn("must not be subtracted from Website visits", traffic_html)
-        self.assertIn("data-stats-total-views", traffic_html)
-        self.assertIn("data-stats-recent-views", traffic_html)
-        self.assertIn("data-stats-crawler-requests", traffic_html)
-        self.assertIn("data-stats-viewed", traffic_html)
-        self.assertIn("data-stats-crawlers", traffic_html)
-        self.assertIn("data-traffic-table", traffic_html)
-        self.assertIn("data-traffic-load-more", traffic_html)
-        self.assertIn("User-Agent heuristic", traffic_html)
-        css_version = hashlib.sha256((ROOT / "css/app.css").read_bytes()).hexdigest()[:16]
-        self.assertIn(f'href="css/app.css?v={css_version}"', traffic_html)
-        self.assertIn("grid-template-columns: 30px 88px minmax(0, 1fr) auto", css)
-        self.assertIn("width: 88px; height: 88px", css)
-        self.assertIn("object-fit: contain", css)
-        self.assertIn("grid-template-columns: 28px 64px minmax(0, 1fr) auto", css)
-        self.assertIn("flex: 0 0 56px; width: 56px; height: 56px", css)
-
-        self.assertIn("async function getTraffic(days = 7)", shared)
-        self.assertIn("window.ColoringStats.getTraffic(7)", traffic_admin)
-        self.assertIn("traffic.unique_visitors", traffic_admin)
-        self.assertIn("traffic.unique_visitors_date", traffic_admin)
-        self.assertIn('traffic.unique_visitors_basis === "worker-d1-daily-hmac-ip"', traffic_admin)
-        self.assertIn("Number.isSafeInteger(traffic.unique_visitors)", traffic_admin)
-        self.assertIn("N/A is not a zero count", traffic_admin)
-        self.assertIn("separate Cloudflare analytics metric", traffic_admin)
-        self.assertIn("window.ColoringStats.getOverview()", traffic_admin)
-        self.assertIn('fetch("catalog.json", {cache: "no-store"})', traffic_admin)
-        self.assertIn("const CATALOG_PAGE_SIZE = 20;", traffic_admin)
-        self.assertIn("visible.slice(0, visibleLimit)", traffic_admin)
-        self.assertNotIn('method: "POST"', traffic_admin)
-
-        self.assertIn("stats.html traffic.html", dockerfile)
-        self.assertNotIn('href="traffic.html"', public_home)
-        self.assertIn("/traffic.html", docs)
-        self.assertIn("CF_ANALYTICS_API_TOKEN", docs)
-        self.assertIn("daily visitor HMAC collection is retired", docs)
-        self.assertIn("separate Cloudflare owner gate", docs)
-
+        self.assertIn('href="traffic.html"', stats)
+        self.assertIn('name="robots" content="noindex,nofollow,noarchive"', html)
+        self.assertIn('href="stats.html"', html)
+        self.assertIn('data-traffic-days', html)
+        self.assertIn('data-stats-visits', html)
+        self.assertIn('data-stats-crawler-requests', html)
+        self.assertIn('data-traffic-unique', html)
+        self.assertIn('data-traffic-requests', html)
+        self.assertIn('data-stats-crawlers', html)
+        self.assertNotIn('data-instagram-', html)
+        self.assertNotIn('data-stats-total-views', html)
+        self.assertNotIn('data-traffic-table', html)
+        self.assertNotIn('data-stats-unique-visitors', html)
+        self.assertIn("getTraffic(days)", js)
+        self.assertNotIn("getOverview(", js)
+        self.assertNotIn("getCampaigns(", js)
+        self.assertNotIn("catalog.json", js)
+        self.assertNotIn("daily_visitors", js)
+        self.assertNotIn("traffic.unique_visitors", js)
+        self.assertNotIn('method: "POST"', js)
+        self.assertIn('async function getTraffic(days = 7)', shared)
+        self.assertIn("httpRequestsAdaptiveGroups", worker)
+        self.assertIn('const host = "ausmalwiese.de";', worker)
+        self.assertIn('http_requests_basis:"cloudflare-http-eyeball-requests"', worker)
+        self.assertIn('error:"analytics_zone_unavailable"', worker)
+        self.assertIn("CF_ANALYTICS_API_TOKEN", worker)
+        self.assertIn("CF_ZONE_TAG", worker)
+        self.assertIn("noindex,nofollow,noarchive", html)
 
     @unittest.skipUnless(shutil.which("node"), "Node required for traffic rendering simulation")
-    def test_unique_ip_source_basis_renders_legacy_and_retired_states(self):
+    def test_traffic_displays_cloudflare_metrics_and_fail_closed_states(self):
         harness = r"""
-const fs=require('node:fs'), vm=require('node:vm');
+const fs=require('node:fs'),vm=require('node:vm');
 const code=fs.readFileSync('js/traffic-admin.js','utf8');
-async function render(metric){
+async function render(metric, selectedDays='7'){
   const nodes=new Map();
   const document={
     querySelector:(selector)=>{
-      if(!nodes.has(selector)){
-        nodes.set(selector,{
-          textContent:'',value:'',hidden:false,disabled:false,
-          addEventListener(){},replaceChildren(){},
-        });
-      }
+      if(!nodes.has(selector))nodes.set(selector,{
+        textContent:'',value:selector==='[data-traffic-days]'?selectedDays:'',
+        hidden:false,disabled:false,addEventListener(){},replaceChildren(...items){this.items=items},
+      });
       return nodes.get(selector);
     },
-    createElement:()=>{throw Error('No catalog rows expected in read-only test');},
+    createElement:(kind)=>({tag:kind,textContent:'',className:'',append(){}}),
   };
-  const window={ColoringStats:{
-    getOverview:async()=>({totals:{view_count:164,recent_views:79},pages:[]}),
-    getTraffic:async()=>({
-      visits:635,crawler_requests:1459,crawlers:[],sampled:true,...metric
-    })
-  }};
-  vm.runInNewContext(code,{
-    document,window,fetch:async()=>({ok:true,json:async()=>[]}),
-    Intl,Date,console
-  });
+  const window={ColoringStats:{getTraffic:async(days)=>({
+    range_days:days,visits:635,crawler_requests:1459,crawlers:[],sampled:true,...metric
+  })}};
+  vm.runInNewContext(code,{document,window,Intl,Date,console});
   await new Promise(resolve=>setImmediate(resolve));
   return {
-    visitors:nodes.get('[data-stats-unique-visitors]').textContent,
-    label:nodes.get('[data-stats-unique-visitors-label]').textContent,
-    note:nodes.get('[data-traffic-visits-note]').textContent,
+    visitors:nodes.get('[data-traffic-unique]').textContent,
     visits:nodes.get('[data-stats-visits]').textContent,
+    requests:nodes.get('[data-traffic-requests]').textContent,
+    crawlers:nodes.get('[data-stats-crawler-requests]').textContent,
+    note:nodes.get('[data-traffic-visits-note]').textContent,
     status:nodes.get('[data-traffic-page-status]').textContent,
   };
 }
 (async()=>{
-  const legacy=await render({
-    unique_visitors_status:'available',
-    unique_visitors_basis:'worker-d1-daily-hmac-ip',
-    unique_visitors:12,unique_visitors_date:'2026-10-19'
-  });
-  if(legacy.visitors!=='12'||!legacy.label.includes('2026-10-19')
-    ||!legacy.note.includes('D1/IP-HMAC')||legacy.visits!=='635'
-    ||!legacy.note.includes('(sampled)')||!legacy.status.includes('Updated'))
-    throw Error('Historical IP counter render failed: '+JSON.stringify(legacy));
-  const retired=await render({
-    unique_visitors_status:'removed',
-    unique_visitors_basis:'removed-no-persistent-visitor-metric',
-    unique_visitors:null,unique_visitors_date:null
-  });
-  if(retired.visitors!=='N/A'||retired.label!=='Daily unique IPs · unavailable'
-    ||!retired.note.includes('N/A is not a zero count')||retired.visits!=='635')
-    throw Error('Retired metric render failed: '+JSON.stringify(retired));
-  for(const invalid of [
-    {unique_visitors_status:'available',unique_visitors_basis:'worker-d1-daily-hmac-ip',
-     unique_visitors:null,unique_visitors_date:'2026-10-19'},
-    {unique_visitors_status:'available',unique_visitors_basis:'other',
-     unique_visitors:4,unique_visitors_date:'2026-10-19'},
-    {unique_visitors_status:'available',unique_visitors_basis:'worker-d1-daily-hmac-ip',
-     unique_visitors:4,unique_visitors_date:'invalid'}
-  ]){
-    const rendered=await render(invalid);
-    if(rendered.visitors!=='N/A')throw Error('Invalid IP data presented: '+JSON.stringify(invalid));
-  }
-  console.log('TRAFFIC_UNIQUE_IP_BASIS=PASS');
+  const v=await render({unique_visitors:12345,unique_visitors_status:'available',
+    unique_visitors_basis:'worker-d1-daily-hmac-ip'});
+  if(v.visitors!=='N/A'||v.visits!=='635'||v.requests!=='N/A'||v.crawlers!=='1,459'
+    ||!v.note.includes('not independently verified')||!v.status.includes('sampled'))
+    throw Error('Cloudflare-only metrics failed '+JSON.stringify(v));
+  const thirty=await render({analytics_host:'ausmalwiese.de',cloudflare_traffic_version:1,http_requests:8091},'30');
+  if(thirty.visits!=='635'||thirty.requests!=='8,091'||!thirty.note.includes('Worker-declared'))
+    throw Error('Cloudflare host-proof rendering failed '+JSON.stringify(thirty));
+  const invalid=await render({visits:null});
+  if(invalid.visits!=='–'||invalid.requests!=='–'||!invalid.status.includes('unavailable'))
+    throw Error('Invalid provider data must not be coerced to zero '+JSON.stringify(invalid));
+  console.log('CLOUDFLARE_ONLY_TRAFFIC=PASS');
 })().catch(error=>{console.error(error);process.exitCode=1;});
 """
-        result = subprocess.run(
-            ["node", "-e", harness], cwd=ROOT,
-            text=True, capture_output=True, timeout=20, check=False
-        )
+        result = subprocess.run(["node", "-e", harness], cwd=ROOT,
+                                text=True, capture_output=True, timeout=20, check=False)
         self.assertEqual(result.returncode, 0, result.stderr[-2000:])
-        self.assertIn("TRAFFIC_UNIQUE_IP_BASIS=PASS", result.stdout)
+        self.assertIn("CLOUDFLARE_ONLY_TRAFFIC=PASS", result.stdout)
 
 
 class KitaCampaignStatsTests(unittest.TestCase):
