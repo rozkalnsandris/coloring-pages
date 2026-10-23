@@ -76,6 +76,31 @@ class PrintBasketUi206Tests(unittest.TestCase):
         self.assertIn("@media (max-width: 720px)", css)
         self.assertIn("min-height: 48px", css)
 
+    def test_header_indicator_uses_actual_menu_parent(self):
+        source = (ROOT / "js" / "print-basket-ui.mjs").read_text(encoding="utf-8")
+        self.assertIn('const actions = header.querySelector(".header-actions");', source)
+        self.assertIn("if (menu) actions.insertBefore(root, menu);", source)
+        self.assertIn("else actions.append(root);", source)
+        self.assertNotIn("header.insertBefore(root, menu)", source)
+        for name in PUBLIC:
+            with self.subTest(page=name):
+                html = (ROOT / name).read_text(encoding="utf-8")
+                self.assertIn('class="header-actions"', html)
+
+    def test_gallery_observer_does_not_rewrite_toggle_labels(self):
+        source = (ROOT / "js" / "print-basket-ui.mjs").read_text(encoding="utf-8")
+        observer = source.split("observer = new MutationObserver(() => {", 1)[1].split("});", 1)[0]
+        self.assertIn("enhanceCards();", observer)
+        self.assertIn("enhanceDetail();", observer)
+        self.assertNotIn("syncButtons();", observer)
+
+    def test_pressed_toggle_keeps_stable_accessible_name(self):
+        source = (ROOT / "js" / "print-basket-ui.mjs").read_text(encoding="utf-8")
+        label = source.split('button.setAttribute(\n      "aria-label",', 1)[1].split("\n    );", 1)[0]
+        self.assertIn('"Drucksammlung: " + entry.title', label)
+        self.assertNotIn("selected", label)
+        self.assertIn('button.setAttribute("aria-pressed", String(selected));', source)
+
     def test_module_parses_with_node(self):
         node = shutil.which("node")
         self.assertIsNotNone(node, "Node.js required for module syntax check")
