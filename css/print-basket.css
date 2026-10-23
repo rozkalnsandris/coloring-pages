@@ -1,4 +1,6 @@
 .basket-summary {
+  cursor: pointer;
+  font-family: inherit;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -75,4 +77,48 @@
 @media (max-width: 380px) {
   .basket-summary { gap: 5px; padding-inline: 7px; }
   .basket-summary strong { padding-inline: 6px; font-size: 11px; }
+}
+
+.basket-summary:focus-visible,
+.basket-dialog :is(button, a):focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+.basket-summary:disabled { opacity: .6; cursor: default; }
+.basket-dialog {
+  width: min(620px, calc(100% - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  color: var(--text);
+  overflow: auto;
+  box-shadow: 0 22px 60px rgb(16 40 77 / 20%);
+}
+.basket-dialog::backdrop { background: rgb(16 40 77 / 60%); }
+.basket-dialog-header { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+.basket-dialog h2 { margin: 0; font-family: var(--font-display); font-size: 25px; }
+.basket-dialog-list { list-style: none; padding: 0; margin: 16px 0; display: grid; gap: 12px; }
+.basket-dialog-item {
+  display: grid; grid-template-columns: 80px minmax(0,1fr); gap: 10px;
+  padding: 12px; border: 1px solid var(--line); border-radius: 12px;
+}
+.basket-dialog-item img { width: 80px; height: 95px; object-fit: contain; grid-row: span 2; }
+.basket-dialog-details { min-width: 0; display: grid; align-content: start; gap: 4px; }
+.basket-dialog-details a { font-weight: 800; overflow-wrap: anywhere; }
+.basket-dialog-details span,
+.basket-dialog-note { color: var(--muted); font-size: 13px; }
+.basket-dialog-actions { grid-column: 2; display: flex; flex-wrap: wrap; gap: 6px; }
+.basket-dialog button {
+  min-height: 44px; padding: 7px 10px; border: 1px solid #bfd8f4;
+  border-radius: 10px; background: #f7fbff; color: var(--blue-deep);
+  font: inherit; font-weight: 700; cursor: pointer;
+}
+.basket-dialog button:disabled { opacity: .5; cursor: default; }
+@media (max-width: 480px) {
+  .basket-dialog { padding: 16px; }
+  .basket-dialog-item { grid-template-columns: 60px minmax(0,1fr); padding: 8px; }
+  .basket-dialog-item img { width: 60px; height: 76px; }
+  .basket-dialog-actions button { font-size: 12px; }
 }
