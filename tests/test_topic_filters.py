@@ -1,4 +1,5 @@
 """Homepage compact topic-filter contract."""
+import hashlib
 import json
 import unittest
 from pathlib import Path
@@ -12,7 +13,9 @@ class TopicFilterTests(unittest.TestCase):
         self.assertEqual(registry["schema"], "rozkalns.coloring-pages.topics.v1")
         ids = [item["id"] for item in registry["topics"]]
         self.assertEqual(len(ids), len(set(ids)))
-        for expected in ("halloween", "obst", "gemuese", "dinosaurier", "bauernhof", "weltraum", "blumen", "meerestiere", "sport", "einhoerner"):
+        for expected in ("winter", "fasching", "fruehling", "ostern", "muttertag", "sommer",
+                         "halloween", "obst", "gemuese", "dinosaurier", "bauernhof", "weltraum",
+                         "blumen", "meerestiere", "sport", "einhoerner"):
             self.assertIn(expected, ids)
         seasonal = [item for item in registry["topics"] if item["kind"] == "seasonal"]
         self.assertTrue(seasonal)
@@ -27,6 +30,19 @@ class TopicFilterTests(unittest.TestCase):
         self.assertIn("data-topic-list", page)
         self.assertIn("data-topic-clear", page)
 
+    def test_homepage_explains_categories_and_popular_topics(self):
+        page = (ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn("Nach Kategorien entdecken", page)
+        self.assertIn('class="category-description"', page)
+        self.assertIn("Halloween, Herbst &amp; Weihnachten", page)
+        self.assertIn("Beliebte Themen", page)
+        self.assertIn("Obst, Gemüse, Dinosaurier, Weltraum &amp; mehr direkt auswählen.", page)
+        self.assertIn("Essen &amp; Natur", page)
+        self.assertIn("Obst, Gemüse, Blumen &amp; Bauernhof", page)
+        self.assertIn('data-collection-filter="essen-natur"', page)
+        version = hashlib.sha256((ROOT / "css/home-discovery.css").read_bytes()).hexdigest()[:16]
+        self.assertIn(f"css/home-discovery.css?v={version}", page)
+
     def test_runtime_prefers_explicit_topics_and_keeps_legacy_fallback(self):
         source = (ROOT / "js/app.js").read_text(encoding="utf-8")
         self.assertIn('fetch("/topics.json"', source)
@@ -34,6 +50,10 @@ class TopicFilterTests(unittest.TestCase):
         self.assertIn("topic.legacy_terms.some", source)
         self.assertIn('button.setAttribute("aria-pressed"', source)
         self.assertIn("matchesTopic", source)
+        self.assertIn('new Set(["obst", "gemuese", "blumen", "bauernhof"])', source)
+        self.assertIn("collectionTopics.has(topicId)", source)
+        self.assertIn('new URLSearchParams(location.search).get("topic")', source)
+        self.assertIn('url.searchParams.set("topic", activeTopic)', source)
 
     def test_topic_chips_keep_mobile_touch_targets_and_horizontal_scroll(self):
         css = (ROOT / "css/app.css").read_text(encoding="utf-8")
@@ -41,6 +61,46 @@ class TopicFilterTests(unittest.TestCase):
         self.assertIn("min-height: 48px", css)
         self.assertIn("overflow-x: auto", css)
         self.assertIn("scroll-snap-type: x proximity", css)
+        home_css = (ROOT / "css/home-discovery.css").read_text(encoding="utf-8")
+        self.assertIn(".category-description", home_css)
+        self.assertIn(".topic-heading-copy p", home_css)
+
+    def test_category_landings_use_accessible_in_page_topic_filters(self):
+        source = (ROOT / "js" / "category.js").read_text(encoding="utf-8")
+        self.assertIn("categoryTopicCandidates", source)
+        self.assertIn("ensureCategoryTopicFilter", source)
+        self.assertIn("renderCategoryEntries", source)
+        self.assertIn('button.type = "button"', source)
+        self.assertIn('button.setAttribute("aria-pressed"', source)
+        self.assertIn('"Malvorlagen nach Thema filtern"', source)
+        self.assertIn('activeTopic.label + " entdecken"', source)
+
+    def test_essen_natur_keeps_exact_curated_topic_scope(self):
+        page = (ROOT / "essen-natur.html").read_text(encoding="utf-8")
+        self.assertIn(
+            'data-category-topics="obst,gemuese,blumen,bauernhof"',
+            page,
+        )
+        source = (ROOT / "js" / "category.js").read_text(encoding="utf-8")
+        self.assertIn("if (categoryTopics.size)", source)
+        self.assertIn("return [...categoryTopics]", source)
+
+    def test_canonical_category_filters_do_not_create_facet_urls(self):
+        source = (ROOT / "js" / "category.js").read_text(encoding="utf-8")
+        self.assertNotIn("URLSearchParams", source)
+        self.assertNotIn("history.pushState", source)
+        self.assertNotIn("location.search", source)
+        self.assertIn("MAX_CATEGORY_TOPICS = 8", source)
+        self.assertIn('category === "jahreszeiten" ? "seasonal" : "evergreen"', source)
+
+    def test_category_topic_strip_is_mobile_first(self):
+        css = (ROOT / "css" / "category.css").read_text(encoding="utf-8")
+        self.assertIn(".category-topic-strip", css)
+        self.assertIn("overflow-x: auto", css)
+        self.assertIn("scroll-snap-type: x proximity", css)
+        self.assertIn(".category-topic-chip", css)
+        self.assertIn("min-height: 44px", css)
+        self.assertIn("min-height: 48px", css)
 
     def test_container_serves_topic_registry(self):
         dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")

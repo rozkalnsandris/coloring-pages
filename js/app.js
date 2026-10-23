@@ -2,11 +2,13 @@ const menuButton = document.querySelector(".menu-button");
 const mobileNav = document.querySelector("#mobile-nav");
 const searchForm = document.querySelector("[data-search-form]");
 const searchInput = document.querySelector("#site-search");
+const ageFilter = document.querySelector("[data-filter-age]");
+const difficultyFilter = document.querySelector("[data-filter-difficulty]");
 const surpriseButton = document.querySelector("[data-surprise-button]");
 const surpriseStatus = document.querySelector("[data-surprise-status]");
 const headerSearch = document.querySelector("[data-header-search]");
 const gallery = document.querySelector("[data-gallery]");
-const categoryButtons = [...document.querySelectorAll("[data-filter]")];
+const categoryButtons = [...document.querySelectorAll("[data-filter], [data-collection-filter]")];
 const resultCount = document.querySelector("[data-result-count]");
 const totalCount = document.querySelector("[data-total-count]");
 const emptyState = document.querySelector("[data-empty-state]");
@@ -26,6 +28,7 @@ const rankingSections = new Map(
 );
 
 const CATALOG_PAGE_SIZE = 20;
+const AGE_FILTER_VALUES = new Set(["3-6", "4-8"]);
 const RANKING_DESCRIPTIONS = {
   trending: "In den letzten 7 Tagen besonders oft gedruckt.",
   popular: "Nach den meisten A4-Druckaktionen.",
@@ -39,7 +42,16 @@ const CATEGORY_LABELS = {
   figuren: "Figuren & Helden",
   jahreszeiten: "Jahreszeiten & Feste",
   seasonal: "Jahreszeiten & Feste",
+  "essen-natur": "Essen & Natur",
 };
+
+const DISCOVERY_COLLECTION_TOPICS = {
+  "essen-natur": new Set(["obst", "gemuese", "blumen", "bauernhof"]),
+};
+
+function categoryButtonId(button) {
+  return normalize(button?.dataset.filter ?? button?.dataset.collectionFilter ?? "");
+}
 
 const DIFFICULTY_LABELS = {
   easy: "Einfach",
@@ -53,6 +65,46 @@ let topicRegistry = [];
 let catalogEntries = null;
 let visibleLimit = CATALOG_PAGE_SIZE;
 let catalogIssueText = "";
+
+// URL only stores explicit catalogue facet values; other parameters (including
+// campaign) and fragments are preserved. History back/forward restores controls.
+function readMetadataFiltersFromUrl() {
+  if (!ageFilter && !difficultyFilter) return;
+  const params = new URLSearchParams(location.search);
+  const age = params.get("age");
+  const difficulty = params.get("difficulty");
+  if (ageFilter) ageFilter.value = AGE_FILTER_VALUES.has(age) ? age : "";
+  if (difficultyFilter) difficultyFilter.value = DIFFICULTY_LABELS[difficulty] ? difficulty : "";
+}
+
+function readTopicFilterFromUrl() {
+  const requested = normalize(new URLSearchParams(location.search).get("topic"));
+  const known = new Set(topicRegistry.map((topic) => topic.id));
+  activeTopic = known.has(requested) ? requested : "";
+}
+
+function syncCatalogFilterUrl() {
+  const url = new URL(location.href);
+  if (ageFilter?.value) url.searchParams.set("age", ageFilter.value);
+  else url.searchParams.delete("age");
+  if (difficultyFilter?.value) url.searchParams.set("difficulty", difficultyFilter.value);
+  else url.searchParams.delete("difficulty");
+  if (activeTopic) url.searchParams.set("topic", activeTopic);
+  else url.searchParams.delete("topic");
+  const next = url.pathname + url.search + url.hash;
+  const now = location.pathname + location.search + location.hash;
+  if (next !== now) history.pushState(null, "", next);
+}
+
+function syncMetadataFilterUrl() {
+  syncCatalogFilterUrl();
+}
+
+function matchesMetadata(age, difficulty) {
+  return (!ageFilter?.value || age === ageFilter.value) &&
+    (!difficultyFilter?.value || difficulty === difficultyFilter.value);
+}
+
 
 function updateSurpriseButton(message = "") {
   if (surpriseButton) surpriseButton.disabled = !Array.isArray(catalogEntries) || catalogEntries.length === 0;
@@ -144,6 +196,7 @@ function updateTopicButtons() {
 
 function selectTopic(topicId) {
   activeTopic = activeTopic === topicId ? "" : topicId;
+  syncCatalogFilterUrl();
   updateTopicButtons();
   applyFilters();
   updateNavigation("#neu");
@@ -179,7 +232,6 @@ function renderTopicExplorer(entries) {
   const current = topicRegistry.filter((topic) => topic.kind === "seasonal" && topicIsCurrent(topic) && (counts.get(topic.id) || 0) > 0);
   const evergreen = topicRegistry.filter((topic) => topic.kind === "evergreen" && (counts.get(topic.id) || 0) > 0);
 
-  if (activeTopic && (counts.get(activeTopic) || 0) === 0) activeTopic = "";
   if (currentTopics) currentTopics.replaceChildren(...current.map(createTopicButton));
   if (topicList) topicList.replaceChildren(...evergreen.map(createTopicButton));
   if (topicCurrentBlock) topicCurrentBlock.hidden = current.length === 0;
@@ -223,9 +275,17 @@ function updateCatalogCounts(entries = null) {
   });
 
   categoryButtons.forEach((button) => {
-    const category = normalize(button.dataset.filter ?? "");
+    const category = categoryButtonId(button);
     const value = button.querySelector("[data-category-count]");
-    if (value) value.textContent = String(counts.get(category) || 0);
+    if (!value) return;
+    const collectionTopics = DISCOVERY_COLLECTION_TOPICS[category];
+    if (Array.isArray(entries) && collectionTopics) {
+      value.textContent = String(entries.filter((entry) =>
+        entryTopicIds(entry).some((topicId) => collectionTopics.has(topicId))
+      ).length);
+      return;
+    }
+    value.textContent = String(counts.get(category) || 0);
   });
 
   if (totalCount) totalCount.textContent = String(Array.isArray(entries) ? entries.length : cards.length);
@@ -241,21 +301,25 @@ function updateCount(totalMatches) {
   }
 }
 
-function matchesFilters(titleValue, categoryValue, topicValues = []) {
+function matchesFilters(titleValue, categoryValue, topicValues = [], ageValue = "", difficultyValue = "") {
   const query = normalize(searchInput?.value ?? "");
   const title = normalize(titleValue ?? "");
   const category = normalize(categoryValue ?? "");
   const categoryLabel = normalize(CATEGORY_LABELS[category] || category);
   const matchesQuery = !query || title.includes(query) || category.includes(query) || categoryLabel.includes(query);
-  const matchesCategory = !activeCategory || category === activeCategory;
+  const collectionTopics = DISCOVERY_COLLECTION_TOPICS[activeCategory];
+  const matchesCategory = !activeCategory ||
+    (collectionTopics
+      ? topicValues.some((topicId) => collectionTopics.has(topicId))
+      : category === activeCategory);
   const matchesTopic = !activeTopic || topicValues.includes(activeTopic);
-  return matchesQuery && matchesCategory && matchesTopic;
+  return matchesQuery && matchesCategory && matchesTopic && matchesMetadata(ageValue, difficultyValue);
 }
 
 function renderCatalog() {
   if (!gallery || !Array.isArray(catalogEntries)) return;
 
-  const matches = catalogEntries.filter((entry) => matchesFilters(entry.title, entry.category, entryTopicIds(entry)));
+  const matches = catalogEntries.filter((entry) => matchesFilters(entry.title, entry.category, entryTopicIds(entry), entry.age, entry.difficulty));
   const visibleEntries = matches.slice(0, visibleLimit);
   const fragment = document.createDocumentFragment();
 
@@ -280,7 +344,7 @@ function applyFilters({ resetLimit = true } = {}) {
 
   let visible = 0;
   currentCards().forEach((card) => {
-    const show = matchesFilters(card.dataset.title, card.dataset.category);
+    const show = matchesFilters(card.dataset.title, card.dataset.category, [], card.dataset.age, card.dataset.difficulty);
     card.hidden = !show;
     if (show) visible += 1;
   });
@@ -349,17 +413,18 @@ function createCatalogCard(entry, stats = null) {
   const badges = document.createElement("div");
   badges.className = "badges";
 
-  const ageClass = entry.age === "4-8" ? "age age-older" : "age";
-  badges.append(createBadge(`${entry.age} Jahre`, ageClass));
+  // Unknown legacy metadata is not an age recommendation or difficulty rating.
+  if (AGE_FILTER_VALUES.has(entry.age)) {
+    const ageClass = entry.age === "4-8" ? "age age-older" : "age";
+    badges.append(createBadge(`${entry.age} Jahre`, ageClass));
+  }
 
-  const difficultyLabel = DIFFICULTY_LABELS[entry.difficulty] || entry.difficulty;
-  const difficultyClass =
-    entry.difficulty === "easy"
-      ? "easy"
-      : entry.difficulty === "detailed"
-        ? "detailed"
-        : "medium";
-  badges.append(createBadge(difficultyLabel, difficultyClass));
+  const difficultyLabel = DIFFICULTY_LABELS[entry.difficulty];
+  if (difficultyLabel) {
+    const difficultyClass = entry.difficulty === "easy" ? "easy"
+      : entry.difficulty === "detailed" ? "detailed" : "medium";
+    badges.append(createBadge(difficultyLabel, difficultyClass));
+  }
 
   const pageCount = entryPageCount(entry);
   if (pageCount > 1) {
@@ -467,6 +532,7 @@ async function hydrateCatalog() {
 
   try {
     await loadTopicRegistry();
+    readTopicFilterFromUrl();
     const response = await fetch("catalog.json", { cache: "no-store" });
     if (!response.ok) throw new Error("catalog unavailable");
 
@@ -481,6 +547,12 @@ async function hydrateCatalog() {
     updateCatalogCounts(catalogEntries);
     renderTopicExplorer(catalogEntries);
     renderCatalog();
+    try {
+      // Editorial feature is optional; never interrupt browse/preview/print.
+      window.AusmalWeekly?.render(catalogEntries);
+    } catch {
+      // A missing/broken optional feature must not block the catalogue.
+    }
     if (entries.length) await hydrateRankings(catalogEntries);
     else rankingsUnavailable();
   } catch {
@@ -543,8 +615,22 @@ searchForm?.addEventListener("submit", (event) => {
 
 searchInput?.addEventListener("input", applyFilters);
 
+[ageFilter, difficultyFilter].forEach((control) => {
+  control?.addEventListener("change", () => {
+    syncMetadataFilterUrl();
+    applyFilters();
+  });
+});
+window.addEventListener("popstate", () => {
+  readMetadataFiltersFromUrl();
+  readTopicFilterFromUrl();
+  updateTopicButtons();
+  applyFilters();
+});
+
 topicClear?.addEventListener("click", () => {
   activeTopic = "";
+  syncCatalogFilterUrl();
   updateTopicButtons();
   applyFilters();
 });
@@ -558,11 +644,11 @@ loadMoreButton?.addEventListener("click", () => {
 categoryButtons.forEach((button) => {
   button.setAttribute("aria-pressed", "false");
   button.addEventListener("click", () => {
-    const category = normalize(button.dataset.filter ?? "");
+    const category = categoryButtonId(button);
     activeCategory = activeCategory === category ? "" : category;
 
     categoryButtons.forEach((candidate) => {
-      const selected = normalize(candidate.dataset.filter) === activeCategory;
+      const selected = categoryButtonId(candidate) === activeCategory;
       candidate.classList.toggle("is-active", selected);
       candidate.setAttribute("aria-pressed", String(selected));
     });
@@ -577,6 +663,9 @@ document.querySelector("[data-reset-filters]")?.addEventListener("click", () => 
   activeCategory = "";
   activeTopic = "";
   if (searchInput) searchInput.value = "";
+  if (ageFilter) ageFilter.value = "";
+  if (difficultyFilter) difficultyFilter.value = "";
+  syncCatalogFilterUrl();
   categoryButtons.forEach((button) => {
     button.classList.remove("is-active");
     button.setAttribute("aria-pressed", "false");
@@ -584,6 +673,8 @@ document.querySelector("[data-reset-filters]")?.addEventListener("click", () => 
   updateTopicButtons();
   applyFilters();
 });
+
+readMetadataFiltersFromUrl();
 
 if (gallery) {
   updateCatalogCounts();

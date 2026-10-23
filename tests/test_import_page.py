@@ -87,6 +87,25 @@ class ImportPageTests(unittest.TestCase):
             0o644,
         )
 
+    def test_import_stamps_new_utc_publication_time_preserving_legacy_entries(self):
+        from datetime import datetime, timezone
+        existing = [{"id": "legacy-001", "title": "Old", "thumb": "/media/legacy-001/thumb.webp"}]
+        catalog_path = self.content / "public/catalog.json"
+        catalog_path.write_text(json.dumps(existing) + "\n", encoding="utf-8")
+        before = datetime.now(timezone.utc)
+        entry = importer.import_page(self.source, self.content, self.metadata())
+        after = datetime.now(timezone.utc)
+
+        published = entry.get("published_at", "")
+        self.assertRegex(published, r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+        moment = datetime.fromisoformat(published.replace("Z", "+00:00"))
+        self.assertLessEqual(before.replace(microsecond=0), moment)
+        self.assertLessEqual(moment, after)
+        catalogue = json.loads(catalog_path.read_text(encoding="utf-8"))
+        self.assertEqual(catalogue[0], entry)
+        self.assertEqual(catalogue[1], existing[0])
+        self.assertNotIn("published_at", catalogue[1])
+
     def test_print_preserves_source_dpi_metadata_when_present(self):
         Image.new("RGB", (1055, 1491), "white").save(
             self.source, format="PNG", dpi=(300, 300)
