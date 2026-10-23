@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline validation for the report Worker Wrangler config (#249)."""
+"""Offline validation for the minimal report Worker Wrangler config (#264)."""
 from __future__ import annotations
 
 import hashlib
@@ -10,20 +10,19 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "cloudflare" / "wrangler.report.json"
 WORKER = ROOT / "cloudflare" / "report-worker.mjs"
-EXPECTED_WORKER_SHA256 = "26d4e597d8c2c961c3a637957ea566654c97c5657a4b2595129c410e9fae22a1"
+EXPECTED_WORKER_SHA256 = "4f57944d4d7ba89d86edcc83bff8899666a93d964855be83c8bfc3fc91e84bce"
 
 ROUTES = [
     {"pattern": "ausmalwiese.de/api/report", "zone_name": "ausmalwiese.de"},
-    {"pattern": "ausmalwiese.de/api/report/config", "zone_name": "ausmalwiese.de"},
     {"pattern": "www.ausmalwiese.de/api/report", "zone_name": "ausmalwiese.de"},
-    {"pattern": "www.ausmalwiese.de/api/report/config", "zone_name": "ausmalwiese.de"},
 ]
-SECRETS = [
-    "TURNSTILE_SITE_KEY",
-    "TURNSTILE_SECRET",
-    "BREVO_API_KEY",
-    "REPORT_TO",
+EMAIL_BINDING = [
+    {"name": "EMAIL", "destination_address": "info@ausmalwiese.de"},
 ]
+OBSERVABILITY = {
+    "logs": {"enabled": True},
+    "traces": {"enabled": False},
+}
 
 
 class ReportWranglerConfigTests(unittest.TestCase):
@@ -41,30 +40,30 @@ class ReportWranglerConfigTests(unittest.TestCase):
                 "workers_dev",
                 "preview_urls",
                 "no_bundle",
+                "observability",
                 "routes",
-                "secrets",
-                "ratelimits",
+                "send_email",
             },
         )
         self.assertEqual(self.config["name"], "coloring-pages-report-v1")
         self.assertEqual(self.config["main"], "./report-worker.mjs")
-        self.assertEqual(self.config["compatibility_date"], "2026-10-17")
+        self.assertEqual(self.config["compatibility_date"], "2026-10-18")
         self.assertIs(self.config["workers_dev"], False)
         self.assertIs(self.config["preview_urls"], False)
         self.assertIs(self.config["no_bundle"], True)
-        self.assertNotIn("vars", self.config)
-        self.assertNotIn("account_id", self.config)
-        self.assertNotIn("zone_id", self.config)
+        for forbidden in ("vars", "secrets", "ratelimits", "account_id", "zone_id"):
+            self.assertNotIn(forbidden, self.config)
 
     def test_exact_worker_source_is_pinned(self):
         raw = WORKER.read_bytes()
         self.assertEqual(hashlib.sha256(raw).hexdigest(), EXPECTED_WORKER_SHA256)
         text = raw.decode("utf-8")
-        self.assertIn('const BREVO_URL = "https://api.brevo.com/v3/smtp/email";', text)
-        self.assertIn('"/api/report/config"', text)
         self.assertIn('"/api/report"', text)
+        self.assertIn("env.EMAIL.send", text)
+        for forbidden in ("BREVO", "TURNSTILE", "REPORT_RATE", "REPORT_DUP", "/api/report/config"):
+            self.assertNotIn(forbidden, text)
 
-    def test_only_four_narrow_report_routes(self):
+    def test_only_two_narrow_report_routes(self):
         self.assertEqual(self.config["routes"], ROUTES)
         patterns = [route["pattern"] for route in self.config["routes"]]
         self.assertEqual(len(patterns), len(set(patterns)))
@@ -73,35 +72,25 @@ class ReportWranglerConfigTests(unittest.TestCase):
             self.assertNotIn("?", pattern)
             self.assertNotIn("#", pattern)
             self.assertNotIn("/api/stats", pattern)
-            self.assertTrue(
-                pattern.startswith("ausmalwiese.de/")
-                or pattern.startswith("www.ausmalwiese.de/")
-            )
+            self.assertTrue(pattern.endswith("/api/report"))
 
-    def test_required_values_are_names_only(self):
-        self.assertEqual(self.config["secrets"], {"required": SECRETS})
+    def test_observability_exactly_preserves_live_logs_without_traces(self):
+        self.assertEqual(self.config["observability"], OBSERVABILITY)
+        self.assertEqual(set(self.config["observability"]), {"logs", "traces"})
+        self.assertEqual(set(self.config["observability"]["logs"]), {"enabled"})
+        self.assertEqual(set(self.config["observability"]["traces"]), {"enabled"})
+        self.assertIs(self.config["observability"]["logs"]["enabled"], True)
+        self.assertIs(self.config["observability"]["traces"]["enabled"], False)
+
+    def test_one_fixed_email_binding_and_no_personal_recipient(self):
+        self.assertEqual(self.config["send_email"], EMAIL_BINDING)
+        binding = self.config["send_email"][0]
+        self.assertEqual(binding["name"], "EMAIL")
+        self.assertEqual(binding["destination_address"], "info@ausmalwiese.de")
         serialized = json.dumps(self.config, sort_keys=True)
-        self.assertNotIn("@", serialized)
+        self.assertNotIn("gmail.com", serialized.lower())
         self.assertNotIn("api-key", serialized.lower())
-        self.assertNotIn("secret_value", serialized.lower())
-
-    def test_exact_rate_limit_bindings(self):
-        limits = self.config["ratelimits"]
-        self.assertEqual([item["name"] for item in limits], ["REPORT_RATE", "REPORT_DUP"])
-        self.assertEqual(limits[0]["simple"], {"limit": 12, "period": 60})
-        self.assertEqual(limits[1]["simple"], {"limit": 1, "period": 60})
-        namespace_ids = [item["namespace_id"] for item in limits]
-        self.assertEqual(len(namespace_ids), len(set(namespace_ids)))
-        for value in namespace_ids:
-            self.assertIsInstance(value, str)
-            self.assertTrue(value.isdigit())
-            self.assertGreater(int(value), 0)
-            self.assertLessEqual(int(value), 4294967295)
-
-    def test_secret_file_patterns_are_ignored(self):
-        ignored = (ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
-        self.assertIn("cloudflare/*.secrets.json", ignored)
-        self.assertIn("cloudflare/*.secrets.env", ignored)
+        self.assertNotIn("secret", serialized.lower())
 
 
 if __name__ == "__main__":

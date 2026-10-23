@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Anbieterkennzeichnung für Ausmalwiese.">
+  <meta name="description" content="Anbieterkennzeichnung und Kontakt für Ausmalwiese.">
   <title>Impressum | Ausmalwiese</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=c5d8c26a8a8349b2">
   <link rel="preload" href="assets/fonts/baloo2-latin-vf-26fb4610d4bc976d.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/nunito-latin-vf-ba344451eab25b21.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/fonts.css?v=e8c09f4e07f0c140">
-  <link rel="stylesheet" href="css/app.css?v=5b3fded828c78728">
+  <link rel="stylesheet" href="css/app.css?v=a7c40bb6d6111c9c">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -19,38 +19,40 @@
         <span class="brand-paw" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
         <span class="brand-word"><span>Ausmal</span> <span class="brand-wiese"><b>w</b><b>i</b><b>e</b><b>s</b><b>e</b></span></span>
       </a>
-      <nav class="legal-header-nav" aria-label="Seitennavigation"><a href="index.html">Zur Startseite</a></nav>
+      <nav class="desktop-nav" aria-label="Seitennavigation">
+        <a href="index.html">Startseite</a>
+        <a href="impressum.html" class="is-active" aria-current="page">Impressum</a>
+        <a href="datenschutz.html">Datenschutz</a>
+      </nav>
+      <div class="header-actions"><a class="outline-link" href="index.html">Zur Startseite</a></div>
     </div>
   </header>
-  <main id="main" class="legal-main" tabindex="-1">
-    <div class="container legal-content">
-      <h1>Impressum</h1>
-      <p class="legal-intro">Angaben zum Betreiber dieser Website.</p>
-      <section aria-labelledby="impressum-operator">
-        <h2 id="impressum-operator">Anbieter</h2>
+  <main id="main" tabindex="-1">
+    <section class="about">
+      <div class="container about-intro">
+        <h1>Impressum</h1>
+        <p>Angaben zum Anbieter dieses Internetangebots.</p>
+
+        <h2>Anbieter und Kontakt</h2>
         <p><strong>Andris Rožkalns</strong><br>
           Meylantstraße 10<br>
           44319 Dortmund<br>
-          Deutschland<br>
-          E-Mail: <a href="mailto:andris@rozkalns.net">andris@rozkalns.net</a></p>
-      </section>
-      <section aria-labelledby="impressum-contact">
-        <h2 id="impressum-contact">Kontakt</h2>
-        <p>Für Fragen zu den kostenlosen Malvorlagen und zum Internetangebot
-          erreichen Sie uns unter <a href="mailto:andris@rozkalns.net">andris@rozkalns.net</a>.</p>
-      </section>
-      <section aria-labelledby="impressum-material">
-        <h2 id="impressum-material">Inhalte</h2>
-        <p>Ausmalwiese stellt kostenlose Malvorlagen und Aktivitäten zum Ansehen
-          und Ausdrucken bereit. Wenn Sie Fragen zu Inhalten haben oder mögliche
-          Rechtsverletzungen melden möchten, nutzen Sie bitte die oben genannte E-Mail-Adresse.</p>
-      </section>
-    </div>
+          Deutschland</p>
+        <p>E-Mail: <a href="mailto:andris@rozkalns.net">andris@rozkalns.net</a></p>
+
+        <h2>Hinweise zu Inhalten</h2>
+        <p>Ausmalwiese stellt kostenlose Malvorlagen und Lernaktivitäten zum Ansehen,
+          Herunterladen und Ausdrucken bereit. Hinweise zu Inhalten oder möglichen
+          Rechtsverletzungen können an die oben genannte E-Mail-Adresse gesendet werden.</p>
+      </div>
+    </section>
   </main>
-  <footer class="legal-footer"><div class="container">
-    <a href="index.html">Startseite</a><span aria-hidden="true">·</span>
-    <a href="impressum.html" aria-current="page">Impressum</a><span aria-hidden="true">·</span>
-    <a href="datenschutz.html">Datenschutz</a>
-  </div></footer>
+  <footer class="about" aria-label="Rechtliche Informationen">
+    <div class="container"><div class="detail-actions">
+      <a class="outline-link" href="index.html">Startseite</a>
+      <a class="outline-link" href="impressum.html" aria-current="page">Impressum</a>
+      <a class="outline-link" href="datenschutz.html">Datenschutz</a>
+    </div></div>
+  </footer>
 </body>
 </html>

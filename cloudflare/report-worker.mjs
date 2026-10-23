@@ -1,6 +1,5 @@
-// Source-only Worker for Ausmalwiese error reporting (#240).
-// Route the exact same-origin /api/report* paths separately from /api/stats/*.
-// Never accept email addresses or URLs from visitors.
+// Minimal source-only Worker for Ausmalwiese error reporting (#264).
+// One same-origin POST endpoint, one Cloudflare Email Service binding.
 const ORIGINS = new Set(["https://ausmalwiese.de", "https://www.ausmalwiese.de"]);
 const REASONS = Object.freeze({
   print: "Drucken funktioniert nicht",
@@ -11,8 +10,9 @@ const REASONS = Object.freeze({
 });
 const PAGE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/i;
 const URL_BASE = "https://ausmalwiese.de";
-const BREVO_URL = "https://api.brevo.com/v3/smtp/email";
 const REPORT_FROM = "info@ausmalwiese.de";
+const FIXED_DESTINATION = "info@ausmalwiese.de";
+const EMAIL_ERROR_CODE = /^E_[A-Z0-9_]{1,62}$/;
 
 function json(payload, status = 200) {
   return new Response(JSON.stringify(payload), {
@@ -25,129 +25,88 @@ function json(payload, status = 200) {
     },
   });
 }
+
 function configured(env) {
-  return Boolean(env?.TURNSTILE_SITE_KEY && env?.TURNSTILE_SECRET &&
-    typeof env?.BREVO_API_KEY === "string" && env.BREVO_API_KEY.length > 0 &&
-    typeof env?.REPORT_TO === "string" && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(env.REPORT_TO) &&
-    env?.REPORT_RATE?.limit && env?.REPORT_DUP?.limit);
+  return Boolean(env?.EMAIL && typeof env.EMAIL.send === "function");
 }
-function sanitizedTitle(title) {
-  if (typeof title !== "string") return "";
-  return title.replace(/[\x00-\x1f\x7f]/g, " ").trim().slice(0, 120);
+
+function sanitizedEmailErrorCode(error) {
+  if (!error || typeof error !== "object") return "UNKNOWN";
+  let code;
+  try {
+    code = error.code;
+  } catch {
+    return "UNKNOWN";
+  }
+  return typeof code === "string" && code.length <= 64 && EMAIL_ERROR_CODE.test(code)
+    ? code
+    : "UNKNOWN";
 }
-async function digest(value) {
-  const result = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(result), (part) => part.toString(16).padStart(2, "0")).join("");
-}
+
 async function readPayload(request) {
   if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get("content-type") || "")) return null;
   const length = request.headers.get("content-length");
-  if (length && (!/^\d+$/.test(length) || Number(length) > 4096)) return null;
+  if (length && (!/^\d+$/.test(length) || Number(length) > 2048)) return null;
   const raw = await request.text();
-  if (raw.length > 4096) return null;
+  if (raw.length > 2048) return null;
   try {
     const value = JSON.parse(raw);
     if (!value || Array.isArray(value) || typeof value !== "object" ||
-      Object.keys(value).some((key) => !["id", "page", "reason", "turnstile"].includes(key))) return null;
+      Object.keys(value).some((key) => !["id", "page", "reason"].includes(key))) return null;
     return value;
   } catch {
     return null;
   }
 }
-async function verifyChallenge(env, token, hostname) {
-  const form = new FormData();
-  form.set("secret", env.TURNSTILE_SECRET);
-  form.set("response", token);
-  const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-    method: "POST", body: form, redirect: "error",
-  });
-  if (!response.ok) return false;
-  const result = await response.json();
-  return result?.success === true && result.hostname === hostname && result.action === "report";
+
+function buildEmail(payload, reason, link) {
+  return {
+    to: FIXED_DESTINATION,
+    from: { email: REPORT_FROM, name: "Ausmalwiese" },
+    subject: "[Ausmalwiese] Fehler gemeldet: " + payload.id,
+    text: [
+      "Neue Fehlermeldung",
+      "Grund: " + reason,
+      "ID: " + payload.id,
+      "Seite: " + payload.page,
+      "Link: " + link,
+      "",
+    ].join("\n"),
+  };
 }
-async function catalogEntry(id) {
-  const response = await fetch(URL_BASE + "/catalog.json", {
-    method: "GET", headers: { accept: "application/json" },
-    cache: "no-store", redirect: "error",
-  });
-  if (!response.ok) return null;
-  const catalog = await response.json();
-  if (!Array.isArray(catalog)) return null;
-  const match = catalog.find((item) => item && item.id === id);
-  if (!match || !sanitizedTitle(match.title)) return null;
-  const pages = Array.isArray(match.pages) && match.pages.length > 0
-    ? match.pages.length
-    : (match.print || match.preview ? 1 : 0);
-  return pages > 0 && pages <= 12 ? { title: sanitizedTitle(match.title), pages } : null;
-}
+
 async function submit(request, env, url) {
   const origin = request.headers.get("origin");
   if (origin !== url.origin || request.headers.get("sec-fetch-site") === "cross-site") {
     return json({ ok: false }, 403);
   }
   if (!configured(env)) return json({ ok: false }, 503);
+
   const payload = await readPayload(request);
   if (!payload || typeof payload.id !== "string" || !PAGE_ID.test(payload.id) ||
     typeof payload.reason !== "string" || !Object.hasOwn(REASONS, payload.reason) ||
-    !Number.isInteger(payload.page) || payload.page < 1 || payload.page > 12 ||
-    typeof payload.turnstile !== "string" || payload.turnstile.length < 1 || payload.turnstile.length > 2048) {
+    !Number.isInteger(payload.page) || payload.page < 1 || payload.page > 12) {
     return json({ ok: false }, 400);
   }
-  const clientIp = request.headers.get("cf-connecting-ip");
-  if (!clientIp || clientIp.length > 64) return json({ ok: false }, 403);
+
+  const link = URL_BASE + "/detail.html?id=" + encodeURIComponent(payload.id) + "&page=" + payload.page;
+  const reason = REASONS[payload.reason];
   try {
-    const key = await digest(clientIp);
-    const allowance = await env.REPORT_RATE.limit({ key });
-    if (allowance?.success !== true) return json({ ok: false }, 429);
-    if (!await verifyChallenge(env, payload.turnstile, url.hostname)) return json({ ok: false }, 403);
-    const entry = await catalogEntry(payload.id);
-    if (!entry || payload.page > entry.pages) return json({ ok: false }, 400);
-    const duplicateKey = await digest(key + ":" + payload.id + ":" + payload.page + ":" + payload.reason);
-    const duplicate = await env.REPORT_DUP.limit({ key: duplicateKey });
-    if (duplicate?.success !== true) return json({ ok: false }, 429);
-    const link = URL_BASE + "/detail.html?id=" + encodeURIComponent(payload.id) + "&page=" + payload.page;
-    const reason = REASONS[payload.reason];
-    const email = {
-      sender: { email: REPORT_FROM, name: "Ausmalwiese" },
-      to: [{ email: env.REPORT_TO, contactPixelTrackingConsent: false }],
-      subject: "[Ausmalwiese] Fehler gemeldet: " + payload.id,
-      textContent: [
-        "Neue Fehlermeldung", "Grund: " + reason,
-        "Vorlage: " + entry.title, "ID: " + payload.id,
-        "Seite: " + payload.page + " von " + entry.pages,
-        "Link: " + link,
-      ].join("\n"),
-    };
-    const response = await fetch(BREVO_URL, {
-      method: "POST",
-      headers: {
-        "accept": "application/json",
-        "content-type": "application/json",
-        "api-key": env.BREVO_API_KEY,
-      },
-      body: JSON.stringify(email),
-      redirect: "error",
-      signal: AbortSignal.timeout(10000),
-    });
-    if (response.status !== 201) return json({ ok: false }, 503);
-    const result = await response.json();
-    if (typeof result?.messageId !== "string" || !result.messageId.trim()) {
-      return json({ ok: false }, 503);
-    }
+    await env.EMAIL.send(buildEmail(payload, reason, link));
     return json({ ok: true }, 200);
-  } catch {
-    // Do not leak addresses, challenge secrets or upstream error data to the caller.
+  } catch (error) {
+    console.error({
+      event: "report_email_send_failed",
+      code: sanitizedEmailErrorCode(error),
+    });
     return json({ ok: false }, 503);
   }
 }
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (!ORIGINS.has(url.origin)) return json({ ok: false }, 404);
-    if (url.pathname === "/api/report/config" && request.method === "GET") {
-      if (!configured(env)) return json({ ok: false }, 503);
-      return json({ siteKey: env.TURNSTILE_SITE_KEY });
-    }
     if (url.pathname !== "/api/report") return json({ ok: false }, 404);
     if (request.method !== "POST") return json({ ok: false }, 405);
     return submit(request, env, url);

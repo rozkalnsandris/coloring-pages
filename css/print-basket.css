@@ -1,0 +1,145 @@
+.basket-summary {
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-left: auto;
+  padding: 7px 11px;
+  border: 1px solid #cfe3fb;
+  border-radius: 999px;
+  background: #f7fbff;
+  color: var(--blue-deep);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.basket-summary strong {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #e4f3ff;
+  font-size: 12px;
+}
+.basket-summary-short { display: none; }
+.basket-summary.is-unavailable { color: var(--muted); background: #f5f7fa; }
+
+.basket-toggle {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border: 1px solid #bfd8f4;
+  border-radius: 12px;
+  background: #f7fbff;
+  color: var(--blue-deep);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.basket-toggle:hover,
+.basket-toggle:focus-visible {
+  border-color: var(--blue);
+  background: #eef7ff;
+}
+.basket-toggle[aria-pressed="true"] {
+  border-color: #9ec8ef;
+  background: #e4f3ff;
+}
+.basket-toggle:disabled {
+  cursor: default;
+  opacity: .55;
+}
+
+.detail-actions .basket-toggle-detail {
+  min-height: 68px;
+  margin-top: 0;
+  padding: 16px 20px;
+  border-radius: var(--radius-card);
+  text-align: left;
+  font-size: 17px;
+}
+
+@media (max-width: 720px) {
+  .basket-summary {
+    min-height: 48px;
+    padding-inline: 9px;
+  }
+  .basket-summary-long { display: none; }
+  .basket-summary-short { display: inline; }
+  .basket-toggle { min-height: 48px; }
+}
+
+@media (max-width: 380px) {
+  .basket-summary { gap: 5px; padding-inline: 7px; }
+  .basket-summary strong { padding-inline: 6px; font-size: 11px; }
+}
+
+.basket-summary:focus-visible,
+.basket-dialog :is(button, a):focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+.basket-summary:disabled { opacity: .6; cursor: default; }
+.basket-dialog {
+  width: min(620px, calc(100% - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  color: var(--text);
+  overflow: auto;
+  box-shadow: 0 22px 60px rgb(16 40 77 / 20%);
+}
+.basket-dialog::backdrop { background: rgb(16 40 77 / 60%); }
+.basket-dialog-header { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+.basket-dialog h2 { margin: 0; font-family: var(--font-display); font-size: 25px; }
+.basket-dialog-list { list-style: none; padding: 0; margin: 16px 0; display: grid; gap: 12px; }
+.basket-dialog-item {
+  display: grid; grid-template-columns: 80px minmax(0,1fr); gap: 10px;
+  padding: 12px; border: 1px solid var(--line); border-radius: 12px;
+}
+.basket-dialog-item img { width: 80px; height: 95px; object-fit: contain; grid-row: span 2; }
+.basket-dialog-details { min-width: 0; display: grid; align-content: start; gap: 4px; }
+.basket-dialog-details a { font-weight: 800; overflow-wrap: anywhere; }
+.basket-dialog-details span,
+.basket-dialog-note { color: var(--muted); font-size: 13px; }
+.basket-dialog-actions { grid-column: 2; display: flex; flex-wrap: wrap; gap: 6px; }
+.basket-dialog button {
+  min-height: 44px; padding: 7px 10px; border: 1px solid #bfd8f4;
+  border-radius: 10px; background: #f7fbff; color: var(--blue-deep);
+  font: inherit; font-weight: 700; cursor: pointer;
+}
+.basket-dialog button:disabled { opacity: .5; cursor: default; }
+@media (max-width: 480px) {
+  .basket-dialog { padding: 16px; }
+  .basket-dialog-item { grid-template-columns: 60px minmax(0,1fr); padding: 8px; }
+  .basket-dialog-item img { width: 60px; height: 76px; }
+  .basket-dialog-actions button { font-size: 12px; }
+}
+
+.basket-zip-download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin-top: 10px;
+  padding: 10px 16px;
+  border: 2px solid var(--blue);
+  border-radius: 12px;
+  background: var(--blue-deep);
+  color: #fff;
+  font-weight: 800;
+  text-decoration: none;
+}
+.basket-zip-download:hover { background: var(--blue); }
+.basket-zip-download:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+[data-basket-zip-link]:empty { display: none; }

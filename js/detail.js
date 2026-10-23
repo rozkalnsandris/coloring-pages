@@ -19,6 +19,9 @@ const likeCount=document.querySelector("[data-action-like-count]");
 const likeStatus=document.querySelector("[data-like-status]");
 const likeRetryWrap=document.querySelector("[data-like-retry-wrap]");
 const likeRetryButton=document.querySelector("[data-like-retry]");
+const relatedSection=document.querySelector("[data-related-section]");
+const relatedGrid=document.querySelector("[data-related-grid]");
+const RELATED_LIMIT=6;
 let activePrintSession=null;
 let loadedEntryId="";
 
@@ -68,6 +71,108 @@ function entryPages(entry) {
     }];
   }
   return [];
+}
+
+
+function relatedTopicIds(entry) {
+  if (!Array.isArray(entry?.topics)) return [];
+  return [...new Set(
+    entry.topics
+      .map((value) => String(value || "").trim().toLocaleLowerCase("de"))
+      .filter(Boolean)
+  )];
+}
+
+function relatedCandidate(entry, currentId) {
+  return Boolean(
+    entry &&
+    entry.id &&
+    String(entry.id) !== String(currentId) &&
+    entry.title &&
+    entry.thumb &&
+    entry.hidden !== true &&
+    entry.visible !== false &&
+    entryPages(entry).length > 0
+  );
+}
+
+function selectRelatedEntries(current, catalog, limit = RELATED_LIMIT) {
+  if (!current || !Array.isArray(catalog) || limit <= 0) return [];
+
+  const currentTopics = new Set(relatedTopicIds(current));
+  const seen = new Set();
+  const ranked = [];
+
+  catalog.forEach((entry, index) => {
+    if (!relatedCandidate(entry, current.id)) return;
+    const id = String(entry.id);
+    if (seen.has(id)) return;
+    seen.add(id);
+
+    const sharedTopics = relatedTopicIds(entry)
+      .reduce((count, topicId) => count + (currentTopics.has(topicId) ? 1 : 0), 0);
+    const sameCategory = Boolean(current.category && entry.category === current.category);
+    if (!sharedTopics && !sameCategory) return;
+
+    ranked.push({ entry, index, sharedTopics });
+  });
+
+  ranked.sort((a, b) => {
+    const aGroup = a.sharedTopics > 0 ? 0 : 1;
+    const bGroup = b.sharedTopics > 0 ? 0 : 1;
+    return aGroup - bGroup ||
+      b.sharedTopics - a.sharedTopics ||
+      a.index - b.index ||
+      String(a.entry.id).localeCompare(String(b.entry.id), "de");
+  });
+
+  return ranked.slice(0, limit).map(({ entry }) => entry);
+}
+
+function relatedDetailHref(id) {
+  const params = new URLSearchParams({ id: String(id) });
+  const campaign = new URLSearchParams(window.location.search).get("campaign");
+  if (campaign === "dortmund-01") params.set("campaign", campaign);
+  return `detail.html?${params.toString()}`;
+}
+
+function renderRelatedEntries(current, catalog) {
+  if (!relatedSection || !relatedGrid) return;
+  const entries = selectRelatedEntries(current, catalog);
+  relatedGrid.replaceChildren();
+
+  if (!entries.length) {
+    if (relatedSection) relatedSection.hidden = true;
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  entries.forEach((entry) => {
+    const card = document.createElement("article");
+    card.className = "detail-related-card";
+
+    const link = document.createElement("a");
+    link.href = relatedDetailHref(entry.id);
+    link.setAttribute("aria-label", `${entry.title} ansehen`);
+
+    const image = document.createElement("img");
+    image.src = entry.thumb;
+    image.alt = `${entry.title} – Malvorlage`;
+    image.loading = "lazy";
+    image.decoding = "async";
+    image.width = 320;
+    image.height = 240;
+
+    const heading = document.createElement("h3");
+    heading.textContent = entry.title;
+
+    link.append(image, heading);
+    card.append(link);
+    fragment.append(card);
+  });
+
+  relatedGrid.append(fragment);
+  relatedSection.hidden = false;
 }
 
 function selectPage(entry, pages, pageIndex) {
@@ -206,20 +311,25 @@ function startHtmlPrint(href) {
 printLink?.addEventListener("click",(event)=>{
   if (!printLink.href || printLink.getAttribute("aria-disabled")==="true") return;
   event.preventDefault();
-  if (loadedEntryId) window.ColoringStats?.trackPrint?.(loadedEntryId);
+  try {
+    if (loadedEntryId) window.ColoringStats?.trackPrint?.(loadedEntryId);
+  } catch {
+    // Printing is independent of telemetry, including a synchronous client error.
+  }
   startHtmlPrint(printLink.href);
 });
 function renderLikeState(data) {
   if (!likeButton) return;
-  const liked=Boolean(data?.liked);
+  const liked=data?.reacted===true;
   likeButton.classList.toggle("is-liked",liked);
   likeButton.setAttribute("aria-pressed",String(liked));
-  if (likeLabel) likeLabel.textContent="Gefällt mir";
+  if (likeLabel) likeLabel.textContent=liked ? "Danke!" : "Gefällt mir";
   if (likeCount) likeCount.textContent=String(Number(data?.like_count||0));
 }
+let likeAttempted=false;
 async function hydrateLikeState(pageId) {
-  if (!likeButton) return;
-  // Do not guess whether this visitor already liked the page when the initial GET fails.
+  if (!likeButton || likeAttempted) return;
+  // Read only the total. A failed read can safely be retried before any reaction.
   likeButton.disabled=true;
   if (likeRetryWrap) likeRetryWrap.hidden=true;
   if (likeRetryButton) likeRetryButton.disabled=true;
@@ -230,7 +340,7 @@ async function hydrateLikeState(pageId) {
   try {
     if (!window.ColoringStats?.getPage) throw new Error("Like status unavailable");
     const data=await window.ColoringStats.getPage(pageId);
-    renderLikeState(data);
+    renderLikeState({...data,reacted:false});
     likeButton.disabled=false;
     likeButton.classList.remove("is-disabled");
   } catch {
@@ -247,22 +357,22 @@ likeRetryButton?.addEventListener("click", () => {
   return hydrateLikeState(loadedEntryId);
 });
 likeButton?.addEventListener("click",async()=>{
-  if (!loadedEntryId || likeButton.disabled || !window.ColoringStats?.toggleLike) return;
+  if (!loadedEntryId || likeButton.disabled || likeAttempted || !window.ColoringStats?.addLike) return;
+  likeAttempted=true;
   if (likeStatus) {
     likeStatus.textContent = "";
     likeStatus.hidden = true;
   }
   likeButton.disabled=true;
   try {
-    renderLikeState(await window.ColoringStats.toggleLike(loadedEntryId));
+    renderLikeState(await window.ColoringStats.addLike(loadedEntryId));
   } catch {
     if (likeStatus) {
-      likeStatus.textContent = "Gefällt mir konnte nicht gespeichert werden. Bitte versuche es erneut.";
+      likeStatus.textContent = "Dein Herz konnte nicht bestätigt werden.";
       likeStatus.hidden = false;
     }
-  } finally {
-    likeButton.disabled=false;
   }
+  // Keep disabled after success or uncertainty. Reload starts a new page view.
 });
 
 function markMissingDetailNoindex() {
@@ -322,7 +432,11 @@ async function loadDetail() {
     }
     detailRoot?.setAttribute("data-loaded-id",entry.id);
     loadedEntryId=entry.id;
-    window.ColoringStats?.trackView?.(entry.id);
+    try {
+      window.ColoringStats?.trackView?.(entry.id);
+    } catch {
+      // Optional view telemetry must never block the preview or A4 printing.
+    }
     if (detailTitle) detailTitle.textContent = entry.title;
     const detailBadges = document.querySelector(".detail-badges");
     if (detailBadges) detailBadges.hidden = false;
@@ -365,6 +479,13 @@ async function loadDetail() {
     setAction(printLink, allPrintable ? `print.html?id=${encodeURIComponent(entry.id)}` : "");
     if (printLabel) {
       printLabel.textContent=pages.length>1 ? `A4 drucken (${pages.length} Seiten)` : "A4 drucken";
+    }
+    try {
+      if (typeof relatedSection !== "undefined" && typeof relatedGrid !== "undefined") {
+        renderRelatedEntries(entry, catalog);
+      }
+    } catch {
+      if (typeof relatedSection !== "undefined" && relatedSection) relatedSection.hidden = true;
     }
     if (typeof CustomEvent === "function" && typeof document.dispatchEvent === "function") document.dispatchEvent(new CustomEvent("ausmalwiese:detail-loaded", { detail: { id: entry.id } }));
     await hydrateLikeState(entry.id);

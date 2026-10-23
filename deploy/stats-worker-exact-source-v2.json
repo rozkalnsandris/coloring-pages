@@ -1,0 +1,55 @@
+{
+  "schema": "ausmalwiese.stats-worker-exact-source-deploy.v2",
+  "repository": "rozkalnsandris/coloring-pages",
+  "worker": "coloring-pages-stats-v1",
+  "environment": "production",
+  "source_path": "cloudflare/stats-worker.js",
+  "source_blob_sha1": "c2ac9da6e0701103e0041b30db7dfbea4298f96c",
+  "wrangler_config_path": "cloudflare/wrangler.stats-worker.jsonc",
+  "wrangler_config_blob_sha1": "3733263a391274f2b6b0f2023c8656565bde8e1a",
+  "additive_migration_path": "cloudflare/stats-cookie-like-migration.sql",
+  "additive_migration_blob_sha1": "b5346c05cb27de1010dab2027b0b923e999af775",
+  "cleanup_migration_path": "cloudflare/stats-remove-daily-visitor-hmac.sql",
+  "cleanup_migration_blob_sha1": "a7cffb110adfceb5c1ff4dcd17a7009c549976a5",
+  "qr_host": "ausmalwiese.de",
+  "qr_destination": "https://ausmalwiese.de/",
+  "routes": [
+    "coloring.rozkalns.net/api/stats/*",
+    "ausmalwiese.de/api/stats/*",
+    "www.ausmalwiese.de/api/stats/*",
+    "ausmalwiese.de/q"
+  ],
+  "bindings": {
+    "DB": "d1_database",
+    "RATE_LIMITER": "rate_limiter",
+    "PUBLIC_ORIGIN": "plain_text",
+    "CF_ANALYTICS_HOST": "plain_text",
+    "CF_ZONE_TAG": "plain_text",
+    "VISITOR_HMAC_KEY": "secret_text",
+    "CF_ANALYTICS_API_TOKEN": "secret_text"
+  },
+  "live_sequence": [
+    "additive-migration-before-worker",
+    "worker-version-upload",
+    "worker-version-deploy-100-percent",
+    "read-only-runtime-verification",
+    "cron-trigger-separate-owner-gate",
+    "legacy-daily-visitors-cleanup-separate-owner-gate"
+  ],
+  "excluded_changes": [
+    "worker-name",
+    "worker-routes",
+    "worker-custom-domains",
+    "worker-bindings",
+    "worker-secrets",
+    "worker-vars",
+    "cloudflare-zone-dns",
+    "access-waf",
+    "other-workers",
+    "unlisted-d1-schema-data",
+    "automatic-retry",
+    "automatic-rollback",
+    "automatic-cleanup"
+  ],
+  "deployment_mode": "separate-owner-authorized-trusted-operator-only"
+}

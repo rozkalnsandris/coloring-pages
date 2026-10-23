@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 import argparse
 import json
 import os
@@ -26,6 +28,7 @@ MIN_SOURCE_LONG_SIDE = 1100
 MAX_ACTIVITY_PAGES = 12
 THUMB_MAX_WIDTH = 400
 PREVIEW_MAX_WIDTH = 1000
+WEBP_METHOD = 4
 ALLOWED_AGES = {"3-6", "4-8"}
 ALLOWED_DIFFICULTIES = {"easy", "normal", "detailed"}
 ALLOWED_LANGUAGES = {"de"}
@@ -259,7 +262,7 @@ def build_derivatives(images: list[Image.Image], target: Path) -> None:
     target.mkdir(parents=True, exist_ok=False)
 
     thumb = resized_copy(images[0], THUMB_MAX_WIDTH)
-    thumb.save(target / "thumb.webp", format="WEBP", lossless=True, quality=100, method=6)
+    thumb.save(target / "thumb.webp", format="WEBP", lossless=True, quality=100, method=WEBP_METHOD)
 
     page_count = len(images)
     for index, image in enumerate(images, start=1):
@@ -269,7 +272,7 @@ def build_derivatives(images: list[Image.Image], target: Path) -> None:
             format="WEBP",
             lossless=True,
             quality=100,
-            method=6,
+            method=WEBP_METHOD,
         )
         print_image = build_print_image(image)
         print_options: dict[str, Any] = {
@@ -321,6 +324,8 @@ def build_catalog_entry(
         "age": metadata["age"],
         "difficulty": metadata["difficulty"],
         "language": metadata["language"],
+        # UTC, new publications only. Legacy entries are preserved unmodified.
+        "published_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "thumb": f"{root}/thumb.webp",
     }
 

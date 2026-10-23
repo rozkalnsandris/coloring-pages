@@ -1,7 +1,7 @@
 /* Small, optional error report panel. Never covers the print/download controls. */
-.report-control { margin: 18px 0 22px; max-width: 640px; }
+.report-control { margin: 14px 0 16px; max-width: 640px; }
 .report-trigger {
-  border: 0; padding: 10px 0; background: transparent; color: var(--muted);
+  border: 0; padding: 8px 0; background: transparent; color: var(--muted);
   text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
   font-size: 0.93rem; font-weight: 700;
 }
@@ -21,7 +21,6 @@
   flex: 0 0 auto; margin: 3px 0 0; width: 18px; height: 18px;
   accent-color: var(--blue);
 }
-.report-panel [data-report-turnstile] { min-height: 68px; margin-top: 14px; }
 .report-panel-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
 .report-panel-actions button {
   min-height: 44px; padding: 10px 20px; border-radius: 11px;
@@ -31,7 +30,16 @@
 .report-panel-actions .report-cancel { background: #fff; color: var(--text); border: 1px solid var(--line); }
 .report-panel-actions button:disabled { opacity: 0.55; cursor: wait; }
 .report-control :is(button, input):focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
-.report-status { margin: 8px 0; line-height: 1.5; font-weight: 700; }
+.report-status {
+  margin: 4px 0 0; line-height: 1.4; font-size: 0.92rem;
+  font-weight: 700; color: var(--muted);
+}
+.report-status[data-state="success"] {
+  display: inline-flex; align-items: center; max-width: 100%;
+  padding: 6px 10px; border-radius: 10px;
+  background: #f3faf6; color: #2e6646;
+}
+.report-status[data-state="error"] { color: #8a3f3b; }
 .report-status:empty { display: none; }
 @media (max-width: 440px) {
   .report-panel { padding: 14px; }

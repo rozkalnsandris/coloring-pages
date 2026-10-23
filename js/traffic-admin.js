@@ -244,14 +244,19 @@
           };
         });
 
-      const uniqueVisitors = Number(traffic.unique_visitors);
+      // Historical D1/IP-HMAC visits are an approximation, never unique people.
+      // The newer privacy Worker retires this metric: absence must not become zero.
       const uniqueVisitorsAvailable = traffic.unique_visitors_status === "available"
-        && Number.isFinite(uniqueVisitors);
-      els.uniqueVisitors.textContent = uniqueVisitorsAvailable ? formatNumber(uniqueVisitors) : "N/A";
+        && traffic.unique_visitors_basis === "worker-d1-daily-hmac-ip"
+        && Number.isSafeInteger(traffic.unique_visitors)
+        && traffic.unique_visitors >= 0
+        && /^\d{4}-\d{2}-\d{2}$/.test(traffic.unique_visitors_date || "");
+      els.uniqueVisitors.textContent = uniqueVisitorsAvailable
+        ? formatNumber(traffic.unique_visitors) : "N/A";
       if (els.uniqueVisitorsLabel) {
-        els.uniqueVisitorsLabel.textContent = traffic.unique_visitors_date
-          ? "Approx. unique visitors · " + traffic.unique_visitors_date
-          : "Approx. unique visitors · latest day";
+        els.uniqueVisitorsLabel.textContent = uniqueVisitorsAvailable
+          ? "Approx. daily unique IPs · " + traffic.unique_visitors_date
+          : "Daily unique IPs · unavailable";
       }
       els.visits.textContent = formatNumber(traffic.visits);
       els.totalViews.textContent = formatNumber(overview.totals?.view_count);
@@ -259,8 +264,14 @@
       els.crawlerRequests.textContent = formatNumber(traffic.crawler_requests);
       renderInstagram(instagram7, instagram30);
       els.trafficStatus.textContent = traffic.sampled ? "Sampled · User-Agent heuristic" : "User-Agent heuristic";
-      if (els.visitsNote && traffic.sampled) {
-        els.visitsNote.textContent = "“Approx. unique visitors” is the Stats Worker’s latest daily privacy-preserving unique-IP count, not an exact people count. “Website visits” is a separate sampled Cloudflare metric.";
+      if (els.visitsNote) {
+        const ipNote = uniqueVisitorsAvailable
+          ? "Approx. daily unique IPs is the Stats Worker's historical D1/IP-HMAC estimate, not an exact people count. "
+          : "The historical daily unique-IP estimate is unavailable or retired; N/A is not a zero count. ";
+        const sampleNote = traffic.sampled ? " (sampled)" : " (may be sampled)";
+        els.visitsNote.textContent = ipNote
+          + "Website visits is a separate Cloudflare analytics metric" + sampleNote
+          + ", not unique people. Crawler requests use User-Agent classification and must not be subtracted from visits.";
       }
 
       renderTopList();

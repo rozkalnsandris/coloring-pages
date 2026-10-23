@@ -1,310 +1,74 @@
-# German legal pages — DRAFT / NOT RELEASE READY
-
-## 2026-10-17 fresh Cloudflare runtime metadata — CURRENT EVIDENCE
-
-**Read-only evidence, not legal sign-off:** an authenticated Cloudflare Dashboard review on 2026-10-17 confirmed the account is on **Free ($0/month) / Workers & Pages Free**, Worker `coloring-pages-stats-v1` has **Workers Logs disabled** and **Workers Traces disabled**, and D1 database `coloring-pages-stats-v1` is on the Free tier. The visible D1 Time Travel restore window was **2026-10-10 → 2026-10-17**, matching Cloudflare's documented **7-day Workers Free** recovery limit. This is recovery history, not active-row retention or a seven-day deletion SLA.
-
-**Web Analytics:** `ausmalwiese.de` is **enabled** with Automatic setup (created 2026-10-11). Cloudflare's current documentation states that unsampled beacon data is retained for **7 days**, then aggregated down to roughly 10% for longer-term storage; Web Analytics data is accessible for the previous **six months**. This closes the retention-fact gap for that Cloudflare product, but **does not decide its GDPR lawful basis**.
-
-**Rate Limiter:** the Production Worker exposes binding `RATE_LIMITER` with namespace `1152026106`. The Dashboard read-only binding card did not expose the configured limit/period without entering an edit surface, so those LIVE values remain **UNKNOWN**. The reviewed source config's `100 / 60s` value is not promoted to a LIVE fact.
-
-**Still unverified:** Cloudflare role/recipient and transfer/safeguard wording; edge/WAF/security and Rate Limiter retention; current origin access-log retention; lawful basis/necessity for Web Analytics and aggregate Print/IP processing; treatment and retention of legacy daily-visitor HMAC rows during the separately gated cleanup; and the deployed expiry-cleanup/Cron schedule plus maximum cleanup delay. No secret values, D1 rows, settings writes or Cloudflare mutations were used for this evidence.
-
-
-## 2026-10-17 Art. 8 / expiry-aggregate review — CURRENT OPEN GATES
-
-**Paired source:** PR #183 now presents the optional persistent Like consent to **parents, holders of parental responsibility and educational professionals**. This is an adult-directed product/UI cue, not age verification, parental-authority verification or a legal conclusion that GDPR Art. 8 is inapplicable. The site itself remains visibly child-oriented. If the Like processing is considered an information-society service offered directly to a child and relies on Art. 6(1)(a), GDPR Art. 8 requires consent/authorisation by the holder of parental responsibility for users below the applicable age threshold and reasonable efforts to verify that authorisation. **This remains a legal/controller gate.**
-
-**Expiry aggregate:** paired PR #183 adds `docs/LIKE_EXPIRY_ANONYMISATION_ASSESSMENT_182.md`. The proposed archive contains only `page_id + like_count`, with no cookie/session key or event timestamp. That is a strong technical candidate for non-linkable aggregate data after source identifiers are deleted, but neither this PR nor public copy may state as a legal fact that the result is anonymous. The assessment must consider record isolation/singling out, linkability and inference together with reasonably available runtime data. EDPB Guidelines 02/2026 on Anonymisation are still a consultation draft through **2026-10-30**.
-
-**Art. 13 gaps still explicit, not silently filled:** fresh runtime evidence now fixes the current Workers Free plan, 7-day D1 Time Travel recovery window, enabled Web Analytics retention facts, and disabled Workers Logs/Traces for the Stats Worker. Before release, the final notice still needs (a) Cloudflare/provider roles and recipients, (b) any third-country transfers/safeguards, (c) concrete retention/deletion criteria for Rate Limiter, edge/origin/security logs, (d) lawful basis and necessity for Web Analytics and aggregate Print/IP processing, (e) verified retirement of daily visitor-HMAC collection plus separately gated legacy-row cleanup, and (f) the actually deployed expiry-cleanup schedule and maximum operational delay. Source text must keep these remaining facts open rather than inventing them.
-
-**Legal effect:** adult-directed wording does not validate a child's consent; post-expiry aggregation does not retroactively cure invalid consent during the preceding pseudonymous period. Both PRs remain **Draft / NOT RELEASE READY / NO LEGAL SIGN-OFF**.
-
-
-## 2026-10-17 coordinated #182/#183 retention alignment — CURRENT DRAFT
-
-**Current paired source direction, not legal sign-off:** PR #183 now uses a Like-only, server-issued `HttpOnly` cookie with a fixed **180-day** lifetime, no passive renewal, explicit withdrawal, and no persistent Print visitor identifier. On expiry, the source-only cleanup design moves remaining per-session Like contributions into page-level totals and deletes the expired cookie hash/session and its pseudonymous Like rows. The public Draft in this PR is aligned to that model.
-
-This **supersedes the earlier 90-day v3 retention proposal** as a product/source decision. Historical 90-day/v3 sections below remain only as audit history and must not be treated as the current retention choice. Exact mutable PR heads are deliberately not made normative here; read PR #183 and this PR fresh before any release decision.
-
-Still open before release:
-- **GDPR Art. 8 / audience:** Ausmalwiese serves material for young children. Whether the optional Like feature is an information-society service offered directly to children, and any resulting parental-authorization/verification duty, still needs legal/controller determination.
-- **Anonymisation assessment:** the expiry archive is designed to keep only page-level totals without a cookie/session key, but the legal conclusion that those totals are anonymous remains a separate assessment. EDPB Guidelines 02/2026 on Anonymisation are still a public-consultation draft through 2026-10-30, not final guidance.
-- **Runtime truth:** GitHub source does not prove that the D1 migration, scheduled cleanup/Cron, Worker source or frontend are LIVE. Release requires fresh runtime evidence and separately authorized D1/Worker/application actions.
-- **Recovery/log boundaries:** fresh 2026-10-17 authenticated Dashboard evidence confirms **Workers Free** and a D1 Time Travel restore window from **2026-10-10 to 2026-10-17**; the current Draft therefore uses the **7-day** recovery limit. This supersedes the earlier plan ambiguity, while the dated 2026-10-15 observation remains below as audit history. Time Travel remains recovery history, not active-row retention. Workers Logs and Workers Traces are currently disabled for the Stats Worker; separate edge/WAF/security, Rate Limiter and origin logging still require their own retention evidence.
-- **Aggregate Print / technical connection data:** the planned Print event has no stable visitor ID, but its lawful basis, Rate Limiter/edge processing and retention still require final legal review. Web Analytics is now runtime-confirmed enabled with its provider retention facts documented above, but its GDPR lawful basis remains open.
-
-Both PR #158 and PR #183 remain **Draft / NOT RELEASE READY / NO LEGAL SIGN-OFF**. This coordination performs no D1, Worker, Cloudflare or application deployment.
-
-## 2026-10-17 final controller/source review — CURRENT RELEASE GATE
-
-**Official-law check:** TDDDG §25 requires informed consent for storing or accessing terminal information unless a narrow statutory exception applies. The current target therefore keeps the Like cookie behind explicit consent. GDPR Art. 13 requires the controller to provide purposes, legal bases, recipients/categories, transfers where applicable, retention periods or criteria and rights at the time data are obtained. GDPR Art. 8 remains open if the consent-based information-society service is offered directly to a child; adult-directed wording alone is not proof of age or parental authority.
-
-**Cloudflare/provider facts checked for this Draft:** D1 Workers Free Time Travel is documented as 7 days; Web Analytics retains unsampled beacon data for 7 days and aggregates long-term data to about 10%; Workers observability retention depends on the enabled product/settings. The standard Cloudflare DPA is currently version 6.4 (effective 2026-04-03). These provider facts do not replace account-specific LIVE verification or the controller's Art. 13 choices.
-
-**Daily visitor-HMAC direction:** the backend-first target retires the custom daily visitor-HMAC metric. The public Draft must not present it as a continuing target processing purpose. Before publication, verify the deployed Worker has stopped producing it and handle any legacy `daily_visitors` rows only through the separately authorized cleanup path.
-
-**Anonymisation boundary:** page-level `archived_like_totals` without a cookie/session key are technically minimised, but no legal anonymity conclusion is made here. EDPB Guidelines 02/2026 on Anonymisation remain a consultation draft through 2026-10-30. Keep the case-specific singling-out/record isolation, linkability and inference assessment open until runtime facts are verified.
-
-**Source completion boundary:** this legal Draft can be source-consistent and CI-green without being legally signed off or publishable. Remaining release gates are limited to the concrete Art. 8/Art. 13/controller and runtime facts listed above; superseded v2/v3/localStorage design sections below are historical evidence only.
-
-
-
-## 2026-10-15 read-only Cloudflare D1 and origin evidence — still NOT RELEASE READY
-
-**Scope and provenance:** Owner-authorized, read-only observations of the existing Cloudflare Dashboard (Worker `coloring-pages-stats-v1` and bound D1 database `coloring-pages-stats-v1`) and RPi5 origin container. These are dated runtime snapshots, **not** GitHub source proofs of deployed v3 behavior, an audit of individual records, a legal certification, or an authorization for configuration changes. PR #158 legal Draft: `579851a663c6bd51ec1c8e18137d921a0fbc4af5` before this documentation-only update; paired PR #183 consent Draft: `b1968be865c7b08e13623cdf99c99073483197a3`. Both were Draft and unmerged at the time of this review.
-
-| Read-only observation | Confirmed at inspection | What is **not** established |
-| --- | --- | --- |
-| Worker `coloring-pages-stats-v1` observability (Cloudflare Dashboard, 2026-10-14) | **Workers Logs: Disabled; Workers Traces: Disabled.** Dashboard showed a D1 database binding and a Rate Limiter binding. | Does not prove absence of Cloudflare edge/WAF/security/access records, all Logpush destinations, Rate Limiter internal retention, historical logs or future settings. The older October 11 script-settings API responses alone had been inconclusive; the newer Dashboard observation supersedes only that specific Workers Logs/Traces uncertainty. |
-| D1 database placement (Cloudflare Dashboard Settings, 2026-10-15) | **Jurisdiction: The European Union; Region: Eastern Europe; Read replication: Disabled.** | EU D1 jurisdiction is not a blanket assertion that Cloudflare Workers, CDN/edge, security processing, subprocessors or transfers remain exclusively in the EU. |
-| D1 Time Travel (Cloudflare Dashboard, 2026-10-15) | Dashboard stated the ability to restore to points within the **past 30 days**; the visible restore window at inspection was **06 October 2026, 09:28 → 15 October 2026, 07:33** (UI timezone not independently established). | This is a recovery window, **not a D1-row retention/automatic deletion period**. The displayed window did not show a full 30 days of existing history. Removing active Like rows does not demonstrate deletion from earlier recoverable database states, backups or other logs. No restore, bookmark retrieval or row read was performed. |
-| RPi5 origin container logging (read-only host snapshot, 2026-10-14) | The running `coloring-pages-public-coloring-pages-1` container was healthy and used Docker `json-file` logging with `max-size=10m`, `max-file=3`; Docker's default logging driver was also `json-file`. | Rotation is **size-based**, not a guaranteed number of days. This does not establish other host log sinks, backup retention, the content of access logs, or a fixed erasure SLA. |
-
-**Remaining Art. 13 / release gates:** Determine actual processing purposes and lawful bases; Cloudflare recipients, role-specific subprocessors, third-country access and safeguards; edge/security/Rate Limiter/origin/email logging and retention criteria; D1 active/legacy Like, credential and daily-HMAC deletion plus recovery implications; `CONSENT_TTL_SECONDS`, consent demonstrability and GDPR Art. 8 child-audience assessment; and DDG §5 operator classification. The proposed **90-day v3 credential lifetime**, daily D1 cleanup and two UTC-day HMAC limit in [PRIVACY_RETENTION_AUDIENCE_DESIGN.md](PRIVACY_RETENTION_AUDIENCE_DESIGN.md) remain **design only**; no production value, migration, Cron, consent release or legal sign-off is approved. Do not transfer these runtime observations into the public `datenschutz.html` as settled retention claims.
-
-**Boundary:** No secrets, visitor data or D1 rows were read for this evidence. No GitHub `main` merge, Worker/D1/RPi5/Cloudflare mutation, rollback or release was authorized by this review.
-
----
-
-## 2026-10-13 reconciliation to main — still NOT RELEASE READY
-
-- Current source-only reconciliation: reviewed PR #158 at `2ace3bfdccb52a52d00a8074dd18c1c8535dea00` against current `main` `ddd73305201eccfb0c1f8404281f262652602e0e`. Paired consent PR #183 reviewed at `b1968be865c7b08e13623cdf99c99073483197a3`; earlier review SHAs in historical sections are snapshots.
-- **Font preservation:** current `main` uses immutable, locally served WOFF2 files in `assets/fonts/`, `css/fonts.css` and page preloads. These supersede the Draft's embedded base64 stylesheet and `privacy-ofl-v1` URLs. Local font delivery and real page behavior remain subject to separately authorized runtime verification.
-- **Copy clarity:** voluntary Like/Print paragraphs use consistent formal `Sie`; `Impressum` replaces a potentially overbroad third-party-rights disclaimer with a direct content-contact instruction. No telephone number, new operator identifier, actual legal basis or retention period has been invented.
-- **DDG §5 (if applicable):** operator name/address and a means of fast direct electronic contact including email must be assessable and accessible. The statute does not universally mandate a telephone number; response suitability, service classification, potential VAT/economic identifiers, and `MStV §18` editorial duties if applicable still need actual owner/legal review.
-- **DSGVO Art. 13 and TDDDG §25:** no approval yet for actual Cloudflare recipients/processors/transfers, Worker/edge/origin logs, retention/backup criteria, stored consent demonstrability, legacy Like erasure, children (Art. 8) or `CONSENT_TTL_SECONDS`. D1 migration and Cron remain unapplied and not approved. The Draft notice cannot be independently published before these facts and paired PR #183 are reconciled.
-- Source tests/CI do not certify legal compliance. **Both PRs remain Draft / NOT RELEASE READY; NO MERGE, NO LIVE, NO D1/Worker mutation.**
-- Official sources: https://www.gesetze-im-internet.de/ddg/__5.html ; https://www.gesetze-im-internet.de/ttdsg/__25.html ; https://eur-lex.europa.eu/eli/reg/2016/679/oj ; https://www.edpb.europa.eu/documents/guideline/transparency_en
-
----
-
-**Pending retention and audience decision (2026-10-12):** [90-day v3, daily cleanup, two UTC-day HMAC and parent/educator audience DESIGN PROPOSAL](PRIVACY_RETENTION_AUDIENCE_DESIGN.md). It has **not** set a production TTL, installed a Cron Trigger, modified a D1 table, or decided GDPR Art. 8 applicability. Paired PR #183 current review head: `ab4e88feb5d9675e2875351e064a1ee7fdf79c3e`; any older head references in historical sections are snapshots, not current source.
-
-
-## Historical source review — 2026-10-12: superseded v3 snapshot / PR #183 `eb1627dd9945f00fb84511f2fa4161371b4f1e30`
-
-**Historical only — not current product direction.** This section records the v3 design that was later superseded by the 2026-10-17 backend-first 180-day Like-cookie + aggregate Print direction above. It is retained for audit history only and must not be used as current release guidance. Neither source CI nor this history is GDPR/legal sign-off or LIVE proof.
-
-### Historical v3 changes that were reflected in an earlier `datenschutz.html`
-
-- **Client choice:** equal-level German `Alle ablehnen / Einstellungen / Alle akzeptieren`, independent Like/Print opt-ins; anonymous aggregate Likes and browsing/PNG/A4 printing remain usable on refusal. Local consent preference `coloring-pages-consent-v1` stores purposes, version and decision time. It alone is **not** proof under GDPR Art. 7(1), and the visitor's age/parental authority is not verified.
-- **Worker-issued identifier:** after a purpose opt-in, the proposed Worker creates a cryptographically random 256-bit `v3-` token. The legacy `coloring-pages-visitor-v1` localStorage **key name remains**, but the credential *value* changes to v3. The Worker persists only `SHA-256(token)` plus Like/Print scope, notice version, server-observed consent timestamp and `expires_at` in a proposed new `visitor_credentials` D1 table; it does **not** attest parental authorization or user identity. This is additional pseudonymous data and a server-side consent-event record: the former public claim that **no server-side record exists is false** for v3.
-- **Rights/withdrawal:** personalized `POST /page`, `POST /like` and consented `POST /print` are guarded on active, unexpired, purpose-specific D1 scope. v3 Like revocation uses a D1 transaction to remove matching active Like rows and retire the old credential; an old credential cannot reinsert Likes after committed revocation. Print can remain consented through rotation. Successful response still covers **active rows only**, not Cloudflare D1 Time Travel, logs, backups or unidentifiable legacy accounts; network ambiguity must not be reported as success.
-- **Legacy fence:** old v1/v2 credentials cannot create new Likes/Print events or personal status; old personalized GET with `visitor_id` is rejected instead of supported. Anonymous GET remains. A legacy v2-only self-service delete route continues for eligible secure credentials; lost/weak legacy IDs require proportionate GDPR Arts. 11/12/17 handling. Old cached clients may lose personalization; no claim that old URL logs vanish.
-- **Expiry:** Worker requires `CONSENT_TTL_SECONDS` in a bounded range before issuance; **no controller-approved real value has been verified**. An expired token is rejected on new personalized operations, but this is **not automatic deletion of Like rows, registry history, D1 backups or host logs**. The new `cloudflare/stats-v3-migration.sql` source is **unapplied**. No application/LIVE outcome follows from source.
-
-### GDPR Art. 13 + legal acceptance matrix (owner evidence required before Ready)
-
-| Duty / operation | Source-visible fact | Unresolved owner/legal evidence, not invented in the notice |
-| --- | --- | --- |
-| GDPR Art. 13(1)(a)–(b) controller/DPO | Controller and email/postal address are in the Draft | Check whether a DPO is required; if yes, provide actual contact. Validate DDG §5 classification and electronic contact suitability. |
-| Art. 13(1)(c)–(d), Art. 6 | Optional consented v3 Likes/Print, independent IP/day HMAC, page views, Web Analytics, origin/CDN security and email | Confirm actual per-purpose legal basis, necessary legitimate interests and balancing, analytics consent/strict necessity where applicable, and TDDDG §25 choice storage/reads. |
-| Art. 7(1), Art. 8 | Local preference plus Worker pseudonymous notice-version/timestamp, **no verified identity or parental authority** | Decide whether the service is offered directly to children; if so, assess Art. 8 under-16 parental authorization and reasonable verification. Evaluate consent proof without collecting excessive extra data. |
-| Art. 13(1)(e)–(f) recipients/transfers | Cloudflare CDN/Worker/D1/Web Analytics/Rate Limiter and self-hosted origin are named | Verify account-specific processing roles, recipients/subprocessors, actual third-country transfers and applicable safeguards. Standard Self-Serve DPA incorporation **does not verify actual routing or retention**. |
-| Art. 13(2)(a) periods/criteria | v3 `expires_at` needs unapproved `CONSENT_TTL_SECONDS`; active `likes` lack automatic expiry; visit HMAC cleanup depends on successful visits; logs/backups are distinct | Approve expiry duration **and** physical D1 Like/registry cleanup, visit/aggregate retention criteria, Time Travel/backup, logs, Rate Limiter and email retention. Do not substitute provider product limits or Docker size-based rotation for actual periods. |
-| Art. 13(2)(b)–(d) rights | Access, rectification, erasure, portability, objection, consent withdrawal, DPA complaint are described | Confirm proportionate lost-ID/manual DSAR procedure, response ownership and effect on legacy Likes; do not solicit bearer credentials or identity documents through ordinary email. |
-| Art. 13(2)(e)–(f) required data/automation | Browsing and printing remain independent of opt-in; v3 optional telemetry | Confirm if any mandatory provision/consequences or Art. 22 automated individual decision-making exists; don't assert profile/automation absence without checking real analytics and safeguards. |
-| Coordination/deployment | PR #183 changes Worker/API and requires unapplied D1 v3 migration; PR #158 is HTML/legal text | Separate owner gates for each MERGE and any D1/Worker LIVE operation; check production schema, TTL setting, browser flows, local fonts and old-cache compatibility before publish. |
-
-**Review outcome:** `NOT RELEASE READY` for both Drafts; no legal certification, no arbitrary fixed TTL or cleanup schedule, no assumed Cloudflare configurations. Next gate is concrete operator/controller evidence and legal decisions, then independent owner authorization. Official primary references: [GDPR Art. 13 and Arts. 6–8/17](https://eur-lex.europa.eu/eli/reg/2016/679/oj), [EDPB transparency](https://www.edpb.europa.eu/documents/guideline/transparency_en), [TDDDG §25](https://www.gesetze-im-internet.de/ttdsg/__25.html), [Cloudflare D1 transactional batch](https://developers.cloudflare.com/d1/worker-api/d1-database/), [D1 Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/), [§5 DDG](https://www.gesetze-im-internet.de/ddg/__5.html).
-
----
-
-
-## Historical v2 source review — 2026-10-12 (superseded by v3 review above)
-
-**Source-only copy review, not a legal sign-off.** Paired source: PR #183 `362c9b5c045111fd4d00880ebaba7c959a1255a2`. The public-facing Draft paragraph on voluntary Like/Print consent was shortened, but must only describe the future coordinated release, not current LIVE behavior. No new phone number, contact form, processor configuration or retention period was invented.
-
-**Facts reflected in the short German notice:** equal-level Reject/Settings/Accept; independent Like and Print opt-ins; browsing/printing without consent; local purpose decision; random optional ID; pseudonymous Like rows in D1; personal status via new POST with legacy GET exposure; only consented new Print intents; withdrawal triggers a single scoped DELETE when a secure v2 proof exists; accurate non-confirmation on failure; historical counters preserved. Old credentials remain usable server-side, so new Likes can reappear; backups are not deleted by the D1 DELETE.
-
-**Art. 13 missing facts (must be resolved BEFORE publication):**
-
-| Processing | Described source fact | Required controller decision/evidence |
-| --- | --- | --- |
-| Optional Like identity and D1 row | Consent choice in browser, D1 hash per page and one-delete withdrawal | Confirm demonstrability under Art. 7(1), consent text version, purpose/Art. 6(1)(a), proportionate Like/ID lifetime and lost-credential rights. Do not say browser timestamp proves individual consent. |
-| Optional Print intent | Only consented new actions; historical aggregate counts retained | Confirm Art. 6 basis and truthful historical/forward-looking labels; distinguish print intent from successful paper print. |
-| Worker visit-HMAC and detail view | Source describes IP/day HMAC and aggregate views independent of Like/Print opt-ins | Record separate Art. 6 basis and necessity, actual cleanup limitations, data category and proportionate retention criteria, including periods without traffic. |
-| Origin, Cloudflare CDN/Worker, security and logs | Public source names Cloudflare; previous read-only log evidence is dated | Determine actual enabled Workers Logs/Traces, edge/origin destinations, roles/subprocessors, contractual transfer safeguards, relevant country processing, log/data retention periods **or criteria**. Do not replace facts with product maximums. |
-| D1 Time Travel and DSAR | Active row deletion is not deletion from every history/backup/log | Confirm actual production subsystem/plan, provider backup window, recovery and rights workflow; do not claim retroactive purge. |
-| Communication by email | Contact is declared; replies contain correspondence | Confirm proportionate retention criteria and whether actual legal obligations apply. |
-
-**DDG §5 / Impressum contact:** The Draft displays a real operator name, owner-attested serviceable postal address and email. §5 DDG (if applicable to this service) requires easy, direct and rapid electronic contact **including email**. It does **not literally mandate a telephone number for all providers**, but whether email alone supplies a sufficiently effective rapid/immediate response needs a legal/factual check. This source has **no verified second rapid contact channel**. Do not invent a phone number or assert a hypothetical form exists; owner must either validate the adequacy of the existing responsive email channel with counsel, or explicitly supply and authorize a real extra contact method. Separately check if this offering qualifies as geschäftsmäßig, any VAT/economic identification, regulated profession/trade register where applicable, and possible media/editorial rules. Neither adding an unrelated feature nor publishing personal details follows from this checklist.
-
-**Release decision:** The short draft intentionally removes internal implementation-history chatter (such as the defunct 24-hour retry) but does not grant permission to release with unresolved facts. Reconcile both Drafts and seek legal/operator validation of Art. 13, §25 TDDDG, DDG §5, GDPR Arts. 6, 7, 11–13 and 17 before Ready; CI/source evidence is not a legal sign-off. No Worker/D1 migration is needed by the revised PR #183, and no LIVE operation is authorized here.
-
-Official sources: [§5 DDG](https://www.gesetze-im-internet.de/ddg/__5.html), [GDPR Article 13](https://eur-lex.europa.eu/eli/reg/2016/679/oj), [§25 TDDDG](https://www.gesetze-im-internet.de/ttdsg/__25.html), [EDPB layered privacy guidance](https://www.edpb.europa.eu/sme/be-compliant/respect-individuals-rights_en).
-
----
-
-## Historical v2 consent review — 2026-10-12 (#182 / PR #183; superseded above)
-
-**HISTORICAL v2 CONTRACT ONLY; superseded by v3 above.** PR #183 head `362c9b5c045111fd4d00880ebaba7c959a1255a2` implements the owner-approved simple erasure flow. PR #158 remains **NOT RELEASE READY** and is not a standalone legal release. Its prior 2026-10-11 references to replay-suppression hashes, permanent `blocked_until` and 24-hour recovery tokens are **superseded** by this 2026-10-12 change. This note is not legal sign-off or authority for D1, Cloudflare, merge or LIVE changes.
-
-### Minimal Like/Print consent and erasure
-
-- The small German notice retains **Alle ablehnen / Einstellungen / Alle akzeptieren**, with independent Like and Print choices. Site browsing, PNG download and A4 printing remain possible on refusal. Only **new consented Print intents** count; historic aggregated Print counters remain.
-- Draft frontend stores `coloring-pages-consent-v1` locally (version, Like/Print booleans, time). No individual server-side consent receipt exists; local timestamp alone is not proven adequate for GDPR Art. 7(1). Evaluate the §25 TDDDG basis for both reading/writing the optional browser identifier and the consent preference; do not add a second tracking database by default.
-- Like withdrawal stops further permitted Like use immediately, retires the current browser ID, and (only for an eligible previously consented secure v2 credential) attempts **one** user-directed `POST /api/stats/erase-likes`. The Worker uses one parameter-bound `DELETE FROM likes WHERE visitor_hash = ?` statement; matching D1 Like counters are adjusted by existing triggers. No extra erasure table or migration is required by this Draft. No persistent retry token or automatic retry is stored/executed.
-- **Accurate result:** confirmed success means only matching current Like rows were deleted *at that execution time*. With no server-enforced v2 credential expiry or replay block, stale, copied or in-flight credentials can reinsert Likes later. On a failure, missing/weak/legacy proof or uncertain response the browser displays **`Löschung nicht bestätigt`**, does not re-enable consent and points to the privacy contact. No promise that CDN/host logs, backups or Cloudflare D1 Time Travel were immediately purged. The lawfulness/effectiveness of this simplified erasure remains an explicit **security/legal release blocker**, not a certified GDPR Art. 17 outcome.
-- Active consented Likes are not bulk-deleted due solely to age; retention, legitimate purposes and data subjects' rights still need a proportionate controller assessment. Separate visit/IP-HMAC analytics and Cloudflare Web Analytics/security processing require independent transparency and lawful bases.
-
-### Lost and legacy credentials: DSAR procedure
-
-Receive requests through the privacy contact without requesting raw browser credentials, account passwords or ID photos in ordinary email. Note date/scope and respond generally within one month (an extension requires timely reasons). Verify row linkage proportionately: an exposed old URL, weak UUID or named page is not sufficient authority for someone to bulk-delete other users' Likes. If identification is genuinely impossible, consider GDPR Arts. 11–12 case by case and state uncertainty; do not claim confirmed D1 deletion without actual evidence and separate case-scoped authorization for manual production writes.
-
-### Legacy GET and coordinated release
-
-New consenting clients use personalized `POST /api/stats/page` with the ID in JSON; anonymous GET remains. Transitional old `GET ...visitor_id` may still expose credentials in URLs until an independently reviewed and authorized sunset, without retroactively removing logged URL records. Before either paired Draft is released: evaluate §25/Art. 6/7/13/17, actual Cloudflare logs/transfers/retention, erasure replay risk, exact German wording and paired frontend/Worker compatibility; validate CI and browser behavior and obtain explicit owner MERGE and separate Worker LIVE authorization where required. **The simplified PR #183 does not introduce a D1 schema migration.**
-
-References: [TDDDG §25](https://www.gesetze-im-internet.de/ttdsg/__25.html); [GDPR](https://eur-lex.europa.eu/eli/reg/2016/679/oj); [EDPB consent 05/2020](https://www.edpb.europa.eu/documents/guideline/guidelines-052020-on-consent-under-regulation-2016679_en); [EDPB rights guidance](https://www.edpb.europa.eu/sme/be-compliant/respect-individuals-rights_en); [Cloudflare D1 Worker API](https://developers.cloudflare.com/d1/worker-api/d1-database/).
-
----
-
-## Scope
-
-- Only `impressum.html`, `datenschutz.html`, the five site footers, existing styling, static Docker packaging, locally served Baloo 2/Nunito fonts (SIL OFL 1.1), and structural tests.
-- The embedded WOFF2 fonts in `css/fonts.css` avoid remote Google Fonts requests on the seven updated HTML pages. Validate browser requests and layout after authorized release.
-- **No changes to `js/stats.js`, `cloudflare/stats-worker.js`, `docs/CLOUDFLARE_STATS_V1.md`, D1 schema, Cloudflare routes, or LIVE.** This legal-only PR does not require a Worker-first deploy.
-- The current `main` QR-gated A4 print, preview watermark, browse UI, and deletion of retired migration code remain unchanged.
-
-## Existing statistics behavior (source evidence only)
-
-- The existing browser `js/stats.js` creates and stores a persistent random visitor ID on the first Like **or Print** using `localStorage`.
-- Existing Like status uses `GET /api/stats/page` and may transmit that ID as a URL query parameter. Like actions use POST; the Worker hashes the ID for D1 Like rows. These rows have no automatic expiration.
-- Print actions submit the ID via POST. The Worker requires it and may supply it to the Rate Limiter; D1 Print counters remain aggregate. Clicks represent print intent, not verified prints.
-- The separate visitor-counting Worker path produces daily IP-derived HMAC records (pseudonymous); deletion is triggered by successful future visits rather than scheduled expiry.
-- LIVE verification, real Cloudflare DPA/transfers, origin/edge logs, exact retention periods, and Rate Limiter behavior are not proven by source. Previous edge checks showed legacy GET 200 and new POST page-status 404.
-
-## Bounded runtime evidence — 2026-10-11 (read-only snapshot, not legal sign-off)
-
-**Evidence boundaries:** GitHub files describe source only; below, public-edge HTTP observations and a read-only RPi5 container-inspection snapshot describe what was observed on 2026-10-11. Neither proves future deployed behavior, private Cloudflare settings, contract acceptance, or lawful bases. No raw logs, secrets, D1 rows or customer contracts were read.
-
-- **RPi5/nginx/Docker:** Source `deploy/nginx.conf` uses `access_log /dev/stdout;`. The observed running container `coloring-pages-public-coloring-pages-1` used Docker logging driver `json-file`, with `max-size=10m` and `max-file=3`; the daemon default showed the same options. This provides size-triggered log rotation, **not a guaranteed retention period in days**, and does not establish the absence of other host/Cloudflare log stores. The inspection did not expose individual visitor log records.
-- **Public-edge snapshot:** An HTTP GET to `/` returned 200. `/impressum.html`, `/datenschutz.html` and `/css/fonts.css` returned 404, so the draft legal pages and local font stylesheet were not observed LIVE. Served home HTML still referenced Google Fonts and the existing `js/stats.js?v=kita-campaign-v1`. A read-only `GET /api/stats/page?page_id=0000000` returned 200; a synthetic `POST /api/stats/page` returned 404, consistent with the old Worker API. That POST was a non-mutating page-status check, not a print/like event.
-- **Cookie evidence boundary:** One home-page HTTP response had no `Set-Cookie` header. That does **not** demonstrate that the entire site, other routes, browser sessions or Cloudflare security challenges never set cookies. Cloudflare documents separate security cookies and their conditions.
-- **Source-side retention distinctions:** `cloudflare/stats-schema.sql` defines `likes` rows without automatic expiry. Source `cloudflare/stats-worker.js` deletes older `daily_visitors` HMAC rows on *successful* visit processing, not on an independent wall-clock schedule. A D1 database-wide retention or deletion guarantee cannot be inferred from either. The Rate Limiter's retention/state was not verified.
-- **Cloudflare Workers Logs product documentation:** published retention is 3 days (Workers Free) or 7 days (Workers Paid) for Workers Logs. Whether Workers Logs are enabled, which plan applies, and any sampling/export settings in this particular account are **unverified**. Those product limits must **not** be represented as the lifetime of origin logs, D1 rows, security data or all edge HTTP logs.
-- **Contracts and transfers:** Cloudflare's current Self-Serve Subscription Agreement §6.1 **incorporates the DPA by reference** for the applicable processor/sub-processor processing of personal data; Cloudflare's GDPR FAQ says no separate action is needed to put the stated cross-border transfer mechanisms in place. This resolves the *standard Self-Serve DPA incorporation* question, not the account's exact agreement history, product-specific processing roles/subprocessors, actual transfers, locations or retention. Those operational facts still require review.
-
-**Still needed before legal sign-off:** verify product-specific Cloudflare processing roles, actual transfers/subprocessors and retention; whether Workers Logs are enabled and whether other Cloudflare log exports exist (script-specific Logpush status is verified separately below); origin/edge log destinations and deletion practice; D1 Like retention/deletion policy; Rate Limiter retention; and the TDDDG §25 consent or strict-necessity assessment. **Do not require a separate Cloudflare DPA signature or account acceptance-date screenshot solely because the standard Self-Serve DPA is incorporated by reference.** GDPR Art. 13 requires actual retention periods or the criteria used to determine them; size-based Docker rotation cannot be substituted for a fixed-day period.
-
-Sources: [Docker `json-file` rotation](https://docs.docker.com/engine/logging/drivers/json-file/); [Cloudflare Workers Logs limits](https://developers.cloudflare.com/workers/observability/logs/workers-logs/); [Cloudflare cookies](https://developers.cloudflare.com/fundamentals/reference/policies-compliances/cloudflare-cookies/); [GDPR Art. 13](https://eur-lex.europa.eu/eli/reg/2016/679/); [TDDDG § 25](https://www.gesetze-im-internet.de/ttdsg/__25.html).
-
----
-
-## Cloudflare account-bound evidence — 2026-10-11 (GET-only, no secrets)
-
-**Scope:** One owner-authorized read-only check of the existing `coloring-pages-stats-v1` Worker and its bound D1 database was performed over the trusted RPi5 RDC path, using existing stored Cloudflare API credentials in memory. Both Cloudflare REST GET responses returned HTTP 200 and `success=true`. No token material or D1 rows were output; no token refresh, settings update, deployment, schema mutation or LIVE change occurred. This is a dated snapshot, not perpetual configuration assurance or legal sign-off.
-
-- **Worker settings — first GET:** `GET /accounts/{account_id}/workers/scripts/coloring-pages-stats-v1/script-settings` returned `logpush=false`, zero `tail_consumers` and no exported destinations in the available nested fields. The `observability` key **was present**, but had **no usable `enabled` value**; no nested `logs` object or invocation-logging value was returned. Therefore the API response does **not** establish whether Workers Logs are enabled, their sampling or account-specific retention. Script-level Logpush disabled does **not** prove that all Cloudflare edge/security logs or account-wide Logpush jobs are absent.
-- **Worker settings — second GET (same date, separate owner-authorized review):** `GET /accounts/{account_id}/workers/scripts/coloring-pages-stats-v1/settings` also returned HTTP 200, `success=true`, `logpush=false` and zero `tail_consumers`. This endpoint did **not** return an `observability` key. The omission is **not equivalent to `observability.enabled=false`**. Cloudflare's Workers Logs documentation states that new Workers have observability enabled by default; neither the age of this Worker nor actual logging state was proven by these two GETs. Confirm the deployed Worker's Observability status from an account-authorized dashboard or authoritative configuration evidence; **do not disable, enable or redeploy logging as a diagnostic step**.
-- **D1 metadata:** `GET /accounts/{account_id}/d1/database/{database_id}` returned `name=coloring-pages-stats-v1`, `jurisdiction=eu`, `running_in_region=EEUR`, `read_replication.mode=disabled`, `version=production`, and `file_size=77824` bytes at the time of the check. Cloudflare's data-location documentation says an `eu` jurisdiction restricts where the **D1 database** runs and stores data; it does **not** restrict where Cloudflare Workers, logs or other edge services process requests, nor does it by itself prove all GDPR transfer requirements.
-- **RPi5 origin logging (rechecked):** `coloring-pages-public-coloring-pages-1` was observed with Docker `json-file` rotation `max-size=10m`, `max-file=3` and nginx `access_log /dev/stdout;`. This caps rotated local log-file volume, **not a fixed retention period**; no individual access-log contents were read.
-- **Public Cloudflare DPA:** DPA v6.4 (2026-04-03) forms part of applicable Enterprise or Self-Serve main agreements. Self-Serve §6.1 incorporates it by reference where Cloudflare acts as processor/sub-processor for covered personal data; the Self-Serve agreement becomes effective on acceptance, use or access. Cloudflare's GDPR FAQ states no separate action is required for the stated cross-border transfer mechanisms. The API calls did **not** independently verify the account's precise agreement effective date or actual product subprocessors, transfers and processing configuration; **these uncertainties do not create a standalone requirement to countersign a separate DPA.**
-- **Remaining retention gap:** Workers Free documentation states Workers Logs retention of 3 days **if those logs are used**; it is not a substitute for a D1 Like-row deletion policy. Source D1 `likes` rows have no scheduled TTL, the daily HMAC cleanup is visit-triggered, and the Rate Limiter's state/retention remain unverified. Keep Art. 13 retention criteria and §25 TDDDG / Art. 6 GDPR assessments open.
-- **Billing/plan limitation:** Workers Free is the owner's reported plan, **not verified in this GET-only check**; the API calls did not inspect Billing.
-
-Official sources: [Worker script settings GET](https://developers.cloudflare.com/api/resources/workers/subresources/scripts/subresources/settings/methods/get/); [D1 data location](https://developers.cloudflare.com/d1/configuration/data-location/); [Workers Logs](https://developers.cloudflare.com/workers/observability/logs/workers-logs/); [Cloudflare DPA v6.4](https://www.cloudflare.com/cloudflare-customer-dpa/); [Docker log rotation](https://docs.docker.com/engine/logging/drivers/json-file/).
-
----
-
-## Cloudflare Self-Serve DPA — official contract clarification (2026-10-11)
-
-**Standard-contract conclusion (reviewed, not account-contract attestation):** The [Cloudflare Self-Serve Subscription Agreement](https://www.cloudflare.com/terms/) (last updated 2025-09-12) §6.1 explicitly incorporates the [Cloudflare DPA](https://www.cloudflare.com/cloudflare-customer-dpa/) by reference for covered personal data processed by Cloudflare as processor/sub-processor. Its introductory terms state that the Self-Serve agreement becomes effective when the customer accepts it, accesses/uses services or otherwise accepts. Cloudflare's [GDPR FAQ](https://www.cloudflare.com/trust-hub/gdpr/) confirms that the standard DPA incorporates the applicable SCCs, and that **no additional customer action is required solely to put the described cross-border transfer mechanisms in place**. DPA v6.4 is dated 2026-04-03.
-
-**Disposition:** For a standard Cloudflare Self-Serve account, do **not** block this legal Draft solely on an absent separately signed DPA, an extra DPA acceptance button, or a screenshot proving a standalone DPA acceptance timestamp. This is a clarification of the published contractual mechanism; the exact terms/version governing this account historically were **not verified** through an individual account contract. Confirm only if evidence indicates a nonstandard agreement.
-
-**Still open:** Product-specific processor/controller roles and subprocessors, actual onward/international processing, logs and retention, D1 Like/Print behavior, GDPR lawful bases/transparency and TDDDG §25 consent/strict necessity. Incorporation of a DPA is **not** a legal compliance sign-off. No Like/Print, Worker/D1, billing, host or LIVE change is approved by this review.
-
----
-
-## Free-tier operation — owner choice, 2026-10-11
-
-- The owner reports that the Cloudflare Workers subscription was switched back to **Workers Free**. This is owner-reported configuration, not verified Billing/Subscriptions evidence. No new paid service or external vendor is required by the current stats source. Do not assume prior paid-plan entitlement remains in force.
-- **Workers Free:** 100,000 requests/day **shared by the account**, CPU limit 10 ms/request. Cloudflare returns error 1027 at the daily request cap; dynamic engagement/analytics can temporarily fail, while the independently self-hosted PNG/site content does not depend on that Worker. Observe actual CPU and request usage in the Cloudflare dashboard; no future traffic/cost guarantee is implied.
-- **D1 on Workers Free:** 5 million rows read/day, 100,000 rows written/day, 5 GB stored across the account, and a 500 MB single-database maximum. Once daily read/write limits are reached, D1 rejects queries until reset. The existing D1 likes, visits, rankings, daily counters and campaign tables are available on Free within those quotas; do not attempt automatic plan upgrades or charged overages.
-- **Cloudflare Web Analytics** is free. Cloudflare's GraphQL Analytics `httpRequestsAdaptiveGroups` is documented as available on all plans, subject to account/zone query quotas and dataset settings. Thus the traffic dashboard needs **no paid Analytics upgrade**, but requires an eligible API token and current zone-level availability; these account settings remain unverified.
-- **Workers Logs Free** currently documents 200,000 log events/day and 3-day retention **if enabled**. The Worker observability/sampling/export configuration was not independently checked, and Workers Logs limits do not establish D1, WAF, Logpush, or RPi5 data lifetimes. Docker origin logging is size-rotated (3 × 10 MB), not day-expiring.
-- **Rate limiting:** source treats the Worker `RATE_LIMITER` binding as optional. Its absence is a weaker anti-abuse posture, not an equivalent substitute. Cloudflare documents Free-plan WAF Rate Limiting rules as an available no-extra-charge alternative, but adding/replacing security rules, bindings or Worker code is a separate authorized Cloudflare operation; none occurs here.
-- **Free-first fallback:** if quotas become a problem, first reduce unnecessary Stats API requests and database row scans within a separately scoped source PR; keep the static RPi5 gallery/print independent of telemetry. Only if essential engagement cannot fit Free quotas, evaluate a small self-hosted RPi5 database/API under an explicit separate architecture/security/host owner gate; do not silently enable paid services or migrate existing D1 data.
-- **No release clearance:** switching billing tier does **not** resolve GDPR Art. 6/13 lawful bases, TDDDG §25 storage consent/necessity, product-specific processor/transfer facts, D1 retention policy or real account log settings. The **standard Self-Serve DPA incorporation is documented**, but this alone does not approve legal-page publication. The legal pages remain a Draft and **NOT RELEASE READY**.
-
-Official references: https://developers.cloudflare.com/workers/platform/limits/ ; https://developers.cloudflare.com/d1/platform/pricing/ ; https://developers.cloudflare.com/d1/platform/limits/ ; https://developers.cloudflare.com/workers/observability/logs/workers-logs/ ; https://developers.cloudflare.com/analytics/graphql-api/features/discovery/settings/ ; https://developers.cloudflare.com/web-analytics/about/ ; https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/
-
----
-
-## Historical owner decision — 2026-10-11 (superseded by 2026-10-17 backend-first direction)
-
-**Historical product instruction at this snapshot:** `KEEP-LIKE + KEEP-PERSISTENT-LIKE-ID + KEEP-PERSISTENT-PRINT-ID + KEEP-PRINT-COUNTER + CLOUDFLARE-FREE-ONLY`. This was later superseded by the 2026-10-17 decision: Like-only 180-day first-party cookie, aggregate Print without a persistent Print identifier, and retirement of daily visitor-HMAC collection.
-
-- Historical source behavior at this snapshot used `localStorage["coloring-pages-visitor-v1"]` for Like and Print. This is retained only as audit history; it is not the current target model and must not be restored by the legal Draft.
-- Existing browser source creates the identifier on first Like **or** Print; it can send the existing ID in the `GET /api/stats/page` URL query and in Like/Print POST bodies. Worker D1 `likes` rows store a SHA-256 hash with no automatic expiry; aggregated print counts are maintained. These are source facts, not proof of compliance.
-- Keep the project on Cloudflare Workers Free and D1 Free, respecting documented shared quotas; no upgrade or new provider is authorized. Free-tier selection does not independently prove the specific Cloudflare account billing state.
-- **Legal assessment remains separate:** TDDDG §25 consent vs a strictly necessary exception, GDPR Art. 6 lawful bases, Art. 13 transparency and retention, D1/Rate Limiter/URL-log lifetime, and actual Cloudflare processing roles and cross-border transfers must be reviewed against operating facts. Standard Self-Serve DPA incorporation is already documented. The owner's choice to retain functionality does **not** create a statutory exemption, establish consent, or authorize publishing unreviewed legal text.
-- Historical note: the then-current `datenschutz.html` described that persistent identifier behavior. The current Draft above now follows the 180-day Like-cookie + aggregate Print direction. This legal PR remains **Draft / NOT RELEASE READY**, with no Worker deploy, D1 changes, MERGE or LIVE authority.
-
-Primary references: [TDDDG §25](https://www.gesetze-im-internet.de/ttdsg/__25.html); [GDPR Arts. 6 and 13](https://eur-lex.europa.eu/eli/reg/2016/679/); [Workers Free limits](https://developers.cloudflare.com/workers/platform/limits/); [D1 Free limits](https://developers.cloudflare.com/d1/platform/pricing/); [Cloudflare DPA](https://www.cloudflare.com/cloudflare-customer-dpa/).
-
----
-
-## Historical persistent Like/Print ID — DSK necessity test (official guidance checked 2026-10-11)
-
-**Assessment, not a legal sign-off:** The [DSK *Orientierungshilfe für Anbieter:innen von digitalen Diensten*, v1.2 (November 2024)](https://datenschutzkonferenz-online.de/media/oh/OH_Digitale_Dienste.pdf), sections on § 25 TDDDG, especially paras. 78–81 (p. 22) and 121–126 (p. 32), makes the strict-necessity test **function-specific and time-sensitive**. A user action can initiate an optional function, but does not itself prove that an individual identifier must persist between visits. The DSK expressly warns that unique IDs will only rarely be *unbedingt erforderlich* and that a session can often suffice; this guidance cannot by itself decide the facts for Ausmalwiese. The binding statutory text is [§ 25 TDDDG](https://www.gesetze-im-internet.de/ttdsg/__25.html).
-
-**Historical source trace:** at this 2026-10-11 snapshot, `js/stats.js` read `localStorage["coloring-pages-visitor-v1"]` for Like status, created it on first Like **or Print**, and sent it to personalized stats endpoints. That model is superseded. The current target uses explicit consent for the Like cookie and no persistent Print identifier; this historical trace remains only to document why the redesign was necessary.
-
-**Function-by-function decision required before publication:**
-
-1. **Like/unlike and returning Like status:** Establish whether cross-visit recognition is indispensable for the expressly requested Like function **and** whether the lifetime, unique ID and subsequent reads are the minimum needed. Otherwise, obtain valid informed consent before any consent-requiring storage or read. The fact that Like is user-triggered is not blanket consent.
-2. **Print-intent counting and abuse control:** A print click requests a printable sheet, not inherently long-lived recognition of a visitor. Document why persistent cross-visit ID is strictly necessary for the requested print service instead of shorter-lived/no-ID mechanisms. Keep the owner's requested existing print counter/ID behavior unchanged in this legal-only Draft until a separately scoped decision authorizes its compliant implementation.
-3. **If relying on consent:** Obtain clear, freely given, purpose-specific opt-in **before** the covered write/read and follow-on processing; do not treat Like/Print action itself or a prechecked choice as legal consent. Make refusal/non-consent possible without blocking ordinary gallery/print access where those functions can lawfully operate independently, and make withdrawal as easy as opt-in. Define how already stored IDs are treated, how consent is recorded, and which reads/API calls cease after refusal/withdrawal. An unobtrusive, function-specific control may be considered; a generic intrusive whole-site banner is not automatically required. Validate the final UX and implementation against DSK paras. 116–126 and [EDPB consent guidance 05/2020](https://www.edpb.europa.eu/documents/guideline/guidelines-052020-on-consent-under-regulation-2016679_en).
-4. **Separate GDPR review:** § 25 permission/exception does not substitute for a documented [Art. 6 GDPR](https://eur-lex.europa.eu/eli/reg/2016/679) legal basis. For [Art. 13](https://eur-lex.europa.eu/eli/reg/2016/679), determine real recipients, international processing, retention **periods or criteria**, and deletion handling. Historical IP-derived daily-HMAC processing is being retired, but legacy rows and provider/origin logs still require transparent, separately verified handling. A size-rotated log file is not a fixed retention deadline.
-
-**Release gate:** The standard Cloudflare Self-Serve DPA incorporation is already documented and **not** a separate-signature blocker. The unresolved Like/Print § 25 choice, Art. 6/13 lawful bases and real retention/processing evidence remain blockers. Do not merge this Draft on the strength of the DPA alone. **No stats code, Worker, D1, Cloudflare, consent UI or LIVE change is authorized by this note.** The owner's latest product choice to keep Like, the persistent Like/Print IDs and Print counters remains intact; implement any consent handling or changed data flow only in a separately agreed scope.
-
-Other official guidance: [IHK Dortmund — *Das Impressum im Internet* (June 2025)](https://www.ihk.de/blueprint/servlet/resource/blob/3739068/a1eb6200f55dc9d29f0d80785493d09e/das-impressum-data.pdf) and [§ 5 DDG](https://www.gesetze-im-internet.de/ddg/__5.html) (whether a free site is a business-related digital service depends on its actual offering, not price alone).
-
----
-
-## PR #183 consent banner alignment — historical 2026-10-11 snapshot (superseded)
-
-The 2026-10-11 design had a durable hashed replay guard and a short-lived erasure retry credential. **This mechanism is no longer part of PR #183.** See the current 2026-10-12 contract at the beginning of this document. The original revision remains available in Git history. Historical concerns that still apply: consent demonstrability, identifier-in-URL legacy GET exposure, DSAR for lost IDs, limits of D1 deletion, and distinct visitor analytics lawful bases.
-
-Both PRs remain Draft until operator/legal acceptance and coordinated release. No migration of the removed `like_erasure_blocks` table is required or authorized. A future Worker deployment remains separately owner-gated. Do not infer any LIVE state from this source-only revision.
-
----
-
-## Data retention inventory — source versus provider versus unknown (2026-10-11)
-
-**Documentary review only.** This separates four kinds of evidence: (1) source behavior, (2) provider's published limits, (3) earlier dated read-only account/host observations, and (4) currently unverified effective deletion and lawful basis. **Nothing here is a chosen retention policy or a statement that a row/log has been deleted.** No credential, database query, host inspection or LIVE mutation was performed in this review.
-
-| Store / data | Grounded source or provider fact | Not yet proven / next legal choice |
-| --- | --- | --- |
-| Browser `coloring-pages-consent-v1` | PR #183 keeps a minimal version, independent Like/Print decisions and decision timestamp in localStorage. | No finite expiry specified; confirm decision validity and record of demonstrable consent under GDPR Art. 7(1); distinguish this strictly necessary preference record from the optional ID. |
-| Browser `coloring-pages-visitor-v1` | PR #183 limits read/create/transmission to opted-in purpose(s) and removes the ID when both permissions end. | No fixed TTL; choose proportionate duration, renewal and legacy-ID behavior. Browser removal does not remove historical server records. |
-| D1 `likes` | Schema stores pseudonymous `(page_id, visitor_hash, created_at)`; `like` removal can delete the matching row. There is **no age-based purge**. | Decide when an unrevoked Like expires, what to do after browser-only withdrawal, and how authenticated erasure requests work without collecting unnecessary identification data. A SHA-256 hash is not presumed anonymous. |
-| D1 `daily_visitors` | Worker HMACs IP/day/host; successful visits also delete rows with `day < date('now', '-1 day')`. | Deletion depends on a later successful visit, **not a time-triggered guarantee**. Define actual retention criteria and the operational response to long periods without visitors. |
-| D1 `page_stats`, `daily_prints`, `daily_views`, `daily_campaign_events`, `daily_print_qr_scans` | Historical aggregate and day/campaign tables have no scheduled TTL in source. PR #183 changes future opt-in Print collection, not historical totals. | Establish whether the output is anonymous/aggregate in the actual processing context, retention rationale, transparency and any necessary period/criteria. Do not confuse an unlimited historical counter with identifiable Like rows. |
-| Cloudflare D1 history / Time Travel | Cloudflare documents always-on Time Travel for production D1 databases. **Workers Free allows recovery for up to 7 days** (Paid: 30). Earlier account GET observed `version=production`. | **Time Travel recovery window is not a TTL for live table rows** and not independent proof of physical erasure from replicas/backups on withdrawal. Cloudflare backup/deletion handling and applicable DPA terms require controller review. |
-| Cloudflare Workers Logs / Traces | Product documentation lists **Workers Free Logs: 3 days if enabled**, and Traces: 7 days if enabled; newly created Workers may have logging enabled by default. Earlier account GET reported `logpush=false` and 0 `tail_consumers`, but **did not resolve the `observability` enablement**. | Determine actual deployed observability settings, sampling/export and any other security/edge/account-level destinations. Product retention caps are **not** evidence that the user's particular Worker emits or does not emit logs. |
-| Cloudflare Rate Limiter | Workers Rate Limiting binding documents a **10- or 60-second rate-limit window** for counters and eventual consistency. This is a throttling configuration, **not a verified data-erasure guarantee**. | Verify actual bound configuration and key processing/retention, including the optional binding's presence; a short limiting window cannot be substituted for provider retention evidence. |
-| RPi5 origin access logs | nginx sends access logs to stdout; earlier read-only host snapshot reported Docker `json-file`, `max-size=10m`, `max-file=3`. | Size-rotated log volume **does not express a fixed number of days** or establish every logging destination/backup. Set an honest period/criteria and document operational deletion responsibilities only after verified evidence. |
-
-**Current owner/legal decisions still needed before release:** (1) final Art. 8 audience/parental-authorisation determination for the adult-directed Like feature; (2) Art. 13 roles/recipients, third-country transfer safeguards and retention criteria for Cloudflare edge/security, Rate Limiter and origin/email logs; (3) lawful basis/necessity for Web Analytics and aggregate Print/IP processing; (4) verified expiry-cleanup/Cron operation and maximum cleanup delay; and (5) a case-specific conclusion on whether the post-expiry page-level totals are anonymous in the actual runtime context. Daily visitor-HMAC collection is no longer a product decision to preserve: the target source retires it, while legacy D1 cleanup remains separately gated. **Do not quietly implement a D1 cleanup, Worker redeploy, host log change or Cloudflare settings change under legal PR #158.**
-
-Official references reviewed 2026-10-11: [GDPR](https://eur-lex.europa.eu/eli/reg/2016/679/oj) Arts. 5(1)(e), 6, 7, 13 and 17; [D1 Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/); [D1 plan limits](https://developers.cloudflare.com/d1/platform/limits/); [D1 jurisdiction](https://developers.cloudflare.com/d1/configuration/data-location/); [Workers Logs](https://developers.cloudflare.com/workers/observability/logs/workers-logs/); [Workers Traces](https://developers.cloudflare.com/workers/observability/traces/); [Rate Limiting binding](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/).
-
----
-
-## Historical release blockers — 2026-10-11 snapshot (superseded where noted above)
-
-1. **DDG § 5:** On 2026-10-11 the owner explicitly confirmed that official legal correspondence and registered letters can be received at the postal address already shown in `impressum.html`. This is an owner attestation, not an independent legal-service assessment. Verify the provider classification, any additional mandatory details, and final `ladungsfähige Anschrift` suitability before release.
-2. **DSGVO Art. 13 and Art. 6:** confirm purposes, lawful bases, recipients/processors, **actual Cloudflare processing/transfer facts (with standard Self-Serve DPA incorporation already documented)**, retention periods or criteria, and data subject rights against production facts.
-3. **TDDDG § 25 — historical snapshot:** this row referred to the former persistent Like/Print `localStorage` model. The current target instead uses explicit consent for the Like cookie and no persistent Print identifier. The underlying rule remains: terminal storage/access needs consent unless a statutory exception applies, and GDPR Art. 6 must be assessed separately.
-4. **Fonts and LIVE:** validate the self-hosted Google Fonts replacement and public page behavior after separately authorized release. Cloudflare Web Analytics' stated lack of cookies does not establish that separate Cloudflare security functions set no cookies. CI proves structure only, not legal compliance.
-
-Official references (reviewed 2026-10-11): https://www.gesetze-im-internet.de/ddg/__5.html ; https://www.gesetze-im-internet.de/ttdsg/__25.html ; https://eur-lex.europa.eu/eli/reg/2016/679/ ; https://developers.cloudflare.com/web-analytics/about/ ; https://developers.cloudflare.com/fundamentals/reference/policies-compliances/cloudflare-cookies/
-
-**NOT RELEASE READY**. No owner MERGE, Worker deploy, D1 mutation, or LIVE authorization is granted by this source document.
+# German legal pages — current aggregate model review
+
+Status: **DRAFT / SOURCE REVIEW ONLY / NO LEGAL CERTIFICATION**
+
+Issue: #256  
+Draft PR: #158  
+Reviewed application main: `a57e61e3ee022c07cb9dbd6adad29155ff8b885a`  
+Review date: 2026-10-23
+
+## Current factual source/runtime model
+
+- Public frontend `js/stats.js` uses `/api/stats/like-aggregate` and
+  `/api/stats/print-aggregate` without a persistent browser visitor ID.
+- Public page-total reads omit credentials. Aggregate Like/Print writes carry
+  page ID and, for Print when allowlisted, a shared campaign ID.
+- The deployed Worker uses `CF-Connecting-IP` only as the transient Rate
+  Limiter key for aggregate Like/Print and does not write that IP into D1 as a
+  reaction/print identifier.
+- D1 aggregate counters are page/day/campaign summaries. They are not a unique
+  person count.
+- Internal traffic analytics query Cloudflare HTTP analytics; the retired daily
+  IP-HMAC visitor metric is reported as unavailable, not zero.
+- Owner-provided read-only RPi5 evidence on 2026-10-23 verified application
+  source `a57e61e3ee022c07cb9dbd6adad29155ff8b885a`, immutable image
+  `sha256:6feb0cf345b14eda00945ea7262d05d945213bfd964e435fddb771b021443410`,
+  `/health=200`, `/ready=200`, and the public page-stats query using
+  `archived_like_totals`.
+- Legacy personalized Like/Print routes and historical pseudonymous D1 records
+  are a separate transition concern. The current frontend does not call them,
+  but this PR does not delete, migrate, disable or reclassify them.
+
+## Public-copy decisions
+
+The public notice is deliberately shorter than the historical draft.
+
+- Remove the superseded 18+/adult-only Like gate, 180-day Like cookie,
+  consent-settings UI and cookie-session claims.
+- Do not claim that all HTTP processing is anonymous.
+- Describe aggregate Like/Print behavior and transient IP-based abuse control
+  factually.
+- Use Art. 6(1)(f) DSGVO only for the documented operational/security/abuse
+  purposes and include the Art. 21 objection right.
+- Keep legacy data transparent as an unresolved transition instead of inventing
+  a deletion date.
+- Do not publish stale account-plan, Workers Logs/Traces, D1 Time Travel or
+  Web Analytics retention snapshots as current facts.
+- Keep provider-specific retention wording criterion-based where current
+  account/runtime evidence is not frozen.
+
+## Official references checked
+
+- GDPR, especially Arts. 6, 13, 21 and 77:
+  https://eur-lex.europa.eu/eli/reg/2016/679/
+- DDG §5:
+  https://www.gesetze-im-internet.de/ddg/__5.html
+- TDDDG §25:
+  https://www.gesetze-im-internet.de/ttdsg/__25.html
+- Cloudflare Workers Rate Limiting:
+  https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/
+- Cloudflare HTTP headers / CF-Connecting-IP:
+  https://developers.cloudflare.com/fundamentals/reference/http-headers/
+- Cloudflare Data Processing Addendum:
+  https://www.cloudflare.com/cloudflare-customer-dpa/
+
+## Remaining gates
+
+1. Source tests and exact-head CI/review for this reconciled Draft PR.
+2. Separate source retirement of stale personalized write routes under #256.
+3. No D1 cleanup, legacy-record deletion, Cloudflare settings change or manual
+   LIVE action is authorized by this PR.
+4. Any eventual merge of application inputs still requires exact owner MERGE
+   authorization and then only the bounded SIMPLE-DEPLOY path in `AGENTS.md`.
+5. This engineering review is not legal certification; the owner remains
+   responsible for the final published legal notice.

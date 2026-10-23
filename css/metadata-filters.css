@@ -1,0 +1,15 @@
+/* #201: compact optional homepage age/difficulty facets (not print styles). */
+.metadata-filters { display:flex; align-items:end; flex-wrap:wrap; gap: 12px 18px; padding: 0 0 18px; }
+.metadata-filter-field { display:flex; flex: 1 1 205px; max-width: 300px; flex-direction:column; gap: 5px; }
+.metadata-filter-field label { font-weight:800; font-size: .91rem; }
+.metadata-filter-field select {
+  font: inherit; width:100%; min-height: 44px; padding: 9px 36px 9px 12px;
+  border: 1.5px solid var(--line); background: #fff; color: var(--text);
+  border-radius: 12px; cursor: pointer;
+}
+.metadata-filter-field select:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.metadata-filter-hint { margin:0; flex: 1 0 100%; color:var(--muted); font-size: .84rem; }
+@media (max-width: 520px) {
+  .metadata-filters { gap: 10px; }
+  .metadata-filter-field { max-width: none; flex:1 1 100%; }
+}

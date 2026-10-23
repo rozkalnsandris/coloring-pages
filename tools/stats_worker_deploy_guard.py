@@ -15,10 +15,18 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-CONTRACT_PATH = "deploy/stats-worker-exact-source-v1.json"
+CONTRACT_PATH = "deploy/stats-worker-exact-source-v2.json"
 SOURCE_PATH = "cloudflare/stats-worker.js"
+CONFIG_PATH = "cloudflare/wrangler.stats-worker.jsonc"
+ADDITIVE_MIGRATION_PATH = "cloudflare/stats-cookie-like-migration.sql"
+CLEANUP_MIGRATION_PATH = "cloudflare/stats-remove-daily-visitor-hmac.sql"
+
 WORKER = "coloring-pages-stats-v1"
-BLOB = "dd5a2859d55b9ef2d9fb9a9d8bf0a535d25a5ba4"
+BLOB = "c2ac9da6e0701103e0041b30db7dfbea4298f96c"
+CONFIG_BLOB = "3733263a391274f2b6b0f2023c8656565bde8e1a"
+ADDITIVE_MIGRATION_BLOB = "b5346c05cb27de1010dab2027b0b923e999af775"
+CLEANUP_MIGRATION_BLOB = "a7cffb110adfceb5c1ff4dcd17a7009c549976a5"
+
 QR_HOST = "ausmalwiese.de"
 QR_DEST = "https://ausmalwiese.de/"
 ROUTES = frozenset({
@@ -36,10 +44,20 @@ BINDINGS = {
     "VISITOR_HMAC_KEY": "secret_text",
     "CF_ANALYTICS_API_TOKEN": "secret_text",
 }
+LIVE_SEQUENCE = [
+    "additive-migration-before-worker",
+    "worker-version-upload",
+    "worker-version-deploy-100-percent",
+    "read-only-runtime-verification",
+    "cron-trigger-separate-owner-gate",
+    "legacy-daily-visitors-cleanup-separate-owner-gate",
+]
 EXCLUDED = frozenset({
     "worker-name", "worker-routes", "worker-custom-domains",
-    "worker-bindings", "worker-secrets", "worker-vars", "d1-schema-data",
+    "worker-bindings", "worker-secrets", "worker-vars",
     "cloudflare-zone-dns", "access-waf", "other-workers",
+    "unlisted-d1-schema-data", "automatic-retry", "automatic-rollback",
+    "automatic-cleanup",
 })
 SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 VERSION = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z")
@@ -63,41 +81,79 @@ def _fixed_file(root: Path, rel: str, *, limit: int) -> bytes:
 
 
 def git_blob_sha1(data: bytes) -> str:
-    return hashlib.sha1(b"blob " + str(len(data)).encode("ascii") + b"\0" + data).hexdigest()
+    return hashlib.sha1(
+        b"blob " + str(len(data)).encode("ascii") + b"\0" + data
+    ).hexdigest()
+
+
+def _check_blob(root: Path, path: str, expected: str, *, limit: int, error: str) -> None:
+    if git_blob_sha1(_fixed_file(root, path, limit=limit)) != expected:
+        raise GuardFailure(error)
 
 
 def check_source_contract(root: Path = ROOT) -> dict[str, str]:
-    """Validate an immutable Worker byte identity and the fixed review contract."""
+    """Validate immutable Worker/config/migration identities and review contract."""
     try:
-        c = json.loads(_fixed_file(root, CONTRACT_PATH, limit=12000))
+        c = json.loads(_fixed_file(root, CONTRACT_PATH, limit=16000))
     except (ValueError, UnicodeError) as exc:
         raise GuardFailure("CONTRACT_INVALID") from exc
+
     required = {
         "schema", "repository", "worker", "environment", "source_path",
-        "source_blob_sha1", "qr_host", "qr_destination", "routes",
-        "bindings", "excluded_changes", "deployment_mode",
+        "source_blob_sha1", "wrangler_config_path", "wrangler_config_blob_sha1",
+        "additive_migration_path", "additive_migration_blob_sha1",
+        "cleanup_migration_path", "cleanup_migration_blob_sha1",
+        "qr_host", "qr_destination", "routes", "bindings", "live_sequence",
+        "excluded_changes", "deployment_mode",
     }
     if not isinstance(c, dict) or set(c) != required:
         raise GuardFailure("CONTRACT_KEYS")
+
     fixed = {
-        "schema": "ausmalwiese.stats-worker-exact-source-deploy.v1",
+        "schema": "ausmalwiese.stats-worker-exact-source-deploy.v2",
         "repository": "rozkalnsandris/coloring-pages",
         "worker": WORKER,
         "environment": "production",
         "source_path": SOURCE_PATH,
         "source_blob_sha1": BLOB,
+        "wrangler_config_path": CONFIG_PATH,
+        "wrangler_config_blob_sha1": CONFIG_BLOB,
+        "additive_migration_path": ADDITIVE_MIGRATION_PATH,
+        "additive_migration_blob_sha1": ADDITIVE_MIGRATION_BLOB,
+        "cleanup_migration_path": CLEANUP_MIGRATION_PATH,
+        "cleanup_migration_blob_sha1": CLEANUP_MIGRATION_BLOB,
         "qr_host": QR_HOST,
         "qr_destination": QR_DEST,
         "deployment_mode": "separate-owner-authorized-trusted-operator-only",
     }
     if any(c.get(k) != v for k, v in fixed.items()):
         raise GuardFailure("CONTRACT_IDENTITY")
-    if not isinstance(c["routes"], list) or len(c["routes"]) != 4 or set(c["routes"]) != ROUTES:
+    if (not isinstance(c["routes"], list)
+            or len(c["routes"]) != len(ROUTES)
+            or set(c["routes"]) != ROUTES):
         raise GuardFailure("CONTRACT_ROUTES")
     if type(c["bindings"]) is not dict or c["bindings"] != BINDINGS:
         raise GuardFailure("CONTRACT_BINDINGS")
-    if not isinstance(c["excluded_changes"], list) or len(c["excluded_changes"]) != len(EXCLUDED) or set(c["excluded_changes"]) != EXCLUDED:
+    if c["live_sequence"] != LIVE_SEQUENCE:
+        raise GuardFailure("CONTRACT_LIVE_SEQUENCE")
+    if (not isinstance(c["excluded_changes"], list)
+            or len(c["excluded_changes"]) != len(EXCLUDED)
+            or set(c["excluded_changes"]) != EXCLUDED):
         raise GuardFailure("CONTRACT_EXCLUSIONS")
+
+    _check_blob(
+        root, CONFIG_PATH, CONFIG_BLOB, limit=20000,
+        error="CONFIG_BLOB_DRIFT",
+    )
+    _check_blob(
+        root, ADDITIVE_MIGRATION_PATH, ADDITIVE_MIGRATION_BLOB, limit=30000,
+        error="ADDITIVE_MIGRATION_BLOB_DRIFT",
+    )
+    _check_blob(
+        root, CLEANUP_MIGRATION_PATH, CLEANUP_MIGRATION_BLOB, limit=10000,
+        error="CLEANUP_MIGRATION_BLOB_DRIFT",
+    )
+
     data = _fixed_file(root, SOURCE_PATH, limit=150000)
     if git_blob_sha1(data) != BLOB:
         raise GuardFailure("WORKER_BLOB_DRIFT")
@@ -107,18 +163,20 @@ def check_source_contract(root: Path = ROOT) -> dict[str, str]:
         raise GuardFailure("WORKER_ENCODING") from exc
     if (f'const PRINT_QR_HOST = "{QR_HOST}";' not in source
             or f'const PRINT_QR_DESTINATION = "{QR_DEST}";' not in source
-            or 'const DEFAULT_ORIGIN = "https://coloring.rozkalns.net";' not in source):
-        raise GuardFailure("WORKER_QR_OR_ORIGIN_DRIFT")
-    return {"worker": WORKER, "blob": BLOB, "result": "SOURCE_CONTRACT_OK_NOT_LIVE_PROOF"}
+            or 'const DEFAULT_ORIGIN = "https://coloring.rozkalns.net";' not in source
+            or "LIKE_COOKIE_TTL_SECONDS" not in source
+            or "/api/stats/print-aggregate" not in source):
+        raise GuardFailure("WORKER_PRIVACY_OR_ORIGIN_DRIFT")
+
+    return {
+        "worker": WORKER,
+        "blob": BLOB,
+        "result": "SOURCE_CONTRACT_OK_NOT_LIVE_PROOF",
+    }
 
 
 def check_sanitized_inventory(payload: Any) -> dict[str, Any]:
-    """Pure structural check; the caller must independently authenticate LIVE evidence.
-
-    Hashes for nonsecret identities/values are produced inside a trusted
-    reader and are never written to this repository. Secrets expose only
-    binding name and kind, never a value or digest.
-    """
+    """Pure structural check; caller must independently authenticate LIVE evidence."""
     if type(payload) is not dict or set(payload) != {
         "schema", "worker", "environment", "version", "traffic_percent",
         "routes", "bindings",
@@ -132,20 +190,25 @@ def check_sanitized_inventory(payload: Any) -> dict[str, Any]:
             or type(payload["traffic_percent"]) is not int
             or payload["traffic_percent"] != 100):
         raise GuardFailure("INVENTORY_TARGET_OR_VERSION")
+
     routes = payload["routes"]
     if (type(routes) is not list or len(routes) != len(ROUTES)
             or any(type(x) is not str for x in routes)
             or set(routes) != ROUTES):
         raise GuardFailure("INVENTORY_ROUTES")
+
     bindings = payload["bindings"]
     if type(bindings) is not list or len(bindings) != len(BINDINGS):
         raise GuardFailure("INVENTORY_BINDING_COUNT")
     fingerprints: dict[str, str | None] = {}
     for binding in bindings:
-        if type(binding) is not dict or set(binding) != {"name", "type", "fingerprint"}:
+        if type(binding) is not dict or set(binding) != {
+            "name", "type", "fingerprint"
+        }:
             raise GuardFailure("INVENTORY_BINDING_FIELDS")
         name = binding["name"]
-        if type(name) is not str or name in fingerprints or BINDINGS.get(name) != binding["type"]:
+        if (type(name) is not str or name in fingerprints
+                or BINDINGS.get(name) != binding["type"]):
             raise GuardFailure("INVENTORY_BINDING_IDENTITY")
         fingerprint = binding["fingerprint"]
         if binding["type"] == "secret_text":
@@ -160,11 +223,7 @@ def check_sanitized_inventory(payload: Any) -> dict[str, Any]:
 
 
 def compare_sanitized_inventories(before: Any, after: Any) -> None:
-    """Reject any route, binding, or nonsecret target drift after a future deploy.
-
-    Does not verify source bytes at Cloudflare or independently attest either
-    snapshot. Trusted live pre/post collection remains a separate owner gate.
-    """
+    """Reject route, binding, or nonsecret target drift after a future deploy."""
     old = check_sanitized_inventory(before)
     new = check_sanitized_inventory(after)
     if old["version"] == new["version"]:
@@ -174,7 +233,9 @@ def compare_sanitized_inventories(before: Any, after: Any) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Stats Worker SOURCE-ONLY deployment contract check")
+    parser = argparse.ArgumentParser(
+        description="Stats Worker SOURCE-ONLY deployment contract check"
+    )
     parser.add_argument("--check-contract", required=True, action="store_true")
     args = parser.parse_args()
     try:
@@ -183,7 +244,11 @@ def main() -> int:
         print("STOP_SOURCE_CONTRACT_" + str(exc))
         return 2
     if args.check_contract:
-        print(outcome["result"] + " worker=" + outcome["worker"] + " blob=" + outcome["blob"])
+        print(
+            outcome["result"]
+            + " worker=" + outcome["worker"]
+            + " blob=" + outcome["blob"]
+        )
     return 0
 
 

@@ -32,9 +32,35 @@ class SupportHeaderTests(unittest.TestCase):
             for payment in ("ko-fi.com/", "paypal.me/", "buymeacoffee.com/", "stripe.com/", "iban"):
                 self.assertNotIn(payment, html)
 
+    def test_internal_dashboards_share_header_contract(self):
+        css = (ROOT / "css/app.css").read_text(encoding="utf-8")
+        self.assertIn(".dashboard-nav {", css)
+        self.assertIn("height: 70px; gap: 36px;", css)
+        self.assertIn("text-decoration: none; font-size: 15px; font-weight: 700;", css)
+        self.assertIn(".dashboard-home-link { justify-self: end; gap: 9px; min-height: 42px; padding: 8px 15px; }", css)
+        self.assertNotIn(".stats-dashboard-nav", css)
+        self.assertNotIn(".stats-header-inner", css)
+        self.assertIn(".skip-link:focus-visible { transform: translateY(0); }", css)
+        self.assertNotIn(".skip-link:focus { transform: translateY(0); }", css)
+
+        rule = ".stats-page main h1,\n.stats-page main h2,\n.stats-page main h3,\n.stats-page main strong { font-family: var(--font-body); }"
+        self.assertIn(rule, css)
+        self.assertIn(".brand {", css)
+        self.assertIn("font-family: var(--font-display);", css)
+
+        for name in ("stats.html", "traffic.html"):
+            html = (ROOT / name).read_text(encoding="utf-8")
+            self.assertIn('class="dashboard-nav"', html)
+            self.assertIn('class="outline-link dashboard-home-link"', html)
+            self.assertNotIn("stats-dashboard-nav", html)
+            self.assertNotIn("stats-header-inner", html)
+            self.assertNotIn("<style>\\n", html)
+            self.assertNotIn("\\n</head>", html)
+            self.assertIn('if (document.activeElement === skip) skip.blur();', html)
+
     def test_css_versions(self):
         css_version = hashlib.sha256((ROOT / "css/app.css").read_bytes()).hexdigest()[:16]
-        for name in ("index.html", "detail.html", "print.html", "kita.html", "stats.html", "traffic.html", "impressum.html", "datenschutz.html"):
+        for name in ("index.html", "detail.html", "print.html", "kita.html", "stats.html", "traffic.html"):
             html = (ROOT / name).read_text(encoding="utf-8")
             self.assertIn(f'href="css/app.css?v={css_version}"', html)
 

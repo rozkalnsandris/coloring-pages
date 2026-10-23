@@ -1,5 +1,9 @@
 # Cloudflare engagement stats v1
 
+> **Historical model, not the current frontend target (2026-10-19):** descriptions below of reversible visitor-ID Likes, visitor HMACs and old deployment hosts document earlier source/design states. The current owner-selected target is [simple aggregate hearts without persistent visitor recognition](SIMPLE_PRIVACY_RULES_V1.md) ([#256](https://github.com/rozkalnsandris/coloring-pages/issues/256)). The backend source has changed, but the frontend and legacy-data transition are separate release gates. Do not treat this historical design text or GitHub CI as current Worker/D1/LIVE evidence.
+
+> **Privacy transition:** daily visitor HMAC collection is retired from the new Worker/source schema. Removing the legacy LIVE `daily_visitors` table is a separate Cloudflare owner gate; source changes and CI do not apply that cleanup or deploy the Worker.
+
 ## Purpose
 Keep Coloring Pages analytics off the Raspberry Pi while supporting:
 - all-time print-click counts;

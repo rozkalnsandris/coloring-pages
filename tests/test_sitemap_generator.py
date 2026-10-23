@@ -12,6 +12,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 HELPER = ROOT / "tools" / "coloring-pages-sitemap"
 ORIGIN = "https://ausmalwiese.de"
+CATEGORY_ROUTES = ("tiere", "fahrzeuge", "alphabet", "lernen", "figuren", "jahreszeiten", "essen-natur")
+STATIC_URLS = [f"{ORIGIN}/", f"{ORIGIN}/kita", *(f"{ORIGIN}/{route}" for route in CATEGORY_ROUTES)]
 
 
 def entry(activity_id):
@@ -59,8 +61,7 @@ class SitemapGeneratorTests(unittest.TestCase):
         self.assertEqual(
             sitemap_urls(result.stdout),
             [
-                f"{ORIGIN}/",
-                f"{ORIGIN}/kita",
+                *STATIC_URLS,
                 f"{ORIGIN}/detail.html?id=9912254",
                 f"{ORIGIN}/detail.html?id=abc-123",
             ],
@@ -75,7 +76,7 @@ class SitemapGeneratorTests(unittest.TestCase):
             catalog, extra_args=("--expected-catalog-sha256", expected)
         )
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(len(sitemap_urls(result.stdout)), 4)
+        self.assertEqual(len(sitemap_urls(result.stdout)), len(STATIC_URLS) + 2)
 
     def test_catalogue_snapshot_mismatch_fails_without_output(self):
         catalog = [entry("9912254")]
@@ -98,7 +99,7 @@ class SitemapGeneratorTests(unittest.TestCase):
     def test_optional_hash_keeps_original_read_only_usage_compatible(self):
         result = self.invoke([entry("9912254")])
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(len(sitemap_urls(result.stdout)), 3)
+        self.assertEqual(len(sitemap_urls(result.stdout)), len(STATIC_URLS) + 1)
 
     def test_verify_exact_candidate_has_no_output_and_no_write(self):
         items = [entry("9912254"), entry("1234567")]
@@ -178,7 +179,7 @@ class SitemapGeneratorTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(
             sitemap_urls(result.stdout),
-            [f"{ORIGIN}/", f"{ORIGIN}/kita", f"{ORIGIN}/detail.html?id=1234567"],
+            [*STATIC_URLS, f"{ORIGIN}/detail.html?id=1234567"],
         )
 
     def test_invalid_catalogue_never_emits_partial_sitemap(self):
@@ -203,7 +204,7 @@ class SitemapGeneratorTests(unittest.TestCase):
     def test_empty_catalogue_keeps_only_home_and_kita(self):
         result = self.invoke([])
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(sitemap_urls(result.stdout), [f"{ORIGIN}/", f"{ORIGIN}/kita"])
+        self.assertEqual(sitemap_urls(result.stdout), STATIC_URLS)
 
 
 if __name__ == "__main__":

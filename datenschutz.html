@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Informationen zum Datenschutz auf Ausmalwiese.">
+  <meta name="description" content="Datenschutzhinweise für Ausmalwiese.">
   <title>Datenschutzerklärung | Ausmalwiese</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=c5d8c26a8a8349b2">
   <link rel="preload" href="assets/fonts/baloo2-latin-vf-26fb4610d4bc976d.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/nunito-latin-vf-ba344451eab25b21.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/fonts.css?v=e8c09f4e07f0c140">
-  <link rel="stylesheet" href="css/app.css?v=5b3fded828c78728">
+  <link rel="stylesheet" href="css/app.css?v=a7c40bb6d6111c9c">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -19,211 +19,135 @@
         <span class="brand-paw" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
         <span class="brand-word"><span>Ausmal</span> <span class="brand-wiese"><b>w</b><b>i</b><b>e</b><b>s</b><b>e</b></span></span>
       </a>
-      <nav class="legal-header-nav" aria-label="Seitennavigation"><a href="index.html">Zur Startseite</a></nav>
+      <nav class="desktop-nav" aria-label="Seitennavigation">
+        <a href="index.html">Startseite</a>
+        <a href="impressum.html">Impressum</a>
+        <a href="datenschutz.html" class="is-active" aria-current="page">Datenschutz</a>
+      </nav>
+      <div class="header-actions"><a class="outline-link" href="index.html">Zur Startseite</a></div>
     </div>
   </header>
-  <main id="main" class="legal-main" tabindex="-1">
-    <div class="container legal-content">
-      <h1>Datenschutzerklärung</h1>
-      <p class="legal-intro">Hier erläutern wir, welche Daten beim Besuch von Ausmalwiese
-        und bei der Nutzung der Funktionen verarbeitet werden.</p>
+  <main id="main" tabindex="-1">
+    <section class="about">
+      <div class="container about-intro">
+        <h1>Datenschutzerklärung</h1>
+        <p>Hier informieren wir darüber, welche Daten beim Besuch von Ausmalwiese
+          und bei der Nutzung der Website-Funktionen verarbeitet werden.</p>
 
-      <section aria-labelledby="privacy-controller">
-        <h2 id="privacy-controller">1. Verantwortlicher und Kontakt</h2>
+        <h2>1. Verantwortlicher</h2>
         <p><strong>Andris Rožkalns</strong><br>
           Meylantstraße 10<br>
           44319 Dortmund<br>
           Deutschland<br>
           E-Mail: <a href="mailto:andris@rozkalns.net">andris@rozkalns.net</a></p>
-      </section>
 
-      <section aria-labelledby="privacy-access">
-        <h2 id="privacy-access">2. Aufruf der Website, Hosting und Sicherheitsprotokolle</h2>
-        <p>Die öffentlichen Seiten und Druckvorlagen werden über einen selbst betriebenen
-          Webserver bereitgestellt. Bei HTTP-Anfragen können technisch erforderliche
-          Informationen verarbeitet werden, insbesondere IP-Adresse, Zeitpunkt, angefragte
-          Adresse, HTTP-Status sowie Browser- und Geräteangaben. Der Webserver führt
-          Zugriffsprotokolle.</p>
-        <p>Die Website nutzt Dienste von <strong>Cloudflare</strong> (insbesondere für
-          die öffentliche Bereitstellung, den Tunnel, Sicherheitsfunktionen sowie
-          die Auslieferung von Webinhalten). Hierbei verarbeitet Cloudflare technische
-          Verbindungsdaten einschließlich der IP-Adresse. Eine Verarbeitung außerhalb
-          des Europäischen Wirtschaftsraums ist abhängig von der konkreten
-          Cloudflare-Konfiguration und den vertraglichen Regelungen möglich.</p>
-        <p>Für die technisch notwendige Bereitstellung und Absicherung kommt
-          Art. 6 Abs. 1 lit. f DSGVO als Rechtsgrundlage in Betracht
-          (Interessen an Verfügbarkeit, Sicherheit und Fehlerdiagnose).
-          Für unseren eigenen Stats Worker waren am 17. Oktober 2026
-          <strong>Workers Logs und Workers Traces deaktiviert</strong>.
-          Dies sagt nichts über separate Cloudflare-Edge-, Sicherheits-,
-          Rate-Limiter- oder originseitige Protokolle aus. Soweit nachfolgend
-          keine konkrete Frist genannt ist, sind die Rechtsgrundlagen der
-          einzelnen Vorgänge, die tatsächlichen Empfänger, mögliche
-          Drittlandübermittlungen sowie Speicher- und Löschkriterien vor
-          Veröffentlichung noch konkret zu prüfen.</p>
-      </section>
+        <h2>2. Bereitstellung, Cloudflare und Sicherheit</h2>
+        <p>Ausmalwiese wird über einen eigenen Webserver und Dienste von
+          <strong>Cloudflare</strong> bereitgestellt. Beim Aufruf der Website fallen technisch
+          erforderliche Verbindungsdaten an. Dazu können insbesondere IP-Adresse,
+          Zeitpunkt, angefragte Adresse, HTTP-Status sowie Browser- und Geräteangaben gehören.
+          Cloudflare kann solche Daten an seinem Netzwerkrand, in Sicherheitsfunktionen,
+          in Workers und bei der Weiterleitung zum Ursprungssystem verarbeiten.</p>
+        <p>Diese Verarbeitung dient der sicheren und zuverlässigen Bereitstellung,
+          der Fehleranalyse und dem Schutz vor Missbrauch. Soweit dabei personenbezogene
+          Daten verarbeitet werden, stützen wir dies auf Art. 6 Abs. 1 lit. f DSGVO.
+          Unser berechtigtes Interesse liegt im sicheren, stabilen und missbrauchsarmen
+          Betrieb des kostenlosen Angebots.</p>
+        <p>Cloudflare kann Daten auch außerhalb des Europäischen Wirtschaftsraums
+          verarbeiten. Für solche Übermittlungen verweist Cloudflare in seinen
+          Datenschutzbedingungen unter anderem auf vertragliche Garantien.
+          Weitere Informationen finden Sie im
+          <a href="https://www.cloudflare.com/cloudflare-customer-dpa/">Cloudflare Data Processing Addendum</a>.
+          Technische Plattform- und Sicherheitsdaten werden nur so lange verarbeitet,
+          wie dies für den jeweiligen Betriebs- oder Sicherheitszweck erforderlich ist
+          oder eine gesetzliche Pflicht besteht; konkrete providerseitige Fristen können
+          von der jeweils aktiven Cloudflare-Funktion abhängen.</p>
 
-      <section aria-labelledby="privacy-analytics">
-        <h2 id="privacy-analytics">3. Webanalyse und aggregierte Nutzungsstatistik</h2>
-        <p>Wir nutzen <strong>Cloudflare Web Analytics</strong>; die Funktion ist
-          für <strong>ausmalwiese.de</strong> aktiviert. Dabei wird ein
-          Analyse-Skript von Cloudflare geladen, das technische Informationen
-          zur Seitennutzung und zur Ladeleistung verarbeitet. Nach Angaben von
-          Cloudflare verwendet dieses Web-Analytics-Skript keine Cookies oder
-          <code>localStorage</code> zur Wiedererkennung einzelner Besucher.
-          Cloudflare speichert nicht gesampelte Beacon-Daten nach eigener
-          Dokumentation für <strong>sieben Tage</strong> und fasst sie danach
-          für die längerfristige Speicherung auf ungefähr zehn Prozent des
-          ursprünglichen Umfangs zusammen; im Dashboard sind Web-Analytics-Daten
-          für die letzten <strong>sechs Monate</strong> abrufbar.
-          Diese Angaben beziehen sich allein auf Web Analytics; unabhängig davon
-          kann Cloudflare bei Sicherheitsfunktionen technische Cookies und andere
-          Verbindungsdaten verarbeiten. Die konkrete datenschutzrechtliche
-          Rechtsgrundlage der Webanalyse wird vor Veröffentlichung abschließend
-          festgelegt.</p>
-        <p>Eine frühere Fassung unseres eigenen Stats Workers verwendete für eine
-          tägliche Besucherstatistik einen aus IP-Adresse, UTC-Tag und Hostnamen
-          abgeleiteten HMAC-Wert. Diese pseudonyme Besucherzählung gehört
-          <strong>nicht</strong> zum vorgesehenen veröffentlichten Zielzustand.
-          Vor Veröffentlichung dieser Erklärung wird technisch verifiziert,
-          dass der produktive Worker keine solchen täglichen Besucher-HMACs mehr
-          erzeugt oder speichert. Verbleibende Legacy-Daten werden nur im Rahmen
-          eines separat freigegebenen und geprüften Löschprozesses behandelt.</p>
-        <p>Daneben werden aggregierte Aufrufe von Vorlagendetailseiten,
-          aggregierte Druckabsichten ohne dauerhaften Besucher-Identifier und
-          gegebenenfalls Kampagnenereignisse erfasst. Für die Druckabsicht wird
-          keine Like-Einwilligung verwendet.
-          Kampagnenkennungen kennzeichnen gemeinsame Aktionen und keine
-          einzelnen Kindergärten oder Personen. Die konkreten Rechtsgrundlagen,
-          Empfänger sowie Speicher- und Löschkriterien dieser zusätzlichen
-          Statistiken und ihrer technischen Verbindungsdaten werden vor
-          Veröffentlichung anhand der tatsächlichen Konfiguration bestätigt.</p>
-      </section>
+        <h2>3. Aggregierte Nutzungsstatistik</h2>
+        <p>Unser Stats Worker führt Summenzähler für Vorlagenaufrufe,
+          Druckabsichten, „Gefällt mir“-Reaktionen und ausgewählte Kampagnenereignisse.
+          Die aktuell ausgelieferte Website verwendet hierfür keine dauerhafte
+          Browserkennung und kein persönliches Reaktionskonto. In Cloudflare D1 werden
+          für diese aktuellen Funktionen nur seiten-, tages- oder kampagnenbezogene
+          Zähler fortgeführt.</p>
+        <p>Für interne Betriebsstatistiken rufen wir außerdem aggregierte
+          Cloudflare-Verkehrsdaten ab, zum Beispiel Besuchs- und Request-Zahlen.
+          Diese Angaben sind keine exakte Zählung einzelner Personen. Soweit bei
+          Erhebung und Übertragung technische Verbindungsdaten verarbeitet werden,
+          erfolgt dies auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO für Betrieb,
+          Sicherheit und eine datensparsame Reichweitenbeobachtung.</p>
+        <p>Aggregierte Summenzähler werden geführt, solange die jeweilige
+          Statistikfunktion für den Betrieb von Ausmalwiese benötigt wird.
+          Sie enthalten nach dem aktuellen Datenmodell keine dauerhafte Besucherkennung.</p>
 
-      <section aria-labelledby="privacy-engagement">
-        <h2 id="privacy-engagement">4. Freiwillige Likes und Druckstatistik</h2>
-        <p>Die freiwillige Funktion „Gefällt mir“ richtet sich an
-          <strong>Eltern, Erziehungsberechtigte und pädagogische Fachkräfte</strong>.
-          Kinder müssen diese Funktion nicht verwenden, um Malvorlagen anzusehen,
-          als PNG herunterzuladen oder auf A4 auszudrucken. Vor der Zustimmung
-          weisen wir darauf hin, dass die Like-Einstellungen für Erwachsene
-          gedacht sind. Diese Oberfläche prüft derzeit weder das Alter noch eine
-          elterliche Berechtigung; ob und welche zusätzliche Verifikation nach
-          Art. 8 DSGVO erforderlich ist, wird vor Veröffentlichung abschließend geprüft.</p>
-        <p>Nach dieser Zustimmung setzt unser Cloudflare Worker für die
-          Like-Funktion einen zufälligen, sicheren <strong>HttpOnly-Cookie</strong>
-          <code>__Secure-aw-like-v1</code>. Er ist auf die Like-API beschränkt
-          und höchstens <strong>180 Tage</strong> ab der Zustimmung gültig.
-          Seitenaufrufe, Likes oder Druckaktionen verlängern diese Frist nicht.
-          JavaScript auf der Seite kann den Cookie-Wert nicht auslesen.</p>
-        <p>In Cloudflare D1 wird nicht der Cookie-Wert selbst gespeichert,
-          sondern nur dessen SHA-256-Hash zusammen mit der Version des
-          Einwilligungshinweises, dem serverseitig erfassten Zeitpunkt und
-          dem Ablaufzeitpunkt. Ein aktiver Like speichert zusätzlich die
-          jeweilige Vorlagen-ID zusammen mit diesem Hash. Der Worker prüft
-          die noch gültige Like-Sitzung bei jeder personalisierten
-          Like-Aktion. Öffentliche Like-Zahlen benötigen keinen Cookie.</p>
-        <p>Sie können die Like-Einwilligung jederzeit über
-          „Gefällt-mir-Einstellungen für Erwachsene“ widerrufen. Bei bestätigtem
-          Widerruf werden die diesem noch gültigen Cookie zugeordneten
-          aktiven Likes und der D1-Sitzungseintrag gelöscht und der Browser-
-          Cookie beendet. Dadurch kann die angezeigte Like-Zahl sinken.
-          Bei einem technischen Fehler oder einer unklaren Antwort wird eine
-          Löschung nicht als erfolgreich dargestellt.</p>
-        <p>Nach Ablauf der 180 Tage ist der Cookie nicht mehr für neue Likes
-          gültig. Die vorgesehene Ablaufbereinigung überführt verbleibende
-          Likes einer abgelaufenen Sitzung nur noch in einen
-          <strong>seitenbezogenen Summenzähler</strong> und löscht anschließend
-          die zugehörigen pseudonymen Like-Zeilen und den Sitzungshash.
-          Dieser Summenzähler enthält keinen Cookie-Hash und keine Zuordnung
-          zu einer einzelnen Browser-Sitzung. Nach dieser Zusammenfassung
-          kann ein einzelner früherer Beitrag nicht mehr über den abgelaufenen
-          Cookie herausgesucht oder zurückgenommen werden. Eine spätere neue
-          Zustimmung kann erneut einen Like erzeugen; die öffentliche Zahl
-          beschreibt daher historische Like-Aktionen und nicht eindeutig
-          identifizierte Personen.</p>
-        <p>Die Druckstatistik verwendet diesen Like-Cookie nicht und speichert
-          dafür keinen dauerhaften Besucher-Identifier. Beim Start eines
-          Druckvorgangs kann eine <strong>aggregierte Druckabsicht</strong> für
-          die jeweilige Vorlage gezählt werden; damit wird kein tatsächlich
-          ausgeführter Papierdruck bestätigt. Das Drucken selbst bleibt von
-          der Like-Einwilligung unabhängig. Zur Missbrauchsbegrenzung können
-          während der Anfrage technische Verbindungsdaten, insbesondere die
-          IP-Adresse, für Origin-Prüfung und den Cloudflare Rate Limiter verarbeitet werden.
-          Die konkrete Rechtsgrundlage, Empfänger, etwaige Drittlandübermittlungen
-          und Speicher- oder Löschkriterien dieser technischen Verarbeitung werden
-          vor Veröffentlichung anhand der tatsächlichen Cloudflare-Konfiguration
-          abschließend dokumentiert.</p>
-        <p>Ältere lokale Besucherkennungen aus früheren Versionen werden nicht
-          für neue Likes oder Druckmeldungen verwendet. Soweit im Browser noch
-          eine geeignete ältere Kennung vorhanden ist, kann eine ausdrücklich
-          angeforderte Alt-Löschung einmalig versucht werden. Es gibt keinen
-          automatischen Wiederholungsversuch bei unklarem Ergebnis. Ist eine
-          Zuordnung nicht mehr möglich, kann eine individuelle Prüfung über
-          den Datenschutzkontakt erforderlich sein; senden Sie dabei keine
-          Browserkennung oder Ausweiskopie unaufgefordert per E-Mail.</p>
-        <p>Für das Speichern und Auslesen des freiwilligen Like-Cookies ist
-          eine Einwilligung nach § 25 TDDDG vorgesehen; für die damit
-          verbundene Verarbeitung personenbezogener Daten ist Art. 6 Abs. 1
-          lit. a DSGVO vorgesehen. Ein Widerruf wirkt für die Zukunft und
-          berührt die Rechtmäßigkeit der vorherigen Verarbeitung nicht.
-          Das aktuell genutzte Cloudflare-Konto verwendet den
-          <strong>Workers-Free-Tarif</strong>. Für die gebundene D1-Datenbank
-          zeigte das Cloudflare Dashboard am 17. Oktober 2026 ein
-          <strong>Time-Travel-Wiederherstellungsfenster von sieben Tagen</strong>.
-          Diese Wiederherstellungshistorie ist keine aktive Like-Speicherfrist;
-          ein Restore kann einen früheren Datenbankzustand wiederherstellen.
-          Technische Edge-, Origin- und Rate-Limiter-Protokolle sowie die
-          rechtliche Einordnung der nach Ablauf verbleibenden reinen
-          Summenzähler werden vor Veröffentlichung gesondert geprüft.</p>
-      </section>
+        <h2>4. „Gefällt mir“ und Druckstatistik</h2>
+        <p>Die aktuelle „Gefällt mir“-Funktion sendet die Vorlagen-ID an den Stats Worker
+          und erhöht einen öffentlichen Summenzähler. Beim Start eines Druckvorgangs kann
+          entsprechend eine aggregierte Druckabsicht gezählt werden. Eine Druckabsicht
+          bedeutet nicht, dass tatsächlich Papier bedruckt wurde.</p>
+        <p>Für diese aktuellen Like- und Print-Aufrufe setzt Ausmalwiese keine
+          dauerhafte Browserkennung, kein Like-Konto und keine sitzungsübergreifende
+          persönliche Reaktionshistorie ein. Nach einem Neuladen kann erneut reagiert
+          werden; die angezeigte Zahl beschreibt Reaktionen und nicht eindeutig
+          identifizierte Personen. Ein fehlgeschlagener Telemetrieaufruf verhindert
+          das Drucken nicht.</p>
+        <p>Zur Missbrauchsbegrenzung verwendet der Worker bei Like- und Print-Anfragen
+          die von Cloudflare bereitgestellte Client-IP vorübergehend als Schlüssel für
+          den Cloudflare Rate Limiter. Diese IP wird von den aktuellen Aggregate-Endpunkten
+          nicht als Like- oder Print-Kennung in D1 gespeichert. Die Verarbeitung dient
+          dem Schutz vor automatisiertem oder übermäßigem Missbrauch und beruht auf
+          Art. 6 Abs. 1 lit. f DSGVO.</p>
 
-      <section aria-labelledby="privacy-fonts">
-        <h2 id="privacy-fonts">5. Schriftarten</h2>
-        <p>Wir verwenden die Schriftarten Baloo 2 und Nunito unter
-          der SIL Open Font License 1.1. Sie werden lokal mit dieser
-          Website ausgeliefert, sodass der Browser beim Laden dieser
-          Schriftarten keine Verbindung zu Google Fonts herstellen muss.
-          Vor Veröffentlichung wird geprüft, ob diese Umstellung
-          tatsächlich produktiv aktiv ist.</p>
-      </section>
+        <h2>5. Übergang von früheren Statistikversionen</h2>
+        <p>Frühere Versionen der Statistik konnten pseudonyme Besucherkennungen,
+          personalisierte Like-Zuordnungen oder Like-Sitzungen verwenden. Die aktuell
+          ausgelieferte Website verwendet diese Altmechanismen nicht für neue öffentliche
+          Likes oder Druckmeldungen. Soweit solche Altbestände noch vorhanden sind,
+          bleiben sie bis zum Abschluss eines getrennt geprüften Lösch- oder
+          Aggregationsprozesses technisch bestehen und werden nicht als neue
+          Besucherhistorie fortgeführt.</p>
+        <p>Technische Legacy-Endpunkte können während dieser Übergangsphase serverseitig
+          noch vorhanden sein. Sie werden von der aktuellen öffentlichen Oberfläche nicht
+          aufgerufen. Eine gesonderte Bereinigung oder Löschung erfolgt nicht automatisch
+          aufgrund dieser Datenschutzerklärung.</p>
 
-      <section aria-labelledby="privacy-communication">
-        <h2 id="privacy-communication">6. E-Mail-Kontakt</h2>
-        <p>Wenn Sie uns eine E-Mail senden, verarbeiten wir die darin
-          enthaltenen Kontaktdaten und Ihre Nachricht, um die Anfrage
-          zu beantworten. Rechtsgrundlage ist je nach Anliegen
-          Art. 6 Abs. 1 lit. b oder lit. f DSGVO. Wir löschen diese
-          Daten, sobald sie für den jeweiligen Zweck nicht mehr
-          erforderlich sind, soweit keine gesetzlichen
-          Aufbewahrungspflichten entgegenstehen.</p>
-      </section>
+        <h2>6. Lokale Schriftarten</h2>
+        <p>Die auf Ausmalwiese verwendeten Webfonts werden lokal von dieser Website
+          ausgeliefert. Beim Laden der Schriftarten wird deshalb keine Verbindung zu
+          Google Fonts hergestellt.</p>
 
-      <section aria-labelledby="privacy-rights">
-        <h2 id="privacy-rights">7. Ihre Rechte</h2>
-        <p>Sie haben im Rahmen der gesetzlichen Voraussetzungen das Recht
-          auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16),
-          Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18),
-          Datenübertragbarkeit (Art. 20) und Widerspruch (Art. 21).
-          Eine erteilte Einwilligung für „Gefällt mir“ können Sie jederzeit über
-          „Gefällt-mir-Einstellungen für Erwachsene“ auf der
-          <a href="index.html">Startseite</a> für die Zukunft
-          widerrufen. Wenn eine individuelle Prüfung erforderlich ist,
-          senden Sie bitte keine Browserkennung oder Ausweiskopien
-          per E-Mail. Für weitere Fragen oder Löschanfragen
-          schreiben Sie an
-          <a href="mailto:andris@rozkalns.net">andris@rozkalns.net</a>.
-          Außerdem können Sie Beschwerde bei einer Datenschutzaufsichtsbehörde
-          einlegen (Art. 77 DSGVO), beispielsweise bei der
-          <a href="https://www.ldi.nrw.de/">Landesbeauftragten für Datenschutz
-          und Informationsfreiheit Nordrhein-Westfalen (LDI NRW)</a>.</p>
-      </section>
-    </div>
+        <h2>7. Externe Links</h2>
+        <p>Ausmalwiese enthält Links zu externen Angeboten, unter anderem zu Instagram
+          und Facebook. Eine Verbindung zu diesen Anbietern wird über diese einfachen
+          Links erst hergestellt, wenn Sie den jeweiligen Link öffnen. Für die anschließende
+          Verarbeitung gelten die Datenschutzinformationen des jeweiligen Anbieters.</p>
+
+        <h2>8. Kontakt per E-Mail</h2>
+        <p>Wenn Sie uns eine E-Mail senden, verarbeiten wir die darin enthaltenen
+          Kontaktdaten und Ihre Nachricht zur Bearbeitung der Anfrage. Je nach Inhalt
+          erfolgt dies auf Grundlage von Art. 6 Abs. 1 lit. b oder lit. f DSGVO.
+          Die Daten werden gelöscht, wenn sie für die Bearbeitung nicht mehr erforderlich
+          sind und keine gesetzlichen Aufbewahrungspflichten entgegenstehen.</p>
+
+        <h2>9. Ihre Rechte</h2>
+        <p>Im Rahmen der gesetzlichen Voraussetzungen haben Sie insbesondere Rechte auf
+          Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung und
+          Datenübertragbarkeit. Soweit eine Verarbeitung auf Art. 6 Abs. 1 lit. f DSGVO
+          beruht, können Sie aus Gründen, die sich aus Ihrer besonderen Situation ergeben,
+          Widerspruch einlegen. Außerdem können Sie sich bei einer Datenschutzaufsichtsbehörde
+          beschweren. In Nordrhein-Westfalen ist dies die
+          <a href="https://www.ldi.nrw.de/">Landesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen</a>.</p>
+        <p>Für Datenschutzanfragen erreichen Sie uns unter
+          <a href="mailto:andris@rozkalns.net">andris@rozkalns.net</a>.</p>
+      </div>
+    </section>
   </main>
-  <footer class="legal-footer"><div class="container">
-    <a href="index.html">Startseite</a><span aria-hidden="true">·</span>
-    <a href="impressum.html">Impressum</a><span aria-hidden="true">·</span>
-    <a href="datenschutz.html" aria-current="page">Datenschutz</a>
-  </div></footer>
+  <footer class="about" aria-label="Rechtliche Informationen">
+    <div class="container"><div class="detail-actions">
+      <a class="outline-link" href="index.html">Startseite</a>
+      <a class="outline-link" href="impressum.html">Impressum</a>
+      <a class="outline-link" href="datenschutz.html" aria-current="page">Datenschutz</a>
+    </div></div>
+  </footer>
 </body>
 </html>

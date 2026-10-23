@@ -10,13 +10,13 @@
   <link rel="preload" href="assets/fonts/baloo2-latin-vf-26fb4610d4bc976d.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/nunito-latin-vf-ba344451eab25b21.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/fonts.css?v=e8c09f4e07f0c140">
-  <link rel="stylesheet" href="css/app.css?v=5b3fded828c78728">
-</head>
+  <link rel="stylesheet" href="css/app.css?v=a7c40bb6d6111c9c">
+  </head>
 <body class="stats-page">
   <a class="skip-link" href="#main">Skip to content</a>
 
   <header class="site-header">
-    <div class="container header-inner stats-header-inner">
+    <div class="container header-inner">
       <a class="brand" href="index.html" aria-label="Ausmalwiese home">
         <span class="brand-paw" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
         <span class="brand-word">
@@ -24,8 +24,12 @@
           <span class="brand-wiese"><b>w</b><b>i</b><b>e</b><b>s</b><b>e</b></span>
         </span>
       </a>
-      <strong class="stats-header-title">Traffic analytics</strong>
-      <a class="outline-link stats-home-link" href="stats.html"><span aria-hidden="true">←</span> Statistics</a>
+      <nav class="dashboard-nav" aria-label="Internal dashboards">
+        <a href="https://admin.ausmalwiese.de/">Admin</a>
+        <a href="stats.html">Statistics</a>
+        <a class="is-active" aria-current="page" href="traffic.html">Traffic</a>
+      </nav>
+      <a class="outline-link dashboard-home-link" href="index.html"><span aria-hidden="true">←</span> Back to website</a>
     </div>
   </header>
 
@@ -48,7 +52,7 @@
       <div class="container stats-kpi-grid traffic-kpi-grid">
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">👤</span>
-          <div><span class="stats-kpi-label" data-stats-unique-visitors-label>Approx. unique visitors · latest day</span><strong data-stats-unique-visitors>–</strong></div>
+          <div><span class="stats-kpi-label" data-stats-unique-visitors-label>Approx. daily unique IPs · latest available day</span><strong data-stats-unique-visitors>–</strong></div>
         </article>
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">↪</span>
@@ -69,7 +73,7 @@
       </div>
       <div class="container">
         <p class="stats-note" data-traffic-visits-note>
-          “Approx. unique visitors” is Cloudflare’s latest available daily Unique Visitors metric (unique IPs) for this hostname. It is not an exact people count, and Free-plan traffic analytics can include crawlers and threats. “Crawler requests” is a separate request count and must not be subtracted from Website visits.
+          Approx. daily unique IPs, when available, is a historical hostname-scoped Stats Worker D1/IP-HMAC estimate, not an exact count of people. This metric may be unavailable after the privacy cutover. Website visits are separate Cloudflare analytics, not unique people, and may be sampled. Crawler requests use a User-Agent heuristic and must not be subtracted from Website visits.
         </p>
       </div>
     </section>
@@ -166,20 +170,27 @@
           </button>
         </div>
         <p class="stats-empty" data-traffic-table-empty hidden>No matching coloring page found.</p>
-        <p class="stats-note">Exact unique people are not available from this dashboard. Approx. unique visitors is a privacy-preserving daily unique-IP count from the Stats Worker; Website visits is a separate Cloudflare metric and may be sampled.</p>
+        <p class="stats-note">Exact unique people are not available from this dashboard. The historical daily unique-IP estimate is shown only if the Stats Worker provides it; otherwise N/A is displayed, not zero. Website visits are a separate Cloudflare metric and may be sampled.</p>
       </div>
     </section>
   </main>
 
-  <script src="js/stats.js?v=kita-campaign-v1" defer></script>
-  <footer class="legal-footer" aria-label="Rechtliche Informationen">
+  <footer class="about" aria-label="Rechtliche Informationen">
     <div class="container">
-      <a href="impressum.html">Impressum</a>
-      <span aria-hidden="true">·</span>
-      <a href="datenschutz.html">Datenschutz</a>
+      <div class="detail-actions">
+        <a class="outline-link" href="impressum.html">Impressum</a>
+        <a class="outline-link" href="datenschutz.html">Datenschutz</a>
+      </div>
     </div>
   </footer>
 
-  <script src="js/traffic-admin.js?v=instagram-216" defer></script>
+  <script>
+    addEventListener("pageshow", () => {
+      const skip = document.querySelector(".skip-link");
+      if (document.activeElement === skip) skip.blur();
+    }, { once: true });
+  </script>
+  <script src="js/stats.js?v=a4c560562b9267fe" defer></script>
+  <script src="js/traffic-admin.js?v=instagram-216-ip-basis-v1" defer></script>
 </body>
 </html>
