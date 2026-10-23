@@ -4,6 +4,7 @@ import { deflateSync } from "node:zlib";
 import { readFileSync } from "node:fs";
 import { reconcileBasket } from "../js/print-basket-selection.mjs";
 import { prepareBasketPrintMedia } from "../js/print-basket-print-media.mjs";
+import { decodeBasketPrintMedia } from "../js/print-basket-print-decode.mjs";
 
 const SITE = "https://ausmalwiese.de";
 const one = (id) => ({ id, title: "Malvorlage", print: `/media/${id}/print.png` });
@@ -158,6 +159,137 @@ test("print media preflight never starts rendering, printing, downloads or telem
   const code = source.split("\n").filter(line => !line.trimStart().startsWith("//")).join("\n");
   for(const forbidden of ["window.", "document.", "sessionStorage", "createObjectURL",
     "window.print", ".click()", "innerHTML", "fetch("]) {
+    assert.ok(!code.includes(forbidden), forbidden);
+  }
+});
+
+test("all ordered A4 pages decode sequentially and release exactly once", async () => {
+  const catalog = [multi("cut-1"), one("2")], ids = ["cut-1","2"];
+  const selected = snap(ids, catalog);
+  const files = [portrait, landscape, portrait];
+  const { fetcher } = mockFetch(selected.pages.map(p=>p.printUrl), files);
+  const media = await prepareBasketPrintMedia(ids, catalog, selected, { origin: SITE, fetcher });
+  let calls = 0, active = 0, peak = 0;
+  const closures = [];
+  const dimensions = [[2480,3508],[3508,2480],[2480,3508]];
+  const decode = async (blob) => {
+    const index = calls++;
+    assert.equal(blob.type, "image/png");
+    assert.equal(blob.size, files[index].byteLength);
+    active++;
+    peak = Math.max(active, peak);
+    await Promise.resolve();
+    active--;
+    return {
+      width: dimensions[index][0], height: dimensions[index][1],
+      close() { closures[index] = (closures[index] || 0) + 1; },
+    };
+  };
+  const result = await decodeBasketPrintMedia(media, { decode });
+  assert.equal(result.released, false);
+  assert.equal(calls, 3);
+  assert.equal(peak, 1);
+  assert.deepEqual(result.sheets.map(s => s.orientation), ["portrait","landscape","portrait"]);
+  assert.deepEqual(result.sheets.map(s => s.page.printUrl), selected.pages.map(p => p.printUrl));
+  assert.ok(Object.isFrozen(result));
+  assert.ok(Object.isFrozen(result.sheets));
+  assert.ok(Object.isFrozen(result.sheets[0]));
+  result.release();
+  assert.equal(result.released, true);
+  result.release();
+  assert.deepEqual(closures, [1,1,1]);
+});
+
+test("second decoder failure closes all earlier A4 bitmaps without partial result", async () => {
+  const catalog = [one("1"), one("2")], ids = ["1","2"];
+  const selected = snap(ids, catalog);
+  const { fetcher } = mockFetch(selected.pages.map(p=>p.printUrl), [portrait, landscape]);
+  const media = await prepareBasketPrintMedia(ids, catalog, selected, { origin: SITE, fetcher });
+  let calls = 0, closed = 0;
+  const decode = async () => {
+    if (++calls === 2) throw new Error("Decoder refused second sheet");
+    return { width: 2480, height: 3508, close() { closed++; } };
+  };
+  await assert.rejects(decodeBasketPrintMedia(media, { decode }), /second sheet/);
+  assert.equal(calls, 2);
+  assert.equal(closed, 1);
+});
+
+test("wrong decoded orientation closes all bitmaps and never returns a success set", async () => {
+  const catalog = [one("1"), one("2")], ids = ["1","2"];
+  const selected = snap(ids, catalog);
+  const { fetcher } = mockFetch(selected.pages.map(p=>p.printUrl), [portrait, landscape]);
+  const media = await prepareBasketPrintMedia(ids, catalog, selected, { origin: SITE, fetcher });
+  let closed = 0, calls = 0;
+  await assert.rejects(decodeBasketPrintMedia(media, { decode: async () => {
+    calls++;
+    return { width: 2480, height: 3508, close() { closed++; } };
+  } }), /dimensions/);
+  assert.equal(calls, 2);
+  assert.equal(closed, 2);
+});
+
+test("abort during awaiting decode closes the late image and previously decoded images", async () => {
+  const catalog = [one("1"), one("2")], ids = ["1","2"];
+  const selected = snap(ids, catalog);
+  const { fetcher } = mockFetch(selected.pages.map(p=>p.printUrl), [portrait, landscape]);
+  const media = await prepareBasketPrintMedia(ids, catalog, selected, { origin: SITE, fetcher });
+  const controller = new AbortController();
+  let calls = 0, closed = 0;
+  const decode = async () => {
+    calls++;
+    if (calls === 2) controller.abort();
+    return { width: calls === 1 ? 2480 : 3508, height: calls === 1 ? 3508 : 2480,
+      close() { closed++; } };
+  };
+  await assert.rejects(
+    decodeBasketPrintMedia(media, { decode, signal: controller.signal }), /aborted/i);
+  assert.equal(calls, 2);
+  assert.equal(closed, 2);
+});
+
+test("invalid preflight metadata, CRC and input decoder fail before decoding", async () => {
+  const catalog = [one("1")], ids = ["1"], selected = snap(ids, catalog);
+  const { fetcher } = mockFetch(selected.pages.map(p=>p.printUrl), [portrait]);
+  const media = await prepareBasketPrintMedia(ids, catalog, selected, { origin: SITE, fetcher });
+  let calls = 0;
+  const decode = async () => { calls++; throw new Error("Unexpected decoder"); };
+  await assert.rejects(decodeBasketPrintMedia({ ...media, sheets: [] }, { decode }));
+  await assert.rejects(decodeBasketPrintMedia({ ...media, sheets: [
+    { ...media.sheets[0], width: 3508 },
+  ] }, { decode }));
+  await assert.rejects(decodeBasketPrintMedia({ ...media, sheets: [
+    { ...media.sheets[0], orientation: "landscape" },
+  ] }, { decode }));
+  const bad = Buffer.from(portrait);
+  bad[bad.length - 6] ^= 1;
+  await assert.rejects(decodeBasketPrintMedia({ ...media, sheets: [
+    { ...media.sheets[0], bytes: bad },
+  ] }, { decode }), /PNG/);
+  await assert.rejects(decodeBasketPrintMedia(media, { decode: null }), /decoder/);
+  assert.equal(calls, 0);
+});
+
+test("bad decoder return and mismatched Blob must fail closed", async () => {
+  const catalog = [one("1")], ids = ["1"], selected = snap(ids, catalog);
+  const { fetcher } = mockFetch(selected.pages.map(p=>p.printUrl), [portrait]);
+  const media = await prepareBasketPrintMedia(ids, catalog, selected, { origin: SITE, fetcher });
+  await assert.rejects(decodeBasketPrintMedia(media, {
+    decode: async () => ({ width: 2480, height: 3508 }),
+  }), /released/);
+  let decodeCalls = 0;
+  await assert.rejects(decodeBasketPrintMedia(media, {
+    blobFactory: () => new Blob([], { type: "image/png" }),
+    decode: async () => { decodeCalls++; },
+  }), /preserve PNG bytes/);
+  assert.equal(decodeCalls, 0);
+});
+
+test("decoder helper has no browser printing, download, tracking or storage side effects", () => {
+  const source = readFileSync(new URL("../js/print-basket-print-decode.mjs", import.meta.url), "utf8");
+  const code = source.split("\\n").filter(line => !line.trimStart().startsWith("//")).join("\\n");
+  for (const forbidden of ["document.", "sessionStorage", "localStorage", "window.print(",
+    "window.open(", "createObjectURL", "innerHTML", "fetch(", ".click()"]) {
     assert.ok(!code.includes(forbidden), forbidden);
   }
 });
