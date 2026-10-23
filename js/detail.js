@@ -472,9 +472,11 @@ async function loadDetail() {
       printLabel.textContent=pages.length>1 ? `A4 drucken (${pages.length} Seiten)` : "A4 drucken";
     }
     try {
-      renderRelatedEntries(entry, catalog);
+      if (typeof relatedSection !== "undefined" && typeof relatedGrid !== "undefined") {
+        renderRelatedEntries(entry, catalog);
+      }
     } catch {
-      if (relatedSection) relatedSection.hidden = true;
+      if (typeof relatedSection !== "undefined" && relatedSection) relatedSection.hidden = true;
     }
     if (typeof CustomEvent === "function" && typeof document.dispatchEvent === "function") document.dispatchEvent(new CustomEvent("ausmalwiese:detail-loaded", { detail: { id: entry.id } }));
     await hydrateLikeState(entry.id);
