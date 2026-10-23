@@ -42,6 +42,10 @@ function makeSummary() {
   const header = document.querySelector(".header-inner");
   if (!header) return null;
 
+  // Keep the indicator inside its true flex parent, not in the header grid.
+  const actions = header.querySelector(".header-actions");
+  if (!actions) return null;
+
   const root = document.createElement("div");
   root.className = "basket-summary";
   root.dataset.basketSummary = "";
@@ -60,9 +64,9 @@ function makeSummary() {
   count.dataset.basketCount = "";
 
   root.append(longLabel, shortLabel, count);
-  const menu = header.querySelector(".menu-button");
-  if (menu) header.insertBefore(root, menu);
-  else header.append(root);
+  const menu = actions.querySelector(".menu-button");
+  if (menu) actions.insertBefore(root, menu);
+  else actions.append(root);
   return root;
 }
 
@@ -92,9 +96,7 @@ function syncButton(button) {
     const sheets = pageCount(entry);
     button.setAttribute(
       "aria-label",
-      selected
-        ? entry.title + " aus der Drucksammlung entfernen"
-        : entry.title + " zur Drucksammlung hinzufügen (" + sheets + (sheets === 1 ? " Seite)" : " Seiten)")
+      "Drucksammlung: " + entry.title + " (" + sheets + (sheets === 1 ? " Seite)" : " Seiten)")
     );
   }
 }
@@ -221,8 +223,9 @@ async function start() {
     }
 
     observer = new MutationObserver(() => {
+      // Only add missing controls; writing labels here would retrigger the observer.
       enhanceCards();
-      syncButtons();
+      enhanceDetail();
     });
     observer.observe(document.body, { childList: true, subtree: true });
   } catch {
