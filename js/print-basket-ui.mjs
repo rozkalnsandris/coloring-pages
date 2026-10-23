@@ -1,4 +1,4 @@
-import { addBasketActivity, removeBasketActivity } from "./print-basket-selection.mjs";
+import { addBasketActivity, clearBasket, moveBasketActivity, removeBasketActivity } from "./print-basket-selection.mjs";
 import { restoreStoredBasket, writeStoredBasketIds } from "./print-basket-storage.mjs";
 
 const MAX_SHEETS = 5;
@@ -9,6 +9,7 @@ let catalog = [];
 let catalogById = new Map();
 let basket = { ids: [], pages: [], sheetCount: 0, droppedIds: [] };
 let summary = null;
+let dialog = null;
 let status = null;
 let observer = null;
 
@@ -46,8 +47,12 @@ function makeSummary() {
   const actions = header.querySelector(".header-actions");
   if (!actions) return null;
 
-  const root = document.createElement("div");
+  const root = document.createElement("button");
+  root.type = "button";
+  root.disabled = true;
   root.className = "basket-summary";
+  root.setAttribute("aria-haspopup", "dialog");
+  root.setAttribute("aria-controls", "basket-dialog");
   root.dataset.basketSummary = "";
   root.setAttribute("aria-live", "polite");
 
@@ -131,8 +136,118 @@ function enhanceDetail() {
   actions.append(createToggle(id, true));
 }
 
+
+function panelButton(text, action, id = "") {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = text;
+  button.dataset.basketAction = action;
+  if (id) button.dataset.basketId = id;
+  return button;
+}
+
+function createDialog() {
+  const node = document.createElement("dialog");
+  node.id = "basket-dialog";
+  node.className = "basket-dialog";
+  node.setAttribute("aria-labelledby", "basket-dialog-title");
+  const header = document.createElement("div");
+  header.className = "basket-dialog-header";
+  const heading = document.createElement("h2");
+  heading.id = "basket-dialog-title";
+  heading.textContent = "Meine Drucksammlung";
+  const close = panelButton("Schließen", "close");
+  close.autofocus = true;
+  header.append(heading, close);
+  const count = document.createElement("p");
+  count.dataset.basketDialogCount = "";
+  count.setAttribute("aria-live", "polite");
+  const list = document.createElement("ul");
+  list.dataset.basketItems = "";
+  list.className = "basket-dialog-list";
+  const empty = document.createElement("p");
+  empty.dataset.basketEmpty = "";
+  empty.textContent = "Noch keine Malvorlagen ausgewählt.";
+  const clear = panelButton("Leeren", "clear");
+  clear.dataset.basketClear = "";
+  const note = document.createElement("p");
+  note.textContent = "Gesamtdruck und ZIP-Download sind noch nicht verfügbar.";
+  note.className = "basket-dialog-note";
+  node.append(header, count, list, empty, clear, note);
+  document.body.append(node);
+
+  node.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-basket-action]");
+    if (!button || button.disabled || !node.contains(button)) return;
+    const action = button.dataset.basketAction;
+    const id = button.dataset.basketId;
+    if (action === "close") return node.close();
+    if (action === "clear") {
+      if (basket.ids.length) commitBasket(clearBasket(), "Drucksammlung geleert.");
+      return;
+    }
+    if (!basket.ids.includes(id)) return;
+    let next = null;
+    if (action === "remove") next = removeBasketActivity(basket.ids, id, catalog);
+    if (action === "up" || action === "down") {
+      next = moveBasketActivity(basket.ids, id, action === "up" ? -1 : 1, catalog);
+    }
+    if (next) commitBasket(next, action === "remove" ? "Malvorlage entfernt." : "Reihenfolge geändert.", action, id);
+  });
+  node.addEventListener("close", () => summary?.focus());
+  return node;
+}
+
+function renderDialog() {
+  if (!dialog) return;
+  const fragment = document.createDocumentFragment();
+  for (const [index, id] of basket.ids.entries()) {
+    const entry = catalogById.get(id);
+    if (!entry) continue;
+    const row = document.createElement("li");
+    row.className = "basket-dialog-item";
+    const thumb = entry.thumb;
+    if (typeof thumb === "string" && new RegExp("^/?media/" + id + "/thumb(?:[-.][a-z0-9]+)?\\.webp$").test(thumb)) {
+      const image = document.createElement("img");
+      image.src = thumb.startsWith("/") ? thumb : "/" + thumb;
+      image.alt = "";
+      image.loading = "lazy";
+      row.append(image);
+    }
+    const info = document.createElement("div");
+    info.className = "basket-dialog-details";
+    const link = document.createElement("a");
+    link.href = "/detail.html?id=" + encodeURIComponent(id);
+    link.textContent = entry.title;
+    const sheetCount = basket.pages.filter((page) => page.activityId === id).length;
+    const pages = document.createElement("span");
+    pages.textContent = sheetCount + (sheetCount === 1 ? " Seite" : " Seiten");
+    info.append(link, pages);
+    const actions = document.createElement("div");
+    actions.className = "basket-dialog-actions";
+    for (const [label, action, disabled] of [
+      ["Nach oben", "up", index === 0],
+      ["Nach unten", "down", index === basket.ids.length - 1],
+      ["Entfernen", "remove", false]
+    ]) {
+      const button = panelButton(label, action, id);
+      button.disabled = disabled;
+      button.setAttribute("aria-label", label + ": " + entry.title);
+      actions.append(button);
+    }
+    row.append(info, actions);
+    fragment.append(row);
+  }
+  dialog.querySelector("[data-basket-items]").replaceChildren(fragment);
+  dialog.querySelector("[data-basket-dialog-count]").textContent =
+    basket.sheetCount + "/5 Druckseiten ausgewählt (maximal 5).";
+  dialog.querySelector("[data-basket-empty]").hidden = basket.ids.length !== 0;
+  dialog.querySelector("[data-basket-clear]").disabled = basket.ids.length === 0;
+}
+
 function setUnavailable(message) {
   if (summary) {
+    summary.disabled = true;
     summary.classList.add("is-unavailable");
     summary.setAttribute("aria-label", "Drucksammlung nicht verfügbar");
     const count = summary.querySelector("[data-basket-count]");
@@ -144,7 +259,7 @@ function setUnavailable(message) {
   announce(message);
 }
 
-function commitBasket(next, message) {
+function commitBasket(next, message, action = null, id = null) {
   try {
     writeStoredBasketIds(next.ids);
   } catch {
@@ -154,6 +269,13 @@ function commitBasket(next, message) {
   basket = next;
   syncSummary();
   syncButtons();
+  renderDialog();
+  if (dialog?.open) {
+    const button = [...dialog.querySelectorAll("[data-basket-action]")].find(
+      (candidate) => candidate.dataset.basketAction === action && candidate.dataset.basketId === id && !candidate.disabled
+    );
+    (button || dialog.querySelector("[data-basket-action=close]"))?.focus();
+  }
   announce(message);
   return true;
 }
@@ -195,6 +317,12 @@ document.addEventListener("click", (event) => {
 async function start() {
   summary = makeSummary();
   status = makeStatusRegion();
+  dialog = createDialog();
+  summary?.addEventListener("click", () => {
+    if (summary.disabled || typeof dialog.showModal !== "function") return;
+    renderDialog();
+    dialog.showModal();
+  });
 
   try {
     const response = await fetch("/catalog.json", { cache: "no-store", credentials: "same-origin" });
@@ -215,6 +343,8 @@ async function start() {
 
     basket = restoreStoredBasket(catalog);
     syncSummary();
+    renderDialog();
+    if (summary && typeof dialog.showModal === "function") summary.disabled = false;
     enhanceCards();
     enhanceDetail();
 
