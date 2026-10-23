@@ -50,7 +50,7 @@ class StatsWorkerSourceGuardTests(unittest.TestCase):
         raw = (ROOT / guard.SOURCE_PATH).read_bytes()
         self.assertEqual(guard.git_blob_sha1(raw), guard.BLOB)
         source = raw.decode("utf-8")
-        self.assertIn("LIKE_COOKIE_TTL_SECONDS", source)
+        self.assertIn("legacy_personalized_api_retired", source)
         self.assertIn("/api/stats/print-aggregate", source)
 
     def _copy(self, location):

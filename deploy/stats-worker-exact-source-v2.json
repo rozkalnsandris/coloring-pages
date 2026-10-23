@@ -4,7 +4,7 @@
   "worker": "coloring-pages-stats-v1",
   "environment": "production",
   "source_path": "cloudflare/stats-worker.js",
-  "source_blob_sha1": "c2ac9da6e0701103e0041b30db7dfbea4298f96c",
+  "source_blob_sha1": "e99068cf0474e64dd9fda718ce8a658d5ea690a2",
   "wrangler_config_path": "cloudflare/wrangler.stats-worker.jsonc",
   "wrangler_config_blob_sha1": "3733263a391274f2b6b0f2023c8656565bde8e1a",
   "additive_migration_path": "cloudflare/stats-cookie-like-migration.sql",
@@ -29,12 +29,11 @@
     "CF_ANALYTICS_API_TOKEN": "secret_text"
   },
   "live_sequence": [
-    "additive-migration-before-worker",
+    "preexisting-d1-schema-read-only-verification",
     "worker-version-upload",
     "worker-version-deploy-100-percent",
     "read-only-runtime-verification",
-    "cron-trigger-separate-owner-gate",
-    "legacy-daily-visitors-cleanup-separate-owner-gate"
+    "legacy-data-cleanup-separate-owner-gate"
   ],
   "excluded_changes": [
     "worker-name",

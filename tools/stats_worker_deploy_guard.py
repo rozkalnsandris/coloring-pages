@@ -22,7 +22,7 @@ ADDITIVE_MIGRATION_PATH = "cloudflare/stats-cookie-like-migration.sql"
 CLEANUP_MIGRATION_PATH = "cloudflare/stats-remove-daily-visitor-hmac.sql"
 
 WORKER = "coloring-pages-stats-v1"
-BLOB = "c2ac9da6e0701103e0041b30db7dfbea4298f96c"
+BLOB = "e99068cf0474e64dd9fda718ce8a658d5ea690a2"
 CONFIG_BLOB = "3733263a391274f2b6b0f2023c8656565bde8e1a"
 ADDITIVE_MIGRATION_BLOB = "b5346c05cb27de1010dab2027b0b923e999af775"
 CLEANUP_MIGRATION_BLOB = "a7cffb110adfceb5c1ff4dcd17a7009c549976a5"
@@ -45,12 +45,11 @@ BINDINGS = {
     "CF_ANALYTICS_API_TOKEN": "secret_text",
 }
 LIVE_SEQUENCE = [
-    "additive-migration-before-worker",
+    "preexisting-d1-schema-read-only-verification",
     "worker-version-upload",
     "worker-version-deploy-100-percent",
     "read-only-runtime-verification",
-    "cron-trigger-separate-owner-gate",
-    "legacy-daily-visitors-cleanup-separate-owner-gate",
+    "legacy-data-cleanup-separate-owner-gate",
 ]
 EXCLUDED = frozenset({
     "worker-name", "worker-routes", "worker-custom-domains",
@@ -164,7 +163,7 @@ def check_source_contract(root: Path = ROOT) -> dict[str, str]:
     if (f'const PRINT_QR_HOST = "{QR_HOST}";' not in source
             or f'const PRINT_QR_DESTINATION = "{QR_DEST}";' not in source
             or 'const DEFAULT_ORIGIN = "https://coloring.rozkalns.net";' not in source
-            or "LIKE_COOKIE_TTL_SECONDS" not in source
+            or "legacy_personalized_api_retired" not in source
             or "/api/stats/print-aggregate" not in source):
         raise GuardFailure("WORKER_PRIVACY_OR_ORIGIN_DRIFT")
 

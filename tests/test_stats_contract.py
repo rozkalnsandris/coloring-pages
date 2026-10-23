@@ -61,8 +61,9 @@ def test_detail_tracks_print_intent_and_aggregate_like():
 def test_cloudflare_stats_contract_keeps_rpi5_out_of_state():
     worker=read("cloudflare/stats-worker.js"); schema=read("cloudflare/stats-schema.sql"); docs=read("docs/CLOUDFLARE_STATS_V1.md")
     assert '"/api/stats/rankings"' in worker
-    assert '"/api/stats/print"' in worker
-    assert '"/api/stats/like"' in worker
+    assert 'path==="/api/stats/print") return legacyPersonalizedRetired' in worker
+    assert 'path==="/api/stats/like") return legacyPersonalizedRetired' in worker
+    assert "legacy_personalized_api_retired" in worker
     assert 'path==="/api/stats/visit"' in worker
     assert "RATE_LIMITER" in worker
     assert "CREATE TABLE IF NOT EXISTS page_stats" in schema
