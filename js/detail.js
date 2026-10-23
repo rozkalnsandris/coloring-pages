@@ -142,7 +142,7 @@ function renderRelatedEntries(current, catalog) {
   relatedGrid.replaceChildren();
 
   if (!entries.length) {
-    relatedSection.hidden = true;
+    if (relatedSection) relatedSection.hidden = true;
     return;
   }
 
