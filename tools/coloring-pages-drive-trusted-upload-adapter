@@ -1,0 +1,269 @@
+#!/usr/bin/env python3
+"""Offline-only trusted Drive uploader adapter model (#270).
+
+This is a SOURCE DESIGN, not an HTTP sender. It holds only byte snapshots and
+consumes scripted mock replies. No OAuth, network, Drive file mutation, or LIVE.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+import hashlib
+import json
+import re
+
+SURFACE = "direct-drive.files.create.multipart"
+URL = "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart"
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+MAX_MULTIPART_BYTES = 5_000_000
+MANIFEST_MAX_BYTES = 64 * 1024
+ID = re.compile(r"[0-9]{7}\Z")
+FOLDER = re.compile(r"[A-Za-z0-9_-]{10,128}\Z")
+DRIVE_ID = re.compile(r"[A-Za-z0-9_-]{10,128}\Z")
+HASH = re.compile(r"[a-f0-9]{64}\Z")
+CATEGORIES = frozenset({
+    "tiere", "fahrzeuge", "alphabet", "lernen", "figuren", "jahreszeiten"
+})
+EXPECTED_KEYS = frozenset({
+    "schema", "id", "sha256", "size_bytes", "title", "character", "category",
+    "age", "difficulty", "language", "source_kind", "approval_class"
+})
+
+
+class StopBeforeWrite(ValueError):
+    """No modeled request has yet been accepted."""
+
+
+class StopAfterWrite(Exception):
+    """A modeled mutation was attempted. No retry/rollback/cleanup allowed."""
+
+    def __init__(self, reason: str, attempted: int, accepted: int):
+        super().__init__(reason)
+        self.reason, self.attempted, self.accepted = reason, attempted, accepted
+
+
+def ensure(condition: bool, reason: str) -> None:
+    if not condition:
+        raise StopBeforeWrite(reason)
+
+
+def digest(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+@dataclass(frozen=True)
+class Blob:
+    name: str
+    mime_type: str
+    data: bytes
+    sha256: str
+    size_bytes: int
+
+
+@dataclass(frozen=True)
+class SyntheticGate:
+    """Untrusted offline fixture, deliberately NOT a production authorization."""
+    proof_class: str
+    owner_command: str
+    surface: str
+    intended_folder_id: str
+    observed_folder_id: str
+    auth_state: str
+    oauth_client_identity: str
+    observed_client_identity: str
+    folder_access: str
+    catalog_state: str
+    importer_state: str
+    duplicate_names: str
+    issued_at: int
+    expires_at: int
+    observed_at: int
+
+
+@dataclass(frozen=True)
+class FrozenRequest:
+    filename: str
+    mime_type: str
+    folder_id: str
+    content_type: str
+    body: bytes
+    media_sha256: str
+    media_bytes: int
+    request_sha256: str
+
+
+@dataclass(frozen=True)
+class OfflinePlan:
+    folder_id: str
+    activity_id: str
+    requests: tuple[FrozenRequest, FrozenRequest]
+
+
+@dataclass(frozen=True)
+class MockReceipt:
+    file_id: str
+    filename: str
+    mime_type: str
+    parent_id: str
+    size_bytes: int
+
+
+@dataclass(frozen=True)
+class SimulatedReceipt:
+    state: str
+    accepted_count: int
+    drive_writes: int
+    live_imports: int
+
+
+def validate_gate(gate: SyntheticGate, folder_id: str) -> None:
+    ensure(isinstance(gate, SyntheticGate), "missing-gate")
+    # Only synthetic offline test evidence is accepted by this code.
+    # There is no function accepting credentials, a production attestation, or HTTP.
+    ensure(gate.proof_class == "synthetic-offline-only", "no-production-permit")
+    ensure(gate.owner_command == "PUBLISH-fixture-only", "owner-authority-unverified")
+    ensure(gate.surface == SURFACE, "upload-surface-mismatch")
+    ensure(isinstance(folder_id, str) and bool(FOLDER.fullmatch(folder_id)), "invalid-folder-id")
+    ensure(gate.intended_folder_id == folder_id, "intended-folder-mismatch")
+    ensure(gate.observed_folder_id == folder_id, "effective-folder-mismatch")
+    ensure(gate.auth_state == "SIMULATED_CAPABILITY_ONLY", "auth-unverified")
+    ensure(
+        gate.oauth_client_identity == "offline-identity"
+        and gate.observed_client_identity == gate.oauth_client_identity,
+        "oauth-client-mismatch",
+    )
+    ensure(gate.folder_access == "SIMULATED_WRITER_ONLY", "folder-access-unverified")
+    ensure(gate.catalog_state == "SIMULATED_FRESH_NONCOLLIDING", "catalog-unverified")
+    ensure(gate.importer_state == "SIMULATED_PINNED", "importer-unverified")
+    ensure(gate.duplicate_names == "SIMULATED_ABSENT", "duplicate-name-uncertain")
+    ensure(
+        type(gate.issued_at) is int
+        and type(gate.observed_at) is int
+        and type(gate.expires_at) is int
+        and 0 <= gate.issued_at <= gate.observed_at < gate.expires_at
+        and gate.expires_at - gate.issued_at <= 300,
+        "stale-evidence",
+    )
+
+
+def check_blob(blob: Blob, expected_name: str, mime: str) -> None:
+    ensure(isinstance(blob, Blob), "missing-blob")
+    ensure(blob.name == expected_name and blob.mime_type == mime, "blob-name-mime-mismatch")
+    ensure(isinstance(blob.data, bytes), "blob-not-frozen-bytes")
+    ensure(
+        type(blob.size_bytes) is int and blob.size_bytes == len(blob.data)
+        and isinstance(blob.sha256, str) and HASH.fullmatch(blob.sha256) is not None
+        and digest(blob.data) == blob.sha256,
+        "blob-hash-size-mismatch",
+    )
+
+
+def check_manifest(data: bytes, activity_id: str, png: Blob) -> None:
+    ensure(len(data) <= MANIFEST_MAX_BYTES, "manifest-too-large")
+    try:
+        manifest = json.loads(data.decode("utf-8"))
+    except (UnicodeError, ValueError) as exc:
+        raise StopBeforeWrite("manifest-not-json") from exc
+    ensure(isinstance(manifest, dict) and set(manifest) == EXPECTED_KEYS, "manifest-schema")
+    ensure(
+        manifest["schema"] == "rozkalns.coloring-pages.drive-staging-manifest.v1"
+        and manifest["id"] == activity_id
+        and manifest["sha256"] == png.sha256
+        and type(manifest["size_bytes"]) is int
+        and manifest["size_bytes"] == png.size_bytes
+        and isinstance(manifest["category"], str)
+        and manifest["category"] in CATEGORIES
+        and isinstance(manifest["title"], str)
+        and bool(manifest["title"].strip())
+        and isinstance(manifest["character"], str)
+        and manifest["age"] in ("3-6", "4-8")
+        and manifest["difficulty"] in ("easy", "normal", "detailed")
+        and manifest["language"] == "de"
+        and manifest["source_kind"] == "chatgpt-generated-png"
+        and manifest["approval_class"] == "explicit-owner-chat-approval",
+        "manifest-binding",
+    )
+
+
+def make_request(blob: Blob, folder_id: str) -> FrozenRequest:
+    # Use immutable in-memory bytes; no local path or URL read.
+    ensure(len(blob.data) <= MAX_MULTIPART_BYTES, "multipart-over-5mb")
+    boundary = "ausmalwiese-" + digest(blob.name.encode("ascii") + blob.data)[:32]
+    delimiter = ("\r\n--" + boundary).encode("ascii")
+    ensure(delimiter not in blob.data, "mime-boundary-collision")
+    metadata = json.dumps(
+        {"name": blob.name, "mimeType": blob.mime_type, "parents": [folder_id]},
+        ensure_ascii=True, separators=(",", ":"),
+    ).encode("ascii")
+    body = (
+        ("--" + boundary + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n").encode("ascii")
+        + metadata + delimiter
+        + ("\r\nContent-Type: " + blob.mime_type + "\r\n\r\n").encode("ascii")
+        + blob.data + delimiter + b"--"
+    )
+    ensure(len(body) <= MAX_MULTIPART_BYTES, "multipart-over-5mb")
+    return FrozenRequest(
+        blob.name, blob.mime_type, folder_id,
+        "multipart/related; boundary=" + boundary, body,
+        blob.sha256, blob.size_bytes, digest(body),
+    )
+
+
+def plan_v1(
+    activity_id: str, png: Blob, manifest: Blob, folder_id: str,
+    gate: SyntheticGate,
+) -> OfflinePlan:
+    """Freeze and cross-validate both requests before any simulation step."""
+    validate_gate(gate, folder_id)
+    ensure(isinstance(activity_id, str) and bool(ID.fullmatch(activity_id)), "invalid-id")
+    check_blob(png, activity_id + ".png", "image/png")
+    check_blob(manifest, activity_id + ".json", "application/json")
+    ensure(png.data.startswith(PNG_SIGNATURE), "png-signature-only-mismatch")
+    check_manifest(manifest.data, activity_id, png)
+    return OfflinePlan(
+        folder_id, activity_id,
+        (make_request(png, folder_id), make_request(manifest, folder_id)),
+    )
+
+
+def simulate_v1(plan: OfflinePlan, scripted: tuple[MockReceipt | BaseException, ...]) -> SimulatedReceipt:
+    """Pure state-machine exercise. No socket, token, files.create or writes.
+
+    Exactly two scripted replies are needed. A malformed/failed first modeled
+    response stops without consuming the second. Never auto-retry.
+    """
+    ensure(isinstance(plan, OfflinePlan) and len(plan.requests) == 2, "invalid-plan")
+    ensure(
+        tuple(r.filename for r in plan.requests)
+        == (plan.activity_id + ".png", plan.activity_id + ".json"),
+        "invalid-request-order",
+    )
+    ensure(
+        all(
+            r.folder_id == plan.folder_id
+            and digest(r.body) == r.request_sha256
+            for r in plan.requests
+        ),
+        "request-identity-drift",
+    )
+    ensure(isinstance(scripted, tuple) and len(scripted) == 2, "missing-scripted-replies")
+    accepted = 0
+    for i, (request, response) in enumerate(zip(plan.requests, scripted), start=1):
+        # A scripted response models a potentially committed remote operation.
+        # No runtime capability exists in this source. Treat ambiguity as STOP.
+        if isinstance(response, BaseException):
+            raise StopAfterWrite("simulated-transport-unknown", attempted=i, accepted=accepted)
+        if not isinstance(response, MockReceipt):
+            raise StopAfterWrite("simulated-invalid-response", attempted=i, accepted=accepted)
+        valid = (
+            isinstance(response.file_id, str)
+            and DRIVE_ID.fullmatch(response.file_id) is not None
+            and response.filename == request.filename
+            and response.mime_type == request.mime_type
+            and response.parent_id == request.folder_id
+            and type(response.size_bytes) is int
+            and response.size_bytes == request.media_bytes
+        )
+        if not valid:
+            raise StopAfterWrite("simulated-receipt-mismatch", attempted=i, accepted=accepted)
+        accepted += 1
+    return SimulatedReceipt("SIMULATED_ONLY_NOT_PUBLISH", accepted, 0, 0)
