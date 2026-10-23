@@ -61,12 +61,16 @@ class CategoryContractTests(unittest.TestCase):
             self.contract["drive_staging"]["category_binding_required_before_upload"]
         )
 
-    def test_public_category_buttons_match_registry(self):
+    def test_public_category_links_match_registry(self):
         registry_ids = {item["id"] for item in self.registry["categories"]}
         index = (ROOT / "index.html").read_text(encoding="utf-8")
-        filters = set(re.findall(r'data-filter="([^"]+)"', index))
-        self.assertEqual(filters, registry_ids)
-        self.assertEqual(index.count('class="category-count-label"> Malvorlagen</span>'), 6)
+        links = set(re.findall(r'data-filter="([^"]+)"', index))
+        self.assertEqual(links, registry_ids)
+        for category_id in registry_ids:
+            self.assertIn(f'href="/{category_id}" data-filter="{category_id}"', index)
+        self.assertIn('href="/essen-natur" data-collection-filter="essen-natur"', index)
+        self.assertNotIn("essen-natur", registry_ids)
+        self.assertEqual(index.count('class="category-count-label"> Malvorlagen</span>'), 7)
 
     def test_category_arrow_is_centered_on_desktop_and_grid_aligned_on_mobile(self):
         css = (ROOT / "css" / "app.css").read_text(encoding="utf-8")

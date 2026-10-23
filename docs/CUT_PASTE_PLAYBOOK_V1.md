@@ -2,7 +2,7 @@
 
 **Status (2026-10-17): SOURCE/DOCS ONLY — jaunais sikspārņa kandidāts nav publicēts.** Šis ir ilgtermiņa *authoring + QA playbook* visiem sezonu tēliem, nevis pierādījums, ka rīks autonomi izpilda katru soli. Šīs lapas autorēšana/merge nekad nepiešķir `PUBLISH`, Drive, RPi5/LIVE, DNS/Cloudflare, permissions vai secrets tiesības.
 
-**Aktīvs īpašnieka HOLD:** šajā darba posmā Cut & Paste publicēšanu atliek līdz pilnīgai pārejai uz **ausmalwiese.de** un atsevišķai precīzā komplekta apstiprināšanai. Šis HOLD nav pielīdzināms pastāvīgai tehniskai iespējošanas pazīmei; vēlāk īpašnieka jauna `PUBLISH` komanda, svaiga operatīvās drošības pārbaude un visu kvalitātes vārtu PASS ir obligāti. Nepieņemt, ka domēna pāreja ir pabeigta no GitHub merge, vecas sarunas vai HTTP pieejamības vien.
+**Publikācijas gate:** globāls Cut & Paste `PUBLISH` HOLD vairs nav spēkā. Katrai precīzajai divu lapu versijai joprojām vajag obligāto art/geometry/print/physical QA, īpašnieka apstiprinājumu un pēc tam svaigu `PUBLISH` komandu, kas autorizē tikai šo exact version. `PHYSICAL_QA` var balstīties uz īpašnieka skaidru apstiprinājumu par reāli izdrukātu, izgrieztu un salīmētu exact version; foto/izmēri nav obligāti. Vecs QA, iepriekšējs `PUBLISH`, GitHub merge vai HTTP pieejamība nav publikācijas atļauja citai versijai.
 
 ## 1. Komandas un nepārprotamas robežas
 
@@ -13,7 +13,7 @@
 | `EDIT <exact instruction>` | Maina tikai nosauktās detaļas *vienā kanoniskajā avotā* un pēc tam atjauno visus atvasinātos attēlus | Vecie validācijas rezultāti kļūst nederīgi |
 | `REMAKE` | Veido jaunu kompozīciju, nevis slepeni aizvieto apstiprinātas detaļas | Nav iepriekšējā varianta apstiprinājuma |
 | `VALIDATE-PRINT` | Tikai precīzā gala A4 PNG tehniskā pārbaude | Nav ģeometriskas salikšanas vai fiziska testa PASS |
-| `PUBLISH` | Atsevišķa, svaiga, īpašnieka precīza publikācijas atļauja, **tikai pēc HOLD atcelšanas un jaunā satura apstiprināšanas** | Nav LIVE deploy, overwrite vai rollback atļaujas |
+| `PUBLISH` | Atsevišķa, svaiga, īpašnieka precīza publikācijas atļauja **tikai exact final divu lapu versijai pēc obligātā QA un īpašnieka apstiprinājuma** | Nav LIVE deploy, overwrite vai rollback atļaujas |
 
 Parastais `MAKE <subject>` joprojām veido **vienu** krāsojamo lapu. `CUT` nav komanda ģenerēt vairākus tēlus vienā reizē, atvērt individuālu GitHub issue katram tēlam vai automātiski publicēt.
 
@@ -63,7 +63,7 @@ Katru anatomijas elementu izvēlies **vienreiz**: ja ausis/spārni/ķepas/acis i
 4. Tikai `ASSEMBLED_FIT=PASS` ar izmērītiem mm un vienas SVG ģeometrijas pierādījumu atļauj atvasināt **1. lapas pamatni bez saliktā parauga** un **2. lapas griežamās detaļas**. Pēc tam joprojām atsevišķi pārbaudi abu lapu A4/PNG kvalitāti, 4 mm šķēru atstarpes, priekšpuses līmēšanas enkurus, nebrendētu oriģinālu un `js/print.js` drukas zonu.
 5. Ja saliktais tēls ar spārniem iziet ārā, trūkst ģeometrijas vai nav precīzas izvietošanas pārbaudes: `ASSEMBLED_FIT=FAIL` vai `ASSEMBLED_FIT=UNVERIFIED` un **STOP pirms divu A4 CUT gala lapu apstiprināšanas**. Atgriezies pie atsūtītā SVG avota, saskaņoti maini kopīgo mērogu/enkurus, nepazaudē bērnam lietojamas griežamās zonas, atvasini abas lapas no jauna un atkārto visus testus. Aizliegts pēc SVG handoff labot fit ar jaunu ImageGen zīmējumu vai atsevišķi samazināt tikai vienu spārnu/lapu.
 
-**Statusi un godīgs pierādījums:** `ART_CONCEPT_ONLY`, `ASSEMBLED_FIT=UNVERIFIED`, `ASSEMBLED_FIT=FAIL` vai `ASSEMBLED_FIT=PASS`, kur `PASS` vienmēr ietver full-size robežas mm, tā paša avota detaļu identitāti un izmantoto print placement. Attēla modelis **nedrīkst apgalvot** ģeometrijas PASS, ja faktiskais izmēru aprēķins nav veikts. Šis source-only noteikums vēl **neievieš jaunu automātisku checker**. A4 PASS neaizstāj fizisko 100% izgriešanu/salīmēšanu, vizuālo apstiprinājumu vai publicēšanas HOLD.
+**Statusi un godīgs pierādījums:** `ART_CONCEPT_ONLY`, `ASSEMBLED_FIT=UNVERIFIED`, `ASSEMBLED_FIT=FAIL` vai `ASSEMBLED_FIT=PASS`, kur `PASS` vienmēr ietver full-size robežas mm, tā paša avota detaļu identitāti un izmantoto print placement. Attēla modelis **nedrīkst apgalvot** ģeometrijas PASS, ja faktiskais izmēru aprēķins nav veikts. Šis source-only noteikums vēl **neievieš jaunu automātisku checker**. A4 PASS neaizstāj fizisko 100% izgriešanu/salīmēšanu, vizuālo apstiprinājumu vai svaigu exact-version `PUBLISH` gate.
 
 ## 4. Lapu līgums un precīzi drukas aprēķini
 
@@ -125,9 +125,9 @@ Katrai precīzajai versijai glabā pārskatu ar:
 - `ART_REVIEW` — `PENDING|PASS|FAIL` + īpašnieka vērtējums; figurālās kvalitātes pārbaude.
 - `GEOMETRY_QA` — `PENDING|PASS|FAIL`; 1:1 part ID/izmēri, līmēšanas laukumi, pretējās puses, full-body extent, no overlap, kontūras un 4 mm scissor separation.
 - `PRINT_QA` — `PENDING|PASS|FAIL`; A4, RGB, ~300 DPI, 15 mm exact-white, x/y 17..193/17..256 mm, site-render scale=1, footer/QR nav oriģinālajā PNG.
-- `PHYSICAL_QA` — `PENDING|PASS|FAIL`; īsts 100% A4 izdrukāts, izgriezts, salīmēts (sikspārnis un cits tēls pirms foundation #221 slēgšanas), foto/izmēri, atbilstība paredzētajam salikumam.
+- `PHYSICAL_QA` — `PENDING|PASS|FAIL`; īsts 100% A4 izdrukāts, izgriezts un salīmēts. Īpašnieka skaidrs apstiprinājums, ka precīzā versija tika fiziski pārbaudīta un viss ir kārtībā, ir pietiekams `PASS` pierādījums. Foto un lineāla izmēri ir izvēles papildu evidence, ja tie ir pieejami; to trūkums pats par sevi nedrīkst bloķēt `PUBLISH`. Tas neaizstāj atsevišķo obligāto `ASSEMBLED_FIT` mm ģeometrijas pārbaudi.
 - `OWNER_APPROVAL` — `PENDING|PASS|FAIL`; precīzajai divu lapu SHA identitātei, nevis abstraktai idejai.
-- `PUBLISH` — `HOLD|NOT_REQUESTED|STOP|PASS`. Šajā brīdī **HOLD**, nevis PASS.
+- `PUBLISH` — `NOT_REQUESTED|STOP|PASS`. `PASS` ir iespējams tikai pēc svaigas exact-version īpašnieka `PUBLISH` komandas un visu obligāto QA gate izpildes.
 
 **STOP noteikumi:** jebkurš `FAIL`, nezināms SHA, neatbilstošs paraugs, nesamontējamas detaļas, pārāk mazi fragmenti, kļūdaina print zone vai derīga `file_uri/source_file_ref` neesība aptur virzīšanu. Nemaini attēlus pēc apstiprinājuma bez pilnas pārvalidēšanas.
 
@@ -135,7 +135,7 @@ Katrai precīzajai versijai glabā pārskatu ar:
 
 `#218` ir kopīgais plāns, `#219` kanoniskā shēma, `#220` exporters, `#221` QA/human gates, `#222` Halloween un `#223` Weihnachten sezonas saraksti. **Nav atsevišķa GitHub issue katram tēlam**, ja vien neparādās atsevišķa programmatūras kļūda.
 
-Vienam tēlam: **ideja → mākslas master + detaļu inventārs → art review → kanoniska salikšana/anchor → abpusējs A4 exports + assembly proof → automātiskie geometry/print testi → 100% fiziska izgriešana/salīmēšana → exact-SHA owner review → HOLD vai atsevišķa PUBLISH komanda**. Tikai pēc PASS un atsevišķas atļaujas pārej pie publicēšanas; pēc tam nākamais sezonas tēls. Krāsainie Cut & Paste materiāli ir apzināti krāsaini, nevis parastās vienkrāsainās krāsojamās lapas.
+Vienam tēlam: **ideja → mākslas master + detaļu inventārs → art review → kanoniska salikšana/anchor → abpusējs A4 exports + assembly proof → automātiskie geometry/print testi → 100% fiziska izgriešana/salīmēšana → exact-SHA owner review → atsevišķa svaiga PUBLISH komanda**. Tikai pēc PASS un atsevišķas exact-version atļaujas pārej pie publicēšanas; pēc tam nākamais sezonas tēls. Krāsainie Cut & Paste materiāli ir apzināti krāsaini, nevis parastās vienkrāsainās krāsojamās lapas.
 
 Kad īpašnieks vēlāk vēlas publicēt: svaigi pārbaudi `coloring-pages/main`, `RPi5_main/main`, **instalētā** operatora un importer attēla atbilstību, LIVE katalogu/ID, precīzās galīgās *bez-footer* PNG, kanonisko A4 prepare+validate un v2 2 lapu manifestu. Pirms **jebkura** Drive mutation jau jābūt visām stabilajām upload atsaucēm; abas PNG augšupielādē manifestam **pirms**, manifests **pēdējais**. Trūkumi ⇒ STOP, pēc pirmās mutācijas nekāda retry/rollback/cleanup/surface switching.
 

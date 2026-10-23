@@ -8,20 +8,21 @@ The existing single-page production path remains unchanged and continues to use:
 
 - `deploy/chat-to-drive-ingestion.json`;
 - manifest schema `rozkalns.coloring-pages.drive-staging-manifest.v1`;
-- one staged `<id>.png` plus `<id>.json`.
+- one staged `<id>.png`; the validated v1 manifest is carried inline in the bounded RPi5 request.
 
 Historical repin evidence from 2026-10-05 records `RPi5_main@7e3e6b6d6574c1dc5199618dbb974b1fae83eaf5`, installed operator blob `399df72159479c405166d011f140a967bdb749a5` (`root:root:755`) and importer image `ghcr.io/rozkalnsandris/coloring-pages@sha256:53801684e0ce5a30d195d3436220a71b350112fc6e6fdc6fe107779d13c857ba`. Those identities prove historical activation only; they are not reusable current runtime authority or current `PUBLISH` eligibility.
 
 ## Current runtime eligibility preflight
 
-Before the first Drive mutation, `PUBLISH` must read fresh `RPi5_main/main` and LIVE operator evidence and prove all of the following:
+Before the first Drive mutation, `PUBLISH` must read fresh `RPi5_main/main` and LIVE evidence for the existing ingest/import role and bounded publish-request bridge. The legacy stage sender is not part of the normal production staging path. The ingest/import alignment must prove all of the following:
 
 - the installed `/usr/local/bin/coloring-pages-drive-ingest` Git blob matches the current `RPi5_main` `ops/bin/coloring-pages-drive-ingest` blob;
 - the current `RPi5_main` operator contract `ops/contracts/coloring-pages-drive-ingest-operator-v1.json` resolves its pinned Coloring Pages consumer source revision;
 - the `tools/coloring-pages-import` blob at that pinned consumer revision matches the current `coloring-pages/main` `tools/coloring-pages-import` blob;
-- the exact immutable importer image required by the current operator contract is locally available before invocation.
+- the exact immutable importer image required by the current operator contract is locally available before invocation;
+- the installed `/usr/local/bin/coloring-pages-publish-request-dispatcher` and active bridge path/service match current `RPi5_main/main` `ops/contracts/coloring-pages-publish-request-bridge-v1.json`.
 
-Any mismatch is a fail-closed STOP before the first Drive/content mutation and requires a separately reviewed `RPi5_main` source repin plus explicit LIVE install/update authority. Historical activation or repin evidence never overrides this fresh preflight.
+Any mismatch is a fail-closed STOP before the first Drive/content mutation and requires a separately reviewed `RPi5_main` runtime repair plus explicit LIVE install/update authority. Historical activation or repin evidence never overrides this fresh preflight.
 
 ## Simple model
 
@@ -34,7 +35,7 @@ One activity stays one catalogue item:
 <id>.json
 ```
 
-The manifest is uploaded last and is the readiness signal. Before the first Drive mutation, `PUBLISH` has prepared and validated every page locally, frozen every per-page SHA-256/byte size, and validated the complete manifest.
+Before the first Drive mutation, `PUBLISH` has prepared and validated every page locally, frozen every per-page SHA-256/byte size, and validated the complete manifest. Only the exact PNG pages are materialized as top-level connector `file_uri` inputs. Bare file IDs, inline Base64, arbitrary URLs and raw local paths at the connector boundary are forbidden. The complete manifest remains local structured data. After all PNG pages are staged, Chat sends one tiny strict request JSON containing that validated manifest plus its ready marker to the fixed RPi5 request bridge; the ready marker is the execution readiness signal. The bridge invokes the existing ingest operator with ordered `--expected-page` values plus bounded `--manifest-json` data and writes one tiny result JSON. No media bytes use RDC and the happy path does not use generic `start_process`.
 
 The manifest carries the ordered page identities:
 
@@ -71,13 +72,15 @@ Page indexes start at 1 and must be contiguous. Filename order is print order.
 
 For new Chat publications, the authoring layer follows `metadata/id-policy.json` and allocates an opaque random seven-digit decimal ID independently for each activity. The candidate must be absent from fresh LIVE catalogue state before the first mutation and distinct from any other candidate in the same local publish batch. The v2 ingestion schema continues to accept historical descriptive and sequential IDs for backward compatibility; published IDs are immutable.
 
-## Trusted host flow
+## Staging and trusted host flow
 
-The activated `RPi5_main` operator stays small:
+Normal staging uses one connected Google Drive `upload_file` surface bound to the exact production `pending/` folder ID and uploads only the ordered page PNGs. Connector response/readback verifies filename, MIME type and parent folder after each PNG. The prebuilt manifest is not uploaded to Drive; it is carried inline in the bounded request JSON after all PNGs are staged. After the first upload attempt, any uncertainty is STOP with no retry, cleanup or alternate staging route. Arbitrary host `rclone`, Base64-over-RDC and the legacy stage sender are not normal production PUBLISH paths.
 
-1. read one v2 manifest from the exact bound Drive pending folder;
-2. validate the complete manifest and page count;
-3. download every declared PNG to `state/drive-ingest/<id>-<index>.png.partial`;
+After Drive staging, the bounded request bridge atomically claims the tiny request and invokes the activated `RPi5_main` ingest operator with a fixed argv array. The operator stays small and remains Drive→RPi5 pull-only:
+
+1. accept the bounded inline v2 manifest supplied by the request bridge;
+2. validate the complete manifest, activity ID, page count and exact ordered page identities;
+3. list/download only the declared PNGs from the exact bound Drive pending folder to `state/drive-ingest/<id>-<index>.png.partial`;
 4. verify every page filename, byte size and SHA-256;
 5. only after all pages pass, publish the verified files to direct-child inbox paths `<id>-<index>.png`;
 6. invoke the existing immutable importer once with the ordered page paths and explicit `--id <id>`;

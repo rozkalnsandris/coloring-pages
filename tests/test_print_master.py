@@ -1,3 +1,5 @@
+import importlib.machinery
+import importlib.util
 import subprocess
 import sys
 import tempfile
@@ -9,10 +11,21 @@ from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOL = ROOT / "tools/coloring-pages-print-master"
+LOADER = importlib.machinery.SourceFileLoader("print_master", str(TOOL))
+SPEC = importlib.util.spec_from_loader(LOADER.name, LOADER)
+print_master = importlib.util.module_from_spec(SPEC)
+assert SPEC and SPEC.loader
+SPEC.loader.exec_module(print_master)
 SAFE_MARGIN_PX = round(15 / 25.4 * 300)
 
 
 class PrintMasterTests(unittest.TestCase):
+    def test_png_compression_is_balanced_lossless_setting(self):
+        self.assertEqual(print_master.PNG_COMPRESS_LEVEL, 6)
+        source = TOOL.read_text(encoding="utf-8")
+        self.assertIn("compress_level=PNG_COMPRESS_LEVEL", source)
+        self.assertNotIn("optimize=True", source)
+
     def setUp(self):
         self.tempdir = tempfile.TemporaryDirectory()
         self.root = Path(self.tempdir.name)

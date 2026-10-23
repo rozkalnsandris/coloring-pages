@@ -44,6 +44,10 @@ The current V1 category IDs are:
 
 A production record must use exactly one registered category. The importer rejects unknown category IDs, and category selection must be bound before Drive staging. Future categories are added through a reviewed source change that keeps the registry and public category UI aligned.
 
+## Topic discovery
+
+`metadata/topics.json` is the canonical homepage topic-discovery registry. Topics are secondary to the single canonical category and do not create new indexable faceted URLs. The homepage prefers an explicit catalogue `topics[]` array when present; legacy records without that field use the registry's bounded `legacy_terms` mapping so existing published content can participate without a production catalogue rewrite. Seasonal topics may define an annual `active_from` / `active_to` window for the compact `Aktuell` row.
+
 ## Catalogue order
 
 The top-level `catalog.json` array is canonical **newest first** publication order. The importer prepends each newly published activity and preserves the relative order of all existing entries. The public gallery renders that array order directly.

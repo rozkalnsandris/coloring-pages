@@ -1,91 +1,66 @@
-# Report Worker Wrangler deployment source (#249)
+# Report Worker Wrangler deployment source (#264)
 
-This repository owns the application and deployment source for the Ausmalwiese report Worker. The reviewed deployment configuration is `cloudflare/wrangler.report.json`.
+This repository owns the application source and Wrangler configuration for the minimal Ausmalwiese **Fehler melden** Worker.
 
-**SOURCE ONLY. Nothing in this document authorizes a Cloudflare deployment, secret access, email send or LIVE mutation.**
+**SOURCE ONLY. This document does not authorize Cloudflare deployment, email sending, DNS changes or LIVE mutation.**
 
-## Why Wrangler
-
-Cloudflare documents `wrangler deploy` as the normal Worker deployment command. For a first deployment it creates a Worker version and immediately deploys it to 100% traffic. The report path therefore uses Wrangler directly instead of maintaining a custom Cloudflare REST/multipart deployment client.
-
-The config intentionally uses JSON rather than JSONC so the repository's existing Python CI can validate the entire file without adding Node/package-manager dependencies.
-
-## Exact source configuration
+## Exact configuration
 
 - Worker: `coloring-pages-report-v1`
 - entrypoint: `cloudflare/report-worker.mjs`
-- compatibility date: `2026-10-17`
+- compatibility date: `2026-10-18`
 - `workers_dev: false`
 - `preview_urls: false`
-- `no_bundle: true`, preserving the reviewed standalone module instead of bundling it
-- four exact `zone_name: ausmalwiese.de` routes only:
+- `no_bundle: true`
+- exactly two narrow routes:
   - `ausmalwiese.de/api/report`
-  - `ausmalwiese.de/api/report/config`
   - `www.ausmalwiese.de/api/report`
-  - `www.ausmalwiese.de/api/report/config`
+- exactly one `send_email` binding:
+  - name: `EMAIL`
+  - destination: `info@ausmalwiese.de`
 
-Exact paths deliberately contain no terminal wildcard. Query-bearing URLs therefore must not be silently broadened into the report route.
+There are no Report secrets, `vars`, rate-limit bindings, Turnstile bindings or `/api/report/config` route.
 
-The Worker source SHA-256 is pinned by the offline test to:
+The Worker source SHA-256 is pinned by `tests/test_report_wrangler_config.py`.
 
-`26d4e597d8c2c961c3a637957ea566654c97c5657a4b2595129c410e9fae22a1`
+## Why this is smaller
 
-## Protected values
+The previous source required Brevo, four protected values, Turnstile, two rate-limit bindings, a config endpoint and a separate Stats no-effect verification path.
 
-Wrangler `secrets.required` declares exactly:
+The #264 target removes all of that. Cloudflare Email Service provides the only external transport through the Worker binding.
 
-- `TURNSTILE_SITE_KEY`
-- `TURNSTILE_SECRET`
-- `BREVO_API_KEY`
-- `REPORT_TO`
+The project does not commit the owner's personal mailbox address. LIVE setup must confirm that the project destination `info@ausmalwiese.de` is valid for Email Service and reaches the already verified mailbox through Email Routing.
 
-Although the Turnstile site key becomes public through `GET /api/report/config`, it is still supplied through the same protected deployment input so no environment-specific value is committed here.
+## Future deployment
 
-A future authorized deployment supplies all four values from one protected JSON or `.env` file using `--secrets-file`. Secret input files matching `cloudflare/*.secrets.json` or `cloudflare/*.secrets.env` are gitignored. Prefer a protected file outside the checkout entirely.
+After separate owner LIVE authorization, deploy only the exact reviewed Worker/config. No secrets file is required for this Report Worker.
 
-Never place real values in source, GitHub issues/PRs, chat, command-line key/value arguments, test fixtures or logs.
+Minimum preflight:
 
-## Rate limiting
+1. exact reviewed `coloring-pages` commit and Worker/config blobs;
+2. correct Cloudflare account/zone;
+3. `ausmalwiese.de` onboarded for Email Sending;
+4. `EMAIL` destination accepted by Cloudflare;
+5. two exact report routes do not overlap unrelated routes.
 
-The config selects two distinct namespace IDs:
+Minimum post-deploy proof:
 
-- `REPORT_RATE`: namespace `2067894450`, 12 requests / 60 seconds
-- `REPORT_DUP`: namespace `2051617019`, 1 request / 60 seconds
+1. exact Report Worker version is active;
+2. exactly the two report routes are present;
+3. exactly one `send_email` binding named `EMAIL` is present;
+4. one owner-approved test POST returns success;
+5. the test email arrives.
 
-These IDs are source-selected candidates, **not proof of account-wide uniqueness**. Before LIVE, a read-only Cloudflare preflight must prove neither ID collides with any other account binding. A collision requires a reviewed source change; do not override the config ad hoc at runtime.
-
-Cloudflare requires Wrangler 4.36.0 or later for Workers Rate Limiting bindings. The trusted RPi5 launcher must pin one exact reviewed Wrangler version at or above that minimum.
-
-## Future deployment shape
-
-After a separate owner LIVE authorization, the trusted launcher may execute only the equivalent of:
-
-    wrangler deploy --config cloudflare/wrangler.report.json --secrets-file <protected-file>
-
-The launcher must bind the exact `coloring-pages` commit, this config, the Worker source digest, exact Wrangler version and target Worker before dispatch.
-
-Before the first mutation it must also prove:
-
-1. correct Cloudflare account and `ausmalwiese.de` zone;
-2. the four report routes are free/compatible and Stats routes are unchanged;
-3. the two namespace IDs are account-wide unique;
-4. all four protected values are available from the approved protected file;
-5. Turnstile hostnames/action, Brevo transactional readiness and privacy/operator gates are approved.
-
-After deployment, read-only verification must prove the intended Worker/version, exactly four report routes, required binding names, two rate limits and unchanged `coloring-pages-stats-v1`.
-
-Any ambiguous deploy outcome is STOP. No automatic retry, rollback, cleanup, alternate REST client or dashboard workaround is implied.
+There is no Stats snapshot or Stats credential/API prerequisite.
 
 ## Offline verification
 
-    python3 -m unittest tests.test_report_wrangler_config -v
+`python3 -m unittest tests.test_report_wrangler_config -v`
 
-The normal repository CI also runs this test through `python3 -m unittest discover -s tests -v`.
+Normal CI also runs the Node Worker suite through `tests/test_report_node.py`.
 
-Official references:
+Official references reviewed 2026-10-18:
 
+- https://developers.cloudflare.com/email-service/api/send-emails/workers-api/
+- https://developers.cloudflare.com/email-service/configuration/send-bindings/
 - https://developers.cloudflare.com/workers/wrangler/configuration/
-- https://developers.cloudflare.com/workers/wrangler/commands/workers/
-- https://developers.cloudflare.com/workers/configuration/secrets/
-- https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/
-- https://developers.cloudflare.com/workers/configuration/routing/routes/

@@ -26,7 +26,8 @@ class Assets(HTMLParser):
 class KitaTests(unittest.TestCase):
     def test_packaged_route_and_versioned_assets(self):
         docker = (ROOT / 'Dockerfile').read_text()
-        self.assertIn('COPY stats.html traffic.html kita.html /usr/share/nginx/html/', docker)
+        copy_lines = [line for line in docker.splitlines() if line.startswith('COPY ') and '/usr/share/nginx/html/' in line]
+        self.assertTrue(any('kita.html' in line.split() for line in copy_lines))
         nginx = (ROOT / 'deploy/nginx.conf').read_text()
         route = nginx.split('location = /kita {')[1].split('}')[0]
         self.assertIn('try_files /kita.html =404;', route)

@@ -31,6 +31,8 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertTrue(
             authority["host_operator_and_importer_alignment_required_before_first_mutation"]
         )
+        self.assertFalse(authority["stage_sender_runtime_alignment_required_before_first_mutation"])
+        self.assertTrue(authority["drive_connector_file_materialization_required_before_first_mutation"])
         self.assertEqual(authority["publication_command"], "PUBLISH")
         self.assertFalse(authority["ok_is_publication_authority"])
 
@@ -57,7 +59,7 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertEqual(evidence["required_public_url_count"], 5)
         self.assertEqual(evidence["required_public_http_status"], 200)
 
-    def test_drive_staging_requires_exact_blob_bytes_and_manifest_last(self):
+    def test_drive_staging_uploads_png_only_and_inlines_manifest(self):
         staging = self.contract["drive_staging"]
         self.assertEqual(staging["provider"], "google-drive")
         self.assertEqual(staging["object_class"], "blob-file")
@@ -66,10 +68,26 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertTrue(staging["folder_name_is_not_authority"])
         self.assertTrue(staging["upload_surface_selection_required_before_first_mutation"])
         self.assertTrue(staging["single_upload_surface_per_publication"])
-        self.assertEqual(staging["upload_surface_must_accept"], ["prepared-png", "prebuilt-manifest"])
-        self.assertTrue(staging["host_rclone_upload_forbidden"])
-        self.assertEqual(staging["publish_order"], ["image", "manifest"])
-        self.assertTrue(staging["manifest_is_readiness_signal"])
+        self.assertEqual(staging["upload_surface_must_accept"], ["runtime-materialized-file-uri"])
+        self.assertEqual(staging["staging_surface"], "google-drive-connector-upload-file")
+        self.assertTrue(staging["runtime_materialized_file_uri_required"])
+        self.assertTrue(staging["raw_local_path_at_connector_boundary_forbidden"])
+        self.assertTrue(staging["bare_file_id_forbidden"])
+        self.assertTrue(staging["inline_base64_forbidden"])
+        self.assertTrue(staging["arbitrary_url_file_handoff_forbidden"])
+        self.assertFalse(staging["trusted_host_stage_sender_upload_allowed"])
+        self.assertTrue(staging["direct_google_drive_connector_upload_allowed"])
+        self.assertTrue(staging["arbitrary_host_rclone_upload_forbidden"])
+        self.assertFalse(staging["envelope_materialization_required_before_first_mutation"])
+        self.assertFalse(staging["envelope_validation_required_before_first_mutation"])
+        self.assertEqual(staging["connector_upload_action"], "Google_Drive.upload_file")
+        self.assertEqual(staging["connector_expected_input"], "file_uri")
+        self.assertTrue(staging["connector_response_readback_required"])
+        self.assertEqual(staging["publish_order"], ["image"])
+        self.assertFalse(staging["manifest_is_readiness_signal"])
+        self.assertTrue(staging["bridge_ready_marker_is_readiness_signal"])
+        self.assertFalse(staging["normal_publish_manifest_upload"])
+        self.assertEqual(staging["manifest_transport"], "publish-request-bridge-inline")
         self.assertTrue(staging["exact_source_bytes_required"])
         self.assertTrue(staging["preupload_sha256_required"])
         self.assertTrue(staging["category_binding_required_before_upload"])
@@ -82,8 +100,12 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
                 "freeze-id-sha256-size-category-and-metadata",
                 "materialize-manifest-locally",
                 "validate-manifest-locally",
-                "upload-image",
-                "upload-manifest",
+                "materialize-runtime-file-reference-for-image",
+                "verify-ingest-operator-runtime",
+                "verify-publish-request-bridge-runtime",
+                "invoke-google-drive-connector-image-only",
+                "write-request-with-inline-manifest",
+                "write-ready-marker",
             ],
         )
 
@@ -141,6 +163,30 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertEqual(host["transport_client"], "rclone")
         self.assertEqual(host["transport_direction"], "drive-to-rpi5-pull-only")
         self.assertFalse(host["host_rclone_upload_allowed"])
+        sender = self.contract["staging_sender"]
+        self.assertEqual(
+            sender["contract_ref"],
+            "deploy/publish-trusted-rpi5-stage-sender-v1.json",
+        )
+        self.assertEqual(sender["production_namespace"], "pending")
+        self.assertFalse(sender["publish_uses_canary_mode"])
+        self.assertFalse(sender["fresh_runtime_identity_preflight_required"])
+        self.assertFalse(sender["production_upload_allowed"])
+        self.assertTrue(sender["arbitrary_rclone_forbidden"])
+        connector = self.contract["direct_drive_connector"]
+        self.assertEqual(connector["action"], "Google_Drive.upload_file")
+        self.assertEqual(connector["destination_namespace"], "pending")
+        self.assertTrue(connector["exact_folder_id_required"])
+        self.assertEqual(connector["top_level_file_parameter"], "file_uri")
+        self.assertTrue(connector["runtime_materialization_required"])
+        self.assertTrue(connector["raw_local_path_at_connector_boundary_forbidden"])
+        self.assertTrue(connector["bare_file_id_forbidden"])
+        self.assertTrue(connector["inline_base64_forbidden"])
+        self.assertEqual(connector["order"], ["png-page-only"])
+        self.assertFalse(connector["manifest_upload_allowed_in_normal_publish"])
+        self.assertEqual(connector["manifest_transport"], "publish-request-bridge-inline")
+        self.assertEqual(connector["accepted_input_expected"], "file_uri")
+        self.assertTrue(connector["read_only_readback_required"])
         self.assertTrue(host["credential_values_must_not_be_read_or_emitted"])
         self.assertFalse(host["fresh_pending_fast_list_allowed"])
         self.assertEqual(
@@ -198,7 +244,7 @@ class ChatToDriveIngestionContractTests(unittest.TestCase):
         self.assertNotIn("public-source-http-200", required)
         self.assertEqual(
             self.contract["post_import_verification"]["web_origin"],
-            "https://coloring.rozkalns.net",
+            "https://ausmalwiese.de",
         )
         proof = self.contract["post_import_verification"]
         self.assertTrue(proof["performed_by_trusted_host_operator"])

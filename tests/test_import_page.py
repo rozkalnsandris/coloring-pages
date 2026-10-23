@@ -3,6 +3,7 @@ import importlib.util
 import json
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 from PIL import Image
@@ -85,6 +86,25 @@ class ImportPageTests(unittest.TestCase):
             (self.content / "public/catalog.json").stat().st_mode & 0o777,
             0o644,
         )
+
+    def test_import_stamps_new_utc_publication_time_preserving_legacy_entries(self):
+        from datetime import datetime, timezone
+        existing = [{"id": "legacy-001", "title": "Old", "thumb": "/media/legacy-001/thumb.webp"}]
+        catalog_path = self.content / "public/catalog.json"
+        catalog_path.write_text(json.dumps(existing) + "\n", encoding="utf-8")
+        before = datetime.now(timezone.utc)
+        entry = importer.import_page(self.source, self.content, self.metadata())
+        after = datetime.now(timezone.utc)
+
+        published = entry.get("published_at", "")
+        self.assertRegex(published, r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+        moment = datetime.fromisoformat(published.replace("Z", "+00:00"))
+        self.assertLessEqual(before.replace(microsecond=0), moment)
+        self.assertLessEqual(moment, after)
+        catalogue = json.loads(catalog_path.read_text(encoding="utf-8"))
+        self.assertEqual(catalogue[0], entry)
+        self.assertEqual(catalogue[1], existing[0])
+        self.assertNotIn("published_at", catalogue[1])
 
     def test_print_preserves_source_dpi_metadata_when_present(self):
         Image.new("RGB", (1055, 1491), "white").save(
@@ -208,6 +228,26 @@ class ImportPageTests(unittest.TestCase):
         self.assertNotIn("2480", source)
         self.assertNotIn("3508", source)
         self.assertNotIn("PRINT_DPI", source)
+
+    def test_webp_derivatives_use_balanced_encoder_method(self):
+        calls = []
+        original_save = Image.Image.save
+
+        def capture_save(image, fp, format=None, **params):
+            calls.append((Path(fp).name, format, dict(params)))
+            return original_save(image, fp, format=format, **params)
+
+        target = self.root / "derivatives"
+        image = Image.new("RGB", (1024, 1536), "white")
+        with mock.patch.object(Image.Image, "save", new=capture_save):
+            importer.build_derivatives([image], target)
+
+        webp_calls = [call for call in calls if call[1] == "WEBP"]
+        self.assertEqual(len(webp_calls), 2)
+        for _, _, params in webp_calls:
+            self.assertTrue(params["lossless"])
+            self.assertEqual(params["quality"], 100)
+            self.assertEqual(params["method"], 4)
 
     def test_invalid_aspect_rejected(self):
         Image.new("L", (1200, 1200), 255).save(self.source, format="PNG")

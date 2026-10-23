@@ -25,14 +25,17 @@ The importer validates file type, portrait/landscape geometry, A4-like ratio, mi
 
 ## Chat publication print master
 
-For new Chat-generated publication, the generation PNG is a draft. The normal owner flow is one publication command:
+For new Chat-generated publication, the generation PNG is a draft. The preferred owner flow is now:
 
 ```text
 MAKE / REMAKE / EDIT
-→ PUBLISH
+→ ZIP
+→ protected admin.ausmalwiese.de publisher
+→ preview/title/category
+→ Sākt publicēšanu
 ```
 
-`PUBLISH` internally runs the mandatory print-master preparation and read-only validation before any Drive/content mutation. `UPSCALE-PRINT` and `VALIDATE-PRINT` remain optional manual inspection/debug commands only.
+`ZIP` preserves the accepted draft PNG artwork bytes and packages only 1–20 top-level PNG files; it does not create a production print master. The protected ADMIN publisher runs the mandatory print-master preparation and read-only validation for every uploaded page before ID allocation/import. `UPSCALE-PRINT` and `VALIDATE-PRINT` remain optional manual inspection/debug commands only. The direct Chat `PUBLISH` path remains supported and uses the same print-master rules internally.
 
 `UPSCALE-PRINT` uses the repository helper `tools/coloring-pages-print-master prepare`. It is deliberately CPU-only and depends only on the pinned Pillow build dependency already used by CI. It does not generate new artwork or use an AI/GPU upscaler.
 
@@ -47,19 +50,32 @@ The prepared publication master must be:
 - aspect-ratio-preserving artwork centered on the A4 canvas;
 - near-neutral white AI noise normalized to exact white;
 - resized with Pillow `Resampling.LANCZOS`;
-- sharpened only with the reviewed conservative `UnsharpMask` values in the helper.
+- sharpened only with the reviewed conservative `UnsharpMask` values in the helper;
+- written as lossless PNG with the reviewed balanced ZLIB compression level `6`. Encoder compression changes storage/CPU cost only; it does not change decoded artwork pixels, A4 geometry, DPI, safe margins, resampling or sharpening.
 
-The validator is read-only and fails closed if any required property is missing. During normal publication, `PUBLISH` runs it automatically after preparing the fresh print master and binds the reported exact SHA-256 and byte size before the first content mutation. `REMAKE` or `EDIT` invalidates any earlier manually prepared/validated master; the next `PUBLISH` prepares and validates again automatically.
+The validator is read-only and fails closed if any required property is missing. In the preferred ZIP/ADMIN flow, ADMIN prepares every uploaded draft and validates every prepared master before ID allocation/import; any failure stops before publication mutation. ADMIN records the prepared master SHA-256 and exact byte size only after validation PASS. Direct Chat `PUBLISH` follows the same canonical print-master rules. `REMAKE` or `EDIT` invalidates any earlier manually prepared/validated master; a later ZIP packages the revised draft bytes and ADMIN prepares/validates again after upload.
 
 This is resampling, not native-detail recovery. It improves the consistency of A4 raster delivery and background white while avoiding per-image API/GPU dependencies.
 
 The importer remains backward-compatible with the broader geometry above and does not perform this authoring upscale itself.
 
+### ADMIN ZIP technical gate
+
+The protected ADMIN ZIP publisher is the mandatory technical quality gate for the preferred ZIP workflow. The archive itself contains drafts only. Before any ID allocation or import, ADMIN must:
+
+1. prepare every uploaded PNG with the pinned immutable `coloring-pages-print-master prepare`;
+2. validate every prepared PNG with `coloring-pages-print-master validate`;
+3. require PASS for the complete uploaded set before continuing to ID allocation/import.
+
+The prepared result must satisfy all print-master requirements listed above: exact A4 geometry, RGB/no alpha, approximately 300 DPI, exact `#FFFFFF` outer border and complete 15 mm / 177 px exact-white safe bands, aspect-ratio-preserving centered fit, near-white normalization, LANCZOS resampling and the reviewed conservative sharpening. This deterministic gate does not replace editorial review: anatomy, wording, composition, unwanted decoration and whether the artwork is actually a suitable coloring page remain MAKE/owner-review responsibilities.
+
+ADMIN v1 treats each ZIP PNG as an independent single-page activity. A multi-page activity that must remain one catalogue item requires the separate ordered multi-page publication contract until ADMIN gains reviewed multi-page ZIP support.
+
 ## Original-resolution print
 
 The source PNG is preserved byte-for-byte and is the canonical print artwork.
 
-The importer itself does **not** require vector tracing, AI/GPU upscale or host-side enlargement. For the Chat publication path, `PUBLISH` derives and validates the owner-approved `2480×3508` portrait or `3508×2480` landscape PNG print master before any content mutation. The lower-resolution `1024×1536` / `1536×1024` generation draft is an authoring input, not the production source master.
+The importer itself does **not** require vector tracing or AI/GPU upscaling. In the preferred ZIP/ADMIN path, the uploaded lower-resolution `1024×1536` / `1536×1024` generation PNG remains an authoring draft; ADMIN deterministically derives and validates the `2480×3508` portrait or `3508×2480` landscape PNG print master before ID allocation/import. Direct Chat `PUBLISH` derives the same canonical master in its own pre-mutation gate. The validated A4 PNG, not the ZIP draft bytes, becomes the production source master.
 
 The validated print-master PNG remains the preserved source master and the catalogue `print` PNG is the canonical browser print/download source. A minimal hidden HTML print document loads that PNG into a canvas, preserves canonical `2480×3508` / `3508×2480` raster dimensions exactly, uses the previous A4-padding calculation only for legacy/non-canonical rasters, preserves original pixel colors, infers portrait/landscape from dimensions, assigns the matching named CSS page, and prints it as A4 portrait or A4 landscape before calling `window.print()`. The detail page downloads the same `print.png` directly.
 
