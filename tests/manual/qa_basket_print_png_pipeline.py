@@ -184,9 +184,12 @@ def case(browser, css, pngs, sequence, ids, indices, missing=None,
         })
         expected_paths = [PATHS[index] for index in indices]
         failed_path = missing or corrupt
+        # Missing HTTP responses abort fetching immediately, whereas a
+        # CRC-invalid PNG is rejected after all streamed files are retrieved.
+        # Neither failure may mount a partial print document.
         if requests != ["/catalog.json"] + (
-            expected_paths[:expected_paths.index(failed_path)+1]
-            if failed_path else expected_paths
+            expected_paths[:expected_paths.index(missing)+1]
+            if missing else expected_paths
         ):
             raise AssertionError(f"unexpected requests {requests}")
         if failed_path is not None:
