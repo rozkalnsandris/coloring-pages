@@ -25,7 +25,7 @@ class BackendFirstPrivacySplit(unittest.TestCase):
         self.assertNotIn("async function recordPrint(", WORKER)
         self.assertIn('path==="/api/stats/page") return pageStats', WORKER)
 
-    def test_future_like_and_print_backends_exist_in_parallel(self):    def test_future_like_and_print_backends_exist_in_parallel(self):
+    def test_future_like_and_print_backends_exist_in_parallel(self):
         self.assertIn('path.startsWith("/api/stats/like/")', WORKER)
         self.assertIn('path==="/api/stats/print-aggregate"', WORKER)
         self.assertIn('"/api/stats/like/forget"', WORKER)
