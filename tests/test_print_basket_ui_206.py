@@ -101,6 +101,41 @@ class PrintBasketUi206Tests(unittest.TestCase):
         self.assertNotIn("selected", label)
         self.assertIn('button.setAttribute("aria-pressed", String(selected));', source)
 
+    def test_basket_dialog_modal_and_focus(self):
+        source = (ROOT / "js" / "print-basket-ui.mjs").read_text(encoding="utf-8")
+        for marker in (
+            'root.setAttribute("aria-haspopup", "dialog")',
+            'root.setAttribute("aria-controls", "basket-dialog")',
+            'node.setAttribute("aria-labelledby", "basket-dialog-title")',
+            'dialog.showModal();',
+            'node.addEventListener("close", () => summary?.focus())',
+            'close.autofocus = true',
+        ):
+            self.assertIn(marker, source)
+
+    def test_basket_dialog_reuses_atomic_selection_and_is_export_gated(self):
+        source = (ROOT / "js" / "print-basket-ui.mjs").read_text(encoding="utf-8")
+        for marker in (
+            "moveBasketActivity(basket.ids", "removeBasketActivity(basket.ids",
+            "commitBasket(clearBasket()", "writeStoredBasketIds(next.ids)",
+            "link.textContent = entry.title", "encodeURIComponent(id)",
+            "Gesamtdruck und ZIP-Download sind noch nicht verfügbar.",
+        ):
+            self.assertIn(marker, source)
+        self.assertNotIn("innerHTML", source)
+        css = (ROOT / "css" / "print-basket.css").read_text(encoding="utf-8")
+        self.assertIn(".basket-dialog::backdrop", css)
+        self.assertIn("max-height: calc(100dvh - 24px)", css)
+
+    def test_basket_dialog_empty_state_and_boundary_controls(self):
+        source = (ROOT / "js" / "print-basket-ui.mjs").read_text(encoding="utf-8")
+        self.assertIn('empty.textContent = "Noch keine Malvorlagen ausgewählt."', source)
+        self.assertIn('dialog.querySelector("[data-basket-empty]").hidden', source)
+        self.assertIn('dialog.querySelector("[data-basket-clear]").disabled', source)
+        self.assertIn('["Nach oben", "up", index === 0]', source)
+        self.assertIn('["Nach unten", "down", index === basket.ids.length - 1]', source)
+        self.assertIn('if (summary && typeof dialog.showModal === "function") summary.disabled = false;', source)
+
     def test_module_parses_with_node(self):
         node = shutil.which("node")
         self.assertIsNotNone(node, "Node.js required for module syntax check")
