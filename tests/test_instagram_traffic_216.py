@@ -1,4 +1,5 @@
 """Source and runtime regressions for fixed Instagram UTM landing attribution (#216)."""
+import hashlib
 import json
 import shutil
 import sqlite3
@@ -126,8 +127,9 @@ console.log('INSTAGRAM_WORKER=PASS');
         self.assertNotIn('method: "POST"',js)
         self.assertIn('noindex,nofollow,noarchive',html)
         self.assertIn('v=instagram-216',html)
-        self.assertIn('v=instagram-216',(ROOT/"index.html").read_text(encoding="utf-8"))
-        self.assertIn('v=instagram-216',(ROOT/"detail.html").read_text(encoding="utf-8"))
+        version = hashlib.sha256((ROOT/"js/stats.js").read_bytes()).hexdigest()[:16]
+        for page in ("index.html", "detail.html", "kita.html", "stats.html", "traffic.html"):
+            self.assertIn('js/stats.js?v='+version, (ROOT/page).read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

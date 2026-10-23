@@ -1,4 +1,6 @@
 import hashlib
+import shutil
+import subprocess
 import unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
@@ -50,11 +52,11 @@ class HomeRankingLayoutTests(unittest.TestCase):
         self.assertIn('.ranking-tabs {', css)
         self.assertIn('.ranking-tab.is-active', css)
         self.assertIn('grid-template-columns: repeat(2, minmax(0, 1fr))', css)
-def test_detail_tracks_print_intent_and_reversible_like():
+def test_detail_tracks_print_intent_and_aggregate_like():
     html=read("detail.html"); js=read("js/detail.js")
     assert 'data-action-like' in html
     assert 'ColoringStats?.trackPrint?.(loadedEntryId)' in js
-    assert 'ColoringStats.toggleLike(loadedEntryId)' in js
+    assert 'ColoringStats.addLike(loadedEntryId)' in js
     assert 'aria-pressed' in html
 def test_cloudflare_stats_contract_keeps_rpi5_out_of_state():
     worker=read("cloudflare/stats-worker.js"); schema=read("cloudflare/stats-schema.sql"); docs=read("docs/CLOUDFLARE_STATS_V1.md")
@@ -69,12 +71,12 @@ def test_cloudflare_stats_contract_keeps_rpi5_out_of_state():
     assert "PRIMARY KEY (page_id, visitor_hash)" in schema
     assert "Raspberry Pi" in docs
     assert "print intent" in docs
-def test_stats_frontend_uses_first_party_random_id_only_on_engagement():
+def test_stats_frontend_uses_aggregate_endpoints_without_persistent_identity():
     js=read("js/stats.js")
-    assert 'getVisitorId(false)' in js
-    assert 'getVisitorId(true)' in js
-    assert 'localStorage.getItem(VISITOR_KEY)' in js
-    assert 'crypto?.randomUUID?.()' in js
+    assert '"/like-aggregate"' in js
+    assert '${API_BASE}/print-aggregate' in js
+    for forbidden in ('getVisitorId', 'visitor_id', 'localStorage', 'sessionStorage', 'randomUUID'):
+        assert forbidden not in js
 
 
 class TrendingSqlRegressionTests(unittest.TestCase):
@@ -293,8 +295,9 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertIn('name="robots" content="noindex,nofollow,noarchive"', traffic_html)
         self.assertIn('href="stats.html"', traffic_html)
         self.assertIn("data-stats-unique-visitors", traffic_html)
-        self.assertIn("Approx. unique visitors", traffic_html)
-        self.assertIn("daily Unique Visitors", traffic_html)
+        self.assertIn("Approx. daily unique IPs", traffic_html)
+        self.assertIn("historical hostname-scoped Stats Worker D1/IP-HMAC estimate", traffic_html)
+        self.assertNotIn("Cloudflare’s latest available daily Unique Visitors", traffic_html)
         self.assertIn("data-stats-visits", traffic_html)
         self.assertIn("Website visits in the last 7 days", traffic_html)
         self.assertIn("not unique people", traffic_html)
@@ -319,8 +322,10 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertIn("window.ColoringStats.getTraffic(7)", traffic_admin)
         self.assertIn("traffic.unique_visitors", traffic_admin)
         self.assertIn("traffic.unique_visitors_date", traffic_admin)
-        self.assertIn("privacy-preserving unique-IP count", traffic_admin)
-        self.assertIn("separate sampled Cloudflare metric", traffic_admin)
+        self.assertIn('traffic.unique_visitors_basis === "worker-d1-daily-hmac-ip"', traffic_admin)
+        self.assertIn("Number.isSafeInteger(traffic.unique_visitors)", traffic_admin)
+        self.assertIn("N/A is not a zero count", traffic_admin)
+        self.assertIn("separate Cloudflare analytics metric", traffic_admin)
         self.assertIn("window.ColoringStats.getOverview()", traffic_admin)
         self.assertIn('fetch("catalog.json", {cache: "no-store"})', traffic_admin)
         self.assertIn("const CATALOG_PAGE_SIZE = 20;", traffic_admin)
@@ -333,6 +338,84 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertIn("CF_ANALYTICS_API_TOKEN", docs)
         self.assertIn("daily visitor HMAC collection is retired", docs)
         self.assertIn("separate Cloudflare owner gate", docs)
+
+
+    @unittest.skipUnless(shutil.which("node"), "Node required for traffic rendering simulation")
+    def test_unique_ip_source_basis_renders_legacy_and_retired_states(self):
+        harness = r"""
+const fs=require('node:fs'), vm=require('node:vm');
+const code=fs.readFileSync('js/traffic-admin.js','utf8');
+async function render(metric){
+  const nodes=new Map();
+  const document={
+    querySelector:(selector)=>{
+      if(!nodes.has(selector)){
+        nodes.set(selector,{
+          textContent:'',value:'',hidden:false,disabled:false,
+          addEventListener(){},replaceChildren(){},
+        });
+      }
+      return nodes.get(selector);
+    },
+    createElement:()=>{throw Error('No catalog rows expected in read-only test');},
+  };
+  const window={ColoringStats:{
+    getOverview:async()=>({totals:{view_count:164,recent_views:79},pages:[]}),
+    getTraffic:async()=>({
+      visits:635,crawler_requests:1459,crawlers:[],sampled:true,...metric
+    })
+  }};
+  vm.runInNewContext(code,{
+    document,window,fetch:async()=>({ok:true,json:async()=>[]}),
+    Intl,Date,console
+  });
+  await new Promise(resolve=>setImmediate(resolve));
+  return {
+    visitors:nodes.get('[data-stats-unique-visitors]').textContent,
+    label:nodes.get('[data-stats-unique-visitors-label]').textContent,
+    note:nodes.get('[data-traffic-visits-note]').textContent,
+    visits:nodes.get('[data-stats-visits]').textContent,
+    status:nodes.get('[data-traffic-page-status]').textContent,
+  };
+}
+(async()=>{
+  const legacy=await render({
+    unique_visitors_status:'available',
+    unique_visitors_basis:'worker-d1-daily-hmac-ip',
+    unique_visitors:12,unique_visitors_date:'2026-10-19'
+  });
+  if(legacy.visitors!=='12'||!legacy.label.includes('2026-10-19')
+    ||!legacy.note.includes('D1/IP-HMAC')||legacy.visits!=='635'
+    ||!legacy.note.includes('(sampled)')||!legacy.status.includes('Updated'))
+    throw Error('Historical IP counter render failed: '+JSON.stringify(legacy));
+  const retired=await render({
+    unique_visitors_status:'removed',
+    unique_visitors_basis:'removed-no-persistent-visitor-metric',
+    unique_visitors:null,unique_visitors_date:null
+  });
+  if(retired.visitors!=='N/A'||retired.label!=='Daily unique IPs · unavailable'
+    ||!retired.note.includes('N/A is not a zero count')||retired.visits!=='635')
+    throw Error('Retired metric render failed: '+JSON.stringify(retired));
+  for(const invalid of [
+    {unique_visitors_status:'available',unique_visitors_basis:'worker-d1-daily-hmac-ip',
+     unique_visitors:null,unique_visitors_date:'2026-10-19'},
+    {unique_visitors_status:'available',unique_visitors_basis:'other',
+     unique_visitors:4,unique_visitors_date:'2026-10-19'},
+    {unique_visitors_status:'available',unique_visitors_basis:'worker-d1-daily-hmac-ip',
+     unique_visitors:4,unique_visitors_date:'invalid'}
+  ]){
+    const rendered=await render(invalid);
+    if(rendered.visitors!=='N/A')throw Error('Invalid IP data presented: '+JSON.stringify(invalid));
+  }
+  console.log('TRAFFIC_UNIQUE_IP_BASIS=PASS');
+})().catch(error=>{console.error(error);process.exitCode=1;});
+"""
+        result = subprocess.run(
+            ["node", "-e", harness], cwd=ROOT,
+            text=True, capture_output=True, timeout=20, check=False
+        )
+        self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+        self.assertIn("TRAFFIC_UNIQUE_IP_BASIS=PASS", result.stdout)
 
 
 class KitaCampaignStatsTests(unittest.TestCase):

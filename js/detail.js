@@ -311,20 +311,25 @@ function startHtmlPrint(href) {
 printLink?.addEventListener("click",(event)=>{
   if (!printLink.href || printLink.getAttribute("aria-disabled")==="true") return;
   event.preventDefault();
-  if (loadedEntryId) window.ColoringStats?.trackPrint?.(loadedEntryId);
+  try {
+    if (loadedEntryId) window.ColoringStats?.trackPrint?.(loadedEntryId);
+  } catch {
+    // Printing is independent of telemetry, including a synchronous client error.
+  }
   startHtmlPrint(printLink.href);
 });
 function renderLikeState(data) {
   if (!likeButton) return;
-  const liked=Boolean(data?.liked);
+  const liked=data?.reacted===true;
   likeButton.classList.toggle("is-liked",liked);
   likeButton.setAttribute("aria-pressed",String(liked));
-  if (likeLabel) likeLabel.textContent="Gefällt mir";
+  if (likeLabel) likeLabel.textContent=liked ? "Danke!" : "Gefällt mir";
   if (likeCount) likeCount.textContent=String(Number(data?.like_count||0));
 }
+let likeAttempted=false;
 async function hydrateLikeState(pageId) {
-  if (!likeButton) return;
-  // Do not guess whether this visitor already liked the page when the initial GET fails.
+  if (!likeButton || likeAttempted) return;
+  // Read only the total. A failed read can safely be retried before any reaction.
   likeButton.disabled=true;
   if (likeRetryWrap) likeRetryWrap.hidden=true;
   if (likeRetryButton) likeRetryButton.disabled=true;
@@ -335,7 +340,7 @@ async function hydrateLikeState(pageId) {
   try {
     if (!window.ColoringStats?.getPage) throw new Error("Like status unavailable");
     const data=await window.ColoringStats.getPage(pageId);
-    renderLikeState(data);
+    renderLikeState({...data,reacted:false});
     likeButton.disabled=false;
     likeButton.classList.remove("is-disabled");
   } catch {
@@ -352,22 +357,22 @@ likeRetryButton?.addEventListener("click", () => {
   return hydrateLikeState(loadedEntryId);
 });
 likeButton?.addEventListener("click",async()=>{
-  if (!loadedEntryId || likeButton.disabled || !window.ColoringStats?.toggleLike) return;
+  if (!loadedEntryId || likeButton.disabled || likeAttempted || !window.ColoringStats?.addLike) return;
+  likeAttempted=true;
   if (likeStatus) {
     likeStatus.textContent = "";
     likeStatus.hidden = true;
   }
   likeButton.disabled=true;
   try {
-    renderLikeState(await window.ColoringStats.toggleLike(loadedEntryId));
+    renderLikeState(await window.ColoringStats.addLike(loadedEntryId));
   } catch {
     if (likeStatus) {
-      likeStatus.textContent = "Gefällt mir konnte nicht gespeichert werden. Bitte versuche es erneut.";
+      likeStatus.textContent = "Dein Herz konnte nicht bestätigt werden.";
       likeStatus.hidden = false;
     }
-  } finally {
-    likeButton.disabled=false;
   }
+  // Keep disabled after success or uncertainty. Reload starts a new page view.
 });
 
 function markMissingDetailNoindex() {
@@ -427,7 +432,11 @@ async function loadDetail() {
     }
     detailRoot?.setAttribute("data-loaded-id",entry.id);
     loadedEntryId=entry.id;
-    window.ColoringStats?.trackView?.(entry.id);
+    try {
+      window.ColoringStats?.trackView?.(entry.id);
+    } catch {
+      // Optional view telemetry must never block the preview or A4 printing.
+    }
     if (detailTitle) detailTitle.textContent = entry.title;
     const detailBadges = document.querySelector(".detail-badges");
     if (detailBadges) detailBadges.hidden = false;
