@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Optional local Chromium A4 layout QA for #206; NOT a LIVE or CI gate.
+"""Optional local/CI Chromium A4 layout QA for #206; NOT a LIVE gate.
 
 Run from a repository checkout after installing locally: playwright, pypdf and
 Chromium. Example:
@@ -137,7 +137,8 @@ def run_case(browser, css, canvas_source, footer_source, sequence, pdf_dir):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--chromium", default="/usr/bin/chromium")
+    parser.add_argument("--chromium", default=None,
+                        help="override the Playwright-managed Chromium executable")
     parser.add_argument("--no-sandbox", action="store_true",
                         help="only for disposable isolated root containers")
     parser.add_argument("--sequences", nargs="+", default=["P", "PLP", "PLPLP"])
@@ -154,7 +155,7 @@ def main():
     from playwright.sync_api import sync_playwright
     with sync_playwright() as driver:
         browser = driver.chromium.launch(
-            executable_path=args.chromium,
+            executable_path=args.chromium,  # None uses Playwright-managed Chromium
             args=["--no-sandbox"] if args.no_sandbox else [],
         )
         try:
