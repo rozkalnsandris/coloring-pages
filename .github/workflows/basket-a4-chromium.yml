@@ -8,6 +8,7 @@ on:
       - .github/workflows/basket-a4-chromium.yml
       - tests/manual/qa_basket_print_layout.py
       - tests/manual/qa_basket_print_firefox.py
+      - tests/manual/qa_basket_print_png_pipeline.py
       - js/print-basket-print-canvas.mjs
       - js/print-basket-print-footer.mjs
       - css/app.css
@@ -38,6 +39,9 @@ jobs:
 
       - name: Check synthetic A4 PDF layout without site network
         run: python3 tests/manual/qa_basket_print_layout.py
+
+      - name: Check full PNG stream, decode and native A4 PDF staging
+        run: python3 tests/manual/qa_basket_print_png_pipeline.py
 
   synthetic-firefox-layout:
     runs-on: ubuntu-24.04
