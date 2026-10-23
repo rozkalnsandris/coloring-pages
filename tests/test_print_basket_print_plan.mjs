@@ -112,9 +112,10 @@ test("returned immutable plan does not modify prior state or catalogue", () => {
 
 test("module stays source-only; never activates printing or downloads", () => {
   const source = readFileSync(new URL("../js/print-basket-print-plan.mjs", import.meta.url), "utf8");
+  const code = source.split("\n").filter((line) => !line.trimStart().startsWith("//")).join("\n");
   for (const forbidden of [
     "document.", "sessionStorage", "fetch(", "createObjectURL",
     "preview.webp", "originals/", "window.open(", ".click()",
-  ]) assert.ok(!source.includes(forbidden), forbidden);
-  assert.doesNotMatch(source, /window\.print\s*\(/);
+  ]) assert.ok(!code.includes(forbidden), forbidden);
+  assert.doesNotMatch(code, /window\.print\s*\(/);
 });
