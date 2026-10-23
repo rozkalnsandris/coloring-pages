@@ -9,6 +9,7 @@
     refresh: document.querySelector("[data-traffic-refresh]"),
     unique: document.querySelector("[data-traffic-unique]"),
     visits: document.querySelector("[data-stats-visits]"),
+    requests: document.querySelector("[data-traffic-requests]"),
     crawlers: document.querySelector("[data-stats-crawler-requests]"),
     crawlerStatus: document.querySelector("[data-traffic-status]"),
     crawlerTable: document.querySelector("[data-stats-crawlers]"),
@@ -44,7 +45,10 @@
     // The zone-level uniq rollup cannot be claimed as hostname-specific.
     // Retired D1/IP-HMAC fields must not be read, even on a legacy Worker.
     els.unique.textContent = "N/A";
+    const hostProof = data.analytics_host === "ausmalwiese.de" && data.cloudflare_traffic_version === 1;
     els.visits.textContent = fmt.format(data.visits);
+    els.requests.textContent = hostProof && validCount(data.http_requests)
+      ? fmt.format(data.http_requests) : "N/A";
     els.crawlers.textContent = fmt.format(data.crawler_requests);
     els.rangeLabel.textContent = "Last " + days + " days";
     els.crawlerStatus.textContent = data.sampled
@@ -53,7 +57,6 @@
     const validRows = data.crawlers.filter(row => row && validCount(row.requests));
     els.crawlerTable.replaceChildren(...validRows.map(renderCrawlerRow));
     els.crawlerEmpty.hidden = validRows.length !== 0;
-    const hostProof = data.analytics_host === "ausmalwiese.de" && data.cloudflare_traffic_version === 1;
     els.note.textContent =
       "Unique visitors: N/A, because a hostname-scoped unique count has not been verified. " +
       "Cloudflare Website visits are not unique people; crawler request counts must not be subtracted from visits. " +
@@ -76,6 +79,7 @@
       if (token === requestNumber) {
         els.unique.textContent = "N/A";
         els.visits.textContent = "–";
+        els.requests.textContent = "–";
         els.crawlers.textContent = "–";
         els.crawlerTable.replaceChildren();
         els.crawlerEmpty.hidden = false;
