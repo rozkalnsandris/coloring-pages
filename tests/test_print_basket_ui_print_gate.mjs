@@ -56,7 +56,7 @@ function sample(ids = []) {
   const dialog = vm.runInNewContext(
     source.slice(start, end) + "\nconst dialog = createDialog(); renderDialog(); dialog;",
     { document, panelButton, basket, catalogById: new Map([[entry.id, entry]]),
-      window: { print() { prints++; } } },
+      window: { print() { prints++; } }, zipBusy: false },
   );
   assert.equal(appended.length, 1);
   assert.strictEqual(appended[0], dialog);
