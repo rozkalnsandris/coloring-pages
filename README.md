@@ -11,40 +11,40 @@ Application source and media content are deliberately separated:
 - Production coloring-page image binaries are **not committed to GitHub**.
 - **Google Drive** may be used only as a bounded transport/staging queue for owner-approved ChatGPT-generated PNGs; it is not a production source of truth.
 
-Daily content flow:
+Preferred daily content flow:
 
 ```text
 generate or edit PNG draft page(s) in ChatGPT
-→ owner PUBLISH approval of the exact latest draft or ordered draft set
-→ PUBLISH prepares every A4 print-master deterministically
-→ PUBLISH validates every prepared print master before mutation
-→ determine one valid category from metadata/categories.json
-→ allocate and freeze one random seven-digit activity ID
-→ freeze every prepared print-master SHA-256 + byte size
-→ fully materialize + validate the manifest before any Drive write
-→ stage exact PNG page(s), then the prebuilt manifest last in Google Drive
-→ trusted RPi5 publish operator pulls and verifies every page
-→ publish the verified activity into /srv/coloring-pages-content/inbox/
-→ directly run the immutable importer image once
-→ verify catalogue, derivatives and public URLs
+→ owner visually accepts the exact latest draft or unambiguous draft set
+→ ZIP packages 1–20 approved draft PNGs only, without changing artwork
+→ owner uploads the ZIP to the protected admin.ausmalwiese.de publisher
+→ inspect private previews and editable titles
+→ choose one canonical category
+→ press Sākt publicēšanu
+→ ADMIN prepares every A4 print master deterministically
+→ ADMIN validates every prepared print master before mutation
+→ only after all pages pass: allocate IDs, import, build derivatives/catalogue and verify public URLs
+→ PASS and direct published links
 ```
 
-This path is production-activated. The first owner-authorized end-to-end import passed on 2026-10-03. That activation record is historical continuity only: each future content import remains separately owner-authorized and exact-ID/hash/size bound.
+The ZIP is a draft handoff only. It contains top-level PNG files and no manifest, category, ID, preview, PDF or other metadata files. ADMIN owns the mandatory technical print-quality gate: exact A4 raster, RGB/no alpha, approximately 300 DPI, exact white border/background bands, 15 mm / 177 px exact-white safe margin and aspect-ratio-preserving centered fit before ID allocation/import.
 
-For normal ChatGPT use, the convenience command layer is:
+For normal ChatGPT use, the preferred convenience command layer is:
 
 ```text
 MAKE <subject>   # generate one draft candidate
 REMAKE           # same subject, new composition
 EDIT <change>    # edit latest draft
-PUBLISH           # approve latest draft/set; prepare, validate, bind and ingest
+ZIP              # package the accepted draft/set for protected ADMIN upload
 ```
 
-`UPSCALE-PRINT` and `VALIDATE-PRINT` remain optional manual inspection/debug commands. They are not required owner steps in the normal publication path because `PUBLISH` performs both gates internally before any Drive/content mutation.
+`UPSCALE-PRINT` and `VALIDATE-PRINT` remain optional manual inspection/debug commands. They are not required owner steps in the preferred ZIP/ADMIN path because ADMIN performs the same prepare/validate gates before publication mutation.
 
-For multiple separately approved coloring pages, one `PUBLISH` can prepare all independent v1 PNG+manifest pairs using the offline `tools/coloring-pages-publish-preflight` helper and a fresh LIVE-catalog snapshot; each pair still undergoes separate trusted import. This reduces repetitive preparation but does not skip stable upload-file references, operator identity alignment or the owner gate. No new RPi5 or Drive authority is created.
+Direct Chat `PUBLISH` remains a supported alternate production path with its existing exact-draft owner approval, print-master validation, Drive staging and trusted RPi5 import contract. It is not the preferred normal handoff after #303.
 
-Two-page `CUT <subject>` / `MAKE Cut & Paste <subject>` activities follow the [Cut & Paste production playbook](docs/CUT_PASTE_PLAYBOOK_V1.md), including one part source, exact reference↔cutout geometry, two no-footer A4 masters, physical cut-and-glue QA and a currently active owner publication hold until the full ausmalwiese.de cutover. A print-dimension PASS alone is not content or physical approval.
+ADMIN ZIP v1 treats each PNG as one independent single-page activity. Ordered multi-page activities that must remain one catalogue item, including two-page Cut & Paste work, must continue to use the separate ordered multi-page publication contract until ADMIN gains reviewed multi-page ZIP support.
+
+Two-page `CUT <subject>` / `MAKE Cut & Paste <subject>` activities follow the [Cut & Paste production playbook](docs/CUT_PASTE_PLAYBOOK_V1.md), including one SVG source, two no-footer A4 masters, physical cut-and-glue QA and a fresh exact-version owner `PUBLISH` gate. There is no global Cut & Paste publication hold; a print-dimension PASS alone is not content, physical or publication approval.
 
 See [Chat image commands v1](docs/CHAT_IMAGE_COMMANDS_V1.md). `PUBLISH` does not weaken the exact activity/page SHA-256/byte-size binding or any existing owner/runtime boundary. `OK` is not a publication command. Before Drive staging, one category must be bound from the canonical registry in `metadata/categories.json`; an unknown category is rejected rather than silently published outside the visible filters.
 

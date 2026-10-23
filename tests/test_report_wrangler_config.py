@@ -10,7 +10,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "cloudflare" / "wrangler.report.json"
 WORKER = ROOT / "cloudflare" / "report-worker.mjs"
-EXPECTED_WORKER_SHA256 = "0ce800727794b863bf9b82609d59e519c913ba24cf3fe034dd67a96fea9cab19"
+EXPECTED_WORKER_SHA256 = "4f57944d4d7ba89d86edcc83bff8899666a93d964855be83c8bfc3fc91e84bce"
 
 ROUTES = [
     {"pattern": "ausmalwiese.de/api/report", "zone_name": "ausmalwiese.de"},
@@ -19,6 +19,10 @@ ROUTES = [
 EMAIL_BINDING = [
     {"name": "EMAIL", "destination_address": "info@ausmalwiese.de"},
 ]
+OBSERVABILITY = {
+    "logs": {"enabled": True},
+    "traces": {"enabled": False},
+}
 
 
 class ReportWranglerConfigTests(unittest.TestCase):
@@ -36,6 +40,7 @@ class ReportWranglerConfigTests(unittest.TestCase):
                 "workers_dev",
                 "preview_urls",
                 "no_bundle",
+                "observability",
                 "routes",
                 "send_email",
             },
@@ -68,6 +73,14 @@ class ReportWranglerConfigTests(unittest.TestCase):
             self.assertNotIn("#", pattern)
             self.assertNotIn("/api/stats", pattern)
             self.assertTrue(pattern.endswith("/api/report"))
+
+    def test_observability_exactly_preserves_live_logs_without_traces(self):
+        self.assertEqual(self.config["observability"], OBSERVABILITY)
+        self.assertEqual(set(self.config["observability"]), {"logs", "traces"})
+        self.assertEqual(set(self.config["observability"]["logs"]), {"enabled"})
+        self.assertEqual(set(self.config["observability"]["traces"]), {"enabled"})
+        self.assertIs(self.config["observability"]["logs"]["enabled"], True)
+        self.assertIs(self.config["observability"]["traces"]["enabled"], False)
 
     def test_one_fixed_email_binding_and_no_personal_recipient(self):
         self.assertEqual(self.config["send_email"], EMAIL_BINDING)

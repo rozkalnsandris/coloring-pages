@@ -11,6 +11,7 @@ const REASONS = Object.freeze({
 const PAGE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/i;
 const URL_BASE = "https://ausmalwiese.de";
 const REPORT_FROM = "info@ausmalwiese.de";
+const FIXED_DESTINATION = "info@ausmalwiese.de";
 const EMAIL_ERROR_CODE = /^E_[A-Z0-9_]{1,62}$/;
 
 function json(payload, status = 200) {
@@ -58,6 +59,22 @@ async function readPayload(request) {
   }
 }
 
+function buildEmail(payload, reason, link) {
+  return {
+    to: FIXED_DESTINATION,
+    from: { email: REPORT_FROM, name: "Ausmalwiese" },
+    subject: "[Ausmalwiese] Fehler gemeldet: " + payload.id,
+    text: [
+      "Neue Fehlermeldung",
+      "Grund: " + reason,
+      "ID: " + payload.id,
+      "Seite: " + payload.page,
+      "Link: " + link,
+      "",
+    ].join("\n"),
+  };
+}
+
 async function submit(request, env, url) {
   const origin = request.headers.get("origin");
   if (origin !== url.origin || request.headers.get("sec-fetch-site") === "cross-site") {
@@ -75,18 +92,7 @@ async function submit(request, env, url) {
   const link = URL_BASE + "/detail.html?id=" + encodeURIComponent(payload.id) + "&page=" + payload.page;
   const reason = REASONS[payload.reason];
   try {
-    await env.EMAIL.send({
-      to: undefined,
-      from: { email: REPORT_FROM, name: "Ausmalwiese" },
-      subject: "[Ausmalwiese] Fehler gemeldet: " + payload.id,
-      text: [
-        "Neue Fehlermeldung",
-        "Grund: " + reason,
-        "ID: " + payload.id,
-        "Seite: " + payload.page,
-        "Link: " + link,
-      ].join("\n"),
-    });
+    await env.EMAIL.send(buildEmail(payload, reason, link));
     return json({ ok: true }, 200);
   } catch (error) {
     console.error({

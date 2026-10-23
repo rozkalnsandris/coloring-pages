@@ -51,18 +51,23 @@ async function captureErrorLogs(run) {
   }
 }
 
-test("all five allowed reasons send one plain-text email through EMAIL binding", async () => {
+test("all five allowed reasons send one fixed structured email through EMAIL binding", async () => {
   for (const reason of REASONS) {
     const { env, mail } = setup();
     const { status, body } = await call(env, { ...defaults, reason, page: 2 });
     assert.equal(status, 200);
     assert.deepEqual(body, { ok: true });
     assert.equal(mail.length, 1);
-    assert.equal(mail[0].to, undefined);
-    assert.deepEqual(mail[0].from, { email: "info@ausmalwiese.de", name: "Ausmalwiese" });
+    assert.deepEqual(Object.keys(mail[0]), ["to", "from", "subject", "text"]);
+    assert.equal(mail[0].to, "info@ausmalwiese.de");
+    assert.deepEqual(mail[0].from, {
+      email: "info@ausmalwiese.de",
+      name: "Ausmalwiese",
+    });
     assert.equal(mail[0].subject, "[Ausmalwiese] Fehler gemeldet: 1234567");
-    assert.match(mail[0].text, /Seite: 2/);
-    assert.match(mail[0].text, /https:\/\/ausmalwiese.de\/detail.html\?id=1234567&page=2/);
+    assert.match(mail[0].text, /^Neue Fehlermeldung\n/);
+    assert.match(mail[0].text, /\nSeite: 2\n/);
+    assert.match(mail[0].text, /https:\/\/ausmalwiese.de\/detail.html\?id=1234567&page=2\n$/);
   }
 });
 
@@ -70,6 +75,7 @@ test("invalid id, page, reason, extra data and contact parameters are denied", a
   const { env, mail } = setup();
   const cases = [
     { ...defaults, id: "../admin" },
+    { ...defaults, id: "1234567\r\nBcc: attacker@example.test" },
     { ...defaults, page: 0 },
     { ...defaults, page: "1" },
     { ...defaults, reason: "unknown" },
@@ -199,7 +205,9 @@ test("worker has no Brevo, Turnstile, rate-limit, catalog or recipient input pat
     assert.ok(!source.includes(forbidden), forbidden);
   }
   assert.match(source, /env\.EMAIL\.send/);
-  assert.match(source, /to: undefined/);
+  assert.match(source, /const FIXED_DESTINATION = "info@ausmalwiese\.de"/);
+  assert.match(source, /await env\.EMAIL\.send\(buildEmail\(payload, reason, link\)\)/);
+  assert.doesNotMatch(source, /EmailMessage|cloudflare:email|to: undefined/);
   assert.doesNotMatch(source, /error\.message|error\.stack/);
 });
 
@@ -226,6 +234,10 @@ test("detail UI has five radio choices and no Turnstile dependency", () => {
   assert.doesNotMatch(client, /turnstile|\/api\/report\/config|activity_unavailable/i);
   assert.doesNotMatch(css, /turnstile/i);
   assert.match(css, /:focus-visible/);
+  assert.match(client, /say\("✓ Danke! Deine Meldung wurde gesendet\.", "success"\)/);
+  assert.match(client, /say\("Die Meldung konnte nicht gesendet werden\. Bitte versuche es später erneut\.", "error"\)/);
+  assert.match(css, /\.report-status\[data-state="success"\]/);
+  assert.match(css, /\.report-status\[data-state="error"\]/);
 });
 
 test("all report JavaScript is syntactically valid", () => {
