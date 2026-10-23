@@ -8,7 +8,9 @@ production media, source PNG write, actual print click or LIVE access.
 
 Exercises real fetch streams, canonical PNG CRC/dimensions, ImageBitmap decode,
 ordered A4 canvas/footer staging, Chromium PDF mixed-orientation page sizes,
-and cleanup. This is NOT mobile-memory, production-image, Firefox PDF, physical
+and cleanup. Repeats a mixed A4 stage/PDF/dispose cycle within one Chromium
+page to catch stale canvases or print-page duplication between requests.
+This is NOT mobile-memory, production-image, Firefox PDF, physical
 printer, visitor button, or real LIVE evidence. A 375px viewport is
 only browser emulation; not a physical-phone or mobile-memory test.
 """
@@ -186,7 +188,8 @@ async ({ids, indices, failed, drift, abortMedia}) => {
 
 
 def case(browser, css, pngs, sequence, ids, indices, missing=None,
-         corrupt=None, drift=False, abort_media=False, viewport_width=1280):
+         corrupt=None, drift=False, abort_media=False, viewport_width=1280,
+         repeat_after_dispose=False):
     page = browser.new_page(viewport={"width": viewport_width, "height": 800})
     page.set_default_timeout(90000)
     requests = []
@@ -256,6 +259,47 @@ def case(browser, css, pngs, sequence, ids, indices, missing=None,
             "c => c.width === 0 && c.height === 0)"
         ):
             raise AssertionError("native canvas not cleared after disposal")
+        if repeat_after_dispose:
+            # Keep the first document's zero-sized canvases as references even
+            # after the second stage replaces the visible sheet collection.
+            page.evaluate(
+                "window.__previousA4 = [...document.querySelectorAll('canvas')]"
+            )
+            second = page.evaluate(STAGE, {
+                "ids": ids, "indices": indices, "failed": False,
+                "drift": False, "abortMedia": False,
+            })
+            if second.get("failed") or second.get("values") != result["values"]:
+                raise AssertionError(
+                    f"repeat stage changed ordered A4 pixels/sheets: {second}"
+                )
+            if requests != 2 * (["/catalog.json"] + expected_downloads):
+                raise AssertionError(f"repeat stage did not revalidate PNGs: {requests}")
+            if not page.evaluate(
+                "window.__previousA4.every(c => c.width === 0 && c.height === 0)"
+            ):
+                raise AssertionError("prior print session retained native canvases")
+            pdf_again = PdfReader(BytesIO(page.pdf(
+                print_background=True, prefer_css_page_size=True,
+            )))
+            if len(pdf_again.pages) != len(sequence):
+                raise AssertionError("repeat stage duplicated or omitted print sheets")
+            for i, sheet in enumerate(pdf_again.pages):
+                box = (float(sheet.mediabox.width), float(sheet.mediabox.height))
+                if any(abs(a - b) > 1 for a, b in zip(box, PAPER[sequence[i]])):
+                    raise AssertionError(f"repeat stage page {i+1} A4 mismatch: {box}")
+                words = sheet.extract_text() or ""
+                if ("Noch mehr Ausmalbilder?" not in words or
+                        "ausmalwiese.de" not in words):
+                    raise AssertionError(f"repeat stage page {i+1} footer missing")
+            page.evaluate("window.__disposeA4()")
+            if not page.evaluate(
+                "[...document.querySelectorAll('canvas')].every("
+                "c => c.width === 0 && c.height === 0)"
+            ):
+                raise AssertionError("repeated session did not release canvases")
+            print(f"PASS repeat staging: {sequence}, new PNG preflight, "
+                  "stable A4 order/footers, both canvas sets disposed")
         print(f"PASS decoded RGB PNGs: {sequence}, {len(sequence)} full-A4 pages, "
               f"{viewport_width}px viewport")
     finally:
@@ -284,6 +328,8 @@ def main():
                  drift=True, viewport_width=375)
             case(browser, css, pngs, "PLP", CASES[1][1], CASES[1][2],
                  abort_media=True, viewport_width=375)
+            case(browser, css, pngs, "PLP", CASES[1][1], CASES[1][2],
+                 repeat_after_dispose=True, viewport_width=375)
         finally:
             browser.close()
 
