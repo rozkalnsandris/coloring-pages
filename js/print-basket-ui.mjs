@@ -255,6 +255,10 @@ function createDialog() {
   empty.textContent = "Noch keine Malvorlagen ausgewählt.";
   const clear = panelButton("Leeren", "clear");
   clear.dataset.basketClear = "";
+  const printAction = panelButton("Alles drucken", "print");
+  printAction.dataset.basketPrint = "";
+  printAction.disabled = true; // Keep held until browser and physical A4 QA.
+  printAction.setAttribute("aria-describedby", "basket-print-unavailable");
   const zipPrepare = panelButton("ZIP vorbereiten", "prepare-zip");
   zipPrepare.dataset.basketZipPrepare = "";
   zipPrepare.disabled = true;
@@ -269,9 +273,10 @@ function createDialog() {
   zipStatus.setAttribute("role", "status");
   zipStatus.setAttribute("aria-live", "polite");
   const note = document.createElement("p");
-  note.textContent = "Alles drucken ist noch nicht verfügbar.";
+  note.id = "basket-print-unavailable";
+  note.textContent = "Alles drucken ist noch nicht verfügbar. Die Vorlagen können einzeln gedruckt oder als ZIP gespeichert werden.";
   note.className = "basket-dialog-note";
-  node.append(header, count, list, empty, clear, zipPrepare, zipCancel, zipLink, zipStatus, note);
+  node.append(header, count, list, empty, clear, printAction, zipPrepare, zipCancel, zipLink, zipStatus, note);
   document.body.append(node);
 
   node.addEventListener("click", (event) => {
