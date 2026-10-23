@@ -92,7 +92,7 @@
           identifizierte Personen. Ein fehlgeschlagener Telemetrieaufruf verhindert
           das Drucken nicht.</p>
         <p>Zur Missbrauchsbegrenzung verwendet der Worker bei Like- und Print-Anfragen
-          die von Cloudflare bereitgestellte Client-IP vorübergehend als Schlüssel für
+          den von Cloudflare bereitgestellten Header CF-Connecting-IP vorübergehend als Schlüssel für
           den Cloudflare Rate Limiter. Diese IP wird von den aktuellen Aggregate-Endpunkten
           nicht als Like- oder Print-Kennung in D1 gespeichert. Die Verarbeitung dient
           dem Schutz vor automatisiertem oder übermäßigem Missbrauch und beruht auf
