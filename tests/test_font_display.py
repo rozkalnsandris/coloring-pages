@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PAGES = ("index.html", "detail.html", "kita.html", "stats.html", "traffic.html", "print.html")
+PAGES = ("index.html", "detail.html", "kita.html", "stats.html", "traffic.html", "print.html", "impressum.html", "datenschutz.html")
 
 
 class LocalFontsTest(unittest.TestCase):

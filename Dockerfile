@@ -22,6 +22,7 @@ COPY stats.html traffic.html kita.html kalender.html /usr/share/nginx/html/
 COPY robots.txt sitemap.xml /usr/share/nginx/html/
 COPY metadata/topics.json /usr/share/nginx/html/topics.json
 COPY google7e69cee667102729.html /usr/share/nginx/html/
+COPY impressum.html datenschutz.html /usr/share/nginx/html/
 COPY css /usr/share/nginx/html/css
 COPY js /usr/share/nginx/html/js
 COPY assets /usr/share/nginx/html/assets
