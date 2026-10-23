@@ -1,5 +1,7 @@
-import { addBasketActivity, clearBasket, moveBasketActivity, removeBasketActivity } from "./print-basket-selection.mjs";
-import { restoreStoredBasket, writeStoredBasketIds } from "./print-basket-storage.mjs";
+import { addBasketActivity, clearBasket, expandBasketForExport, moveBasketActivity, removeBasketActivity } from "./print-basket-selection.mjs";
+import { readStoredBasketIds, restoreStoredBasket, writeStoredBasketIds } from "./print-basket-storage.mjs";
+import { prepareBasketPngZip } from "./print-basket-zip-fetch.mjs";
+import { stageBasketZipDownloadLink } from "./print-basket-zip-link.mjs";
 
 const MAX_SHEETS = 5;
 const CARD_SELECTOR = ".coloring-card";
@@ -12,6 +14,10 @@ let summary = null;
 let dialog = null;
 let status = null;
 let observer = null;
+let zipController = null;
+let stagedZip = null;
+let zipBusy = false;
+let zipEpoch = 0;
 
 function detailIdFromCard(card) {
   const link = card.querySelector('a[href*="detail.html"]');
@@ -146,6 +152,85 @@ function panelButton(text, action, id = "") {
   return button;
 }
 
+
+function resetZip() {
+  zipEpoch++;
+  zipController?.abort();
+  zipController = null;
+  zipBusy = false;
+  if (stagedZip) {
+    stagedZip.link.remove();
+    stagedZip.dispose();
+    stagedZip = null;
+  }
+  dialog?.querySelector("[data-basket-zip-link]")?.replaceChildren();
+  const message = dialog?.querySelector("[data-basket-zip-status]");
+  if (message) message.textContent = "";
+  const prepare = dialog?.querySelector("[data-basket-zip-prepare]");
+  if (prepare) prepare.disabled = basket.ids.length === 0;
+  const cancel = dialog?.querySelector("[data-basket-zip-cancel]");
+  if (cancel) cancel.disabled = true;
+}
+
+async function prepareZip() {
+  if (!dialog?.open || zipBusy || basket.ids.length === 0) return;
+  resetZip();
+  const epoch = zipEpoch;
+  const controller = new AbortController();
+  zipController = controller;
+  zipBusy = true;
+  const prepare = dialog.querySelector("[data-basket-zip-prepare]");
+  const cancel = dialog.querySelector("[data-basket-zip-cancel]");
+  const message = dialog.querySelector("[data-basket-zip-status]");
+  prepare.disabled = true;
+  cancel.disabled = false;
+  message.textContent = "Druckseiten werden geprüft und als ZIP vorbereitet …";
+
+  try {
+    const selectedIds = readStoredBasketIds();
+    if (JSON.stringify(selectedIds) !== JSON.stringify(basket.ids)) {
+      throw new Error("Selection changed in sessionStorage");
+    }
+    const response = await fetch("/catalog.json", {
+      cache: "no-store", credentials: "omit", redirect: "error", signal: controller.signal,
+    });
+    if (!response.ok || response.redirected) throw new Error("Fresh catalogue unavailable");
+    const catalogFresh = await response.json();
+    const pages = expandBasketForExport(selectedIds, catalogFresh);
+    if (pages.length !== basket.sheetCount ||
+        pages.some((page, index) => page.activityId !== basket.pages[index]?.activityId ||
+          page.pageIndex !== basket.pages[index]?.pageIndex ||
+          page.printUrl !== basket.pages[index]?.printUrl)) {
+      throw new Error("Published selection changed; review before export");
+    }
+    const zip = await prepareBasketPngZip(pages, {
+      origin: window.location.origin, signal: controller.signal,
+    });
+    if (epoch !== zipEpoch || controller.signal.aborted || !dialog.open) return;
+    const staged = stageBasketZipDownloadLink(zip);
+    const slot = dialog.querySelector("[data-basket-zip-link]");
+    if (!slot) {
+      staged.dispose();
+      throw new Error("ZIP destination missing");
+    }
+    staged.link.className = "basket-zip-download";
+    slot.replaceChildren(staged.link);
+    stagedZip = staged;
+    message.textContent = "ZIP bereit. Mit „Als ZIP speichern“ herunterladen.";
+  } catch {
+    if (epoch === zipEpoch && dialog.open && !controller.signal.aborted) {
+      message.textContent = "ZIP konnte nicht vorbereitet werden. Bitte Auswahl prüfen und erneut versuchen.";
+    }
+  } finally {
+    if (epoch === zipEpoch) {
+      zipBusy = false;
+      zipController = null;
+      prepare.disabled = basket.ids.length === 0;
+      cancel.disabled = true;
+    }
+  }
+}
+
 function createDialog() {
   const node = document.createElement("dialog");
   node.id = "basket-dialog";
@@ -170,10 +255,23 @@ function createDialog() {
   empty.textContent = "Noch keine Malvorlagen ausgewählt.";
   const clear = panelButton("Leeren", "clear");
   clear.dataset.basketClear = "";
+  const zipPrepare = panelButton("ZIP vorbereiten", "prepare-zip");
+  zipPrepare.dataset.basketZipPrepare = "";
+  zipPrepare.disabled = true;
+  const zipCancel = panelButton("Abbrechen", "cancel-zip");
+  zipCancel.dataset.basketZipCancel = "";
+  zipCancel.disabled = true;
+  const zipLink = document.createElement("div");
+  zipLink.dataset.basketZipLink = "";
+  const zipStatus = document.createElement("p");
+  zipStatus.dataset.basketZipStatus = "";
+  zipStatus.className = "basket-dialog-note";
+  zipStatus.setAttribute("role", "status");
+  zipStatus.setAttribute("aria-live", "polite");
   const note = document.createElement("p");
-  note.textContent = "Gesamtdruck und ZIP-Download sind noch nicht verfügbar.";
+  note.textContent = "Alles drucken ist noch nicht verfügbar.";
   note.className = "basket-dialog-note";
-  node.append(header, count, list, empty, clear, note);
+  node.append(header, count, list, empty, clear, zipPrepare, zipCancel, zipLink, zipStatus, note);
   document.body.append(node);
 
   node.addEventListener("click", (event) => {
@@ -182,6 +280,12 @@ function createDialog() {
     const action = button.dataset.basketAction;
     const id = button.dataset.basketId;
     if (action === "close") return node.close();
+    if (action === "prepare-zip") { void prepareZip(); return; }
+    if (action === "cancel-zip") {
+      resetZip();
+      node.querySelector("[data-basket-zip-status]").textContent = "Abgebrochen.";
+      return;
+    }
     if (action === "clear") {
       if (basket.ids.length) commitBasket(clearBasket(), "Drucksammlung geleert.");
       return;
@@ -194,7 +298,7 @@ function createDialog() {
     }
     if (next) commitBasket(next, action === "remove" ? "Malvorlage entfernt." : "Reihenfolge geändert.", action, id);
   });
-  node.addEventListener("close", () => summary?.focus());
+  node.addEventListener("close", () => { resetZip(); summary?.focus(); });
   return node;
 }
 
@@ -243,9 +347,11 @@ function renderDialog() {
     basket.sheetCount + "/5 Druckseiten ausgewählt (maximal 5).";
   dialog.querySelector("[data-basket-empty]").hidden = basket.ids.length !== 0;
   dialog.querySelector("[data-basket-clear]").disabled = basket.ids.length === 0;
+  dialog.querySelector("[data-basket-zip-prepare]").disabled = basket.ids.length === 0 || zipBusy;
 }
 
 function setUnavailable(message) {
+  resetZip();
   if (summary) {
     summary.disabled = true;
     summary.classList.add("is-unavailable");
@@ -266,6 +372,7 @@ function commitBasket(next, message, action = null, id = null) {
     setUnavailable("Die Drucksammlung ist in diesem Tab nicht verfügbar.");
     return false;
   }
+  resetZip();
   basket = next;
   syncSummary();
   syncButtons();
@@ -318,6 +425,7 @@ async function start() {
   summary = makeSummary();
   status = makeStatusRegion();
   dialog = createDialog();
+  window.addEventListener("pagehide", resetZip);
   summary?.addEventListener("click", () => {
     if (summary.disabled || typeof dialog.showModal !== "function") return;
     renderDialog();
