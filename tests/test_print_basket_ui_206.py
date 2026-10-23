@@ -105,7 +105,7 @@ class PrintBasketUi206Tests(unittest.TestCase):
             'root.setAttribute("aria-controls", "basket-dialog")',
             'node.setAttribute("aria-labelledby", "basket-dialog-title")',
             'dialog.showModal();',
-            'node.addEventListener("close", () => summary?.focus())',
+            'node.addEventListener("close", () => { resetZip(); summary?.focus(); });',
             'close.autofocus = true',
         ):
             self.assertIn(marker, source)
