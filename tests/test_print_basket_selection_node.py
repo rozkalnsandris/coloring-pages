@@ -31,6 +31,7 @@ class BasketSelectionJavaScriptTests(unittest.TestCase):
                 "tests/test_print_basket_print_canvas.mjs",
                 "tests/test_print_basket_print_footer.mjs",
                 "tests/test_print_basket_print_staged_document.mjs",
+                "tests/test_print_basket_print_session.mjs",
             ],
             cwd=ROOT,
             capture_output=True,
