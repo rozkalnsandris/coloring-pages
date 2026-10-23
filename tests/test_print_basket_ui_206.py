@@ -52,16 +52,13 @@ class PrintBasketUi206Tests(unittest.TestCase):
         ):
             self.assertIn(marker, source)
 
-    def test_slice_does_not_activate_zip_or_cross_activity_print(self):
+    def test_zip_requires_explicit_visitor_download_and_print_remains_off(self):
         source = (ROOT / "js" / "print-basket-ui.mjs").read_text(encoding="utf-8")
-        for forbidden in (
-            "prepareBasketPngZip",
-            "stageBasketZipDownloadLink",
-            "window.print",
-            ".click()",
-            "print-basket-zip-fetch",
-            "print-basket-zip-link",
-        ):
+        self.assertIn('panelButton("ZIP vorbereiten", "prepare-zip")', source)
+        self.assertIn("stageBasketZipDownloadLink(zip)", source)
+        self.assertIn("slot.replaceChildren(staged.link);", source)
+        self.assertIn('note.textContent = "Alles drucken ist noch nicht verfügbar."', source)
+        for forbidden in ("window.print", ".click()", "innerHTML", "window.open("):
             self.assertNotIn(forbidden, source)
         for name in ("print.html", "stats.html", "traffic.html"):
             html = (ROOT / name).read_text(encoding="utf-8")
@@ -119,7 +116,7 @@ class PrintBasketUi206Tests(unittest.TestCase):
             "moveBasketActivity(basket.ids", "removeBasketActivity(basket.ids",
             "commitBasket(clearBasket()", "writeStoredBasketIds(next.ids)",
             "link.textContent = entry.title", "encodeURIComponent(id)",
-            "Gesamtdruck und ZIP-Download sind noch nicht verfügbar.",
+            "Alles drucken ist noch nicht verfügbar.",
         ):
             self.assertIn(marker, source)
         self.assertNotIn("innerHTML", source)
@@ -135,6 +132,47 @@ class PrintBasketUi206Tests(unittest.TestCase):
         self.assertIn('["Nach oben", "up", index === 0]', source)
         self.assertIn('["Nach unten", "down", index === basket.ids.length - 1]', source)
         self.assertIn('if (summary && typeof dialog.showModal === "function") summary.disabled = false;', source)
+
+    def test_zip_refreshes_catalogue_and_revalidates_selection_before_fetch(self):
+        source = (ROOT / "js" / "print-basket-ui.mjs").read_text(encoding="utf-8")
+        for marker in (
+            'readStoredBasketIds()',
+            'JSON.stringify(selectedIds) !== JSON.stringify(basket.ids)',
+            'fetch("/catalog.json", {',
+            'cache: "no-store", credentials: "omit", redirect: "error", signal: controller.signal',
+            'expandBasketForExport(selectedIds, catalogFresh)',
+            'pages.length !== basket.sheetCount',
+            'page.printUrl !== basket.pages[index]?.printUrl',
+            'prepareBasketPngZip(pages, {',
+            'origin: window.location.origin, signal: controller.signal',
+        ):
+            self.assertIn(marker, source)
+
+    def test_zip_cancels_and_releases_blob_on_selection_change_or_close(self):
+        source = (ROOT / "js" / "print-basket-ui.mjs").read_text(encoding="utf-8")
+        for marker in (
+            'zipController?.abort();',
+            'stagedZip.link.remove();',
+            'stagedZip.dispose();',
+            'node.addEventListener("close", () => { resetZip(); summary?.focus(); });',
+            'window.addEventListener("pagehide", resetZip);',
+            'if (action === "cancel-zip")',
+            'if (epoch !== zipEpoch || controller.signal.aborted || !dialog.open) return;',
+            'resetZip();\n  basket = next;',
+        ):
+            self.assertIn(marker, source)
+        self.assertNotIn("staged.link.click()", source)
+        self.assertNotIn("setTimeout(", source)
+
+    def test_zip_ready_link_is_accessible_and_empty_basket_blocks_prepare(self):
+        source = (ROOT / "js" / "print-basket-ui.mjs").read_text(encoding="utf-8")
+        self.assertIn('zipPrepare.disabled = true;', source)
+        self.assertIn('dialog.querySelector("[data-basket-zip-prepare]").disabled = basket.ids.length === 0 || zipBusy;', source)
+        self.assertIn('zipStatus.setAttribute("role", "status");', source)
+        self.assertIn('zipStatus.setAttribute("aria-live", "polite");', source)
+        css = (ROOT / "css" / "print-basket.css").read_text(encoding="utf-8")
+        self.assertIn(".basket-zip-download", css)
+        self.assertIn("min-height: 48px;", css)
 
     def test_module_parses_with_node(self):
         node = shutil.which("node")
