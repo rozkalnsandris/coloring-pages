@@ -1,7 +1,7 @@
 // Source-only ordered full-quality PNG retrieval for basket ZIP (#206).
 // No DOM, storage, download trigger, telemetry or third-party dependency.
 // Caller MUST first derive pages with expandBasketForExport from a fresh catalogue.
-import { buildPrintPngZip, MAX_ZIP_INPUT_BYTES } from "./print-zip-store.mjs";
+import { assertCanonicalA4Png, buildPrintPngZip, MAX_ZIP_INPUT_BYTES } from "./print-zip-store.mjs";
 
 const MAX_SHEETS = 5;
 const PATH = /^\/media\/([a-z0-9]+(?:-[a-z0-9]+)*)\/print(?:-[a-z0-9]+|\.[a-f0-9]{64})?\.png$/;
@@ -80,9 +80,10 @@ async function readBoundedStream(response, remaining, declared, signal) {
   }
 }
 
-// Sequential reads bound concurrent allocations; any failure rejects the whole
-// operation. Nothing is exposed until the final ZIP validates every PNG chunk.
-export async function prepareBasketPngZip(pages, { origin, fetcher = globalThis.fetch, signal } = {}) {
+// Shared sequential, bounded transport. No file is returned on HTTP, MIME, size,
+// redirect, stream or cancellation failure. The raw helper is private to keep
+// validation mandatory for every public caller.
+async function fetchRawPrintPngs(pages, { origin, fetcher = globalThis.fetch, signal } = {}) {
   checkedPages(pages); // Reject unsafe URLs before any network request.
   const site = checkedOrigin(origin);
   if (typeof fetcher !== "function") throw new TypeError("Fetch capability unavailable");
@@ -111,7 +112,22 @@ export async function prepareBasketPngZip(pages, { origin, fetcher = globalThis.
     total += bytes.byteLength;
     downloads.push({ url: page.printUrl, bytes });
   }
-  // Re-check all exact identities, PNG A4 geometry/CRC and STORE byte fidelity.
-  // A failed or partial fetch can never produce a downloadable ZIP.
+  return downloads;
+}
+
+// Structural PNG validation uses the existing ZIP validator: A4 dimensions,
+// 8-bit RGB, chunk boundaries and CRC. Successful structural validation is NOT
+// an image decode or authority to print: a reviewed renderer must decode all
+// images and verify pagination before enabling visitor-initiated printing.
+export async function fetchBasketPrintPngBytes(pages, options = {}) {
+  const downloads = await fetchRawPrintPngs(pages, options);
+  for (const item of downloads) assertCanonicalA4Png(item.bytes);
+  return downloads;
+}
+
+// Preserve the existing ZIP path and full byte checks inside buildPrintPngZip.
+export async function prepareBasketPngZip(pages, options = {}) {
+  const downloads = await fetchRawPrintPngs(pages, options);
   return buildPrintPngZip(pages, downloads);
 }
+
