@@ -19,7 +19,7 @@ function crc32(bytes) {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
-function assertCanonicalA4Png(bytes) {
+export function assertCanonicalA4Png(bytes) {
   if (!(bytes instanceof Uint8Array) || bytes.byteLength < 57) throw new TypeError("Valid PNG bytes required");
   for (let i = 0; i < PNG_SIGNATURE.length; i++) {
     if (bytes[i] !== PNG_SIGNATURE[i]) throw new TypeError("Invalid PNG signature");
