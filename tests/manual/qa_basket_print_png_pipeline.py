@@ -117,7 +117,7 @@ def serve(route, pngs, requests, missing=None, corrupt=None):
 
 
 STAGE = r"""
-async ({ids, indices, failed}) => {
+async ({ids, indices, failed, drift, abortMedia}) => {
   const {reconcileBasket} = await import('/js/print-basket-selection.mjs');
   const {stageCurrentBasketPrintSession} =
     await import('/js/print-basket-print-session.mjs');
@@ -136,10 +136,26 @@ async ({ids, indices, failed}) => {
     throw Error('Bad test selection');
   }
   let staged;
+  const controller = new AbortController();
+  let reads = 0;
+  // Deliberately change the second tab-scoped snapshot read only AFTER
+  // the whole staged media set is decoded; it must reject before DOM mount.
+  const readIds = () => {
+    reads++;
+    return drift && reads > 1 ? [...ids].reverse() : [...ids];
+  };
+  // Abort immediately after the first PNG fetch resolves, before any
+  // streaming/decode/mount. The real fetch and signal still take effect.
+  const fetcher = async (url, options) => {
+    const response = await fetch(url, options);
+    if (abortMedia && url.endsWith('/media/cut-1/print-1.png')) {
+      controller.abort();
+    }
+    return response;
+  };
   try {
     staged = await stageCurrentBasketPrintSession(basket, {
-      origin: location.origin,
-      readIds: () => [...ids],
+      origin: location.origin, readIds, fetcher, signal: controller.signal,
     });
     if (failed) throw Error('invalid PNG was incorrectly accepted');
     if (staged.plan.sheetCount !== indices.length) throw Error('Sheet count');
@@ -170,7 +186,7 @@ async ({ids, indices, failed}) => {
 
 
 def case(browser, css, pngs, sequence, ids, indices, missing=None,
-         corrupt=None, viewport_width=1280):
+         corrupt=None, drift=False, abort_media=False, viewport_width=1280):
     page = browser.new_page(viewport={"width": viewport_width, "height": 800})
     page.set_default_timeout(90000)
     requests = []
@@ -178,27 +194,34 @@ def case(browser, css, pngs, sequence, ids, indices, missing=None,
     try:
         page.goto(ORIGIN + "/", wait_until="load")
         page.add_style_tag(content=css)
+        failed = missing is not None or corrupt is not None or drift or abort_media
         result = page.evaluate(STAGE, {
-            "ids": ids, "indices": indices,
-            "failed": missing is not None or corrupt is not None,
+            "ids": ids, "indices": indices, "failed": failed,
+            "drift": drift, "abortMedia": abort_media,
         })
         expected_paths = [PATHS[index] for index in indices]
-        failed_path = missing or corrupt
-        # Missing HTTP responses abort fetching immediately, whereas a
-        # CRC-invalid PNG is rejected after all streamed files are retrieved.
-        # Neither failure may mount a partial print document.
-        if requests != ["/catalog.json"] + (
-            expected_paths[:expected_paths.index(missing)+1]
-            if missing else expected_paths
-        ):
+        # HTTP 404 and explicit abort stop at their first failing PNG;
+        # CRC failure and late selection drift happen after all PNG fetches.
+        expected_downloads = (
+            expected_paths[:expected_paths.index(missing)+1] if missing
+            else expected_paths[:1] if abort_media
+            else expected_paths
+        )
+        if requests != ["/catalog.json"] + expected_downloads:
             raise AssertionError(f"unexpected requests {requests}")
-        if failed_path is not None:
+        if failed:
             if result.get("failed") is not True or result["children"]:
-                raise AssertionError("invalid PNG must fail before mounting")
-            if corrupt and "CRC" not in result["message"]:
+                raise AssertionError("failed session must not mount any pages")
+            message = result["message"]
+            if corrupt and "CRC" not in message:
                 raise AssertionError("corrupt PNG must be rejected by CRC validation")
-            reason = "CRC" if corrupt else "missing"
-            print(f"PASS native PNG failure: {reason} sheet prevents partial stage")
+            if drift and "selection changed" not in message.lower():
+                raise AssertionError("late basket change must invalidate staged media")
+            if abort_media and "abort" not in message.lower():
+                raise AssertionError("abort must invalidate the entire media session")
+            reason = ("CRC" if corrupt else "missing" if missing else
+                      "selection drift" if drift else "abort")
+            print(f"PASS native PNG failure: {reason} prevents partial stage")
             return
         if result.get("failed") or len(result.get("values", [])) != len(sequence):
             raise AssertionError(f"incomplete browser stage: {result}")
@@ -257,6 +280,10 @@ def main():
                  missing=PATHS[1], viewport_width=375)
             case(browser, css, pngs, "PLP", CASES[1][1], CASES[1][2],
                  corrupt=PATHS[1], viewport_width=375)
+            case(browser, css, pngs, "PLP", CASES[1][1], CASES[1][2],
+                 drift=True, viewport_width=375)
+            case(browser, css, pngs, "PLP", CASES[1][1], CASES[1][2],
+                 abort_media=True, viewport_width=375)
         finally:
             browser.close()
 
