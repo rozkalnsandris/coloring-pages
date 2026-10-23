@@ -9,7 +9,8 @@ production media, source PNG write, actual print click or LIVE access.
 Exercises real fetch streams, canonical PNG CRC/dimensions, ImageBitmap decode,
 ordered A4 canvas/footer staging, Chromium PDF mixed-orientation page sizes,
 and cleanup. This is NOT mobile-memory, production-image, Firefox PDF, physical
-printer, visitor button, or real LIVE evidence.
+printer, visitor button, or real LIVE evidence. A 375px viewport is
+only browser emulation; not a physical-phone or mobile-memory test.
 """
 from io import BytesIO
 from pathlib import Path
@@ -82,7 +83,7 @@ def valid_a4_png(orientation, marker):
 
 # Real browser imports fetch actual linked JS modules from checked-out source.
 # Every request is served locally or blocked; none can reach the public site.
-def serve(route, pngs, requests, missing=None):
+def serve(route, pngs, requests, missing=None, corrupt=None):
     url = route.request.url
     path = urlsplit(url).path
     if not url.startswith(ORIGIN + "/"):
@@ -98,7 +99,12 @@ def serve(route, pngs, requests, missing=None):
         if path == missing:
             route.fulfill(status=404, content_type="text/plain", body="missing")
         else:
-            route.fulfill(status=200, content_type="image/png", body=pngs[path])
+            data = pngs[path]
+            if path == corrupt:
+                data = bytearray(data)
+                data[42] ^= 1  # IDAT byte changed, original CRC unchanged
+                data = bytes(data)
+            route.fulfill(status=200, content_type="image/png", body=data)
     elif path.startswith("/js/") and path.endswith(".mjs"):
         asset = (ROOT / path.lstrip("/")).resolve()
         if asset.is_relative_to((ROOT / "js").resolve()) and asset.is_file():
@@ -135,7 +141,7 @@ async ({ids, indices, failed}) => {
       origin: location.origin,
       readIds: () => [...ids],
     });
-    if (failed) throw Error('missing PNG was incorrectly accepted');
+    if (failed) throw Error('invalid PNG was incorrectly accepted');
     if (staged.plan.sheetCount !== indices.length) throw Error('Sheet count');
     host.replaceChildren(...staged.sheets.map(sheet => sheet.element));
     const values = staged.sheets.map((sheet, i) => {
@@ -163,27 +169,33 @@ async ({ids, indices, failed}) => {
 """
 
 
-def case(browser, css, pngs, sequence, ids, indices, missing=None):
-    page = browser.new_page(viewport={"width": 1280, "height": 800})
+def case(browser, css, pngs, sequence, ids, indices, missing=None,
+         corrupt=None, viewport_width=1280):
+    page = browser.new_page(viewport={"width": viewport_width, "height": 800})
     page.set_default_timeout(90000)
     requests = []
-    page.route("**/*", lambda route: serve(route, pngs, requests, missing))
+    page.route("**/*", lambda route: serve(route, pngs, requests, missing, corrupt))
     try:
         page.goto(ORIGIN + "/", wait_until="load")
         page.add_style_tag(content=css)
         result = page.evaluate(STAGE, {
-            "ids": ids, "indices": indices, "failed": missing is not None,
+            "ids": ids, "indices": indices,
+            "failed": missing is not None or corrupt is not None,
         })
         expected_paths = [PATHS[index] for index in indices]
+        failed_path = missing or corrupt
         if requests != ["/catalog.json"] + (
-            expected_paths[:expected_paths.index(missing)+1]
-            if missing else expected_paths
+            expected_paths[:expected_paths.index(failed_path)+1]
+            if failed_path else expected_paths
         ):
             raise AssertionError(f"unexpected requests {requests}")
-        if missing is not None:
+        if failed_path is not None:
             if result.get("failed") is not True or result["children"]:
-                raise AssertionError("missing PNG must fail before mounting")
-            print("PASS native PNG failure: missing sheet prevents partial stage")
+                raise AssertionError("invalid PNG must fail before mounting")
+            if corrupt and "CRC" not in result["message"]:
+                raise AssertionError("corrupt PNG must be rejected by CRC validation")
+            reason = "CRC" if corrupt else "missing"
+            print(f"PASS native PNG failure: {reason} sheet prevents partial stage")
             return
         if result.get("failed") or len(result.get("values", [])) != len(sequence):
             raise AssertionError(f"incomplete browser stage: {result}")
@@ -218,7 +230,8 @@ def case(browser, css, pngs, sequence, ids, indices, missing=None):
             "c => c.width === 0 && c.height === 0)"
         ):
             raise AssertionError("native canvas not cleared after disposal")
-        print(f"PASS decoded RGB PNGs: {sequence}, {len(sequence)} full-A4 pages")
+        print(f"PASS decoded RGB PNGs: {sequence}, {len(sequence)} full-A4 pages, "
+              f"{viewport_width}px viewport")
     finally:
         page.close()
 
@@ -233,10 +246,14 @@ def main():
     with sync_playwright() as driver:
         browser = driver.chromium.launch()
         try:
-            for sequence, ids, indices in CASES:
-                case(browser, css, pngs, sequence, ids, indices)
+            for viewport_width in (1280, 375):
+                for sequence, ids, indices in CASES:
+                    case(browser, css, pngs, sequence, ids, indices,
+                         viewport_width=viewport_width)
             case(browser, css, pngs, "PLP", CASES[1][1], CASES[1][2],
-                 missing=PATHS[1])
+                 missing=PATHS[1], viewport_width=375)
+            case(browser, css, pngs, "PLP", CASES[1][1], CASES[1][2],
+                 corrupt=PATHS[1], viewport_width=375)
         finally:
             browser.close()
 
