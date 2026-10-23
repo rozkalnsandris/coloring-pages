@@ -289,6 +289,7 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertIn('data-stats-visits', html)
         self.assertIn('data-stats-crawler-requests', html)
         self.assertIn('data-traffic-unique', html)
+        self.assertIn('data-traffic-requests', html)
         self.assertIn('data-stats-crawlers', html)
         self.assertNotIn('data-instagram-', html)
         self.assertNotIn('data-stats-total-views', html)
@@ -303,6 +304,9 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertNotIn('method: "POST"', js)
         self.assertIn('async function getTraffic(days = 7)', shared)
         self.assertIn("httpRequestsAdaptiveGroups", worker)
+        self.assertIn('const host = "ausmalwiese.de";', worker)
+        self.assertIn('http_requests_basis:"cloudflare-http-eyeball-requests"', worker)
+        self.assertIn('error:"analytics_zone_unavailable"', worker)
         self.assertIn("CF_ANALYTICS_API_TOKEN", worker)
         self.assertIn("CF_ZONE_TAG", worker)
         self.assertIn("noindex,nofollow,noarchive", html)
@@ -332,6 +336,7 @@ async function render(metric, selectedDays='7'){
   return {
     visitors:nodes.get('[data-traffic-unique]').textContent,
     visits:nodes.get('[data-stats-visits]').textContent,
+    requests:nodes.get('[data-traffic-requests]').textContent,
     crawlers:nodes.get('[data-stats-crawler-requests]').textContent,
     note:nodes.get('[data-traffic-visits-note]').textContent,
     status:nodes.get('[data-traffic-page-status]').textContent,
@@ -340,14 +345,14 @@ async function render(metric, selectedDays='7'){
 (async()=>{
   const v=await render({unique_visitors:12345,unique_visitors_status:'available',
     unique_visitors_basis:'worker-d1-daily-hmac-ip'});
-  if(v.visitors!=='N/A'||v.visits!=='635'||v.crawlers!=='1,459'
+  if(v.visitors!=='N/A'||v.visits!=='635'||v.requests!=='N/A'||v.crawlers!=='1,459'
     ||!v.note.includes('not independently verified')||!v.status.includes('sampled'))
     throw Error('Cloudflare-only metrics failed '+JSON.stringify(v));
-  const thirty=await render({analytics_host:'ausmalwiese.de',cloudflare_traffic_version:1},'30');
-  if(thirty.visits!=='635'||!thirty.note.includes('Worker-declared'))
+  const thirty=await render({analytics_host:'ausmalwiese.de',cloudflare_traffic_version:1,http_requests:8091},'30');
+  if(thirty.visits!=='635'||thirty.requests!=='8,091'||!thirty.note.includes('Worker-declared'))
     throw Error('Cloudflare host-proof rendering failed '+JSON.stringify(thirty));
   const invalid=await render({visits:null});
-  if(invalid.visits!=='–'||!invalid.status.includes('unavailable'))
+  if(invalid.visits!=='–'||invalid.requests!=='–'||!invalid.status.includes('unavailable'))
     throw Error('Invalid provider data must not be coerced to zero '+JSON.stringify(invalid));
   console.log('CLOUDFLARE_ONLY_TRAFFIC=PASS');
 })().catch(error=>{console.error(error);process.exitCode=1;});
