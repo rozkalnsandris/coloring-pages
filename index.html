@@ -10,9 +10,14 @@
   <link rel="preload" href="assets/fonts/baloo2-latin-vf-26fb4610d4bc976d.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/nunito-latin-vf-ba344451eab25b21.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/fonts.css?v=e8c09f4e07f0c140">
-  <link rel="stylesheet" href="css/app.css?v=0b91706cbd11ccc7">
+  <link rel="stylesheet" href="css/app.css?v=a7c40bb6d6111c9c">
+  <link rel="stylesheet" href="css/weekly-feature.css?v=e8b4682820f92a2b">
   <link rel="stylesheet" href="css/surprise.css?v=f16c46180a834f1a">
+  <link rel="stylesheet" href="css/metadata-filters.css?v=9ae6a022f03ed049">
   <link rel="stylesheet" href="css/mobile-first.css?v=mobile-hero-size-186">
+  <link rel="stylesheet" href="css/home-discovery.css?v=79d61a2cc6b580b1">
+  <link rel="stylesheet" href="css/social-footer.css?v=092268d2fc5c2826">
+  <link rel="stylesheet" href="css/print-basket.css?v=f5b570b94caca28e">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -33,6 +38,7 @@
         <a href="#hero">Startseite</a>
         <a href="#kategorien">Kategorien</a>
         <a href="#ueber-uns">Über uns</a>
+              <a href="kalender.html">Kalender</a>
       </nav>
 
       <div class="header-actions">
@@ -51,6 +57,7 @@
       <a href="#hero">Startseite</a>
       <a href="#kategorien">Kategorien</a>
       <a href="#ueber-uns">Über uns</a>
+          <a href="kalender.html">Kalender</a>
     </nav>
   </header>
 
@@ -95,34 +102,90 @@
       </div>
     </section>
 
-    <section id="kategorien" class="categories" aria-label="Kategorien">
+    <section id="kategorien" class="categories" aria-labelledby="category-heading">
       <div class="container">
-        <div class="category-grid" data-category-grid>
-          <button class="category-card category-figures" type="button" data-filter="figuren">
-            <span class="category-icon" aria-hidden="true">🦸</span>
-            <span class="category-name">Figuren &amp; Helden</span><span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
-          </button>
-          <button class="category-card category-animals" type="button" data-filter="tiere">
-            <span class="category-icon" aria-hidden="true">🐱</span>
-            <span class="category-name">Tiere</span><span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
-          </button>
-          <button class="category-card category-vehicles" type="button" data-filter="fahrzeuge">
-            <span class="category-icon" aria-hidden="true">🚒</span>
-            <span class="category-name">Fahrzeuge</span><span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
-          </button>
-          <button class="category-card category-alphabet" type="button" data-filter="alphabet">
-            <span class="category-icon category-abc" aria-hidden="true"><b>A</b><b>B</b><b>C</b></span>
-            <span class="category-name">Alphabet</span><span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
-          </button>
-          <button class="category-card category-learning" type="button" data-filter="lernen">
-            <span class="category-icon" aria-hidden="true">💡</span>
-            <span class="category-name">Lernen</span><span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
-          </button>
-          <button class="category-card category-seasons" type="button" data-filter="jahreszeiten">
-            <span class="category-icon" aria-hidden="true">🎃</span>
-            <span class="category-name">Jahreszeiten &amp; Feste</span><span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
-          </button>
+        <div class="category-heading">
+          <h2 id="category-heading">Nach Kategorien entdecken</h2>
+          <p>Wähle einen Bereich – die Beispiele zeigen dir, was du dort findest.</p>
         </div>
+        <div class="category-grid" data-category-grid>
+          <a style="text-decoration: none;" class="category-card category-figures" href="/figuren" data-filter="figuren">
+            <span class="category-icon" aria-hidden="true">🦸</span>
+            <span class="category-name">Figuren &amp; Helden</span>
+            <span class="category-description">Menschen, Helden &amp; Fantasie</span>
+            <span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
+          </a>
+          <a style="text-decoration: none;" class="category-card category-animals" href="/tiere" data-filter="tiere">
+            <span class="category-icon" aria-hidden="true">🐱</span>
+            <span class="category-name">Tiere</span>
+            <span class="category-description">Tiere von klein bis groß</span>
+            <span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
+          </a>
+          <a style="text-decoration: none;" class="category-card category-vehicles" href="/fahrzeuge" data-filter="fahrzeuge">
+            <span class="category-icon" aria-hidden="true">🚒</span>
+            <span class="category-name">Fahrzeuge</span>
+            <span class="category-description">Autos, Feuerwehr &amp; mehr</span>
+            <span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
+          </a>
+          <a style="text-decoration: none;" class="category-card category-alphabet" href="/alphabet" data-filter="alphabet">
+            <span class="category-icon category-abc" aria-hidden="true"><b>A</b><b>B</b><b>C</b></span>
+            <span class="category-name">Alphabet</span>
+            <span class="category-description">Buchstaben &amp; Schreibübungen</span>
+            <span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
+          </a>
+          <a style="text-decoration: none;" class="category-card category-learning" href="/lernen" data-filter="lernen">
+            <span class="category-icon" aria-hidden="true">💡</span>
+            <span class="category-name">Lernen</span>
+            <span class="category-description">Lernblätter &amp; Übungen</span>
+            <span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
+          </a>
+          <a style="text-decoration: none;" class="category-card category-seasons" href="/jahreszeiten" data-filter="jahreszeiten">
+            <span class="category-icon" aria-hidden="true">🎃</span>
+            <span class="category-name">Jahreszeiten &amp; Feste</span>
+            <span class="category-description">Halloween, Herbst &amp; Weihnachten</span>
+            <span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
+          </a>
+          <a style="text-decoration: none;" class="category-card category-food" href="/essen-natur" data-collection-filter="essen-natur">
+            <span class="category-icon" aria-hidden="true">🍎</span>
+            <span class="category-name">Essen &amp; Natur</span>
+            <span class="category-description">Obst, Gemüse, Blumen &amp; Bauernhof</span>
+            <span class="category-count"><span data-category-count>0</span><span class="category-count-label"> Malvorlagen</span></span><span class="category-arrow" aria-hidden="true">›</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="topic-explorer" data-topic-explorer aria-label="Themen" hidden>
+      <div class="container">
+        <div class="topic-block topic-current" data-topic-current-block hidden>
+          <div class="topic-heading"><h2>Aktuell</h2></div>
+          <div class="topic-strip" data-current-topics role="group" aria-label="Aktuelle Themen"></div>
+        </div>
+        <div class="topic-block" data-topic-main-block hidden>
+          <div class="topic-heading">
+            <div class="topic-heading-copy">
+              <h2 id="topic-explorer-title">Beliebte Themen</h2>
+              <p>Obst, Gemüse, Dinosaurier, Weltraum &amp; mehr direkt auswählen.</p>
+            </div>
+            <button class="topic-clear" type="button" data-topic-clear hidden>Alle zeigen</button>
+          </div>
+          <div class="topic-strip" data-topic-list role="group" aria-label="Malvorlagen nach Thema filtern"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="weekly-feature" data-weekly-feature aria-labelledby="weekly-title" hidden>
+      <div class="container">
+        <h2 class="weekly-heading" id="weekly-title">Ausmalbild der Woche</h2>
+        <article class="weekly-card">
+          <a class="weekly-preview" data-weekly-preview href="detail.html">
+            <img data-weekly-image alt="" loading="lazy" width="210" height="280">
+          </a>
+          <div class="weekly-copy">
+            <h3><a data-weekly-title href="detail.html"></a></h3>
+            <a class="outline-link" data-weekly-action href="detail.html">Malvorlage ansehen <span aria-hidden="true">→</span></a>
+          </div>
+        </article>
       </div>
     </section>
 
@@ -131,6 +194,27 @@
         <div class="section-heading">
           <h2 id="gallery-title">Neue Malvorlagen</h2>
           <a class="outline-link" href="#neu" data-reset-filters><span class="desktop-label">Alle Malvorlagen ansehen</span><span class="mobile-label">Alle ansehen</span><span class="catalog-total"><span data-total-count>0</span><span class="sr-only"> Malvorlagen insgesamt</span></span><span aria-hidden="true">→</span></a>
+        </div>
+
+        <div class="metadata-filters" role="group" aria-label="Malvorlagen nach Alter und Schwierigkeit filtern">
+          <div class="metadata-filter-field">
+            <label for="filter-age">Alter</label>
+            <select id="filter-age" data-filter-age>
+              <option value="">Alle Altersgruppen</option>
+              <option value="3-6">3–6 Jahre</option>
+              <option value="4-8">4–8 Jahre</option>
+            </select>
+          </div>
+          <div class="metadata-filter-field">
+            <label for="filter-difficulty">Schwierigkeit</label>
+            <select id="filter-difficulty" data-filter-difficulty>
+              <option value="">Alle Schwierigkeitsgrade</option>
+              <option value="easy">Einfach</option>
+              <option value="normal">Mittel</option>
+              <option value="detailed">Detailliert</option>
+            </select>
+          </div>
+          <p class="metadata-filter-hint">Gefiltert wird nur nach hinterlegten Angaben. Nicht eingestufte Vorlagen erscheinen ohne Filter.</p>
         </div>
 
         <div id="new-pages-gallery" class="gallery" data-gallery>
@@ -243,6 +327,9 @@
   </main>
 
   <script src="js/stats.js?v=instagram-216" defer></script>
-  <script src="js/app.js?v=446c7c313e4a91a5" defer></script>
+  <script src="js/weekly-feature.js?v=21d8504424c9ae23" defer></script>
+  <script src="js/app.js?v=1867ab6fc91f6089" defer></script>
+  <script type="module" src="js/print-basket-ui.mjs?v=9d29cc0fa833b6c8"></script>
+  <script src="js/social-footer.js?v=fab4cb04a2d17f28" defer></script>
 </body>
 </html>

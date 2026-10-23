@@ -12,8 +12,15 @@ class ReportWorkerNodeTests(unittest.TestCase):
     def test_worker_and_report_ui(self):
         node = shutil.which("node")
         self.assertIsNotNone(node, "Node.js is required for the report Worker tests")
+        loader = ROOT / "tests" / "cloudflare_email_loader.mjs"
         result = subprocess.run(
-            [node, "--test", "tests/test_report_worker.mjs"],
+            [
+                node,
+                "--experimental-loader",
+                str(loader),
+                "--test",
+                "tests/test_report_worker.mjs",
+            ],
             cwd=ROOT,
             text=True,
             capture_output=True,

@@ -36,7 +36,20 @@ class CanonicalDomainSourceTests(unittest.TestCase):
         root = ET.fromstring(read("sitemap.xml"))
         ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
         urls = [loc.text for loc in root.findall("sm:url/sm:loc", ns)]
-        self.assertEqual(urls, [f"{NEW}/", f"{NEW}/kita"])
+        self.assertEqual(
+            urls,
+            [
+                f"{NEW}/",
+                f"{NEW}/kita",
+                f"{NEW}/tiere",
+                f"{NEW}/fahrzeuge",
+                f"{NEW}/alphabet",
+                f"{NEW}/lernen",
+                f"{NEW}/figuren",
+                f"{NEW}/jahreszeiten",
+                f"{NEW}/essen-natur",
+            ],
+        )
         generator = read("tools/coloring-pages-sitemap")
         self.assertIn(f'ORIGIN = "{NEW}"', generator)
         self.assertNotIn(OLD, generator)

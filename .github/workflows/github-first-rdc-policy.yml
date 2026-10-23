@@ -1,0 +1,26 @@
+name: GitHub-first RDC fallback policy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    name: GitHub-first RDC contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify source-only GitHub-first policy
+        run: |
+          set -euo pipefail
+          python3 -m json.tool .github/github-first-rdc-v1.json >/dev/null
+          python3 -m unittest discover -s tests -p 'test_github_first_rdc_v1.py' -v

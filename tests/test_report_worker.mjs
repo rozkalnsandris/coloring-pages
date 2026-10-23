@@ -8,12 +8,12 @@ const ORIGIN = "https://ausmalwiese.de";
 const REASONS = ["print", "image", "craft", "wrong", "other"];
 const defaults = { id: "1234567", page: 1, reason: "print" };
 
-function setup({ failEmail = false } = {}) {
+function setup({ emailError = null } = {}) {
   const mail = [];
   const env = {
     EMAIL: {
       send: async (message) => {
-        if (failEmail) throw new Error("email unavailable");
+        if (emailError !== null) throw emailError;
         mail.push(message);
         return { messageId: "accepted-1" };
       },
@@ -40,18 +40,34 @@ async function call(env, payload = defaults, params) {
   return { status: response.status, body: await response.json() };
 }
 
-test("all five allowed reasons send one plain-text email through EMAIL binding", async () => {
+async function captureErrorLogs(run) {
+  const logs = [];
+  const original = console.error;
+  console.error = (...args) => logs.push(args);
+  try {
+    return { value: await run(), logs };
+  } finally {
+    console.error = original;
+  }
+}
+
+test("all five allowed reasons send one fixed structured email through EMAIL binding", async () => {
   for (const reason of REASONS) {
     const { env, mail } = setup();
     const { status, body } = await call(env, { ...defaults, reason, page: 2 });
     assert.equal(status, 200);
     assert.deepEqual(body, { ok: true });
     assert.equal(mail.length, 1);
-    assert.equal(mail[0].to, undefined);
-    assert.deepEqual(mail[0].from, { email: "info@ausmalwiese.de", name: "Ausmalwiese" });
+    assert.deepEqual(Object.keys(mail[0]), ["to", "from", "subject", "text"]);
+    assert.equal(mail[0].to, "info@ausmalwiese.de");
+    assert.deepEqual(mail[0].from, {
+      email: "info@ausmalwiese.de",
+      name: "Ausmalwiese",
+    });
     assert.equal(mail[0].subject, "[Ausmalwiese] Fehler gemeldet: 1234567");
-    assert.match(mail[0].text, /Seite: 2/);
-    assert.match(mail[0].text, /https:\/\/ausmalwiese.de\/detail.html\?id=1234567&page=2/);
+    assert.match(mail[0].text, /^Neue Fehlermeldung\n/);
+    assert.match(mail[0].text, /\nSeite: 2\n/);
+    assert.match(mail[0].text, /https:\/\/ausmalwiese.de\/detail.html\?id=1234567&page=2\n$/);
   }
 });
 
@@ -59,6 +75,7 @@ test("invalid id, page, reason, extra data and contact parameters are denied", a
   const { env, mail } = setup();
   const cases = [
     { ...defaults, id: "../admin" },
+    { ...defaults, id: "1234567\r\nBcc: attacker@example.test" },
     { ...defaults, page: 0 },
     { ...defaults, page: "1" },
     { ...defaults, reason: "unknown" },
@@ -118,16 +135,65 @@ test("only same-origin browser POST to the exact report path is accepted", async
   assert.equal(mail.length, 0);
 });
 
-test("missing binding and email send errors fail closed without false success", async () => {
+test("missing binding fails closed without a send attempt", async () => {
   const missing = await call({}, defaults);
   assert.equal(missing.status, 503);
   assert.deepEqual(missing.body, { ok: false });
+});
 
-  const broken = setup({ failEmail: true });
-  const failed = await call(broken.env, defaults);
+test("email send failure logs only one sanitized provider code", async () => {
+  const providerError = new Error("provider detail must stay private");
+  providerError.code = "E_SENDER_NOT_VERIFIED";
+  const broken = setup({ emailError: providerError });
+  const payload = { id: "7654321", page: 7, reason: "craft" };
+  const { value: failed, logs } = await captureErrorLogs(
+    () => call(broken.env, payload),
+  );
+
   assert.equal(failed.status, 503);
   assert.deepEqual(failed.body, { ok: false });
   assert.equal(broken.mail.length, 0);
+  assert.deepEqual(logs, [[{
+    event: "report_email_send_failed",
+    code: "E_SENDER_NOT_VERIFIED",
+  }]]);
+
+  const serialized = JSON.stringify(logs);
+  for (const forbidden of [
+    "provider detail must stay private",
+    "7654321",
+    "craft",
+    "info@ausmalwiese.de",
+    "https://ausmalwiese.de",
+  ]) {
+    assert.ok(!serialized.includes(forbidden), forbidden);
+  }
+});
+
+test("malformed email error codes are logged only as UNKNOWN", async () => {
+  const invalidCodes = [
+    "sender_not_verified",
+    "E_BAD-DASH",
+    7,
+    "E_" + "A".repeat(63),
+  ];
+
+  for (const code of invalidCodes) {
+    const providerError = new Error("private provider detail");
+    providerError.code = code;
+    const broken = setup({ emailError: providerError });
+    const { value: failed, logs } = await captureErrorLogs(
+      () => call(broken.env, defaults),
+    );
+
+    assert.equal(failed.status, 503);
+    assert.deepEqual(failed.body, { ok: false });
+    assert.deepEqual(logs, [[{
+      event: "report_email_send_failed",
+      code: "UNKNOWN",
+    }]]);
+    assert.ok(!JSON.stringify(logs).includes("private provider detail"));
+  }
 });
 
 test("worker has no Brevo, Turnstile, rate-limit, catalog or recipient input path", () => {
@@ -139,7 +205,10 @@ test("worker has no Brevo, Turnstile, rate-limit, catalog or recipient input pat
     assert.ok(!source.includes(forbidden), forbidden);
   }
   assert.match(source, /env\.EMAIL\.send/);
-  assert.match(source, /to: undefined/);
+  assert.match(source, /const FIXED_DESTINATION = "info@ausmalwiese\.de"/);
+  assert.match(source, /await env\.EMAIL\.send\(buildEmail\(payload, reason, link\)\)/);
+  assert.doesNotMatch(source, /EmailMessage|cloudflare:email|to: undefined/);
+  assert.doesNotMatch(source, /error\.message|error\.stack/);
 });
 
 test("detail UI has five radio choices and no Turnstile dependency", () => {
@@ -165,6 +234,10 @@ test("detail UI has five radio choices and no Turnstile dependency", () => {
   assert.doesNotMatch(client, /turnstile|\/api\/report\/config|activity_unavailable/i);
   assert.doesNotMatch(css, /turnstile/i);
   assert.match(css, /:focus-visible/);
+  assert.match(client, /say\("✓ Danke! Deine Meldung wurde gesendet\.", "success"\)/);
+  assert.match(client, /say\("Die Meldung konnte nicht gesendet werden\. Bitte versuche es später erneut\.", "error"\)/);
+  assert.match(css, /\.report-status\[data-state="success"\]/);
+  assert.match(css, /\.report-status\[data-state="error"\]/);
 });
 
 test("all report JavaScript is syntactically valid", () => {
