@@ -450,7 +450,7 @@ async function pageStats(env, request) {
   return json({page_id:pageId,print_count:Number(stats?.print_count||0),
     like_count:Number(stats?.like_count||0),liked:false});
 }
-function strictWrite(request) {function strictWrite(request) {function strictWrite(request) {
+function strictWrite(request) {
   const target = new URL(request.url).origin;
   return STATS_WRITE_ORIGINS.has(target)
     && request.headers.get("origin") === target
@@ -559,7 +559,7 @@ async function cookieLikeRoutes(env, request, path) {
   return cookieJson({ok:true,revoked:true},200,likeSetCookie("",0));
 }
 
-// Aggregate reactions (#256):// Aggregate reactions (#256): no visitor credential, session or per-vote row.
+// Aggregate reactions (#256): no visitor credential, session or per-vote row.
 async function aggregateLikeBody(request) {
   const declared = request.headers.get("content-length");
   if (declared !== null && (!/^\d+$/.test(declared) || Number(declared) > 256))
