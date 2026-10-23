@@ -12,7 +12,10 @@ This source candidate adds `POST /api/stats/like-aggregate` as described in
 [the aggregate Like API](AGGREGATE_LIKE_V1.md). It reuses existing page totals
 and the existing archive table; it adds no migration, route or binding. The
 frontend remains on its existing endpoints until a coordinated cutover.
-The revised Worker digest below identifies source only, not an approved deployment.\n\n**#368 Cloudflare-only Traffic source extension:** the pinned Worker now fixes the Traffic query hostname to `ausmalwiese.de`, exposes Cloudflare HTTP request counts alongside Visits and crawler request aggregates, and rejects an absent zone result instead of claiming zero. This changes source only; it does not confirm the target CF zone binding or deploy a new Worker. The Stats/D1 engagement endpoints remain independent.
+The revised Worker digest below identifies source only, not an approved deployment.
+
+**#368 Cloudflare-only Traffic source extension:** the pinned Worker now fixes the Traffic query hostname to `ausmalwiese.de`, exposes Cloudflare HTTP request counts alongside Visits and crawler request aggregates, and rejects an absent zone result instead of claiming zero. This changes source only; it does not confirm the target CF zone binding or deploy a new Worker. The Stats/D1 engagement endpoints remain independent.
+
 Cookie/legacy compatibility and their historical data remain unchanged.
 
 ## Immutable source set
