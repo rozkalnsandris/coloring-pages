@@ -55,8 +55,12 @@ jobs:
       - name: Install pinned Playwright library
         run: python3 -m pip install --disable-pip-version-check 'playwright==1.64.0'
 
-      - name: Install Playwright Firefox and OS dependencies
-        run: python3 -m playwright install --with-deps firefox
+      # ubuntu-24.04 GitHub runners already ship Firefox runtime libraries.
+      # Avoid apt --with-deps: slow Ubuntu mirror downloads hit the 15m job limit.
+      # Install the pinned Playwright-managed browser only; the launch test
+      # below must still pass before this PR can be marked Ready.
+      - name: Install Playwright-managed Firefox without apt
+        run: python3 -m playwright install firefox
 
       - name: Check Firefox print media A4 layout without site network
         run: python3 tests/manual/qa_basket_print_firefox.py
