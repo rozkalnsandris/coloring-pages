@@ -159,6 +159,18 @@ class AdminStatsDashboardTests(unittest.TestCase):
         self.assertIn("data-stats-load-more", html)
         self.assertIn("More", html)
 
+    def test_published_pages_counts_actual_a4_sheets(self):
+        admin = read("js/stats-admin.js")
+        html = read("stats.html")
+
+        self.assertIn("function publishedPageCount(entry)", admin)
+        self.assertIn("Array.isArray(entry?.pages) && entry.pages.length > 0", admin)
+        self.assertIn('typeof entry?.print === "string" && entry.print ? 1 : 0', admin)
+        self.assertIn("page_count: publishedPageCount(entry)", admin)
+        self.assertIn("rows.reduce((total, row) => total + row.page_count, 0)", admin)
+        self.assertNotIn("els.publishedPages.textContent = formatNumber(rows.length);", admin)
+        self.assertIn("Published pages", html)
+
     def test_admin_dashboard_uses_read_only_shared_stats_api(self):
         shared = read("js/stats.js")
         admin = read("js/stats-admin.js")

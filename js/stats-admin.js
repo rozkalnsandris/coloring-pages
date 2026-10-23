@@ -56,6 +56,11 @@
     return CATEGORY_LABELS[value] || value || "–";
   }
 
+  function publishedPageCount(entry) {
+    if (Array.isArray(entry?.pages) && entry.pages.length > 0) return entry.pages.length;
+    return typeof entry?.print === "string" && entry.print ? 1 : 0;
+  }
+
   function createTopItem(row, index, kind) {
     const item = document.createElement("li");
     item.className = "stats-top-item";
@@ -204,6 +209,7 @@
             title: entry.title,
             category: entry.category,
             thumb: entry.thumb,
+            page_count: publishedPageCount(entry),
             print_count: number(stats.print_count),
             like_count: number(stats.like_count),
             recent_prints: number(stats.recent_prints),
@@ -213,7 +219,9 @@
       els.totalPrints.textContent = formatNumber(overview.totals?.print_count);
       els.totalLikes.textContent = formatNumber(overview.totals?.like_count);
       els.recentPrints.textContent = formatNumber(overview.totals?.recent_prints);
-      els.publishedPages.textContent = formatNumber(rows.length);
+      els.publishedPages.textContent = formatNumber(
+        rows.reduce((total, row) => total + row.page_count, 0)
+      );
       // Older Stats Workers omit these keys until the owner-gated D1 + Worker rollout.
       els.qrTotal.textContent = typeof overview.totals?.qr_scan_count === "number"
         ? formatNumber(overview.totals.qr_scan_count) : "–";
