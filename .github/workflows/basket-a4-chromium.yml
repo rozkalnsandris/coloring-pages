@@ -1,12 +1,13 @@
-name: Basket A4 Chromium QA
+name: Basket A4 Browser QA
 
-# Source-only, synthetic A4 PDF layout check for #206. Not a production
-# deployment, physical printing guarantee, or release/activation gate.
+# Source-only, synthetic Chromium PDF and Firefox print-CSS layout for #206.
+# No LIVE, physical print guarantee, or visitor print activation.
 on:
   pull_request:
     paths:
       - .github/workflows/basket-a4-chromium.yml
       - tests/manual/qa_basket_print_layout.py
+      - tests/manual/qa_basket_print_firefox.py
       - js/print-basket-print-canvas.mjs
       - js/print-basket-print-footer.mjs
       - css/app.css
@@ -16,7 +17,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: basket-a4-chromium-${{ github.event.pull_request.number || github.ref }}
+  group: basket-a4-browser-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -37,3 +38,21 @@ jobs:
 
       - name: Check synthetic A4 PDF layout without site network
         run: python3 tests/manual/qa_basket_print_layout.py
+
+  synthetic-firefox-layout:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned Playwright library
+        run: python3 -m pip install --disable-pip-version-check 'playwright==1.64.0'
+
+      - name: Install Playwright Firefox and OS dependencies
+        run: python3 -m playwright install --with-deps firefox
+
+      - name: Check Firefox print media A4 layout without site network
+        run: python3 tests/manual/qa_basket_print_firefox.py
