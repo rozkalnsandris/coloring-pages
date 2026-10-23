@@ -12,7 +12,7 @@ This source candidate adds `POST /api/stats/like-aggregate` as described in
 [the aggregate Like API](AGGREGATE_LIKE_V1.md). It reuses existing page totals
 and the existing archive table; it adds no migration, route or binding. The
 frontend remains on its existing endpoints until a coordinated cutover.
-The revised Worker digest below identifies source only, not an approved deployment.
+The revised Worker digest below identifies source only, not an approved deployment.\n\n**#368 Cloudflare-only Traffic source extension:** the pinned Worker now fixes the Traffic query hostname to `ausmalwiese.de`, exposes Cloudflare HTTP request counts alongside Visits and crawler request aggregates, and rejects an absent zone result instead of claiming zero. This changes source only; it does not confirm the target CF zone binding or deploy a new Worker. The Stats/D1 engagement endpoints remain independent.
 Cookie/legacy compatibility and their historical data remain unchanged.
 
 ## Immutable source set
@@ -24,7 +24,7 @@ The machine contract is
 
 | Artifact | Git blob SHA-1 |
 | --- | --- |
-| `cloudflare/stats-worker.js` | `c2ac9da6e0701103e0041b30db7dfbea4298f96c` |
+| `cloudflare/stats-worker.js` | `ccb68d7bbf12474f32e0f94d574ead1b02cd9c7e` |
 | `cloudflare/wrangler.stats-worker.jsonc` | `3733263a391274f2b6b0f2023c8656565bde8e1a` |
 | `cloudflare/stats-cookie-like-migration.sql` | `b5346c05cb27de1010dab2027b0b923e999af775` |
 | `cloudflare/stats-remove-daily-visitor-hmac.sql` | `a7cffb110adfceb5c1ff4dcd17a7009c549976a5` |
