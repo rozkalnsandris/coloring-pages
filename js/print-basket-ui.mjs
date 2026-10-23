@@ -274,7 +274,7 @@ function createDialog() {
   zipStatus.setAttribute("aria-live", "polite");
   const note = document.createElement("p");
   note.id = "basket-print-unavailable";
-  note.textContent = "Alles drucken ist noch nicht verfügbar. Die Vorlagen können einzeln gedruckt oder als ZIP gespeichert werden.";
+  note.textContent = "Alles drucken ist noch nicht verfügbar.";
   note.className = "basket-dialog-note";
   node.append(header, count, list, empty, clear, printAction, zipPrepare, zipCancel, zipLink, zipStatus, note);
   document.body.append(node);

@@ -17,7 +17,7 @@ function node(tag) {
     replaceChildren(...items) { this.children = items; },
     addEventListener(key, listener) { this.events.set(key, listener); },
     querySelector(selector) {
-      const match = /^\\[data-([a-z-]+)\\]$/.exec(selector);
+      const match = selector.startsWith("[data-") && selector.endsWith("]") ? [null, selector.slice(6, -1)] : null;
       if (!match) throw new Error("Unknown selector " + selector);
       const key = match[1].replace(/-([a-z])/g, (_, c) => c.toUpperCase());
       const visit = element => {
