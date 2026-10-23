@@ -1,0 +1,255 @@
+#!/usr/bin/env python3
+"""Pure offline Google Drive files.create multipart feasibility prototype (#266).
+
+No HTTP client, OAuth handling, Drive writes, RPi5 calls or publication success.
+Only prepared independent v1 activities produced by publish-preflight are inputs.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import stat
+import sys
+
+UPLOAD_URL = (
+    "https://www.googleapis.com/upload/drive/v3/files"
+    "?uploadType=multipart&fields=id,name,mimeType,parents,size,md5Checksum"
+)
+INDEX_SCHEMA = "rozkalns.coloring-pages.publish-preflight-result.v1"
+MANIFEST_SCHEMA = "rozkalns.coloring-pages.drive-staging-manifest.v1"
+PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+LIMIT = 5_000_000  # conservative <=5 MB Drive multipart guidance; includes framing
+INDEX_LIMIT = 64 * 1024
+MANIFEST_LIMIT = 64 * 1024
+IDENTIFIER = re.compile(r"[0-9]{7}\Z")
+FOLDER_ID = re.compile(r"[A-Za-z0-9_-]{10,128}\Z")
+HASH = re.compile(r"[0-9a-f]{64}\Z")
+CATEGORIES = {"tiere", "fahrzeuge", "alphabet", "lernen", "figuren", "jahreszeiten"}
+MANIFEST_KEYS = {
+    "schema", "id", "sha256", "size_bytes", "title", "character", "category",
+    "age", "difficulty", "language", "source_kind", "approval_class",
+}
+
+
+class DesignBlocked(ValueError):
+    pass
+
+
+def require(condition: bool, reason: str) -> None:
+    if not condition:
+        raise DesignBlocked(reason)
+
+
+def sha256(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def open_prepared_dir(directory: Path) -> int:
+    # The Linux/POSIX descriptor is anchored once for the entire planned batch.
+    require(hasattr(os, "O_NOFOLLOW") and hasattr(os, "O_DIRECTORY"), "safe-open-unavailable")
+    try:
+        return os.open(
+            directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+        )
+    except OSError as exc:
+        raise DesignBlocked("prepared-dir-unavailable") from exc
+
+
+def local_bytes(dirfd: int, filename: str, limit: int, too_large: str) -> bytes:
+    """Read from a no-follow regular-file descriptor, never by re-opening a checked path.
+
+    Bound both fstat size *before* allocation and actual read length, and reject
+    detected concurrent changes. This is not an immutable-file snapshot proof.
+    """
+    require(
+        isinstance(filename, str) and filename not in (".", "..")
+        and "/" not in filename and "\\" not in filename,
+        "file-unavailable",
+    )
+    try:
+        fd = os.open(
+            filename, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK,
+            dir_fd=dirfd,
+        )
+        with os.fdopen(fd, "rb", buffering=0) as stream:
+            before = os.fstat(stream.fileno())
+            require(stat.S_ISREG(before.st_mode), "file-unavailable")
+            require(before.st_size <= limit, too_large)
+            data = stream.read(limit + 1)
+            after = os.fstat(stream.fileno())
+            require(len(data) <= limit, too_large)
+            identity = lambda st: (
+                st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns
+            )
+            require(
+                len(data) == before.st_size and identity(before) == identity(after),
+                "file-changed-during-read",
+            )
+            return data
+    except OSError as exc:
+        raise DesignBlocked("file-unavailable") from exc
+
+
+def json_file(dirfd: int, filename: str):
+    try:
+        return json.loads(local_bytes(dirfd, filename, INDEX_LIMIT, "index-over-limit"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise DesignBlocked("invalid-json") from exc
+
+
+def prepared_entries(directory: Path) -> list[dict]:
+    dirfd = open_prepared_dir(directory)
+    try:
+        return _prepared_entries_from_dirfd(dirfd)
+    finally:
+        os.close(dirfd)
+
+
+def _prepared_entries_from_dirfd(dirfd: int) -> list[dict]:
+    index = json_file(dirfd, "preflight-index.json")
+    require(
+        isinstance(index, dict) and set(index) == {"schema", "activities"}
+        and index["schema"] == INDEX_SCHEMA, "invalid-index"
+    )
+    rows = index["activities"]
+    require(isinstance(rows, list) and 1 <= len(rows) <= 20, "invalid-activity-count")
+    seen = set()
+    artifacts = []
+    for item in rows:
+        require(
+            isinstance(item, dict)
+            and set(item) == {"id", "png", "manifest", "sha256", "size_bytes"},
+            "invalid-index-row",
+        )
+        ident = item["id"]
+        require(
+            isinstance(ident, str) and bool(IDENTIFIER.fullmatch(ident))
+            and ident not in seen, "invalid-or-duplicate-id"
+        )
+        seen.add(ident)
+        png_name, json_name = ident + ".png", ident + ".json"
+        require(item["png"] == png_name and item["manifest"] == json_name, "filename-mismatch")
+        require(
+            type(item["size_bytes"]) is int and item["size_bytes"] > 0
+            and isinstance(item["sha256"], str) and bool(HASH.fullmatch(item["sha256"])),
+            "invalid-index-identity",
+        )
+        require(item["size_bytes"] <= LIMIT, "multipart-over-5mb")
+        png = local_bytes(dirfd, png_name, LIMIT, "multipart-over-5mb")
+        require(png.startswith(PNG_MAGIC), "not-png")
+        require(
+            len(png) == item["size_bytes"] and sha256(png) == item["sha256"],
+            "png-identity-mismatch",
+        )
+        manifest_data = local_bytes(dirfd, json_name, MANIFEST_LIMIT, "manifest-over-limit")
+        try:
+            manifest = json.loads(manifest_data)
+        except (UnicodeError, json.JSONDecodeError) as exc:
+            raise DesignBlocked("invalid-manifest-json") from exc
+        require(isinstance(manifest, dict) and set(manifest) == MANIFEST_KEYS, "invalid-manifest")
+        require(
+            manifest["schema"] == MANIFEST_SCHEMA and manifest["id"] == ident
+            and manifest["sha256"] == item["sha256"] and manifest["size_bytes"] == len(png)
+            and isinstance(manifest["category"], str)
+            and manifest["category"] in CATEGORIES
+            and manifest["language"] == "de"
+            and manifest["age"] in ("3-6", "4-8")
+            and manifest["difficulty"] in ("easy", "normal", "detailed")
+            and manifest["source_kind"] == "chatgpt-generated-png"
+            and manifest["approval_class"] == "explicit-owner-chat-approval"
+            and isinstance(manifest["title"], str) and bool(manifest["title"].strip())
+            and isinstance(manifest["character"], str),
+            "manifest-identity-mismatch",
+        )
+        # Both immutable local byte arrays are inspected before any request is composed.
+        artifacts.extend([
+            {"name": png_name, "mime": "image/png", "data": png},
+            {"name": json_name, "mime": "application/json", "data": manifest_data},
+        ])
+    return artifacts
+
+
+def multipart_request(name: str, mime: str, data: bytes, folder_id: str,
+                      *, boundary: str | None = None) -> dict:
+    """Compose request bytes in memory only; no send method exists in this module."""
+    require(
+        isinstance(folder_id, str) and bool(FOLDER_ID.fullmatch(folder_id)),
+        "invalid-folder-id",
+    )
+    require(re.fullmatch(r"[0-9]{7}\.(png|json)", name) is not None, "invalid-filename")
+    require(mime in ("image/png", "application/json"), "unsupported-mime")
+    require(
+        (name.endswith(".png") and mime == "image/png")
+        or (name.endswith(".json") and mime == "application/json"),
+        "mime-filename-mismatch",
+    )
+    require(isinstance(data, bytes), "invalid-payload")
+    if boundary is None:
+        boundary = "ausmalwiese-" + sha256(name.encode("ascii") + data)[:32]
+    require(
+        bool(re.fullmatch(r"[A-Za-z0-9_-]{8,65}", boundary)),
+        "invalid-boundary",
+    )
+    delimiter = ("\r\n--" + boundary).encode("ascii")
+    require(delimiter not in data, "boundary-collision")
+    metadata = {"name": name, "mimeType": mime, "parents": [folder_id]}
+    meta = json.dumps(metadata, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
+    body = (
+        ("--" + boundary + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n").encode("ascii")
+        + meta + delimiter
+        + ("\r\nContent-Type: " + mime + "\r\n\r\n").encode("ascii")
+        + data + delimiter + b"--"
+    )
+    require(len(body) <= LIMIT, "multipart-over-5mb")
+    return {
+        "method": "POST", "url": UPLOAD_URL,
+        "content_type": "multipart/related; boundary=" + boundary,
+        "content_length": len(body), "metadata": metadata, "boundary": boundary,
+        "media_sha256": sha256(data), "media_bytes": len(data),
+        "body_sha256": sha256(body), "body": body,
+    }
+
+
+def design(directory: Path, folder_id: str) -> list[dict]:
+    """Freeze every local request in memory before returning a plan."""
+    artifacts = prepared_entries(directory)
+    return [multipart_request(a["name"], a["mime"], a["data"], folder_id) for a in artifacts]
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--prepared-dir", required=True, type=Path)
+    parser.add_argument("--folder-id", required=True)
+    args = parser.parse_args()
+    try:
+        requests = design(args.prepared_dir, args.folder_id)
+    except (OSError, DesignBlocked) as exc:
+        reason = "local-read-error" if isinstance(exc, OSError) else str(exc)
+        print("DIRECT_DRIVE_DESIGN=BLOCKED\nREASON=" + reason + "\nDRIVE_WRITE=NO", file=sys.stderr)
+        return 2
+    plans = [
+        {
+            "name": r["metadata"]["name"], "mimeType": r["metadata"]["mimeType"],
+            "method": r["method"], "url": r["url"], "parents": r["metadata"]["parents"],
+            "media_sha256": r["media_sha256"], "media_bytes": r["media_bytes"],
+            "content_type": r["content_type"], "content_length": r["content_length"],
+            "body_sha256": r["body_sha256"],
+        }
+        for r in requests
+    ]
+    print("DIRECT_DRIVE_DESIGN=OFFLINE_ONLY")
+    print("DRIVE_WRITE=NO")
+    print("AUTHORIZATION=NOT_AVAILABLE")
+    print("LIVE_IMPORT=NO")
+    print("PNG_PROOF=SIGNATURE_ONLY")
+    print("PRINT_VALIDATION=NOT_PERFORMED")
+    print(json.dumps({"request_count": len(plans), "requests": plans}, indent=2))
+    return 3  # Nonzero: never allow a normal publication gate to treat this as PASS.
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
