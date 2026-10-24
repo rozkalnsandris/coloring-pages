@@ -297,6 +297,9 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertIn('data-stats-crawler-requests', html)
         self.assertIn('data-traffic-unique', html)
         self.assertIn('data-traffic-requests', html)
+        self.assertIn('data-traffic-visits-availability', html)
+        self.assertIn('data-traffic-requests-availability', html)
+        self.assertNotIn('<td>Available</td>', html)
         self.assertIn('data-stats-crawlers', html)
         self.assertNotIn('data-instagram-', html)
         self.assertIn("Instagram, QR &amp; Kita", html)
@@ -348,6 +351,8 @@ async function render(metric, selectedDays='7'){
     visits:nodes.get('[data-stats-visits]').textContent,
     requests:nodes.get('[data-traffic-requests]').textContent,
     crawlers:nodes.get('[data-stats-crawler-requests]').textContent,
+    visitsState:nodes.get('[data-traffic-visits-availability]').textContent,
+    requestsState:nodes.get('[data-traffic-requests-availability]').textContent,
     note:nodes.get('[data-traffic-visits-note]').textContent,
     status:nodes.get('[data-traffic-page-status]').textContent,
   };
@@ -355,14 +360,22 @@ async function render(metric, selectedDays='7'){
 (async()=>{
   const v=await render({unique_visitors:12345,unique_visitors_status:'available',
     unique_visitors_basis:'worker-d1-daily-hmac-ip'});
-  if(v.visitors!=='N/A'||v.visits!=='635'||v.requests!=='N/A'||v.crawlers!=='1,459'
-    ||!v.note.includes('not independently verified')||!v.status.includes('sampled'))
-    throw Error('Cloudflare-only metrics failed '+JSON.stringify(v));
+  if(v.visitors!=='N/A'||v.visits!=='–'||v.requests!=='–'||v.crawlers!=='–'
+    ||v.visitsState!=='Unavailable'||v.requestsState!=='Unavailable'
+    ||!v.note.includes('not independently verified')||!v.status.includes('hostname not verified'))
+    throw Error('Legacy or wrong-host metrics must be hidden '+JSON.stringify(v));
   const thirty=await render({analytics_host:'ausmalwiese.de',cloudflare_traffic_version:1,http_requests:8091},'30');
-  if(thirty.visits!=='635'||thirty.requests!=='8,091'||!thirty.note.includes('Worker-declared'))
+  if(thirty.visits!=='635'||thirty.requests!=='8,091'||!thirty.note.includes('Worker-declared')
+    ||!thirty.visitsState.includes('host declared by Worker')
+    ||!thirty.requestsState.includes('sampled'))
     throw Error('Cloudflare host-proof rendering failed '+JSON.stringify(thirty));
+  const missing=await render({analytics_host:'ausmalwiese.de',cloudflare_traffic_version:1});
+  if(missing.requests!=='N/A'||!missing.requestsState.includes('Unavailable')
+    ||missing.visits!=='635')
+    throw Error('Missing request field must be unavailable, not zero '+JSON.stringify(missing));
   const invalid=await render({visits:null});
-  if(invalid.visits!=='–'||invalid.requests!=='–'||!invalid.status.includes('unavailable'))
+  if(invalid.visits!=='–'||invalid.requests!=='–'||!invalid.status.includes('unavailable')
+    ||invalid.visitsState!=='Unavailable'||invalid.requestsState!=='Unavailable')
     throw Error('Invalid provider data must not be coerced to zero '+JSON.stringify(invalid));
   console.log('CLOUDFLARE_ONLY_TRAFFIC=PASS');
 })().catch(error=>{console.error(error);process.exitCode=1;});

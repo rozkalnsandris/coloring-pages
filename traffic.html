@@ -60,7 +60,7 @@
       <div class="container stats-kpi-grid traffic-kpi-grid">
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">👤</span>
-          <div><span class="stats-kpi-label">Unique visitors · verified people</span><strong data-traffic-unique>–</strong></div>
+          <div><span class="stats-kpi-label">Unique visitors · not verified</span><strong data-traffic-unique>–</strong></div>
         </article>
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">↪</span>
@@ -98,8 +98,8 @@
                 <tr><th scope="col">Signal</th><th scope="col">Source</th><th scope="col">State</th></tr>
               </thead>
               <tbody>
-                <tr><td>Visits</td><td>HTTP Analytics · exact host</td><td>Available</td></tr>
-                <tr><td>HTTP requests</td><td>HTTP Analytics · exact host</td><td>Available after Worker host proof</td></tr>
+                <tr><td>Visits</td><td>HTTP Analytics · Worker-declared host</td><td data-traffic-visits-availability>Not loaded</td></tr>
+                <tr><td>HTTP requests</td><td>HTTP Analytics · Worker-declared host</td><td data-traffic-requests-availability>Not loaded</td></tr>
                 <tr><td>Unique people</td><td>Cloudflare provider metric</td><td>Not verified</td></tr>
                 <tr><td>Page views by coloring page</td><td>Cloudflare page/path analytics</td><td>Needs provider/route proof</td></tr>
               </tbody>
@@ -166,6 +166,6 @@
     }, { once: true });
   </script>
   <script src="js/stats.js?v=a4c560562b9267fe" defer></script>
-  <script src="js/traffic-admin.js?v=cloudflare-only-368-v3" defer></script>
+  <script src="js/traffic-admin.js?v=cloudflare-only-368-v4" defer></script>
 </body>
 </html>
