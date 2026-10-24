@@ -16,16 +16,21 @@ class BackendFirstPrivacySplit(unittest.TestCase):
         self.assertNotIn("CREATE TABLE IF NOT EXISTS daily_visitors", SCHEMA)
         self.assertIn("DROP TABLE IF EXISTS daily_visitors", CLEANUP)
 
-    def test_backend_is_backward_compatible_until_frontend_cutover(self):
-        self.assertIn('path==="/api/stats/like") return toggleLike', WORKER)
-        self.assertIn('path==="/api/stats/print") return recordPrint', WORKER)
+    def test_legacy_personalized_routes_are_retired_after_frontend_cutover(self):
+        self.assertIn('path==="/api/stats/like") return legacyPersonalizedRetired', WORKER)
+        self.assertIn('path==="/api/stats/print") return legacyPersonalizedRetired', WORKER)
+        self.assertIn('url.searchParams.has("visitor_id")', WORKER)
+        self.assertIn("legacy_personalized_api_retired", WORKER)
+        self.assertNotIn("async function toggleLike(", WORKER)
+        self.assertNotIn("async function recordPrint(", WORKER)
         self.assertIn('path==="/api/stats/page") return pageStats', WORKER)
-        self.assertNotIn("legacy_personalized_api_retired", WORKER)
 
     def test_future_like_and_print_backends_exist_in_parallel(self):
         self.assertIn('path.startsWith("/api/stats/like/")', WORKER)
         self.assertIn('path==="/api/stats/print-aggregate"', WORKER)
-        self.assertIn("const LIKE_COOKIE_TTL_SECONDS = 180 * 24 * 60 * 60", WORKER)
+        self.assertIn('"/api/stats/like/forget"', WORKER)
+        self.assertIn("RETIRED_COOKIE_PATHS", WORKER)
+        self.assertNotIn("LIKE_COOKIE_TTL_SECONDS", WORKER)
         self.assertIn("async scheduled(", WORKER)
         self.assertIn("archived_like_totals", SCHEMA)
         self.assertIn("like_cookie_sessions", SCHEMA)

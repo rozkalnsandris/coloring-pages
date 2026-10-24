@@ -59,9 +59,11 @@ class CookieArchiveSourceTest(unittest.TestCase):
         with self.db:
             return [self.db.execute(query,(cutoff,)).rowcount for query in source_sql()]
 
-    def test_duration_is_fixed_not_renewed_by_page_reads(self):
-        self.assertIn("const LIKE_COOKIE_TTL_SECONDS = 180 * 24 * 60 * 60",WORKER)
-        self.assertIn("return LIKE_COOKIE_TTL_SECONDS;",WORKER)
+    def test_new_cookie_issuance_is_retired_but_bounded_archive_remains(self):
+        self.assertNotIn("LIKE_COOKIE_TTL_SECONDS",WORKER)
+        self.assertNotIn("crypto.getRandomValues",WORKER)
+        self.assertIn("RETIRED_COOKIE_PATHS",WORKER)
+        self.assertIn("legacy_personalized_api_retired",WORKER)
         self.assertIn("Secure; HttpOnly; SameSite=Lax",WORKER)
         self.assertIn("async scheduled(",WORKER)
 
