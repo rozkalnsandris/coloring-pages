@@ -4,7 +4,7 @@
   "worker": "coloring-pages-stats-v1",
   "environment": "production",
   "source_path": "cloudflare/stats-worker.js",
-  "source_blob_sha1": "c2ac9da6e0701103e0041b30db7dfbea4298f96c",
+  "source_blob_sha1": "ccb68d7bbf12474f32e0f94d574ead1b02cd9c7e",
   "wrangler_config_path": "cloudflare/wrangler.stats-worker.jsonc",
   "wrangler_config_blob_sha1": "3733263a391274f2b6b0f2023c8656565bde8e1a",
   "additive_migration_path": "cloudflare/stats-cookie-like-migration.sql",

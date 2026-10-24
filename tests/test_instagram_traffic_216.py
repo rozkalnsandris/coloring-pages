@@ -1,4 +1,5 @@
 """Source and runtime regressions for fixed Instagram UTM landing attribution (#216)."""
+import hashlib
 import json
 import shutil
 import sqlite3
@@ -107,27 +108,27 @@ console.log('INSTAGRAM_WORKER=PASS');
             self.assertEqual(total(30),12)
             self.assertEqual(db.execute("SELECT SUM(event_count) FROM daily_campaign_events WHERE campaign='dortmund-01'").fetchone()[0],7)
 
-    def test_admin_uses_only_readonly_aggregate_api_and_safe_fallback(self):
+    def test_instagram_attribution_preserved_but_not_mislabelled_cloudflare_traffic(self):
         html=(ROOT/"traffic.html").read_text(encoding="utf-8")
         js=(ROOT/"js/traffic-admin.js").read_text(encoding="utf-8")
         worker=(ROOT/"cloudflare/stats-worker.js").read_text(encoding="utf-8")
+        stats=(ROOT/"js/stats.js").read_text(encoding="utf-8")
         for key in ("7","30","profile","story","reel"):
-            self.assertIn(f"data-instagram-{key}",html)
-        self.assertIn("getCampaigns(7).catch",js)
-        self.assertIn("getCampaigns(30).catch",js)
-        self.assertIn('data?.instagram_attribution_version !== 1',js)
-        self.assertIn('week ? formatNumber(week.total) : "–"',js)
-        self.assertIn('month ? formatNumber(month.total) : "–"',js)
+            self.assertNotIn(f"data-instagram-{key}",html)
+        self.assertNotIn("getCampaigns(", js)
+        self.assertNotIn("getOverview(", js)
         self.assertIn("INSTAGRAM_CAMPAIGN_IDS",worker)
         self.assertIn("instagram_attribution_version:1",worker)
         self.assertIn('event !== "landing"',worker)
         self.assertIn("prefetch|prerender",worker)
         self.assertIn("botManagement?.verifiedBot",worker)
+        self.assertIn('async function getCampaigns(days = 30)',stats)
         self.assertNotIn('method: "POST"',js)
         self.assertIn('noindex,nofollow,noarchive',html)
-        self.assertIn('v=instagram-216',html)
-        self.assertIn('v=instagram-216',(ROOT/"index.html").read_text(encoding="utf-8"))
-        self.assertIn('v=instagram-216',(ROOT/"detail.html").read_text(encoding="utf-8"))
+        self.assertIn('v=cloudflare-only-368',html)
+        version = hashlib.sha256((ROOT/"js/stats.js").read_bytes()).hexdigest()[:16]
+        for page in ("index.html", "detail.html", "kita.html", "stats.html", "traffic.html"):
+            self.assertIn('js/stats.js?v='+version, (ROOT/page).read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

@@ -36,79 +36,56 @@
   <main id="main" tabindex="-1">
     <section class="stats-hero" aria-labelledby="traffic-title">
       <div class="container">
-        <span class="stats-eyebrow">Internal dashboard</span>
+        <span class="stats-eyebrow">Internal dashboard · Cloudflare Analytics</span>
         <div class="stats-hero-row">
           <div>
             <h1 id="traffic-title">Traffic analytics</h1>
-            <p>Visits, coloring page views and crawler activity from Cloudflare.</p>
+            <p>Cloudflare-only traffic metrics. Engagement counts remain on the Statistics page.</p>
           </div>
           <button class="outline-link stats-refresh" type="button" data-traffic-refresh>Refresh <span aria-hidden="true">↻</span></button>
         </div>
-        <p class="stats-status" data-traffic-page-status aria-live="polite">Loading traffic analytics …</p>
+        <label class="stats-sort-label" for="traffic-days">Time range
+          <select id="traffic-days" data-traffic-days>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+          </select>
+        </label>
+        <p class="stats-status" data-traffic-page-status role="status" aria-live="polite">Loading Cloudflare analytics …</p>
       </div>
     </section>
 
-    <section class="stats-summary" aria-label="Traffic summary">
+    <section class="stats-summary" aria-label="Cloudflare traffic summary">
       <div class="container stats-kpi-grid traffic-kpi-grid">
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">👤</span>
-          <div><span class="stats-kpi-label" data-stats-unique-visitors-label>Approx. unique visitors · latest day</span><strong data-stats-unique-visitors>–</strong></div>
+          <div><span class="stats-kpi-label">Unique visitors · ausmalwiese.de</span><strong data-traffic-unique>–</strong></div>
         </article>
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">↪</span>
-          <div><span class="stats-kpi-label">Website visits in the last 7 days <span aria-hidden="true">·</span> not unique people</span><strong data-stats-visits>–</strong></div>
+          <div><span class="stats-kpi-label">Website visits · Cloudflare HTTP Analytics</span><strong data-stats-visits>–</strong></div>
         </article>
         <article class="stats-kpi">
-          <span class="stats-kpi-icon" aria-hidden="true">👁️</span>
-          <div><span class="stats-kpi-label">Total coloring page views</span><strong data-stats-total-views>–</strong></div>
-        </article>
-        <article class="stats-kpi">
-          <span class="stats-kpi-icon" aria-hidden="true">📅</span>
-          <div><span class="stats-kpi-label">Coloring page views in the last 7 days</span><strong data-stats-recent-views>–</strong></div>
+          <span class="stats-kpi-icon" aria-hidden="true">↔</span>
+          <div><span class="stats-kpi-label">HTTP requests · Cloudflare edge</span><strong data-traffic-requests>–</strong></div>
         </article>
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">🤖</span>
-          <div><span class="stats-kpi-label">Crawler requests in the last 7 days</span><strong data-stats-crawler-requests>–</strong></div>
+          <div><span class="stats-kpi-label">Crawler requests · User-Agent heuristic</span><strong data-stats-crawler-requests>–</strong></div>
         </article>
       </div>
       <div class="container">
         <p class="stats-note" data-traffic-visits-note>
-          “Approx. unique visitors” is Cloudflare’s latest available daily Unique Visitors metric (unique IPs) for this hostname. It is not an exact people count, and Free-plan traffic analytics can include crawlers and threats. “Crawler requests” is a separate request count and must not be subtracted from Website visits.
+          Unique visitors are unavailable until Cloudflare exposes a verified hostname-scoped metric; a zone-wide unique-IP total is not a count of visitors to this hostname. Visits are not unique people. These Cloudflare HTTP Analytics counts can be sampled.
         </p>
       </div>
     </section>
 
-    <section class="stats-summary" aria-labelledby="instagram-title">
+    <section class="stats-rankings" aria-label="Cloudflare crawler activity">
       <div class="container">
-        <div class="stats-table-heading">
-          <div><span class="stats-panel-kicker">Attribution · UTM</span><h2 id="instagram-title">Instagram arrivals</h2></div>
-        </div>
-        <div class="stats-kpi-grid">
-          <article class="stats-kpi"><div><span class="stats-kpi-label">Instagram · 7 days</span><strong data-instagram-7>–</strong></div></article>
-          <article class="stats-kpi"><div><span class="stats-kpi-label">Instagram · 30 days</span><strong data-instagram-30>–</strong></div></article>
-          <article class="stats-kpi"><div><span class="stats-kpi-label">Profile · 30 days</span><strong data-instagram-profile>–</strong></div></article>
-          <article class="stats-kpi"><div><span class="stats-kpi-label">Stories · 30 days</span><strong data-instagram-story>–</strong></div></article>
-          <article class="stats-kpi"><div><span class="stats-kpi-label">Reels · 30 days</span><strong data-instagram-reel>–</strong></div></article>
-        </div>
-        <p class="stats-note" data-instagram-note aria-live="polite">Instagram attribution is loading. Counts are landing events, not unique people.</p>
-      </div>
-    </section>
-
-    <section class="stats-rankings" aria-label="Traffic and crawler analytics">
-      <div class="container stats-rankings-grid">
         <article class="stats-panel">
           <div class="stats-panel-heading">
-            <div><span class="stats-panel-kicker">7 days</span><h2>👁 Most viewed TOP 10</h2></div>
-            <span class="stats-panel-caption">Coloring page detail views</span>
-          </div>
-          <ol class="stats-top-list" data-stats-viewed></ol>
-          <p class="stats-empty" data-stats-viewed-empty hidden>No coloring page views yet.</p>
-        </article>
-
-        <article class="stats-panel">
-          <div class="stats-panel-heading">
-            <div><span class="stats-panel-kicker">7 days</span><h2>🤖 Crawlers</h2></div>
-            <span class="stats-panel-caption" data-traffic-status>User-Agent heuristic</span>
+            <div><span class="stats-panel-kicker" data-traffic-range-label>Last 7 days</span><h2>Crawler requests</h2></div>
+            <span class="stats-panel-caption" data-traffic-status>Cloudflare · User-Agent heuristic</span>
           </div>
           <div class="stats-table-wrap">
             <table class="stats-table">
@@ -122,55 +99,9 @@
               <tbody data-stats-crawlers></tbody>
             </table>
           </div>
-          <p class="stats-empty" data-stats-crawlers-empty hidden>No crawler requests in this period.</p>
-          <p class="stats-note">Crawler names are inferred from User-Agent strings. Paths do not include URL query strings.</p>
+          <p class="stats-empty" data-stats-crawlers-empty hidden>No crawler requests were reported for this period.</p>
+          <p class="stats-note">Crawler activity is estimated from request User-Agent strings, not verified bot identities. Query strings are omitted. Do not subtract crawler requests from visits.</p>
         </article>
-      </div>
-    </section>
-
-    <section class="stats-all" aria-labelledby="traffic-all-title">
-      <div class="container">
-        <div class="stats-table-heading">
-          <div>
-            <span class="stats-panel-kicker">Page views</span>
-            <h2 id="traffic-all-title">Views by coloring page</h2>
-          </div>
-          <div class="stats-controls">
-            <label class="stats-search">
-              <span class="sr-only">Search coloring pages</span>
-              <input type="search" placeholder="Search coloring pages …" data-traffic-search>
-            </label>
-            <label class="stats-sort-label">
-              <span class="sr-only">Sort</span>
-              <select data-traffic-sort>
-                <option value="recentViews">Views in the last 7 days</option>
-                <option value="views">Total views</option>
-                <option value="title">Title A–Z</option>
-              </select>
-            </label>
-          </div>
-        </div>
-
-        <div class="stats-table-wrap">
-          <table id="traffic-catalog-table" class="stats-table">
-            <thead>
-              <tr>
-                <th scope="col">Coloring page</th>
-                <th scope="col">Category</th>
-                <th scope="col" class="stats-number">Total views</th>
-                <th scope="col" class="stats-number">7 day views</th>
-              </tr>
-            </thead>
-            <tbody data-traffic-table></tbody>
-          </table>
-        </div>
-        <div class="gallery-actions">
-          <button class="outline-link" type="button" data-traffic-load-more aria-controls="traffic-catalog-table" hidden>
-            More <span aria-hidden="true">↓</span>
-          </button>
-        </div>
-        <p class="stats-empty" data-traffic-table-empty hidden>No matching coloring page found.</p>
-        <p class="stats-note">Exact unique people are not available from this dashboard. Approx. unique visitors is a privacy-preserving daily unique-IP count from the Stats Worker; Website visits is a separate Cloudflare metric and may be sampled.</p>
       </div>
     </section>
   </main>
@@ -181,7 +112,7 @@
       if (document.activeElement === skip) skip.blur();
     }, { once: true });
   </script>
-  <script src="js/stats.js?v=kita-campaign-v1" defer></script>
-  <script src="js/traffic-admin.js?v=instagram-216" defer></script>
+  <script src="js/stats.js?v=a4c560562b9267fe" defer></script>
+  <script src="js/traffic-admin.js?v=cloudflare-only-368-v2" defer></script>
 </body>
 </html>
