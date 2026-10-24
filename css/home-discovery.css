@@ -93,6 +93,7 @@
 .category-subtopics a {
   display: flex;
   align-items: center;
+  gap: 10px;
   min-height: 44px;
   padding: 9px 12px;
   border-radius: 9px;
@@ -100,6 +101,17 @@
   font-weight: 800;
   text-decoration: none;
 }
+.category-subtopic-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 23px;
+  line-height: 1;
+}
+.category-subtopic-label { min-width: 0; overflow-wrap: anywhere; }
 .category-subtopics a:hover { background: var(--category-tint); text-decoration: underline; text-underline-offset: 3px; }
 .category-group summary:focus-visible, .category-direct:focus-visible,
 .category-subtopics a:focus-visible, .category-all-link:focus-visible {
