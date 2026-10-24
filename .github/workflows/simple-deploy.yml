@@ -1,6 +1,7 @@
 name: SIMPLE-DEPLOY Coloring Pages
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
