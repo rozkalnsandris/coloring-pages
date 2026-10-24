@@ -51,6 +51,8 @@ class StatsWorkerSourceGuardTests(unittest.TestCase):
         self.assertEqual(guard.git_blob_sha1(raw), guard.BLOB)
         source = raw.decode("utf-8")
         self.assertIn("legacy_personalized_api_retired", source)
+        self.assertIn("cloudflare_traffic_version:1", source)
+        self.assertIn("http_requests:httpRequests", source)
         self.assertIn("/api/stats/print-aggregate", source)
 
     def _copy(self, location):

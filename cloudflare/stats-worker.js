@@ -322,7 +322,9 @@ async function trafficStats(env, request) {
   const url = new URL(request.url);
   const requestedDays = Number(url.searchParams.get("days")) || 7;
   const days = ANALYTICS_RANGE_DAYS.has(requestedDays) ? requestedDays : 7;
-  const host = env.CF_ANALYTICS_HOST || new URL(env.PUBLIC_ORIGIN || DEFAULT_ORIGIN).hostname;
+  // Traffic dashboard scope is the apex Ausmalwiese host only. Never fall back
+  // to the legacy coloring.rozkalns.net binding or unverified zone-wide data.
+  const host = "ausmalwiese.de";
   const end = new Date();
   const start = new Date(end.getTime() - days * 86400000);
   const commonFilter = {
@@ -337,6 +339,7 @@ async function trafficStats(env, request) {
     " viewer { zones(filter: { zoneTag: $zoneTag }) {",
     "  visits: httpRequestsAdaptiveGroups(limit: 1000, orderBy: [datetimeHour_ASC], filter: $filter) {",
     "   sum { visits }",
+    "   count",
     "   avg { sampleInterval }",
     "   dimensions { datetimeHour }",
     "  }",
@@ -347,6 +350,10 @@ async function trafficStats(env, request) {
     filter: commonFilter,
   });
   if (visitsResult.error) return json({error:visitsResult.error},visitsResult.status);
+  // Empty zone selection is a configuration error, not zero traffic.
+  if (visitsResult.data?.viewer?.zones?.length !== 1) {
+    return json({error:"analytics_zone_unavailable"},503);
+  }
 
   // Daily IP-derived HMAC uniqueness was retired by the #182 privacy decision.
   // Keep the response fields temporarily for the internal dashboard compatibility window.
@@ -383,9 +390,13 @@ async function trafficStats(env, request) {
   });
   if (crawlerResult.error) return json({error:crawlerResult.error},crawlerResult.status);
 
-  const visitsRows = visitsResult.data?.viewer?.zones?.[0]?.visits || [];
-  const crawlerRows = crawlerResult.data?.viewer?.zones?.[0]?.crawlers || [];
+  if (crawlerResult.data?.viewer?.zones?.length !== 1) {
+    return json({error:"analytics_zone_unavailable"},503);
+  }
+  const visitsRows = visitsResult.data.viewer.zones[0].visits || [];
+  const crawlerRows = crawlerResult.data.viewer.zones[0].crawlers || [];
   const visits = visitsRows.reduce((sum, row) => sum + Number(row.sum?.visits || 0), 0);
+  const httpRequests = visitsRows.reduce((sum, row) => sum + Number(row.count || 0), 0);
   let sampled = visitsRows.some((row) => Number(row.avg?.sampleInterval || 1) > 1);
 
   const crawlerMap = new Map();
@@ -410,6 +421,10 @@ async function trafficStats(env, request) {
 
   return json({
     range_days:days,
+    analytics_host:host,
+    cloudflare_traffic_version:1,
+    http_requests:httpRequests,
+    http_requests_basis:"cloudflare-http-eyeball-requests",
     unique_visitors:uniqueVisitors,
     unique_visitors_date:uniqueVisitorsDate,
     unique_visitors_status:uniqueVisitorsStatus,

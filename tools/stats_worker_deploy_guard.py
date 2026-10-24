@@ -22,7 +22,7 @@ ADDITIVE_MIGRATION_PATH = "cloudflare/stats-cookie-like-migration.sql"
 CLEANUP_MIGRATION_PATH = "cloudflare/stats-remove-daily-visitor-hmac.sql"
 
 WORKER = "coloring-pages-stats-v1"
-BLOB = "f3a743b5f0db928c2b1592272f48ffaabf6b0a2c"
+BLOB = "8790a8ddc3b83771088c4cceb16a3b57ce5d1c8b"
 CONFIG_BLOB = "3733263a391274f2b6b0f2023c8656565bde8e1a"
 ADDITIVE_MIGRATION_BLOB = "b5346c05cb27de1010dab2027b0b923e999af775"
 CLEANUP_MIGRATION_BLOB = "a7cffb110adfceb5c1ff4dcd17a7009c549976a5"
@@ -164,7 +164,11 @@ def check_source_contract(root: Path = ROOT) -> dict[str, str]:
             or f'const PRINT_QR_DESTINATION = "{QR_DEST}";' not in source
             or 'const DEFAULT_ORIGIN = "https://coloring.rozkalns.net";' not in source
             or "legacy_personalized_api_retired" not in source
-            or "/api/stats/print-aggregate" not in source):
+            or "/api/stats/print-aggregate" not in source
+            or 'const host = "ausmalwiese.de";' not in source
+            or "clientRequestHTTPHost: host," not in source
+            or "cloudflare_traffic_version:1" not in source
+            or "http_requests:httpRequests" not in source):
         raise GuardFailure("WORKER_PRIVACY_OR_ORIGIN_DRIFT")
 
     return {
