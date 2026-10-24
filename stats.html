@@ -11,7 +11,7 @@
   <link rel="preload" href="assets/fonts/nunito-latin-vf-ba344451eab25b21.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/fonts.css?v=e8c09f4e07f0c140">
   <link rel="stylesheet" href="css/app.css?v=a7c40bb6d6111c9c">
-  </head>
+</head>
 <body class="stats-page">
   <a class="skip-link" href="#main">Skip to content</a>
 
@@ -36,11 +36,11 @@
   <main id="main" tabindex="-1">
     <section class="stats-hero" aria-labelledby="stats-title">
       <div class="container">
-        <span class="stats-eyebrow">Internal dashboard</span>
+        <span class="stats-eyebrow">Internal dashboard · engagement</span>
         <div class="stats-hero-row">
           <div>
             <h1 id="stats-title">Statistics</h1>
-            <p>Print activity, likes and catalog engagement.</p>
+            <p>Print actions, likes and page-level catalog engagement.</p>
           </div>
           <div class="stats-controls">
             <a class="outline-link" href="traffic.html">Traffic analytics <span aria-hidden="true">→</span></a>
@@ -51,7 +51,7 @@
       </div>
     </section>
 
-    <section class="stats-summary" aria-label="Summary">
+    <section class="stats-summary" aria-label="Engagement summary">
       <div class="container stats-kpi-grid">
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">🖨️</span>
@@ -63,38 +63,15 @@
         </article>
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">🔥</span>
-          <div><span class="stats-kpi-label">Prints in the last 7 days</span><strong data-stats-recent-prints>–</strong></div>
+          <div><span class="stats-kpi-label">Print actions in the last 7 days</span><strong data-stats-recent-prints>–</strong></div>
         </article>
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">🖍️</span>
           <div><span class="stats-kpi-label">Published pages</span><strong data-stats-published-pages>–</strong></div>
         </article>
-        <article class="stats-kpi">
-          <span class="stats-kpi-icon" aria-hidden="true">▦</span>
-          <div><span class="stats-kpi-label">Printed QR link visits · total</span><strong data-stats-qr-total>–</strong></div>
-        </article>
-        <article class="stats-kpi">
-          <span class="stats-kpi-icon" aria-hidden="true">↪</span>
-          <div><span class="stats-kpi-label">Printed QR link visits · 7 days</span><strong data-stats-qr-recent>–</strong></div>
-        </article>
       </div>
-    </section>
-
-    <section class="stats-summary" aria-labelledby="kita-pilot-title">
       <div class="container">
-        <div class="stats-table-heading">
-          <div>
-            <span class="stats-panel-kicker">30 days</span>
-            <h2 id="kita-pilot-title">Kita pilot · Dortmund 01</h2>
-          </div>
-        </div>
-        <div class="stats-kpi-grid">
-          <article class="stats-kpi"><span class="stats-kpi-icon" aria-hidden="true">✉️</span><div><span class="stats-kpi-label">Landing visits</span><strong data-stats-kita-landing>–</strong></div></article>
-          <article class="stats-kpi"><span class="stats-kpi-icon" aria-hidden="true">↪</span><div><span class="stats-kpi-label">Catalog entries</span><strong data-stats-kita-catalog>–</strong></div></article>
-          <article class="stats-kpi"><span class="stats-kpi-icon" aria-hidden="true">👁️</span><div><span class="stats-kpi-label">Detail views</span><strong data-stats-kita-detail>–</strong></div></article>
-          <article class="stats-kpi"><span class="stats-kpi-icon" aria-hidden="true">🖨️</span><div><span class="stats-kpi-label">Print actions</span><strong data-stats-kita-prints>–</strong></div></article>
-        </div>
-        <p class="stats-note" data-stats-kita-note>Event counts from the shared <code>dortmund-01</code> campaign. They are not unique Kita counts; print actions are print intent.</p>
+        <p class="stats-note">Traffic, referrers and campaign acquisition belong to the separate Cloudflare-only Traffic dashboard. “Print actions” are button actions, not confirmed physical prints.</p>
       </div>
     </section>
 
@@ -176,6 +153,6 @@
     }, { once: true });
   </script>
   <script src="js/stats.js?v=a4c560562b9267fe" defer></script>
-  <script src="js/stats-admin.js?v=published-pages-v1" defer></script>
+  <script src="js/stats-admin.js?v=engagement-v2" defer></script>
 </body>
 </html>
