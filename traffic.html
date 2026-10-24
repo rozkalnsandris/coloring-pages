@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
-  <meta name="description" content="Internal Ausmalwiese traffic and crawler analytics dashboard.">
+  <meta name="description" content="Internal Ausmalwiese Cloudflare traffic analytics dashboard.">
   <title>Traffic analytics – Ausmalwiese</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=c5d8c26a8a8349b2">
   <link rel="preload" href="assets/fonts/baloo2-latin-vf-26fb4610d4bc976d.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/nunito-latin-vf-ba344451eab25b21.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/fonts.css?v=e8c09f4e07f0c140">
   <link rel="stylesheet" href="css/app.css?v=a7c40bb6d6111c9c">
-  </head>
+</head>
 <body class="stats-page">
   <a class="skip-link" href="#main">Skip to content</a>
 
@@ -36,20 +36,22 @@
   <main id="main" tabindex="-1">
     <section class="stats-hero" aria-labelledby="traffic-title">
       <div class="container">
-        <span class="stats-eyebrow">Internal dashboard · Cloudflare Analytics</span>
+        <span class="stats-eyebrow">Internal dashboard · Cloudflare only</span>
         <div class="stats-hero-row">
           <div>
-            <h1 id="traffic-title">Traffic analytics</h1>
-            <p>Cloudflare-only traffic metrics. Engagement counts remain on the Statistics page.</p>
+            <h1 id="traffic-title">Traffic intelligence</h1>
+            <p>Website traffic, crawler activity and acquisition readiness from Cloudflare analytics only.</p>
           </div>
           <button class="outline-link stats-refresh" type="button" data-traffic-refresh>Refresh <span aria-hidden="true">↻</span></button>
         </div>
-        <label class="stats-sort-label" for="traffic-days">Time range
-          <select id="traffic-days" data-traffic-days>
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-          </select>
-        </label>
+        <div class="stats-controls">
+          <label class="stats-sort-label" for="traffic-days">Time range
+            <select id="traffic-days" data-traffic-days>
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+            </select>
+          </label>
+        </div>
         <p class="stats-status" data-traffic-page-status role="status" aria-live="polite">Loading Cloudflare analytics …</p>
       </div>
     </section>
@@ -58,7 +60,7 @@
       <div class="container stats-kpi-grid traffic-kpi-grid">
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">👤</span>
-          <div><span class="stats-kpi-label">Unique visitors · ausmalwiese.de</span><strong data-traffic-unique>–</strong></div>
+          <div><span class="stats-kpi-label">Unique visitors · verified people</span><strong data-traffic-unique>–</strong></div>
         </article>
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">↪</span>
@@ -66,17 +68,68 @@
         </article>
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">↔</span>
-          <div><span class="stats-kpi-label">HTTP requests · Cloudflare edge</span><strong data-traffic-requests>–</strong></div>
+          <div><span class="stats-kpi-label">HTTP requests · ausmalwiese.de</span><strong data-traffic-requests>–</strong></div>
         </article>
         <article class="stats-kpi">
           <span class="stats-kpi-icon" aria-hidden="true">🤖</span>
-          <div><span class="stats-kpi-label">Crawler requests · User-Agent heuristic</span><strong data-stats-crawler-requests>–</strong></div>
+          <div><span class="stats-kpi-label">Crawler requests · heuristic</span><strong data-stats-crawler-requests>–</strong></div>
         </article>
       </div>
       <div class="container">
         <p class="stats-note" data-traffic-visits-note>
-          Unique visitors are unavailable until Cloudflare exposes a verified hostname-scoped metric; a zone-wide unique-IP total is not a count of visitors to this hostname. Visits are not unique people. These Cloudflare HTTP Analytics counts can be sampled.
+          Unique visitors stay unavailable until a Cloudflare metric is verified as hostname-scoped and semantically equivalent to people. Visits are sessions/visit starts, not unique people.
         </p>
+      </div>
+    </section>
+
+    <section class="stats-rankings" aria-label="Traffic coverage">
+      <div class="container stats-rankings-grid">
+        <article class="stats-panel">
+          <div class="stats-panel-heading">
+            <div>
+              <span class="stats-panel-kicker">Data quality</span>
+              <h2>What is measured now</h2>
+            </div>
+            <span class="stats-panel-caption">Cloudflare edge</span>
+          </div>
+          <div class="stats-table-wrap">
+            <table class="stats-table">
+              <thead>
+                <tr><th scope="col">Signal</th><th scope="col">Source</th><th scope="col">State</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Visits</td><td>HTTP Analytics · exact host</td><td>Available</td></tr>
+                <tr><td>HTTP requests</td><td>HTTP Analytics · exact host</td><td>Available after Worker host proof</td></tr>
+                <tr><td>Unique people</td><td>Cloudflare provider metric</td><td>Not verified</td></tr>
+                <tr><td>Page views by coloring page</td><td>Cloudflare page/path analytics</td><td>Needs provider/route proof</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="stats-note">The current detail URL uses <code>detail.html?id=…</code>. A path-only aggregate sees the same <code>/detail.html</code> path for every coloring page, so per-page views must not be guessed from raw edge paths.</p>
+        </article>
+
+        <article class="stats-panel">
+          <div class="stats-panel-heading">
+            <div>
+              <span class="stats-panel-kicker">Acquisition</span>
+              <h2>Instagram, QR &amp; Kita</h2>
+            </div>
+            <span class="stats-panel-caption">Cloudflare-only target</span>
+          </div>
+          <div class="stats-table-wrap">
+            <table class="stats-table">
+              <thead>
+                <tr><th scope="col">Channel</th><th scope="col">Preferred Cloudflare signal</th><th scope="col">State</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Instagram</td><td>Referrer / landing path attribution</td><td>Provider API verification required</td></tr>
+                <tr><td>Printed QR</td><td>Dedicated landing path requests or visits</td><td>Route design required</td></tr>
+                <tr><td>Kita</td><td>Dedicated campaign landing path</td><td>Planned</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="stats-note">Existing D1 campaign counters are deliberately not mixed into this Traffic dashboard. New channel numbers appear here only when Cloudflare can provide them with a defined host, path/referrer, time window and bot policy.</p>
+        </article>
       </div>
     </section>
 
@@ -113,6 +166,6 @@
     }, { once: true });
   </script>
   <script src="js/stats.js?v=a4c560562b9267fe" defer></script>
-  <script src="js/traffic-admin.js?v=cloudflare-only-368-v2" defer></script>
+  <script src="js/traffic-admin.js?v=cloudflare-only-368-v3" defer></script>
 </body>
 </html>
