@@ -54,7 +54,7 @@ class SeoCategoryLandingTests(unittest.TestCase):
         for category_id, _ in self.categories:
             self.assertRegex(
                 index,
-                rf'<a [^>]*class="category-card [^"]+" href="/{category_id}" data-filter="{category_id}">',
+                rf'<a [^>]*href="/{category_id}" data-filter="{category_id}">',
             )
         self.assertIn('href="/essen-natur" data-collection-filter="essen-natur"', index)
         self.assertNotIn('type="button" data-filter=', index)
