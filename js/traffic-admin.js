@@ -10,6 +10,8 @@
     unique: document.querySelector("[data-traffic-unique]"),
     visits: document.querySelector("[data-stats-visits]"),
     requests: document.querySelector("[data-traffic-requests]"),
+    visitsAvailability: document.querySelector("[data-traffic-visits-availability]"),
+    requestsAvailability: document.querySelector("[data-traffic-requests-availability]"),
     crawlers: document.querySelector("[data-stats-crawler-requests]"),
     crawlerStatus: document.querySelector("[data-traffic-status]"),
     crawlerTable: document.querySelector("[data-stats-crawlers]"),
@@ -36,20 +38,48 @@
     return tr;
   }
 
+  function resetTraffic(status, note) {
+    els.unique.textContent = "N/A";
+    els.visits.textContent = "–";
+    els.requests.textContent = "–";
+    els.crawlers.textContent = "–";
+    els.visitsAvailability.textContent = "Unavailable";
+    els.requestsAvailability.textContent = "Unavailable";
+    els.crawlerTable.replaceChildren();
+    els.crawlerEmpty.hidden = false;
+    els.crawlerStatus.textContent = "Data unavailable";
+    els.note.textContent = note;
+    els.status.textContent = status;
+  }
+
   function render(data, days) {
     if (data?.range_days !== days || !validCount(data.visits)
         || !validCount(data.crawler_requests) || !Array.isArray(data.crawlers)
         || typeof data.sampled !== "boolean") {
       throw new Error("invalid Cloudflare traffic analytics response");
     }
+    // A legacy Worker can return valid-looking zone or wrong-host metrics.
+    // Fail closed for ALL traffic numbers without the exact-host source marker.
+    const hostProof = data.analytics_host === "ausmalwiese.de" && data.cloudflare_traffic_version === 1;
+    if (!hostProof) {
+      resetTraffic(
+        "Cloudflare analytics hostname not verified.",
+        "The active Worker's Cloudflare analytics hostname is not independently verified. No traffic numbers are displayed."
+      );
+      return;
+    }
     // The zone-level uniq rollup cannot be claimed as hostname-specific.
     // Retired D1/IP-HMAC fields must not be read, even on a legacy Worker.
     els.unique.textContent = "N/A";
-    const hostProof = data.analytics_host === "ausmalwiese.de" && data.cloudflare_traffic_version === 1;
     els.visits.textContent = fmt.format(data.visits);
-    els.requests.textContent = hostProof && validCount(data.http_requests)
-      ? fmt.format(data.http_requests) : "N/A";
+    const requestsAvailable = validCount(data.http_requests);
+    els.requests.textContent = requestsAvailable ? fmt.format(data.http_requests) : "N/A";
     els.crawlers.textContent = fmt.format(data.crawler_requests);
+    els.visitsAvailability.textContent = data.sampled
+      ? "Returned · sampled · host declared by Worker" : "Returned · host declared by Worker";
+    els.requestsAvailability.textContent = requestsAvailable
+      ? (data.sampled ? "Returned · sampled · host declared by Worker" : "Returned · host declared by Worker")
+      : "Unavailable · missing provider field";
     els.rangeLabel.textContent = "Last " + days + " days";
     els.crawlerStatus.textContent = data.sampled
       ? "Cloudflare · sampled · User-Agent heuristic"
@@ -71,20 +101,18 @@
     const token = ++requestNumber;
     const days = els.range.value === "30" ? 30 : 7;
     els.refresh.disabled = true;
-    els.status.textContent = "Loading Cloudflare analytics …";
+    resetTraffic("Loading Cloudflare analytics …", "Awaiting Cloudflare analytics for the selected period.");
+    els.visitsAvailability.textContent = "Loading";
+    els.requestsAvailability.textContent = "Loading";
     try {
       const data = await window.ColoringStats.getTraffic(days);
       if (token === requestNumber) render(data, days);
     } catch (error) {
       if (token === requestNumber) {
-        els.unique.textContent = "N/A";
-        els.visits.textContent = "–";
-        els.requests.textContent = "–";
-        els.crawlers.textContent = "–";
-        els.crawlerTable.replaceChildren();
-        els.crawlerEmpty.hidden = false;
-        els.status.textContent = "Cloudflare traffic analytics unavailable.";
-        els.crawlerStatus.textContent = "Data unavailable";
+        resetTraffic(
+          "Cloudflare traffic analytics unavailable.",
+          "Cloudflare did not return a valid response for this period. No traffic counts are available."
+        );
         console.error(error);
       }
     } finally {
@@ -95,5 +123,8 @@
   els.range.addEventListener("change", load);
   els.refresh.addEventListener("click", load);
   if (typeof window.ColoringStats?.getTraffic === "function") load();
-  else els.status.textContent = "Cloudflare traffic analytics API unavailable.";
+  else resetTraffic(
+    "Cloudflare traffic analytics API unavailable.",
+    "A Cloudflare-only source is required; no fallback traffic counts are displayed."
+  );
 })();
