@@ -92,10 +92,10 @@ const window = {ColoringStats:{
     if (getCalls <= (f.initialFailures || 0)) throw new Error('status api unavailable');
     return {liked:true,like_count:4};
   },
-  toggleLike: async () => {
+  addLike: async () => {
     likeCalls++;
     if (f.fail) throw new Error('api unavailable');
-    return {liked:true,like_count:1};
+    return {reacted:true,like_count:1};
   },
 }};
 const code = fs.readFileSync('js/detail.js','utf8');
@@ -120,7 +120,14 @@ if (f.init) {
     console.log(JSON.stringify({initial, afterRetry:snapshot(), getCalls, likeCalls}));
   });
 } else {
-  Promise.resolve(handlers.click()).then(() => console.log(JSON.stringify(snapshot())));
+  (async () => {
+    const pending=handlers.click();
+    await handlers.click();
+    await pending;
+    await handlers.click();
+    await context.runHydrate("sample");
+    console.log(JSON.stringify({...snapshot(), likeCalls, getCalls}));
+  })();
 }
 """
 
@@ -303,7 +310,7 @@ class UIErrorStateTests(unittest.TestCase):
         self.assertFalse(restored["disabled"])
         self.assertTrue(restored["hidden"])
         self.assertTrue(restored["retryHidden"])
-        self.assertEqual(restored["pressed"], "true")
+        self.assertEqual(restored["pressed"], "false")
         self.assertEqual(restored["count"], "4")
         self.assertEqual(result["getCalls"], 2)
         self.assertEqual(result["likeCalls"], 0)
@@ -315,15 +322,20 @@ class UIErrorStateTests(unittest.TestCase):
         self.assertFalse(result["afterRetry"]["retryDisabled"])
         self.assertEqual(result["likeCalls"], 0)
 
-    def test_like_failure_is_visible_and_reenables_button(self):
+    def test_like_success_and_uncertainty_both_prevent_resubmission(self):
         failed = node_check(LIKE_HARNESS, {"fail":True})
-        self.assertFalse(failed["disabled"])
+        self.assertTrue(failed["disabled"])
         self.assertFalse(failed["hidden"])
-        self.assertIn("nicht gespeichert", failed["text"])
+        self.assertIn("nicht bestätigt", failed["text"])
         good = node_check(LIKE_HARNESS, {"fail":False})
-        self.assertFalse(good["disabled"])
+        self.assertTrue(good["disabled"])
         self.assertTrue(good["hidden"])
         self.assertEqual(good["pressed"], "true")
+        self.assertEqual(good["likeCalls"], 1)
+        self.assertEqual(failed["likeCalls"], 1)
+        self.assertEqual(good["getCalls"], 0)
+        self.assertEqual(failed["getCalls"], 0)
+        self.assertEqual(failed["count"], "0")
 
 
 class PageHead(HTMLParser):

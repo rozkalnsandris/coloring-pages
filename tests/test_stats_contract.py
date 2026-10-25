@@ -1,4 +1,6 @@
 import hashlib
+import shutil
+import subprocess
 import unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
@@ -50,17 +52,20 @@ class HomeRankingLayoutTests(unittest.TestCase):
         self.assertIn('.ranking-tabs {', css)
         self.assertIn('.ranking-tab.is-active', css)
         self.assertIn('grid-template-columns: repeat(2, minmax(0, 1fr))', css)
-def test_detail_tracks_print_intent_and_reversible_like():
+def test_detail_tracks_print_intent_and_aggregate_like():
     html=read("detail.html"); js=read("js/detail.js")
     assert 'data-action-like' in html
     assert 'ColoringStats?.trackPrint?.(loadedEntryId)' in js
-    assert 'ColoringStats.toggleLike(loadedEntryId)' in js
+    assert 'ColoringStats.addLike(loadedEntryId)' in js
     assert 'aria-pressed' in html
 def test_cloudflare_stats_contract_keeps_rpi5_out_of_state():
     worker=read("cloudflare/stats-worker.js"); schema=read("cloudflare/stats-schema.sql"); docs=read("docs/CLOUDFLARE_STATS_V1.md")
     assert '"/api/stats/rankings"' in worker
-    assert '"/api/stats/print"' in worker
-    assert '"/api/stats/like"' in worker
+    assert 'path==="/api/stats/print") return legacyPersonalizedRetired' in worker
+    assert 'path==="/api/stats/like") return legacyPersonalizedRetired' in worker
+    assert "legacy_personalized_api_retired" in worker
+    assert "cloudflare_traffic_version:1" in worker
+    assert "http_requests:httpRequests" in worker
     assert 'path==="/api/stats/visit"' in worker
     assert "RATE_LIMITER" in worker
     assert "CREATE TABLE IF NOT EXISTS page_stats" in schema
@@ -69,12 +74,12 @@ def test_cloudflare_stats_contract_keeps_rpi5_out_of_state():
     assert "PRIMARY KEY (page_id, visitor_hash)" in schema
     assert "Raspberry Pi" in docs
     assert "print intent" in docs
-def test_stats_frontend_uses_first_party_random_id_only_on_engagement():
+def test_stats_frontend_uses_aggregate_endpoints_without_persistent_identity():
     js=read("js/stats.js")
-    assert 'getVisitorId(false)' in js
-    assert 'getVisitorId(true)' in js
-    assert 'localStorage.getItem(VISITOR_KEY)' in js
-    assert 'crypto?.randomUUID?.()' in js
+    assert '"/like-aggregate"' in js
+    assert '${API_BASE}/print-aggregate' in js
+    for forbidden in ('getVisitorId', 'visitor_id', 'localStorage', 'sessionStorage', 'randomUUID'):
+        assert forbidden not in js
 
 
 class TrendingSqlRegressionTests(unittest.TestCase):
@@ -143,6 +148,10 @@ class AdminStatsDashboardTests(unittest.TestCase):
 
         self.assertIn('name="robots" content="noindex,nofollow,noarchive"', html)
         self.assertIn("data-stats-total-prints", html)
+        self.assertIn("Total likes", html)
+        self.assertIn("Print actions in the last 7 days", html)
+        self.assertNotIn("data-stats-qr-total", html)
+        self.assertNotIn("data-stats-kita-landing", html)
         self.assertIn("data-stats-popular", html)
         self.assertIn("data-stats-trending", html)
         self.assertIn("data-stats-table", html)
@@ -274,65 +283,107 @@ class AdminTrafficAnalyticsTests(unittest.TestCase):
         self.assertNotIn("clientIP", traffic)
         self.assertNotIn("visitor_hash", traffic)
 
-    def test_traffic_analytics_are_split_into_a_separate_internal_page(self):
-        stats_html = read("stats.html")
-        traffic_html = read("traffic.html")
+    def test_traffic_uses_only_cloudflare_aggregates(self):
+        html = read("traffic.html")
+        js = read("js/traffic-admin.js")
+        worker = read("cloudflare/stats-worker.js")
+        stats = read("stats.html")
         shared = read("js/stats.js")
-        stats_admin = read("js/stats-admin.js")
-        traffic_admin = read("js/traffic-admin.js")
-        css = read("css/app.css")
-        dockerfile = read("Dockerfile")
-        public_home = read("index.html")
-        docs = read("docs/CLOUDFLARE_STATS_V1.md")
+        self.assertIn('href="traffic.html"', stats)
+        self.assertIn('name="robots" content="noindex,nofollow,noarchive"', html)
+        self.assertIn('href="stats.html"', html)
+        self.assertIn('data-traffic-days', html)
+        self.assertIn('data-stats-visits', html)
+        self.assertIn('data-stats-crawler-requests', html)
+        self.assertIn('data-traffic-unique', html)
+        self.assertIn('data-traffic-requests', html)
+        self.assertIn('data-traffic-visits-availability', html)
+        self.assertIn('data-traffic-requests-availability', html)
+        self.assertNotIn('<td>Available</td>', html)
+        self.assertIn('data-stats-crawlers', html)
+        self.assertNotIn('data-instagram-', html)
+        self.assertIn("Instagram, QR &amp; Kita", html)
+        self.assertIn("Provider API verification required", html)
+        self.assertIn("Page views by coloring page", html)
+        self.assertNotIn('data-stats-total-views', html)
+        self.assertNotIn('data-traffic-table', html)
+        self.assertNotIn('data-stats-unique-visitors', html)
+        self.assertIn("getTraffic(days)", js)
+        self.assertNotIn("getOverview(", js)
+        self.assertNotIn("getCampaigns(", js)
+        self.assertNotIn("catalog.json", js)
+        self.assertNotIn("daily_visitors", js)
+        self.assertNotIn("traffic.unique_visitors", js)
+        self.assertNotIn('method: "POST"', js)
+        self.assertIn('async function getTraffic(days = 7)', shared)
+        self.assertIn("httpRequestsAdaptiveGroups", worker)
+        self.assertIn('const host = "ausmalwiese.de";', worker)
+        self.assertIn('http_requests_basis:"cloudflare-http-eyeball-requests"', worker)
+        self.assertIn('error:"analytics_zone_unavailable"', worker)
+        self.assertIn("CF_ANALYTICS_API_TOKEN", worker)
+        self.assertIn("CF_ZONE_TAG", worker)
+        self.assertIn("noindex,nofollow,noarchive", html)
 
-        self.assertIn('href="traffic.html"', stats_html)
-        self.assertNotIn("data-stats-visits", stats_html)
-        self.assertNotIn("data-stats-crawlers", stats_html)
-        self.assertNotIn("getTraffic(7)", stats_admin)
-
-        self.assertIn('name="robots" content="noindex,nofollow,noarchive"', traffic_html)
-        self.assertIn('href="stats.html"', traffic_html)
-        self.assertIn("data-stats-unique-visitors", traffic_html)
-        self.assertIn("Approx. unique visitors", traffic_html)
-        self.assertIn("daily Unique Visitors", traffic_html)
-        self.assertIn("data-stats-visits", traffic_html)
-        self.assertIn("Website visits in the last 7 days", traffic_html)
-        self.assertIn("not unique people", traffic_html)
-        self.assertIn("must not be subtracted from Website visits", traffic_html)
-        self.assertIn("data-stats-total-views", traffic_html)
-        self.assertIn("data-stats-recent-views", traffic_html)
-        self.assertIn("data-stats-crawler-requests", traffic_html)
-        self.assertIn("data-stats-viewed", traffic_html)
-        self.assertIn("data-stats-crawlers", traffic_html)
-        self.assertIn("data-traffic-table", traffic_html)
-        self.assertIn("data-traffic-load-more", traffic_html)
-        self.assertIn("User-Agent heuristic", traffic_html)
-        css_version = hashlib.sha256((ROOT / "css/app.css").read_bytes()).hexdigest()[:16]
-        self.assertIn(f'href="css/app.css?v={css_version}"', traffic_html)
-        self.assertIn("grid-template-columns: 30px 88px minmax(0, 1fr) auto", css)
-        self.assertIn("width: 88px; height: 88px", css)
-        self.assertIn("object-fit: contain", css)
-        self.assertIn("grid-template-columns: 28px 64px minmax(0, 1fr) auto", css)
-        self.assertIn("flex: 0 0 56px; width: 56px; height: 56px", css)
-
-        self.assertIn("async function getTraffic(days = 7)", shared)
-        self.assertIn("window.ColoringStats.getTraffic(7)", traffic_admin)
-        self.assertIn("traffic.unique_visitors", traffic_admin)
-        self.assertIn("traffic.unique_visitors_date", traffic_admin)
-        self.assertIn("privacy-preserving unique-IP count", traffic_admin)
-        self.assertIn("separate sampled Cloudflare metric", traffic_admin)
-        self.assertIn("window.ColoringStats.getOverview()", traffic_admin)
-        self.assertIn('fetch("catalog.json", {cache: "no-store"})', traffic_admin)
-        self.assertIn("const CATALOG_PAGE_SIZE = 20;", traffic_admin)
-        self.assertIn("visible.slice(0, visibleLimit)", traffic_admin)
-        self.assertNotIn('method: "POST"', traffic_admin)
-
-        self.assertIn("stats.html traffic.html", dockerfile)
-        self.assertNotIn('href="traffic.html"', public_home)
-        self.assertIn("/traffic.html", docs)
-        self.assertIn("CF_ANALYTICS_API_TOKEN", docs)
-        self.assertIn("daily visitor HMAC collection is retired", docs)
-        self.assertIn("separate Cloudflare owner gate", docs)
+    @unittest.skipUnless(shutil.which("node"), "Node required for traffic rendering simulation")
+    def test_traffic_displays_cloudflare_metrics_and_fail_closed_states(self):
+        harness = r"""
+const fs=require('node:fs'),vm=require('node:vm');
+const code=fs.readFileSync('js/traffic-admin.js','utf8');
+async function render(metric, selectedDays='7'){
+  const nodes=new Map();
+  const document={
+    querySelector:(selector)=>{
+      if(!nodes.has(selector))nodes.set(selector,{
+        textContent:'',value:selector==='[data-traffic-days]'?selectedDays:'',
+        hidden:false,disabled:false,addEventListener(){},replaceChildren(...items){this.items=items},
+      });
+      return nodes.get(selector);
+    },
+    createElement:(kind)=>({tag:kind,textContent:'',className:'',append(){}}),
+  };
+  const window={ColoringStats:{getTraffic:async(days)=>({
+    range_days:days,visits:635,crawler_requests:1459,crawlers:[],sampled:true,...metric
+  })}};
+  vm.runInNewContext(code,{document,window,Intl,Date,console});
+  await new Promise(resolve=>setImmediate(resolve));
+  return {
+    visitors:nodes.get('[data-traffic-unique]').textContent,
+    visits:nodes.get('[data-stats-visits]').textContent,
+    requests:nodes.get('[data-traffic-requests]').textContent,
+    crawlers:nodes.get('[data-stats-crawler-requests]').textContent,
+    visitsState:nodes.get('[data-traffic-visits-availability]').textContent,
+    requestsState:nodes.get('[data-traffic-requests-availability]').textContent,
+    note:nodes.get('[data-traffic-visits-note]').textContent,
+    status:nodes.get('[data-traffic-page-status]').textContent,
+  };
+}
+(async()=>{
+  const v=await render({unique_visitors:12345,unique_visitors_status:'available',
+    unique_visitors_basis:'worker-d1-daily-hmac-ip'});
+  if(v.visitors!=='N/A'||v.visits!=='–'||v.requests!=='–'||v.crawlers!=='–'
+    ||v.visitsState!=='Unavailable'||v.requestsState!=='Unavailable'
+    ||!v.note.includes('not independently verified')||!v.status.includes('hostname not verified'))
+    throw Error('Legacy or wrong-host metrics must be hidden '+JSON.stringify(v));
+  const thirty=await render({analytics_host:'ausmalwiese.de',cloudflare_traffic_version:1,http_requests:8091},'30');
+  if(thirty.visits!=='635'||thirty.requests!=='8,091'||!thirty.note.includes('Worker-declared')
+    ||!thirty.visitsState.includes('host declared by Worker')
+    ||!thirty.requestsState.includes('sampled'))
+    throw Error('Cloudflare host-proof rendering failed '+JSON.stringify(thirty));
+  const missing=await render({analytics_host:'ausmalwiese.de',cloudflare_traffic_version:1});
+  if(missing.requests!=='N/A'||!missing.requestsState.includes('Unavailable')
+    ||missing.visits!=='635')
+    throw Error('Missing request field must be unavailable, not zero '+JSON.stringify(missing));
+  const invalid=await render({visits:null});
+  if(invalid.visits!=='–'||invalid.requests!=='–'||!invalid.status.includes('unavailable')
+    ||invalid.visitsState!=='Unavailable'||invalid.requestsState!=='Unavailable')
+    throw Error('Invalid provider data must not be coerced to zero '+JSON.stringify(invalid));
+  console.log('CLOUDFLARE_ONLY_TRAFFIC=PASS');
+})().catch(error=>{console.error(error);process.exitCode=1;});
+"""
+        result = subprocess.run(["node", "-e", harness], cwd=ROOT,
+                                text=True, capture_output=True, timeout=20, check=False)
+        self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+        self.assertIn("CLOUDFLARE_ONLY_TRAFFIC=PASS", result.stdout)
 
 
 class KitaCampaignStatsTests(unittest.TestCase):
@@ -360,15 +411,16 @@ class KitaCampaignStatsTests(unittest.TestCase):
         self.assertIn("ColoringStats?.trackView?.(entry.id)", detail)
         self.assertIn("ColoringStats?.trackPrint?.(loadedEntryId)", detail)
 
-    def test_admin_campaign_panel_is_read_only_and_optional(self):
+    def test_campaign_api_is_preserved_but_removed_from_engagement_dashboard(self):
         html = read("stats.html")
         shared = read("js/stats.js")
         admin = read("js/stats-admin.js")
-        self.assertIn("data-stats-kita-landing", html)
-        self.assertIn("data-stats-kita-catalog", html)
-        self.assertIn("data-stats-kita-detail", html)
-        self.assertIn("data-stats-kita-prints", html)
+        self.assertNotIn("data-stats-kita-landing", html)
+        self.assertNotIn("data-stats-kita-catalog", html)
+        self.assertNotIn("data-stats-kita-detail", html)
+        self.assertNotIn("data-stats-kita-prints", html)
+        self.assertNotIn("data-stats-qr-total", html)
+        self.assertNotIn("data-stats-qr-recent", html)
         self.assertIn("async function getCampaigns(days = 30)", shared)
-        self.assertIn("getCampaigns?.(30).catch(() => null)", admin)
-        self.assertIn('item.campaign === "dortmund-01"', admin)
+        self.assertNotIn("getCampaigns", admin)
         self.assertNotIn('method: "POST"', admin)

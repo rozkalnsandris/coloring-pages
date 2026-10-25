@@ -18,9 +18,6 @@ const rankingStatus = document.querySelector("[data-ranking-status]");
 const rankingTabs = [...document.querySelectorAll("[data-ranking-tab]")];
 const rankingDescription = document.querySelector("[data-ranking-description]");
 const topicExplorer = document.querySelector("[data-topic-explorer]");
-const topicCurrentBlock = document.querySelector("[data-topic-current-block]");
-const currentTopics = document.querySelector("[data-current-topics]");
-const topicMainBlock = document.querySelector("[data-topic-main-block]");
 const topicList = document.querySelector("[data-topic-list]");
 const topicClear = document.querySelector("[data-topic-clear]");
 const rankingSections = new Map(
@@ -192,15 +189,17 @@ function updateTopicButtons() {
     button.setAttribute("aria-pressed", String(button.dataset.topicChip === activeTopic));
   });
   if (topicClear) topicClear.hidden = !activeTopic;
+  renderTopicExplorer();
 }
 
-function selectTopic(topicId) {
-  activeTopic = activeTopic === topicId ? "" : topicId;
+function selectTopic(topicId, { toggle = true } = {}) {
+  activeTopic = toggle && activeTopic === topicId ? "" : topicId;
   syncCatalogFilterUrl();
   updateTopicButtons();
   applyFilters();
   updateNavigation("#neu");
   document.querySelector("#neu")?.scrollIntoView({ block: "start" });
+  document.querySelector("#gallery-title")?.focus({ preventScroll: true });
 }
 
 function createTopicButton(topic) {
@@ -222,23 +221,31 @@ function createTopicButton(topic) {
   return button;
 }
 
-function renderTopicExplorer(entries) {
-  if (!topicExplorer || !Array.isArray(entries) || !topicRegistry.length) {
-    if (topicExplorer) topicExplorer.hidden = true;
-    return;
+// The homepage starts with broad categories. Only a chosen topic is shown
+// beside the results; secondary choices stay inside their parent disclosure.
+function renderTopicExplorer() {
+  const topic = topicRegistry.find((candidate) => candidate.id === activeTopic);
+  if (topicExplorer) topicExplorer.hidden = !topic;
+  if (topicList) {
+    const button = topic ? createTopicButton(topic) : null;
+    if (button) button.setAttribute("aria-pressed", "true");
+    topicList.replaceChildren(...(button ? [button] : []));
   }
-
-  const counts = topicCounts(entries);
-  const current = topicRegistry.filter((topic) => topic.kind === "seasonal" && topicIsCurrent(topic) && (counts.get(topic.id) || 0) > 0);
-  const evergreen = topicRegistry.filter((topic) => topic.kind === "evergreen" && (counts.get(topic.id) || 0) > 0);
-
-  if (currentTopics) currentTopics.replaceChildren(...current.map(createTopicButton));
-  if (topicList) topicList.replaceChildren(...evergreen.map(createTopicButton));
-  if (topicCurrentBlock) topicCurrentBlock.hidden = current.length === 0;
-  if (topicMainBlock) topicMainBlock.hidden = evergreen.length === 0;
-  topicExplorer.hidden = current.length === 0 && evergreen.length === 0;
-  updateTopicButtons();
+  const heading = document.querySelector("#gallery-title");
+  if (heading) heading.textContent = topic ? `${topic.label} – Malvorlagen` : "Neue Malvorlagen";
 }
+
+// Native links still work before hydration and for new-tab/modified clicks.
+document.querySelectorAll("[data-browse-topic]").forEach((link) => {
+  link.addEventListener("click", (event) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const id = link.dataset.browseTopic;
+    if (!Array.isArray(catalogEntries) || !topicRegistry.some((topic) => topic.id === id)) return;
+    event.preventDefault();
+    activeCategory = "";
+    selectTopic(id, { toggle: false });
+  });
+});
 
 async function loadTopicRegistry() {
   try {
@@ -633,6 +640,7 @@ topicClear?.addEventListener("click", () => {
   syncCatalogFilterUrl();
   updateTopicButtons();
   applyFilters();
+  document.querySelector("#gallery-title")?.focus({ preventScroll: true });
 });
 
 loadMoreButton?.addEventListener("click", () => {
@@ -642,6 +650,8 @@ loadMoreButton?.addEventListener("click", () => {
 });
 
 categoryButtons.forEach((button) => {
+  // Category destinations are ordinary crawlable links, not toggle buttons.
+  if (button.tagName === "A") return;
   button.setAttribute("aria-pressed", "false");
   button.addEventListener("click", () => {
     const category = categoryButtonId(button);
@@ -659,7 +669,7 @@ categoryButtons.forEach((button) => {
   });
 });
 
-document.querySelector("[data-reset-filters]")?.addEventListener("click", () => {
+document.querySelectorAll("[data-reset-filters]").forEach((link) => link.addEventListener("click", () => {
   activeCategory = "";
   activeTopic = "";
   if (searchInput) searchInput.value = "";
@@ -668,11 +678,11 @@ document.querySelector("[data-reset-filters]")?.addEventListener("click", () => 
   syncCatalogFilterUrl();
   categoryButtons.forEach((button) => {
     button.classList.remove("is-active");
-    button.setAttribute("aria-pressed", "false");
+    if (button.tagName !== "A") button.setAttribute("aria-pressed", "false");
   });
   updateTopicButtons();
   applyFilters();
-});
+}));
 
 readMetadataFiltersFromUrl();
 

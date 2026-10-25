@@ -1,6 +1,7 @@
 # Aggregate Like API (#256)
 
-Source-only backend step toward [simple privacy rules](SIMPLE_PRIVACY_RULES_V1.md).
+Source contract for the backend and frontend steps toward
+[simple privacy rules](SIMPLE_PRIVACY_RULES_V1.md). Source is not deployment evidence.
 
 ## Request and result
 
@@ -42,3 +43,57 @@ Offline tests execute the real Worker handler with SQLite-backed D1-shaped batch
 results. They cover request bounds, all three hosts, identifier rejection, rate
 limits, counter preservation, transaction rollback and uncertain outcomes.
 Production D1/runtime behavior still requires separately authorized verification.
+
+## Frontend cutover candidate
+
+The updated shared client sends only the page ID to aggregate Like and only the
+page ID plus an allowlisted campaign to aggregate Print. These writes and the
+public page-total read omit credentials. Internal admin reads retain credentials
+for Cloudflare Access. The client no longer reads or creates a persistent visitor
+ID and does not fall back to the personalized endpoints.
+
+The heart shows the total, accepts one attempt per page view, and shows `Danke!`
+only after a confirmed result. In-flight clicks, success, timeout and uncertain
+results all leave it disabled until reload. An initial failed count read may be
+retried safely before any reaction. Reload can allow another reaction; these are
+action totals, not unique people. Printing still opens if telemetry fails.
+
+Old browser storage and historical server records are left untouched, including
+any legacy erasure proof. This is not a data cleanup or a claim of completed
+retirement. Legacy personalized-write fencing and #158 reconciliation remain
+part of the coordinated release.
+
+**Merge/release hold — not release ready:** source CI alone does not prove
+that the aggregate Stats Worker endpoint and the required `archived_like_totals`
+D1 schema are active in production. Obtain separately authorized, exact-runtime
+read-only evidence of both before requesting a merge. Changes to `js/**`,
+`index.html` or `detail.html` are eligible application-image inputs under
+`AGENTS.md`: a later, explicitly owner-authorized exact-head `MERGE` may trigger
+only the repository's bounded GHCR → `:production` → RPi5 SIMPLE-DEPLOY →
+`/health` + `/ready` flow for `coloring-pages-public-rpi5`. This does not grant
+a separate manual LIVE, Worker/D1, migration, permissions or settings action.
+Reconcile legal Draft PR #158 and stale personalized writes separately; this
+source-only PR does not perform any release or data cleanup.
+
+
+## Personalized route retirement candidate
+
+After the aggregate frontend was deployed and verified on 2026-10-23, the next
+source-only #256 step retires creation and recognition through the stale
+personalized API surface:
+
+- legacy POST `/api/stats/like` and `/api/stats/print` return HTTP 410;
+- `GET /api/stats/page` rejects a `visitor_id` query instead of hashing or
+  looking up a personal Like state;
+- cookie `session`, `state`, `consent` and `choice` routes return HTTP 410;
+- existing `/api/stats/like/forget` and `/api/stats/erase-likes` erasure
+  paths remain available while legacy pseudonymous records may still exist;
+- aggregate Like/Print, historical totals and the bounded expired-session archive
+  logic are unchanged.
+
+This source change performs no D1 deletion, migration or cleanup and does not
+deploy the Worker. The current trusted RPi5 exact-deploy runtime is pinned to the
+previous Worker blob and must be separately repinned/reviewed before any exact
+owner-authorized Cloudflare LIVE transition. Pre-existing D1 schema must be
+verified read-only before such a transition. No automatic retry, rollback or
+cleanup is authorized.

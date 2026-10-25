@@ -70,7 +70,8 @@ class CategoryContractTests(unittest.TestCase):
             self.assertIn(f'href="/{category_id}" data-filter="{category_id}"', index)
         self.assertIn('href="/essen-natur" data-collection-filter="essen-natur"', index)
         self.assertNotIn("essen-natur", registry_ids)
-        self.assertEqual(index.count('class="category-count-label"> Malvorlagen</span>'), 7)
+        self.assertIn('aria-label="Malvorlagen nach Kategorien"', index)
+        self.assertNotIn('class="category-count-label"', index)
 
     def test_category_arrow_is_centered_on_desktop_and_grid_aligned_on_mobile(self):
         css = (ROOT / "css" / "app.css").read_text(encoding="utf-8")

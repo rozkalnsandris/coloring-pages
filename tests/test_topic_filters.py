@@ -26,20 +26,31 @@ class TopicFilterTests(unittest.TestCase):
     def test_homepage_has_compact_topic_mount_points(self):
         page = (ROOT / "index.html").read_text(encoding="utf-8")
         self.assertIn("data-topic-explorer", page)
-        self.assertIn("data-current-topics", page)
         self.assertIn("data-topic-list", page)
         self.assertIn("data-topic-clear", page)
 
-    def test_homepage_explains_categories_and_popular_topics(self):
+    def test_homepage_groups_topics_under_native_disclosures(self):
+        import re
+        from urllib.parse import parse_qs, urlsplit
         page = (ROOT / "index.html").read_text(encoding="utf-8")
-        self.assertIn("Nach Kategorien entdecken", page)
-        self.assertIn('class="category-description"', page)
-        self.assertIn("Halloween, Herbst &amp; Weihnachten", page)
-        self.assertIn("Beliebte Themen", page)
-        self.assertIn("Obst, Gemüse, Dinosaurier, Weltraum &amp; mehr direkt auswählen.", page)
-        self.assertIn("Essen &amp; Natur", page)
-        self.assertIn("Obst, Gemüse, Blumen &amp; Bauernhof", page)
-        self.assertIn('data-collection-filter="essen-natur"', page)
+        self.assertIn("Was möchtest du ausmalen?", page)
+        self.assertNotIn("Beliebte Themen", page)
+        self.assertEqual(page.count('name="category-browser"'), 6)
+        self.assertIn('href="/fahrzeuge" data-filter="fahrzeuge"', page)
+        groups = dict(re.findall(
+            r'<details class="category-group category-group-([^"]+)"[^>]*>(.*?)</details>',
+            page, re.S))
+        self.assertIn('href="/alphabet"', groups["learning"])
+        self.assertIn('href="/lernen"', groups["learning"])
+        self.assertIn('data-browse-topic="obst"', groups["food"])
+        self.assertIn('data-browse-topic="gemuese"', groups["food"])
+        registry = json.loads((ROOT / "metadata/topics.json").read_text(encoding="utf-8"))
+        ids = {topic["id"] for topic in registry["topics"]}
+        links = re.findall(r'href="([^"]+)" data-browse-topic="([^"]+)"', page)
+        self.assertEqual({topic for _, topic in links}, ids)
+        for href, topic in links:
+            self.assertEqual(parse_qs(urlsplit(href).query), {"topic": [topic]})
+            self.assertEqual(urlsplit(href).fragment, "neu")
         version = hashlib.sha256((ROOT / "css/home-discovery.css").read_bytes()).hexdigest()[:16]
         self.assertIn(f"css/home-discovery.css?v={version}", page)
 
@@ -62,8 +73,9 @@ class TopicFilterTests(unittest.TestCase):
         self.assertIn("overflow-x: auto", css)
         self.assertIn("scroll-snap-type: x proximity", css)
         home_css = (ROOT / "css/home-discovery.css").read_text(encoding="utf-8")
-        self.assertIn(".category-description", home_css)
-        self.assertIn(".topic-heading-copy p", home_css)
+        self.assertIn(".category-subtopics a", home_css)
+        self.assertIn("min-height: 44px", home_css)
+        self.assertIn("focus-visible", home_css)
 
     def test_category_landings_use_accessible_in_page_topic_filters(self):
         source = (ROOT / "js" / "category.js").read_text(encoding="utf-8")
