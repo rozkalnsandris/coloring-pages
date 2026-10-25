@@ -238,6 +238,74 @@ pre-activation decision; lack of IP **storage** does not mean no IP
   [legal PR #158](https://github.com/rozkalnsandris/coloring-pages/pull/158)
   and privacy [#256](https://github.com/rozkalnsandris/coloring-pages/issues/256).
 
+## Verified upstream and German guidance for the next isolated runtime gate (2026-10-25)
+
+**External evidence checked for this specific design — not legal approval:**
+
+- [GoatCounter backend](https://www.goatcounter.com/help/backend)
+  documents authenticated `POST /api/v0/count` with `no_sessions:true`
+  and a logical `hits[].path`. Only a trusted first-party backend
+  should build that JSON from the already-validated catalog ID. The
+  frontend must not send arbitrary GoatCounter API fields, user headers
+  or the secret token.
+- [GoatCounter API documentation](https://www.goatcounter.com/api.html)
+  describes `202 Accepted` for accepted counting requests, **not
+  durable SQLite persistence**; the `v2.7.0` handler
+  [source](https://github.com/arp242/goatcounter/blob/v2.7.0/handlers/api.go)
+  states that pageviews are persisted in the background, approximately
+  every 10 seconds. The test plan must distinguish HTTP acceptance,
+  successful persistence and ambiguous/time-out results. **Never
+  automatically repeat a request after an ambiguous response.**
+- [Sessions and visitors](https://www.goatcounter.com/help/sessions)
+  explains that default session tracking uses an IP + User-Agent
+  in-memory mapping for up to eight hours. For our *pageview-event*
+  metric, turn off site **Sessions** (and Individual pageviews and all
+  ancillary dimensions) as well as passing `no_sessions:true`.
+  The source-level `CollectNothing=1` vs `Collect=0` default trap
+  above remains mandatory to check after instance creation and restart.
+- [DSK Orientierungshilfe Digitale Dienste v1.2, November 2024,
+  pp. 24–26, paras. 88–95](https://www.datenschutz-berlin.de/fileadmin/user_upload/pdf/publikationen/DSK/2024/2024_DSK-OH_Digitale-Dienste.pdf)
+  discusses pure per-page counting as distinct from detailed visitor
+  analytics. **It explicitly refuses to declare all
+  `Reichweitenmessung` categorically consent-free**: the precise
+  collection method and *purpose* determine whether an exception is
+  available. Even the simplest visitor count is not per se an
+  indispensable feature requested by visitors (para. 90).
+- [TDDDG §25](https://www.gesetze-im-internet.de/ttdsg/__25.html)
+  separately regulates storage in/access to an end-user device;
+  [GDPR](https://eur-lex.europa.eu/eli/reg/2016/679/oj/eng)
+  governs processing of personal data in any collection/transport
+  chain. A cookie-free first-party event does **not** establish that
+  every browser-to-Cloudflare-to-RPi5 operation is exempt from consent
+  or a legal basis. Review the precise browser event, legitimate
+  interests/children's rights if relied on, data retention, notice and
+  transport/access/error logs before enabling public traffic.
+
+**Executable isolated-runtime acceptance sequence is still missing.**
+Before building a first-party collector or requesting RPi5 installation,
+a separate source/test PR must use a pinned immutable upstream artifact
+in an **ephemeral non-LIVE environment**, create *synthetic* site/user
+credentials and an isolated SQLite database, set/verify
+`CollectNothing=1`, submit only the backend allowlisted test payload,
+wait for confirmed background persistence, shut down cleanly and
+checkpoint SQLite, and run
+`tools/goatcounter_offline_privacy_probe.py` against an actual
+**synthetic** database copy. Confirm the normal two-view count,
+bot-marked input rejection at the adapter boundary, disabled session
+state, empty individual-hit and bot tables, and no unintended retained
+User-Agent/referrer/location data, files, logs, backups or sidecars.
+A test showing `202` or an all-green Python *mock* alone is
+**insufficient**; report `STOP` on any mismatch instead of weakening
+the privacy contract.
+
+**Governance reconciliation:** The owner closed #368 as superseded
+on 2026-10-25 and chose GoatCounter as a *planned* future replacement.
+`AGENTS.md` now records that choice while retaining the hard gate
+against activating **any** GoatCounter process/storage on RPi5 without
+an independently reviewed, explicitly owner-authorized LIVE scope.
+No Cloudflare/Worker/D1, RPi5, actual visitor data, privacy policy
+text or live site settings are changed by this documentation.
+
 ## Executable synthetic SQLite preflight (source-only)
 
 A **read-only structural verifier** now exists at
