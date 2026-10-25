@@ -89,7 +89,9 @@ def _timestamp(value: object, *, day: bool) -> bool:
     try:
         if day:
             return dt.date.fromisoformat(value).isoformat() == value
-        return dt.datetime.fromisoformat(value.replace(" ", "T")).minute == 0
+        stamp = dt.datetime.fromisoformat(value.replace(" ", "T"))
+        return (stamp.minute == 0 and stamp.second == 0
+                and stamp.microsecond == 0 and stamp.tzinfo is None)
     except ValueError:
         return False
 
