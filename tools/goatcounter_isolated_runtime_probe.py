@@ -12,6 +12,7 @@ Cloudflare/proxy-log assessment, or LIVE authorization.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import json
 import os
@@ -124,7 +125,7 @@ def _make_site(binary: Path, root: Path, env: dict[str, str], db: Path) -> str:
          "-user=" + EMAIL, "-name=synthetic-count-only",
          "-perm=count", "-db=" + db_arg)
     try:
-        with sqlite3.connect(db, timeout=2) as con:
+        with contextlib.closing(sqlite3.connect(db, timeout=2)) as con:
             con.row_factory = sqlite3.Row
             sites = con.execute(
                 "SELECT site_id, settings FROM sites"
@@ -143,6 +144,7 @@ def _make_site(binary: Path, root: Path, env: dict[str, str], db: Path) -> str:
                 "UPDATE sites SET settings=? WHERE site_id=?",
                 (json.dumps(settings, separators=(",", ":")), sites[0]["site_id"]),
             )
+            con.commit()
             token = tokens[0]["token"]
             if not isinstance(token, str) or len(token) < 16:
                 _stop("SYNTHETIC_TOKEN_INVALID")
@@ -187,7 +189,9 @@ def _count_once(port: int, token: str) -> None:
     )
     try:
         # Exactly one HTTP transmission. Never resend after ambiguity.
-        with urllib.request.urlopen(request, timeout=5) as response:
+        # Bypass inherited HTTP_PROXY settings as well as DNS resolution.
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener.open(request, timeout=5) as response:
             if response.status != 202:
                 _stop("BACKEND_NOT_ACCEPTED")
             response.read(1024)
@@ -202,7 +206,10 @@ def _stop_server(proc: subprocess.Popen[bytes]) -> None:
             proc.wait(timeout=12)
         except subprocess.TimeoutExpired:
             proc.kill()
-            proc.wait(timeout=5)
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                _stop("SERVER_PROCESS_STUCK")
             _stop("SERVER_SHUTDOWN_TIMEOUT")
 
 
