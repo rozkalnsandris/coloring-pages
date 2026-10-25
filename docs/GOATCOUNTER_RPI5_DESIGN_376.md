@@ -329,8 +329,15 @@ one `0700` private system-temp directory and synthetic local SQLite
 DB; creates a disposable test site, user and count-only API token;
 sets the isolated site's `CollectNothing=1`; binds GoatCounter only to
 `127.0.0.1`; sends exactly **two** synthetic API pageview requests
-for fixed ID `0427183`; waits for the delayed write, shuts down the
-test server, then runs the structural fixture audit. Its HTTP client
+for fixed ID `0427183`; then sends SIGINT and **requires the
+GoatCounter process to exit with status 0** before running the
+structural fixture audit. This replaces the former arbitrary 3-second
+delay: the [v2.7.0 `cmd/goatcounter/serve.go` shutdown path](https://github.com/arp242/goatcounter/blob/v2.7.0/cmd/goatcounter/serve.go)
+runs `cron.TaskPersistAndStat()` on graceful shutdown. Unexpected
+process exits, nonzero exit codes and shutdown timeouts now produce
+stable `STOP` results; HTTP `202 Accepted` alone cannot yield PASS.
+The cleanup-and-check behavior has disconnected regression tests.
+Its HTTP client
 explicitly disables inherited proxy settings, **clears urllib's
 automatic `Python-urllib/...` User-Agent header**, and rejects all HTTP
 redirects so an internal bearer token cannot be forwarded to another
