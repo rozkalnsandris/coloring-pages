@@ -65,11 +65,12 @@ export function printStagedBasketDocumentOnce(
   staged,
   { mount, print = globalThis.print, signal } = {},
 ) {
-  let owned = false;
+  // Take cleanup ownership of an undisposed stage before inspecting it.
+  // Even a corrupt or detached stage may hold large decoded A4 canvases.
+  const owned = !!staged && !staged.disposed && typeof staged.dispose === "function";
   let target;
   try {
     const sheets = checkedStagedDocument(staged);
-    owned = true;
     target = checkedMount(mount);
     if (typeof print !== "function") {
       throw new TypeError("Browser print capability required");
