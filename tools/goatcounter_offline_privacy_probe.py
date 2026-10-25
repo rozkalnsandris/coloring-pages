@@ -31,12 +31,13 @@ TABLES = frozenset({
     "browsers", "systems", "refs", "hit_counts", "ref_counts", "hit_stats",
     "browser_stats", "system_stats", "location_stats", "size_stats",
     "language_stats", "campaign_stats", "exports", "locations",
-    "languages", "store", "version",
+    "languages", "store", "version", "iso_3166_1",
 })
 DISALLOWED_ROWS = frozenset({
     "hits", "bots", "campaigns", "browsers", "systems",
     "browser_stats", "system_stats", "location_stats", "size_stats",
     "language_stats", "campaign_stats", "exports", "store",
+    "iso_3166_1",
 })
 COLS = {
     "sites": {"site_id", "settings"},
@@ -49,6 +50,9 @@ COLS = {
     "bots": {"site_id", "path", "user_agent", "created_at", "bot"},
     "store": {"key", "value"},
     "version": {"name"},
+    "locations": {"location_id", "country", "country_name", "region", "region_name"},
+    "languages": {"iso_639_3", "name"},
+    "iso_3166_1": {"name", "alpha2"},
 }
 class ProbeStop(ValueError):
     """Stable, non-sensitive failure code; no raw database values."""
@@ -149,6 +153,42 @@ def inspect_fixture(root: str | Path, *, page_id: str, expected_views: int) -> s
             for table in sorted(DISALLOWED_ROWS):
                 if _count(conn, table):
                     _stop("FORBIDDEN_ROWS_" + table.upper())
+            # v2.7.0 includes seeded reference tables as well as visitor data.
+            # A clean installation has one static unknown-location row; the
+            # bundled db/languages.sql creates 7,086 language entries plus
+            # the unknown sentinel. An extra location is never acceptable
+            # for this no-location-collection synthetic proof.
+            locations = conn.execute(
+                "SELECT location_id, country, country_name, region, region_name "
+                "FROM locations"
+            ).fetchall()
+            if (len(locations) != 1 or tuple(locations[0])
+                    != (1, "", "(unknown)", "", "")):
+                _stop("LOCATION_LOOKUP_NOT_STATIC")
+            language_rows = conn.execute(
+                "SELECT iso_639_3, name FROM languages"
+            ).fetchall()
+            # One sentinel is used in the small synthetic unit fixture;
+            # the actual pinned newdb loads 7,086 more reference names.
+            if len(language_rows) not in (1, 7087):
+                _stop("LANGUAGE_LOOKUP_COUNT")
+            language_codes = set()
+            for row in language_rows:
+                code, name = row["iso_639_3"], row["name"]
+                if not isinstance(code, str) or not isinstance(name, str):
+                    _stop("LANGUAGE_LOOKUP_SHAPE")
+                if code in language_codes:
+                    _stop("LANGUAGE_LOOKUP_DUPLICATE")
+                language_codes.add(code)
+                if code == "":
+                    if name != "(unknown)":
+                        _stop("LANGUAGE_LOOKUP_SENTINEL")
+                elif (re.fullmatch(r"[a-z]{3}", code) is None
+                      or not 1 <= len(name) <= 128
+                      or any(ord(char) < 32 for char in name)):
+                    _stop("LANGUAGE_LOOKUP_SHAPE")
+            if "" not in language_codes:
+                _stop("LANGUAGE_LOOKUP_SENTINEL")
             sites = conn.execute("SELECT site_id, settings FROM sites").fetchall()
             if len(sites) != 1:
                 _stop("SITE_COUNT")
