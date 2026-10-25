@@ -56,8 +56,8 @@ class PageviewContractTests(unittest.TestCase):
             b'{"no_sessions":true,"hits":[{"path":"/coloring-page/0427183"}]}',
         )
         for forbidden in (
-            b"campaign", b"ref", b"user_agent", b"session", b"query",
-            b"ip", b"bot", b"cookie", b"utm",
+            b'"campaign"', b'"ref"', b'"user_agent"', b'"session"',
+            b'"query"', b'"ip"', b'"bot"', b'"cookie"', b'"utm"',
         ):
             self.assertNotIn(forbidden, accepted.goatcounter_body())
 
