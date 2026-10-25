@@ -31,7 +31,7 @@ TABLES = frozenset({
     "browsers", "systems", "refs", "hit_counts", "ref_counts", "hit_stats",
     "browser_stats", "system_stats", "location_stats", "size_stats",
     "language_stats", "campaign_stats", "exports", "locations",
-    "languages", "store",
+    "languages", "store", "version",
 })
 DISALLOWED_ROWS = frozenset({
     "hits", "bots", "campaigns", "browsers", "systems",
@@ -48,6 +48,7 @@ COLS = {
     "hits": {"site_id", "path_id", "created_at", "session"},
     "bots": {"site_id", "path", "user_agent", "created_at", "bot"},
     "store": {"key", "value"},
+    "version": {"name"},
 }
 class ProbeStop(ValueError):
     """Stable, non-sensitive failure code; no raw database values."""
@@ -130,6 +131,21 @@ def inspect_fixture(root: str | Path, *, page_id: str, expected_views: int) -> s
                 columns = {row[1] for row in conn.execute("PRAGMA table_info(" + table + ")")}
                 if not needed.issubset(columns):
                     _stop("SCHEMA_COLUMNS")
+            migrations = conn.execute(
+                "SELECT name FROM version"
+            ).fetchall()
+            if (not migrations or len(migrations) > 256
+                    or not any(m["name"] == "2025-12-12-1-ref-scheme"
+                               for m in migrations)
+                    or any(
+                        not isinstance(m["name"], str)
+                        or re.fullmatch(
+                            r"[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]+-[a-z0-9-]+",
+                            m["name"],
+                        ) is None
+                        for m in migrations
+                    )):
+                _stop("VERSION_MIGRATION_IDENTITY")
             for table in sorted(DISALLOWED_ROWS):
                 if _count(conn, table):
                     _stop("FORBIDDEN_ROWS_" + table.upper())
