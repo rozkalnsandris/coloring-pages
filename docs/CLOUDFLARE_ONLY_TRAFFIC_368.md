@@ -1,6 +1,14 @@
 # Traffic dashboard: Cloudflare-only data boundary (#368)
 
-**SOURCE CANDIDATE ONLY — no Cloudflare Worker deployment, RPi5 LIVE action, token, D1 migration or production verification.**
+**Status (2026-10-25):** The Traffic frontend source has been merged and operator-supplied read-only SSH output supports its deployment on the public RPi5 app. This does **not** verify the live Cloudflare analytics provider, unique-person metric, or data accuracy. No Cloudflare Worker deployment, token, D1 migration, settings change or new LIVE action is authorized here.
+
+## Source and LIVE evidence — bounded
+
+- **GitHub source:** PR #373 was squash-merged as `5d0ca7593a9290d30d33e50fb264add8fa52a6a7`; the fail-closed hostname/status correction in PR #374 was squash-merged as `a80feb4391dad1be259142d7554e570c47106288`.
+- **Exact-head CI/review for #374:** `d8b9fa9c4b250a45c02bff6870334841408796d5` passed CI and GitHub-first policy; no reviews or unresolved review threads were recorded at the merge gate.
+- **Operator-reported RPi5 read-only checks (2026-10-25):** host `rpi5`; public app container reported `healthy`; `http://127.0.0.1:9191/health` and `/ready` returned HTTP 200; live `traffic.html` referenced `cloudflare-only-368-v4`. The running container's `org.opencontainers.image.revision` label exactly matched `a80feb4391dad1be259142d7554e570c47106288`, and the served `js/traffic-admin.js` included the new `Cloudflare analytics hostname not verified.` fail-closed message.
+- **Boundary of proof:** these observations confirm the deployed application image revision and the served frontend marker, **not** the active Cloudflare Worker implementation, configured zone, upstream Analytics API responses, comparable Cloudflare dashboard totals, bot filtering quality or unique visitors. The frontend hostname field is Worker-declared, not independent provider verification.
+- **Remaining #368 gate:** compare the same hostname/time window, bot policy and dataset in actual Cloudflare Analytics and the read-only Traffic endpoint; do not mark the issue done or publish additional metric claims until this succeeds.
 
 ## Dashboard separation
 
