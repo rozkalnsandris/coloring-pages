@@ -104,9 +104,10 @@ Evidence reviewed against upstream documentation on 2026-10-25:
    remains empty. Isolated runtime/schema verification is a release blocker.
 
 6. [GoatCounter upstream README](https://github.com/arp242/goatcounter)
-   describes self-hosting using SQLite/Docker. A reviewed immutable image
-   digest, release source/tag identity, supported RPi5 platform and license
-   obligations are **not yet established**.
+   describes self-hosting using SQLite/Docker. The reviewed source tag and
+   license identity are now recorded below, but an independently authenticated
+   binary/container digest, release artifact provenance and RPi5 runtime
+   acceptance are **not yet established**.
 
 ## v2.7.0 source verification — read-only, 2026-10-25
 
@@ -305,6 +306,39 @@ against activating **any** GoatCounter process/storage on RPi5 without
 an independently reviewed, explicitly owner-authorized LIVE scope.
 No Cloudflare/Worker/D1, RPi5, actual visitor data, privacy policy
 text or live site settings are changed by this documentation.
+
+## v2.7.0 release-build profile gate — source-only
+
+The pinned tag's
+[`.gogo-release`](https://github.com/arp242/goatcounter/blob/v2.7.0/.gogo-release)
+defines official Linux release targets **amd64** and **arm64**, sets
+`CGO_ENABLED=1`, and builds with `-trimpath`, static external linking
+and `sqlite_omit_load_extension`. The v2.7.0
+[`version -json` implementation](https://github.com/arp242/goatcounter/blob/v2.7.0/cmd/goatcounter/main.go)
+reports exactly `version`, `go`, `GOOS`, `GOARCH`, `race` and
+`cgo`; it does **not** report the source commit.
+
+The isolated-runtime harness now fail-closes unless that output matches the
+pinned Linux release profile: v2.7.0, Linux, the current authorized test
+host's matching amd64/arm64 architecture, `race=false`, `cgo=true`, and
+the exact expected JSON field set. Unsupported host architectures stop before
+the test site is created. Disconnected tests cover the accepted amd64 profile,
+wrong OS/architecture, disabled cgo, race builds, unexpected JSON fields and
+unsupported host architectures.
+
+This narrows accidental/custom-build drift but **does not establish binary
+provenance**. The operator-supplied SHA-256 still must come from an
+independently authenticated artifact review; neither `version -json` nor a
+matching caller-provided digest proves that the executable was built from
+commit `7e91d8a9bdbb0dd48496e498c5680f8f3477a1b4`.
+
+The pinned
+[`LICENSE`](https://github.com/arp242/goatcounter/blob/v2.7.0/LICENSE)
+identifies GoatCounter as a modified **EUPL 1.2** work, while the optional
+`count.js` integration is ISC-licensed. This project does not use the
+third-party `count.js` path. License identity is source-verified here;
+distribution/notice obligations for any eventual packaged binary or container
+remain part of the separate deployment review.
 
 ## Runnable isolated GoatCounter v2.7.0 runtime check — opt-in, not run yet
 

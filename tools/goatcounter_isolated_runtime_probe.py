@@ -97,6 +97,21 @@ def _run(binary: Path, root: Path, env: dict[str, str], *argv: str) -> None:
         _stop("BINARY_COMMAND_REJECTED")
 
 
+def _expected_goarch() -> str:
+    if platform.system().casefold() != "linux":
+        _stop("UNSUPPORTED_RELEASE_HOST")
+    machine = platform.machine().casefold()
+    mapping = {
+        "x86_64": "amd64",
+        "amd64": "amd64",
+        "aarch64": "arm64",
+        "arm64": "arm64",
+    }
+    if machine not in mapping:
+        _stop("UNSUPPORTED_RELEASE_HOST")
+    return mapping[machine]
+
+
 def _version(binary: Path, root: Path, env: dict[str, str]) -> None:
     try:
         p = subprocess.run(
@@ -110,6 +125,20 @@ def _version(binary: Path, root: Path, env: dict[str, str]) -> None:
     if (p.returncode != 0 or not isinstance(data, dict)
             or data.get("version") not in ("2.7.0", "v2.7.0")):
         _stop("WRONG_GOATCOUNTER_VERSION")
+
+    # Pinned v2.7.0 .gogo-release publishes Linux amd64/arm64 with
+    # CGO_ENABLED=1. version -json exposes these runtime build facts but
+    # NOT the source commit; this narrows the build profile and does not
+    # replace independent artifact provenance/digest review.
+    if set(data) != {"version", "go", "GOOS", "GOARCH", "race", "cgo"}:
+        _stop("RELEASE_BUILD_PROFILE_MISMATCH")
+    if (data["GOOS"] != "linux"
+            or data["GOARCH"] != _expected_goarch()
+            or type(data["race"]) is not bool or data["race"] is not False
+            or type(data["cgo"]) is not bool or data["cgo"] is not True
+            or not isinstance(data["go"], str)
+            or re.fullmatch(r"go1\.[0-9]+(?:\.[0-9]+)?(?:[^ ]*)?", data["go"]) is None):
+        _stop("RELEASE_BUILD_PROFILE_MISMATCH")
 
 
 def _make_site(binary: Path, root: Path, env: dict[str, str], db: Path) -> str:
