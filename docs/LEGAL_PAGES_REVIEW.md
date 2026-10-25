@@ -4,8 +4,9 @@ Status: **DRAFT / SOURCE REVIEW ONLY / NO LEGAL CERTIFICATION**
 
 Issue: #256  
 Draft PR: #158  
-Reviewed application main: `a57e61e3ee022c07cb9dbd6adad29155ff8b885a`  
-Review date: 2026-10-23
+Source reconciliation baseline: `d1ea05c56bc77c5070f87966bf8f17ae4a4f85b4`  
+Last owner-provided LIVE application evidence: `a57e61e3ee022c07cb9dbd6adad29155ff8b885a`  
+Review date: 2026-10-25
 
 ## Current factual source/runtime model
 

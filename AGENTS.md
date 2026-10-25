@@ -139,7 +139,7 @@ V1 intentionally uses:
 - Docker
 - `nginx-unprivileged`
 - RPi5 runtime behind the existing shared Cloudflare Tunnel
-- optional Cloudflare Web Analytics plus a same-origin Worker/D1 engagement-statistics edge layer; no analytics service/database runs on RPi5
+- current Cloudflare Web Analytics / same-origin Worker/D1 source supports the existing engagement-statistics edge layer; no GoatCounter service/database is authorized as LIVE. The owner selected a *future*, separately gated first-party GoatCounter pageview design in #376 after closing the Cloudflare-only Traffic issue #368 as superseded (2026-10-25). Do not infer deployed analytics architecture from source.
 
 Do not add a framework, CMS, database or backend API without a documented need.
 
@@ -199,4 +199,4 @@ Keep the primary journey simple:
 
 **find → preview → print**
 
-Avoid adding accounts, login, ratings, comments, CMS, browser uploads, on-site AI generation or ads in V1. The explicitly approved analytics exception is `docs/CLOUDFLARE_STATS_V1.md`: Cloudflare Web Analytics for aggregate views plus a same-origin Worker/D1 store for print intent, Like counts, Popular and 7-day Trending; the next frontend follows the aggregate-reaction target above. Do not host analytics, a database or an API on RPi5; Cloudflare resource/settings activation remains separately owner-gated.
+Avoid adding accounts, login, ratings, comments, CMS, browser uploads, on-site AI generation or ads in V1. **Existing source boundary:** `docs/CLOUDFLARE_STATS_V1.md` covers Cloudflare Web Analytics and the same-origin Worker/D1 engagement store (print intent, Like counts, Popular and 7-day Trending), which are not GoatCounter pageviews. **New owner-selected design direction (2026-10-25):** #368 was closed as superseded, and #376 proposes first-party, page-ID-only GoatCounter pageview aggregates on RPi5 without analytics sessions, persistent visitor IDs or IP/User-Agent/referrer storage. This is **not** an implementation, release or LIVE authorization. Until verified isolated GoatCounter storage/proxy/log behavior, TDDDG/GDPR assessment, reviewed source changes and an independent explicit `RPi5_main` exact-owner gate, **do not install, start, configure, expose, migrate or store GoatCounter traffic on RPi5**, enable public tracking or replace the current Cloudflare-backed Traffic runtime. An ordinary PR merge (including docs/tests) cannot authorize the new RPi5 service/database or Cloudflare settings. Canonical proposed design and technical STOP criteria: `docs/GOATCOUNTER_RPI5_DESIGN_376.md`.

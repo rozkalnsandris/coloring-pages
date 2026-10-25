@@ -74,3 +74,26 @@ only the repository's bounded GHCR → `:production` → RPi5 SIMPLE-DEPLOY →
 a separate manual LIVE, Worker/D1, migration, permissions or settings action.
 Reconcile legal Draft PR #158 and stale personalized writes separately; this
 source-only PR does not perform any release or data cleanup.
+
+
+## Personalized route retirement candidate
+
+After the aggregate frontend was deployed and verified on 2026-10-23, the next
+source-only #256 step retires creation and recognition through the stale
+personalized API surface:
+
+- legacy POST `/api/stats/like` and `/api/stats/print` return HTTP 410;
+- `GET /api/stats/page` rejects a `visitor_id` query instead of hashing or
+  looking up a personal Like state;
+- cookie `session`, `state`, `consent` and `choice` routes return HTTP 410;
+- existing `/api/stats/like/forget` and `/api/stats/erase-likes` erasure
+  paths remain available while legacy pseudonymous records may still exist;
+- aggregate Like/Print, historical totals and the bounded expired-session archive
+  logic are unchanged.
+
+This source change performs no D1 deletion, migration or cleanup and does not
+deploy the Worker. The current trusted RPi5 exact-deploy runtime is pinned to the
+previous Worker blob and must be separately repinned/reviewed before any exact
+owner-authorized Cloudflare LIVE transition. Pre-existing D1 schema must be
+verified read-only before such a transition. No automatic retry, rollback or
+cleanup is authorized.

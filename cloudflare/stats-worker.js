@@ -64,6 +64,11 @@ async function printQrVisit(env, request) {
   return printQrRedirect();
 }
 
+const LEGACY_PERSONALIZED_RETIRED_ERROR = "legacy_personalized_api_retired";
+function legacyPersonalizedRetired() {
+  return json({error:LEGACY_PERSONALIZED_RETIRED_ERROR},410);
+}
+
 function validPageId(value) { return typeof value === "string" && PAGE_ID_RE.test(value); }
 function validVisitorId(value) { return typeof value === "string" && VISITOR_ID_RE.test(value); }
 function validErasureProof(value) { return typeof value === "string" && V2_ERASURE_RE.test(value); }
@@ -317,7 +322,9 @@ async function trafficStats(env, request) {
   const url = new URL(request.url);
   const requestedDays = Number(url.searchParams.get("days")) || 7;
   const days = ANALYTICS_RANGE_DAYS.has(requestedDays) ? requestedDays : 7;
-  const host = env.CF_ANALYTICS_HOST || new URL(env.PUBLIC_ORIGIN || DEFAULT_ORIGIN).hostname;
+  // Traffic dashboard scope is the apex Ausmalwiese host only. Never fall back
+  // to the legacy coloring.rozkalns.net binding or unverified zone-wide data.
+  const host = "ausmalwiese.de";
   const end = new Date();
   const start = new Date(end.getTime() - days * 86400000);
   const commonFilter = {
@@ -332,6 +339,7 @@ async function trafficStats(env, request) {
     " viewer { zones(filter: { zoneTag: $zoneTag }) {",
     "  visits: httpRequestsAdaptiveGroups(limit: 1000, orderBy: [datetimeHour_ASC], filter: $filter) {",
     "   sum { visits }",
+    "   count",
     "   avg { sampleInterval }",
     "   dimensions { datetimeHour }",
     "  }",
@@ -342,6 +350,10 @@ async function trafficStats(env, request) {
     filter: commonFilter,
   });
   if (visitsResult.error) return json({error:visitsResult.error},visitsResult.status);
+  // Empty zone selection is a configuration error, not zero traffic.
+  if (visitsResult.data?.viewer?.zones?.length !== 1) {
+    return json({error:"analytics_zone_unavailable"},503);
+  }
 
   // Daily IP-derived HMAC uniqueness was retired by the #182 privacy decision.
   // Keep the response fields temporarily for the internal dashboard compatibility window.
@@ -378,9 +390,13 @@ async function trafficStats(env, request) {
   });
   if (crawlerResult.error) return json({error:crawlerResult.error},crawlerResult.status);
 
-  const visitsRows = visitsResult.data?.viewer?.zones?.[0]?.visits || [];
-  const crawlerRows = crawlerResult.data?.viewer?.zones?.[0]?.crawlers || [];
+  if (crawlerResult.data?.viewer?.zones?.length !== 1) {
+    return json({error:"analytics_zone_unavailable"},503);
+  }
+  const visitsRows = visitsResult.data.viewer.zones[0].visits || [];
+  const crawlerRows = crawlerResult.data.viewer.zones[0].crawlers || [];
   const visits = visitsRows.reduce((sum, row) => sum + Number(row.sum?.visits || 0), 0);
+  const httpRequests = visitsRows.reduce((sum, row) => sum + Number(row.count || 0), 0);
   let sampled = visitsRows.some((row) => Number(row.avg?.sampleInterval || 1) > 1);
 
   const crawlerMap = new Map();
@@ -405,6 +421,10 @@ async function trafficStats(env, request) {
 
   return json({
     range_days:days,
+    analytics_host:host,
+    cloudflare_traffic_version:1,
+    http_requests:httpRequests,
+    http_requests_basis:"cloudflare-http-eyeball-requests",
     unique_visitors:uniqueVisitors,
     unique_visitors_date:uniqueVisitorsDate,
     unique_visitors_status:uniqueVisitorsStatus,
@@ -437,53 +457,13 @@ async function recordView(env, request) {
 async function pageStats(env, request) {
   const url = new URL(request.url);
   const pageId = url.searchParams.get("page_id") || "";
-  const visitorId = url.searchParams.get("visitor_id") || "";
+  if (url.searchParams.has("visitor_id")) return legacyPersonalizedRetired();
   if (!validPageId(pageId)) return json({error:"invalid page_id"},400);
-  if (visitorId && !validVisitorId(visitorId)) return json({error:"invalid visitor_id"},400);
-  const stats = await env.DB.prepare("SELECT p.print_count,p.like_count+COALESCE(a.like_count,0) AS like_count FROM page_stats p LEFT JOIN archived_like_totals a ON a.page_id=p.page_id WHERE p.page_id=?").bind(pageId).first();
-  let liked = false;
-  if (visitorId) {
-    const visitorHash = await sha256(visitorId);
-    liked = Boolean(await env.DB.prepare("SELECT 1 AS liked FROM likes WHERE page_id = ? AND visitor_hash = ?").bind(pageId,visitorHash).first());
-  }
-  return json({page_id:pageId,print_count:Number(stats?.print_count||0),like_count:Number(stats?.like_count||0),liked});
-}
-async function recordPrint(env, request) {
-  if (!allowedWriteOrigin(request,env)) return json({error:"forbidden"},403);
-  const body = await parseBody(request);
-  if (!body || !validVisitorId(body.visitor_id)) return json({error:"invalid request"},400);
-  if (!(await rateLimit(env,body.visitor_id,"print"))) return json({error:"rate_limited"},429);
-  const statements = [
-    env.DB.prepare(
-      `INSERT INTO page_stats (page_id, print_count, updated_at)
-       VALUES (?, 1, datetime('now'))
-       ON CONFLICT(page_id) DO UPDATE SET print_count=print_count+1, updated_at=datetime('now')`
-    ).bind(body.page_id),
-    env.DB.prepare(
-      `INSERT INTO daily_prints (page_id, day, print_count)
-       VALUES (?, date('now'), 1)
-       ON CONFLICT(page_id, day) DO UPDATE SET print_count=print_count+1`
-    ).bind(body.page_id),
-  ];
-  const campaign = campaignEventStatement(env,body.campaign,"print",body.page_id);
-  if (campaign) statements.push(campaign);
-  await env.DB.batch(statements);
-  return json({ok:true},201);
-}
-async function toggleLike(env, request) {
-  if (!allowedWriteOrigin(request,env)) return json({error:"forbidden"},403);
-  const body = await parseBody(request);
-  if (!body || !validVisitorId(body.visitor_id)) return json({error:"invalid request"},400);
-  if (!(await rateLimit(env,body.visitor_id,"like"))) return json({error:"rate_limited"},429);
-  const visitorHash = await sha256(body.visitor_id);
-  const existing = await env.DB.prepare("SELECT 1 AS liked FROM likes WHERE page_id = ? AND visitor_hash = ?").bind(body.page_id,visitorHash).first();
-  if (existing) {
-    await env.DB.prepare("DELETE FROM likes WHERE page_id = ? AND visitor_hash = ?").bind(body.page_id,visitorHash).run();
-  } else {
-    await env.DB.prepare("INSERT OR IGNORE INTO likes (page_id, visitor_hash) VALUES (?, ?)").bind(body.page_id,visitorHash).run();
-  }
-  const stats = await env.DB.prepare("SELECT p.like_count+COALESCE(a.like_count,0) AS like_count,p.print_count FROM page_stats p LEFT JOIN archived_like_totals a ON a.page_id=p.page_id WHERE p.page_id=?").bind(body.page_id).first();
-  return json({page_id:body.page_id,liked:!existing,like_count:Number(stats?.like_count||0),print_count:Number(stats?.print_count||0)});
+  const stats = await env.DB.prepare(
+    "SELECT p.print_count,p.like_count+COALESCE(a.like_count,0) AS like_count FROM page_stats p LEFT JOIN archived_like_totals a ON a.page_id=p.page_id WHERE p.page_id=?"
+  ).bind(pageId).first();
+  return json({page_id:pageId,print_count:Number(stats?.print_count||0),
+    like_count:Number(stats?.like_count||0),liked:false});
 }
 function strictWrite(request) {
   const target = new URL(request.url).origin;
@@ -526,17 +506,17 @@ async function eraseLikes(env, request) {
 }
 
 
-// Backend-first #182 endpoints. The current main frontend does not call these yet.
- // They remain source-only until the additive D1 migration and exact Worker rollout are separately authorized.
- // The host-only cookie is scoped only to /api/stats/like, never /api/stats/print.
+// Legacy cookie model: creation, personal state reads and Like choices are retired.
+// Keep only the existing cookie-scoped erasure path while legacy records may remain.
 const LIKE_COOKIE_NAME = "__Secure-aw-like-v1";
 const LIKE_COOKIE_RE = /^l1-[0-9a-f]{64}$/;
 const LIKE_COOKIE_PATH = "/api/stats/like";
-const LIKE_COOKIE_TTL_SECONDS = 180 * 24 * 60 * 60;
-function likeCookieTtl(_env) {
-  // Fixed 180 days from consent. Reads and Like clicks never renew it.
-  return LIKE_COOKIE_TTL_SECONDS;
-}
+const RETIRED_COOKIE_PATHS = new Set([
+  "/api/stats/like/session",
+  "/api/stats/like/state",
+  "/api/stats/like/consent",
+  "/api/stats/like/choice",
+]);
 function readLikeCookie(request) {
   const matches = (request.headers.get("cookie") || "").split(";")
     .map(value=>value.trim())
@@ -574,89 +554,24 @@ async function boundedLikeJson(request, allowedKeys) {
       || Object.keys(body).some(key=>!allowedKeys.includes(key))) return null;
   return body;
 }
-async function likeCookieState(env, pageId, hash) {
-  const stats = await env.DB.prepare(
-    "SELECT p.print_count,p.like_count+COALESCE(a.like_count,0) AS like_count FROM page_stats p LEFT JOIN archived_like_totals a ON a.page_id=p.page_id WHERE p.page_id=?"
-  ).bind(pageId).first();
-  const liked = hash ? await env.DB.prepare(
-    "SELECT 1 AS liked FROM likes WHERE page_id=? AND visitor_hash=?"
-  ).bind(pageId,hash).first() : null;
-  return {page_id:pageId,liked:Boolean(liked),
-    like_count:Number(stats?.like_count||0),print_count:Number(stats?.print_count||0)};
-}
 async function cookieLikeRoutes(env, request, path) {
-  // Proof of an HttpOnly cookie returned by the browser after issuance.
-  if (path === "/api/stats/like/session" && request.method === "GET") {
-    return json({consented:Boolean(await cookieLikeSession(env,request))});
-  }
-  // Read-only aggregate + cookie-scoped state: no creation or renewal on GET.
-  if (path === "/api/stats/like/state" && request.method === "GET") {
-    const pageId = new URL(request.url).searchParams.get("page_id") || "";
-    if (!validPageId(pageId)) return json({error:"invalid_page_id"},400);
-    const hash = await cookieLikeSession(env,request);
-    return json({...await likeCookieState(env,pageId,hash),consented:Boolean(hash)});
-  }
-  if (!["/api/stats/like/consent","/api/stats/like/choice",
-        "/api/stats/like/forget"].includes(path) || request.method !== "POST")
+  if (RETIRED_COOKIE_PATHS.has(path)) return legacyPersonalizedRetired();
+  if (path !== "/api/stats/like/forget" || request.method !== "POST")
     return json({error:"not_found"},404);
   if (!strictWrite(request)) return json({error:"forbidden"},403);
-  if (path === "/api/stats/like/consent") {
-    const body = await boundedLikeJson(request,["accept","version"]);
-    if (!body || body.accept !== true || body.version !== 1
-        || Object.keys(body).length !== 2) return json({error:"invalid_request"},400);
-    const prior = await cookieLikeSession(env,request);
-    if (prior) return json({ok:true,already_consented:true});
-    const ttl = likeCookieTtl(env);
-    const ip = request.headers.get("CF-Connecting-IP");
-    if (!ttl || !env.RATE_LIMITER || !ip)
-      return json({error:"like_consent_unavailable"},503);
-    if (!(await rateLimit(env,ip,"like-consent")))
-      return json({error:"rate_limited"},429);
-    const bytes = new Uint8Array(32);
-    crypto.getRandomValues(bytes);
-    const token = "l1-" + [...bytes].map(b=>b.toString(16).padStart(2,"0")).join("");
-    const hash = await sha256(token);
-    const insert = await env.DB.prepare(
-      "INSERT INTO like_cookie_sessions(cookie_hash,consent_notice_version,expires_at) VALUES (?,1,unixepoch()+?)"
-    ).bind(hash,ttl).run();
-    if (insert?.success !== true || insert?.meta?.changes !== 1)
-      return json({error:"like_consent_unconfirmed"},503);
-    return cookieJson({ok:true},201,likeSetCookie(token,ttl));
-  }
   const hash = await cookieLikeSession(env,request);
   if (!hash) return json({error:"like_cookie_required"},403);
-  if (path === "/api/stats/like/forget") {
-    const body = await boundedLikeJson(request,["confirm"]);
-    if (!body || body.confirm !== true || Object.keys(body).length !== 1)
-      return json({error:"invalid_request"},400);
-    const batch = await env.DB.batch([
-      env.DB.prepare("DELETE FROM likes WHERE visitor_hash=?").bind(hash),
-      env.DB.prepare("DELETE FROM like_cookie_sessions WHERE cookie_hash=?").bind(hash),
-    ]);
-    if (batch.some(result=>result?.success !== true)
-        || batch[1]?.meta?.changes !== 1)
-      return json({error:"erasure_unconfirmed"},503);
-    return cookieJson({ok:true,revoked:true},200,likeSetCookie("",0));
-  }
-  const body = await boundedLikeJson(request,["page_id","liked"]);
-  if (!body || !validPageId(body.page_id) || typeof body.liked !== "boolean"
-      || Object.keys(body).length !== 2)
+  const body = await boundedLikeJson(request,["confirm"]);
+  if (!body || body.confirm !== true || Object.keys(body).length !== 1)
     return json({error:"invalid_request"},400);
-  if (!env.RATE_LIMITER || !(await rateLimit(env,hash,"like-choice")))
-    return json({error:"rate_limited_or_unavailable"},429);
-  // Desired-state changes are idempotent and checked against a live session
-  // inside each SQL mutation: expired/revoked cookies cannot create a Like.
-  const result = body.liked ? await env.DB.prepare(
-    "INSERT INTO likes(page_id,visitor_hash) SELECT ?,cookie_hash FROM like_cookie_sessions WHERE cookie_hash=? AND expires_at>unixepoch() ON CONFLICT(page_id,visitor_hash) DO NOTHING"
-  ).bind(body.page_id,hash).run() : await env.DB.prepare(
-    "DELETE FROM likes WHERE page_id=? AND visitor_hash=? AND EXISTS(SELECT 1 FROM like_cookie_sessions WHERE cookie_hash=? AND expires_at>unixepoch())"
-  ).bind(body.page_id,hash,hash).run();
-  if (result?.success !== true) return json({error:"like_unconfirmed"},503);
-  const stillActive = await env.DB.prepare(
-    "SELECT 1 AS valid FROM like_cookie_sessions WHERE cookie_hash=? AND expires_at>unixepoch()"
-  ).bind(hash).first();
-  if (!stillActive) return json({error:"like_cookie_expired"},403);
-  return json(await likeCookieState(env,body.page_id,hash));
+  const batch = await env.DB.batch([
+    env.DB.prepare("DELETE FROM likes WHERE visitor_hash=?").bind(hash),
+    env.DB.prepare("DELETE FROM like_cookie_sessions WHERE cookie_hash=?").bind(hash),
+  ]);
+  if (batch.some(result=>result?.success !== true)
+      || batch[1]?.meta?.changes !== 1)
+    return json({error:"erasure_unconfirmed"},503);
+  return cookieJson({ok:true,revoked:true},200,likeSetCookie("",0));
 }
 
 // Aggregate reactions (#256): no visitor credential, session or per-vote row.
@@ -805,10 +720,9 @@ export default {
     if (request.method==="POST" && path==="/api/stats/visit") return recordVisitor(env,request);
     if (request.method==="POST" && path==="/api/stats/view") return recordView(env,request);
     if (request.method==="POST" && path==="/api/stats/erase-likes") return eraseLikes(env,request);
-    // Compatibility window: current LIVE frontend keeps these legacy writes until
-    // the separately reviewed adult-only frontend cutover is deployed.
-    if (request.method==="POST" && path==="/api/stats/print") return recordPrint(env,request);
-    if (request.method==="POST" && path==="/api/stats/like") return toggleLike(env,request);
+    // The aggregate frontend is deployed; stale personalized write routes are retired.
+    if (request.method==="POST" && path==="/api/stats/print") return legacyPersonalizedRetired();
+    if (request.method==="POST" && path==="/api/stats/like") return legacyPersonalizedRetired();
     return json({error:"not_found"},404);
   },
 };

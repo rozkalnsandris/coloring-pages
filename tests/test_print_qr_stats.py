@@ -93,15 +93,24 @@ check().catch(e=>{console.error(e);process.exitCode=1});
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("QR_REDIRECT_SIMULATION=PASS", result.stdout)
 
-    def test_admin_counts_are_optional_until_worker_activation(self):
+    def test_qr_totals_remain_available_in_worker_but_not_engagement_ui(self):
+        worker = (ROOT / "cloudflare/stats-worker.js").read_text()
         admin = (ROOT / "js/stats-admin.js").read_text()
-        html = (ROOT / "stats.html").read_text()
-        self.assertIn('overview.totals?.qr_scan_count === "number"', admin)
-        self.assertIn('overview.totals?.recent_qr_scans === "number"', admin)
-        self.assertIn("data-stats-qr-total", html)
-        self.assertIn("data-stats-qr-recent", html)
-        self.assertIn("QR link visits", html)
-        self.assertIn("noindex,nofollow,noarchive", html)
+        stats = (ROOT / "stats.html").read_text()
+        traffic = (ROOT / "traffic.html").read_text()
+        traffic_admin = (ROOT / "js/traffic-admin.js").read_text()
+
+        self.assertIn("qr_scan_count", worker)
+        self.assertIn("recent_qr_scans", worker)
+        self.assertIn("FROM daily_print_qr_scans", worker)
+        self.assertNotIn("qr_scan_count", admin)
+        self.assertNotIn("recent_qr_scans", admin)
+        self.assertNotIn("data-stats-qr-total", stats)
+        self.assertNotIn("data-stats-qr-recent", stats)
+        self.assertNotIn("data-traffic-qr", traffic)
+        self.assertNotIn("getOverview(", traffic_admin)
+        self.assertNotIn("getCampaigns(", traffic_admin)
+        self.assertIn("noindex,nofollow,noarchive", stats)
 
 
 if __name__ == "__main__":
