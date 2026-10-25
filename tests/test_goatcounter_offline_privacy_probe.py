@@ -35,6 +35,7 @@ class SyntheticGoatCounterFixture(unittest.TestCase):
             "paths": "site_id integer, path_id integer, path text",
             "refs": "ref_id integer, ref text, ref_scheme text",
             "hit_counts": "site_id integer, path_id integer, hour text, total integer",
+            "ref_counts": "site_id integer, path_id integer, ref_id integer, hour text, total integer",
             "hit_stats": "site_id integer, path_id integer, day text, stats text",
             "bots": "site_id integer, path text, bot integer, user_agent text, created_at text",
             "hits": "site_id integer, path_id integer, session blob, created_at text",
@@ -56,7 +57,15 @@ class SyntheticGoatCounterFixture(unittest.TestCase):
             con.execute(
                 "INSERT INTO hit_counts VALUES(1, 9, '2026-10-25 11:00:00', 2)"
             )
-            con.execute("INSERT INTO hit_stats VALUES(1, 9, '2026-10-25', '{}')")
+            con.execute(
+                "INSERT INTO ref_counts VALUES(1, 9, 1, '2026-10-25 11:00:00', 2)"
+            )
+            hours = [0] * 24
+            hours[11] = 2
+            con.execute(
+                "INSERT INTO hit_stats VALUES(1, 9, ?, ?)",
+                ("2026-10-25", json.dumps(hours)),
+            )
 
     def mutate(self, sql, args=()):
         with sqlite3.connect(self.db) as con:
@@ -113,8 +122,8 @@ class SyntheticGoatCounterFixture(unittest.TestCase):
         self.mutate("INSERT INTO store VALUES('session', 'synthetic')")
         self.assert_stops("FORBIDDEN_ROWS_STORE")
 
-    def test_browser_and_ref_dimensions_rejected(self):
-        for table in ("browser_stats", "ref_counts", "location_stats"):
+    def test_personal_dimensions_rejected(self):
+        for table in ("browser_stats", "location_stats", "campaign_stats"):
             with self.subTest(table=table):
                 self.mutate("INSERT INTO " + table + " VALUES(1)")
                 self.assert_stops("FORBIDDEN_ROWS_" + table.upper())
@@ -125,6 +134,74 @@ class SyntheticGoatCounterFixture(unittest.TestCase):
             "INSERT INTO refs VALUES(2, 'https://example.invalid/', 'u')"
         )
         self.assert_stops("REFERRER_STORED")
+
+    def test_no_referrer_aggregation_is_permitted(self):
+        self.assertEqual(
+            self.run_probe(),
+            "PASS_STRUCTURAL_SYNTHETIC_ONLY_NOT_RUNTIME_OR_PRIVACY_PROOF",
+        )
+
+    def test_wrong_referrer_id_rejected(self):
+        self.mutate("UPDATE ref_counts SET ref_id=2")
+        self.assert_stops("REF_AGGREGATE_ROW_INVALID")
+
+    def test_non_matching_referrer_aggregation_rejected(self):
+        self.mutate("UPDATE ref_counts SET total=4")
+        self.assert_stops("REF_AGGREGATE_MISMATCH")
+
+    def test_missing_referrer_aggregate_rejected(self):
+        self.mutate("DELETE FROM ref_counts")
+        self.assert_stops("REF_AGGREGATE_MISMATCH")
+
+    def test_duplicate_referrer_hour_rejected(self):
+        self.mutate(
+            "INSERT INTO ref_counts VALUES(1, 9, 1, '2026-10-25 11:00:00', 2)"
+        )
+        self.assert_stops("REF_AGGREGATE_DUPLICATE_HOUR")
+
+    def test_daily_array_must_have_exactly_24_hours(self):
+        self.mutate("UPDATE hit_stats SET stats='[0,2,0]'")
+        self.assert_stops("DAILY_STATS_FORMAT")
+
+    def test_daily_array_cannot_contain_identifiers(self):
+        values = [0] * 24
+        values[11] = "SyntheticVisitorID"
+        self.mutate(
+            "UPDATE hit_stats SET stats=?", (json.dumps(values),)
+        )
+        self.assert_stops("DAILY_STATS_FORMAT")
+
+    def test_daily_array_rejects_boolean_counts(self):
+        values = [0] * 24
+        values[11] = True
+        self.mutate(
+            "UPDATE hit_stats SET stats=?", (json.dumps(values),)
+        )
+        self.assert_stops("DAILY_STATS_FORMAT")
+
+    def test_daily_array_cannot_disagree_with_hourly_total(self):
+        values = [0] * 24
+        values[10] = 2
+        self.mutate(
+            "UPDATE hit_stats SET stats=?", (json.dumps(values),)
+        )
+        self.assert_stops("DAILY_COUNTS_MISMATCH")
+
+    def test_missing_daily_aggregation_rejected(self):
+        self.mutate("DELETE FROM hit_stats")
+        self.assert_stops("NO_DAILY_STATS")
+
+    def test_duplicate_daily_aggregation_rejected(self):
+        self.mutate(
+            "INSERT INTO hit_stats SELECT * FROM hit_stats"
+        )
+        self.assert_stops("DAILY_ROW_DUPLICATE")
+
+    def test_duplicate_hourly_aggregation_rejected(self):
+        self.mutate(
+            "INSERT INTO hit_counts VALUES(1, 9, '2026-10-25 11:00:00', 2)"
+        )
+        self.assert_stops("AGGREGATE_DUPLICATE_HOUR")
 
     def test_arbitrary_or_unpublished_page_rejected(self):
         self.mutate(
