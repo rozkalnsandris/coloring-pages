@@ -1,6 +1,6 @@
 # GoatCounter on RPi5: minimal first-party pageview design (#376)
 
-**Status: DESIGN CANDIDATE / NO IMPLEMENTATION OR LIVE AUTHORITY (2026-10-25).**
+**Status: SOURCE IMPLEMENTATION IN REVIEW / NO LIVE AUTHORITY (2026-10-25).**
 **Owner scope:** `START coloring-pages` following the design-only issue creation authorization
 `AUTHORIZE DESIGN coloring-pages GOATCOUNTER-RPI5 FIRST-PARTY-PAGEVIEWS-ONLY NO-SESSION NO-IP-STORAGE SOURCE-ONLY NEW-ISSUE NO-MERGE NO-LIVE`.
 **Reviewed repository baseline:** `coloring-pages/main=e85105458d03e964fdaa2fb6b79e695398f42618`.
@@ -15,6 +15,28 @@ a claim of German legal compliance.
 - [Issue #376](https://github.com/rozkalnsandris/coloring-pages/issues/376) remains OPEN. The original `AUTHORIZE DESIGN ... NEW-ISSUE` permitted issue creation only; the subsequent START created the design document through owner-approved docs-only [PR #377](https://github.com/rozkalnsandris/coloring-pages/pull/377). Neither authorizes installation, telemetry activation, LIVE or production data access.
 - The explicit **architecture-selection gate is satisfied**, but product implementation requires separately scoped and reviewed source work after release-specific privacy/retention evidence. Any install, database, logging, service or network mutation on RPi5 requires a separate exact-owner LIVE gate in `RPi5_main`; no generic merge or `turpini` can grant it.
 - Scope of this follow-up: **source-only read-only upstream analysis and documentation**. Do not touch deployed app, Stats Worker, D1, Like/Print/QR/campaign aggregates, public tracking code, any RPi5 service, secrets, settings, or historical traffic data.
+
+## Browser pageview client — source implementation run
+
+The current source candidate adds `js/pageview.js` and loads it before
+`js/detail.js`. After `detail.js` has fetched the current catalogue and found a
+renderable entry, it makes one best-effort call to
+`window.AusmalPageviews.track(entry.id)`.
+
+The client accepts only an exact seven-digit string and sends exactly
+`{"page_id":"1234567"}` to same-origin `POST /api/pageview`. It uses
+`credentials: "omit"`, `referrerPolicy: "no-referrer"`, `cache: "no-store"`,
+`redirect: "error"` and `keepalive: true`. It does not read cookies, browser
+storage, User-Agent, campaign/UTM values or referrer. A page ID is marked
+attempted before dispatch, so a network error or ambiguous response is not
+retried during that page lifetime. All failures are swallowed so preview,
+download and A4 printing remain independent of analytics.
+
+This source step does **not** make `/api/pageview` operational. The RPi5-side
+adapter/proxy, GoatCounter process, credentials, database, logging policy and
+LIVE route still require separately reviewed source/runtime work and an exact
+owner LIVE gate. Until that exists, this client must not be interpreted as a
+working production counter.
 
 ## User goal and metric contract
 
