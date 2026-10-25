@@ -159,7 +159,7 @@ def accept_client_event(
         _stop("CLIENT_ORIGIN")
     if not _valid_content_type(content_type):
         _stop("CLIENT_CONTENT_TYPE")
-    if not isinstance(raw_body, bytes) or not 2 <= len(raw_body) <= MAX_BODY_BYTES:
+    if not isinstance(raw_body, bytes) or not 1 <= len(raw_body) <= MAX_BODY_BYTES:
         _stop("CLIENT_BODY_SIZE")
     try:
         data = json.loads(
