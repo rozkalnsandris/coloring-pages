@@ -33,6 +33,11 @@ class SyntheticGoatCounterFixture(unittest.TestCase):
     def _create_synthetic_schema(self):
         schemas = {
             "sites": "site_id integer, settings text",
+            "users": "user_id integer, site_id integer, email text",
+            "api_tokens": (
+                "api_token_id integer, site_id integer, user_id integer, "
+                "name text, token text, permissions text, sites text"
+            ),
             "paths": "site_id integer, path_id integer, path text",
             "refs": "ref_id integer, ref text, ref_scheme text",
             "hit_counts": "site_id integer, path_id integer, hour text, total integer",
@@ -62,6 +67,14 @@ class SyntheticGoatCounterFixture(unittest.TestCase):
             con.execute(
                 "INSERT INTO sites VALUES(?, ?)",
                 (1, json.dumps({"collect": 1, "ignore_ips": []})),
+            )
+            con.execute(
+                "INSERT INTO users VALUES(5, 1, 'goatcounter-probe@example.com')"
+            )
+            con.execute(
+                "INSERT INTO api_tokens VALUES(7, 1, 5, "
+                "'synthetic-count-only', ?, '2', '[1]')",
+                ("synthetic-disposable-token",),
             )
             con.execute(
                 "INSERT INTO paths VALUES(1, 9, ?)",
@@ -99,6 +112,77 @@ class SyntheticGoatCounterFixture(unittest.TestCase):
             self.run_probe(),
             "PASS_STRUCTURAL_SYNTHETIC_ONLY_NOT_RUNTIME_OR_PRIVACY_PROOF",
         )
+
+    def test_synthetic_user_is_required(self):
+        self.mutate("DELETE FROM users")
+        self.assert_stops("SYNTHETIC_USER_SCOPE")
+
+    def test_unexpected_second_user_rejected(self):
+        self.mutate(
+            "INSERT INTO users VALUES(6, 1, 'extra@example.invalid')"
+        )
+        self.assert_stops("SYNTHETIC_USER_SCOPE")
+
+    def test_unexpected_user_identity_rejected(self):
+        self.mutate(
+            "UPDATE users SET email='visitor@example.invalid'"
+        )
+        self.assert_stops("SYNTHETIC_USER_SCOPE")
+
+    def test_missing_api_token_rejected(self):
+        self.mutate("DELETE FROM api_tokens")
+        self.assert_stops("API_TOKEN_COUNT")
+
+    def test_extra_api_token_rejected(self):
+        self.mutate(
+            "INSERT INTO api_tokens VALUES("
+            "8, 1, 5, 'synthetic-count-only', "
+            "'synthetic-second-token', '2', '[1]')"
+        )
+        self.assert_stops("API_TOKEN_COUNT")
+
+    def test_elevated_api_token_permissions_rejected(self):
+        for permissions in ("4", "6", "64", "3", "0", "true", '"2"'):
+            with self.subTest(permissions=permissions):
+                self.mutate(
+                    "UPDATE api_tokens SET permissions=?",
+                    (permissions,),
+                )
+                self.assert_stops("API_TOKEN_NOT_COUNT_ONLY")
+
+    def test_unparsable_api_token_permissions_rejected(self):
+        self.mutate("UPDATE api_tokens SET permissions='not-json'")
+        self.assert_stops("API_TOKEN_JSON")
+
+    def test_wildcard_or_cross_site_api_token_scopes_rejected(self):
+        for sites in ("[-1]", "[1, 2]", "[2]", "[]", '["1"]'):
+            with self.subTest(sites=sites):
+                self.mutate("UPDATE api_tokens SET sites=?", (sites,))
+                self.assert_stops("API_TOKEN_NOT_COUNT_ONLY")
+
+    def test_api_token_site_and_owner_must_match(self):
+        for column, value in (("site_id", 2), ("user_id", 6)):
+            with self.subTest(column=column):
+                self.mutate(
+                    "UPDATE api_tokens SET " + column + "=?",
+                    (value,),
+                )
+                self.assert_stops("API_TOKEN_NOT_COUNT_ONLY")
+                self.mutate(
+                    "UPDATE api_tokens SET " + column + "=?",
+                    (1 if column == "site_id" else 5,),
+                )
+
+    def test_api_token_metadata_and_length_gate(self):
+        self.mutate(
+            "UPDATE api_tokens SET name='synthetic-admin-token'"
+        )
+        self.assert_stops("API_TOKEN_NOT_COUNT_ONLY")
+        self.mutate(
+            "UPDATE api_tokens SET name='synthetic-count-only', "
+            "token='short'"
+        )
+        self.assert_stops("API_TOKEN_NOT_COUNT_ONLY")
 
     def test_unknown_country_lookup_table_is_present_but_empty(self):
         self.mutate("INSERT INTO iso_3166_1 VALUES('Injected', 'ZZ')")

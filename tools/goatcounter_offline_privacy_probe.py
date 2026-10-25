@@ -41,6 +41,8 @@ DISALLOWED_ROWS = frozenset({
 })
 COLS = {
     "sites": {"site_id", "settings"},
+    "users": {"user_id", "site_id", "email"},
+    "api_tokens": {"site_id", "user_id", "name", "token", "permissions", "sites"},
     "paths": {"site_id", "path_id", "path"},
     "refs": {"ref_id", "ref", "ref_scheme"},
     "hit_counts": {"site_id", "path_id", "hour", "total"},
@@ -202,6 +204,45 @@ def inspect_fixture(root: str | Path, *, page_id: str, expected_views: int) -> s
                     or settings.get("ignore_ips") not in (None, [])):
                 _stop("SITE_COLLECTION_NOT_MINIMAL")
             site_id = sites[0]["site_id"]
+
+            # All accounts and credentials here MUST be disposable,
+            # synthetically created, and scoped to the one test site.
+            # Never SELECT or print the token value or password.
+            users = conn.execute(
+                "SELECT user_id, site_id, email FROM users"
+            ).fetchall()
+            if (len(users) != 1
+                    or type(users[0]["user_id"]) is not int
+                    or users[0]["user_id"] < 1
+                    or users[0]["site_id"] != site_id
+                    or users[0]["email"] != "goatcounter-probe@example.com"):
+                _stop("SYNTHETIC_USER_SCOPE")
+            token_rows = conn.execute(
+                "SELECT site_id, user_id, name, permissions, sites, "
+                "length(token) AS token_length FROM api_tokens"
+            ).fetchall()
+            if len(token_rows) != 1:
+                _stop("API_TOKEN_COUNT")
+            token = token_rows[0]
+            try:
+                permissions = json.loads(token["permissions"])
+                allowed_sites = json.loads(token["sites"])
+            except (ValueError, TypeError):
+                _stop("API_TOKEN_JSON")
+            # APIPermCount = 2 in pinned api_token.go. Export, site
+            # management, stats and wildcard site scopes are forbidden.
+            if (token["site_id"] != site_id
+                    or token["user_id"] != users[0]["user_id"]
+                    or token["name"] != "synthetic-count-only"
+                    or type(token["token_length"]) is not int
+                    or not 11 <= token["token_length"] <= 256
+                    or type(permissions) is not int or permissions != 2
+                    or not isinstance(allowed_sites, list)
+                    or len(allowed_sites) != 1
+                    or type(allowed_sites[0]) is not int
+                    or allowed_sites[0] != site_id):
+                _stop("API_TOKEN_NOT_COUNT_ONLY")
+
             # v2.7.0 always has a static blank-referrer sentinel (ref_id=1).
             # Anything else would mean retaining referrer metadata.
             refs = conn.execute(
