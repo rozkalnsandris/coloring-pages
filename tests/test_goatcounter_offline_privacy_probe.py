@@ -40,11 +40,15 @@ class SyntheticGoatCounterFixture(unittest.TestCase):
             "bots": "site_id integer, path text, bot integer, user_agent text, created_at text",
             "hits": "site_id integer, path_id integer, session blob, created_at text",
             "store": "key text, value blob",
+            "version": "name text",
         }
         with sqlite3.connect(self.db) as con:
             for table in sorted(probe.TABLES):
                 definition = schemas.get(table, "test_sentinel integer")
                 con.execute("CREATE TABLE " + table + " (" + definition + ")")
+            con.execute(
+                "INSERT INTO version VALUES('2025-12-12-1-ref-scheme')"
+            )
             con.execute(
                 "INSERT INTO sites VALUES(?, ?)",
                 (1, json.dumps({"collect": 1, "ignore_ips": []})),
@@ -220,6 +224,14 @@ class SyntheticGoatCounterFixture(unittest.TestCase):
     def test_bad_hour_boundary_rejected(self):
         self.mutate("UPDATE hit_counts SET hour='2026-10-25 11:02:00'")
         self.assert_stops("AGGREGATE_ROW_INVALID")
+
+    def test_missing_upstream_version_migration_rejected(self):
+        self.mutate("DELETE FROM version")
+        self.assert_stops("VERSION_MIGRATION_IDENTITY")
+
+    def test_fake_version_name_rejected(self):
+        self.mutate("INSERT INTO version VALUES(?)", ("visitor:203.0.113.7",))
+        self.assert_stops("VERSION_MIGRATION_IDENTITY")
 
     def test_unknown_schema_table_rejected(self):
         self.mutate("CREATE TABLE visitor_ids (ip text)")
