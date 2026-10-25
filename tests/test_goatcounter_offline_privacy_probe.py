@@ -5,6 +5,7 @@ Cloudflare, inspect RPi5, or demonstrate GDPR/TDDDG compliance.
 """
 import contextlib
 import io
+import itertools
 import json
 import sqlite3
 import sys
@@ -41,6 +42,9 @@ class SyntheticGoatCounterFixture(unittest.TestCase):
             "hits": "site_id integer, path_id integer, session blob, created_at text",
             "store": "key text, value blob",
             "version": "name text",
+            "locations": "location_id integer, country text, country_name text, region text, region_name text",
+            "languages": "iso_639_3 text, name text",
+            "iso_3166_1": "name text, alpha2 text",
         }
         with sqlite3.connect(self.db) as con:
             for table in sorted(probe.TABLES):
@@ -48,6 +52,12 @@ class SyntheticGoatCounterFixture(unittest.TestCase):
                 con.execute("CREATE TABLE " + table + " (" + definition + ")")
             con.execute(
                 "INSERT INTO version VALUES('2025-12-12-1-ref-scheme')"
+            )
+            con.execute(
+                "INSERT INTO locations VALUES(1, '', '(unknown)', '', '')"
+            )
+            con.execute(
+                "INSERT INTO languages VALUES('', '(unknown)')"
             )
             con.execute(
                 "INSERT INTO sites VALUES(?, ?)",
@@ -89,6 +99,68 @@ class SyntheticGoatCounterFixture(unittest.TestCase):
             self.run_probe(),
             "PASS_STRUCTURAL_SYNTHETIC_ONLY_NOT_RUNTIME_OR_PRIVACY_PROOF",
         )
+
+    def test_unknown_country_lookup_table_is_present_but_empty(self):
+        self.mutate("INSERT INTO iso_3166_1 VALUES('Injected', 'ZZ')")
+        self.assert_stops("FORBIDDEN_ROWS_ISO_3166_1")
+
+    def test_additional_location_rows_are_rejected(self):
+        self.mutate(
+            "INSERT INTO locations VALUES(2, 'DE', 'Germany', 'NW', 'NRW')"
+        )
+        self.assert_stops("LOCATION_LOOKUP_NOT_STATIC")
+
+    def test_changed_location_sentinel_is_rejected(self):
+        self.mutate(
+            "UPDATE locations SET country_name='203.0.113.7'"
+        )
+        self.assert_stops("LOCATION_LOOKUP_NOT_STATIC")
+
+    def test_added_language_row_does_not_fit_exact_pinned_counts(self):
+        self.mutate(
+            "INSERT INTO languages VALUES('eng', 'English')"
+        )
+        self.assert_stops("LANGUAGE_LOOKUP_COUNT")
+
+    def test_changed_language_sentinel_is_rejected(self):
+        self.mutate(
+            "UPDATE languages SET name='Visitor synthetic' WHERE iso_639_3=''"
+        )
+        self.assert_stops("LANGUAGE_LOOKUP_SENTINEL")
+
+    def test_full_pinned_language_reference_count_is_accepted(self):
+        # Reference-table shape only: these are all synthetic labels, NOT
+        # the actual bundled upstream language names.
+        rows = []
+        for chars in itertools.product("abcdefghijklmnopqrstuvwxyz", repeat=3):
+            if len(rows) == 7086:
+                break
+            rows.append(("".join(chars), "Synthetic reference name"))
+        with sqlite3.connect(self.db) as con:
+            con.executemany(
+                "INSERT INTO languages (iso_639_3, name) VALUES(?, ?)",
+                rows,
+            )
+        self.assertEqual(
+            self.run_probe(),
+            "PASS_STRUCTURAL_SYNTHETIC_ONLY_NOT_RUNTIME_OR_PRIVACY_PROOF",
+        )
+
+    def test_invalid_language_label_rejected_with_full_reference_count(self):
+        rows = []
+        for chars in itertools.product("abcdefghijklmnopqrstuvwxyz", repeat=3):
+            if len(rows) == 7086:
+                break
+            rows.append(("".join(chars), "Synthetic reference name"))
+        with sqlite3.connect(self.db) as con:
+            con.executemany(
+                "INSERT INTO languages (iso_639_3, name) VALUES(?, ?)",
+                rows,
+            )
+        self.mutate(
+            "UPDATE languages SET name='visitor\nheader' WHERE iso_639_3='aaa'"
+        )
+        self.assert_stops("LANGUAGE_LOOKUP_SHAPE")
 
     def test_session_defaults_zero_rejected(self):
         self.mutate("UPDATE sites SET settings='{\"collect\": 0}'")

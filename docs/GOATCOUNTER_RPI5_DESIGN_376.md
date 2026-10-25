@@ -382,6 +382,41 @@ lawfulness. Those independent reviews and separate owner permissions
 are required before *any* RPi5/LIVE operation or first-party tracker
 deployment.
 
+## Pinned v2.7.0 lookup-table reconciliation (source-only)
+
+A further review of upstream
+[`db/schema.gotxt`](https://github.com/arp242/goatcounter/blob/v2.7.0/db/schema.gotxt)
+and
+[`db/languages.sql`](https://github.com/arp242/goatcounter/blob/v2.7.0/db/languages.sql)
+shows that the real SQLite schema contains **25 tables**, including
+`iso_3166_1`, which the previous synthetic inventory omitted.
+Moreover, a normal v2.7.0 SQLite startup
+([GoatCounter `connectDB`](https://github.com/arp242/goatcounter/blob/v2.7.0/cmd/goatcounter/main.go))
+populates `languages` with **7,086 static language names** plus the
+empty-code `(unknown)` sentinel. These reference rows are **not
+visitor-language observations**, so rejecting every `languages`
+row would be incorrect; accepting arbitrary content would also
+weaken the minimal-data gate.
+
+The offline verifier now requires all 25 pinned tables, an empty
+`iso_3166_1` table in this no-geo synthetic test, and precisely the
+one known `locations` sentinel (location ID 1, unknown country and
+empty region). It verifies the unknown-language sentinel, reference
+code/label shapes and either one row (the deliberately minimal
+synthetic unit fixture) or exactly **7,087 rows** (the pinned release's
+normal language lookup size). Added negative tests reject extra
+locations, unexpected country lookup rows, injected sentinels,
+invalid language entries and unreviewed language-row counts.
+One positive test builds **only synthetic** 7,086-entry reference
+shape; it does not copy upstream language data.
+
+This is a **structure/count check, not a cryptographic identity check**
+of every upstream language name. It does not assert that reference
+tables can never hold unexpected data, nor replace inspection of the
+actual v2.7.0 executable and its SQLite bytes. Failing any static
+lookup condition means `STOP`, not permission to delete data,
+disable safety checks or enable LIVE tracking.
+
 ## Executable synthetic SQLite preflight (source-only)
 
 A **read-only structural verifier** now exists at
