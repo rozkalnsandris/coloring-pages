@@ -1,18 +1,21 @@
 """Opt-in isolated GoatCounter v2.7.0 runtime proof with synthetic data only.
 
 No downloads, Docker, real users, public traffic, production access, RPi5
-operations, or GitHub workflow mutations. Requires a separately obtained and
-independently reviewed local binary plus its exact expected SHA-256. Starts one
-loopback listener in a fresh private temporary directory, writes ONLY
-synthetic test data, shuts down, and invokes the read-only SQLite probe.
+operations, or GitHub workflow mutations. Requires a separately obtained
+official GoatCounter v2.7.0 Linux release .gz asset whose GitHub-published
+name, size and SHA-256 are pinned below. The harness verifies that archive
+before extracting the binary into its private temporary directory, then starts
+one loopback listener, writes ONLY synthetic test data, shuts down, and invokes
+the read-only SQLite probe.
 
-The result is NOT a legal clearance, identity proof for downloaded binaries,
+The result is NOT a legal clearance, proof of GitHub release immutability,
 Cloudflare/proxy-log assessment, or LIVE authorization.
 """
 from __future__ import annotations
 
 import argparse
 import contextlib
+import gzip
 import hashlib
 import json
 import os
@@ -38,6 +41,19 @@ EMAIL = "goatcounter-probe@example.com"
 PAGE_ID = "0427183"
 PAGE_PATH = "/coloring-page/" + PAGE_ID
 VIEWS = 2
+MAX_BINARY_BYTES = 128 * 1024 * 1024
+RELEASE_ASSETS = {
+    "amd64": {
+        "name": "goatcounter-v2.7.0-linux-amd64.gz",
+        "size": 13935060,
+        "sha256": "98d221cb9c8ef2bf76d8daa9cca647839f8d8b0bb5bc7400ff9337c5da834511",
+    },
+    "arm64": {
+        "name": "goatcounter-v2.7.0-linux-arm64.gz",
+        "size": 12770791,
+        "sha256": "ff5b2670b858bbe48802dfdc74130b6dcde2de9f5c1229b838eb9132769307dd",
+    },
+}
 
 
 class RuntimeStop(Exception):
@@ -54,15 +70,19 @@ def _host_guard() -> None:
         _stop("UNSAFE_HOST_OR_ROOT")
 
 
-def _verified_binary(path_arg: str, expected_digest: str) -> Path:
+def _release_asset_for_host() -> dict[str, object]:
+    return RELEASE_ASSETS[_expected_goarch()]
+
+
+def _verified_release_archive(path_arg: str, root: Path) -> Path:
     path = Path(path_arg)
+    asset = _release_asset_for_host()
     if (not path.is_absolute() or path.is_symlink() or not path.is_file()
-            or re.fullmatch(r"[0-9a-f]{64}", expected_digest) is None):
-        _stop("BINARY_INPUT_INVALID")
-    if not os.access(path, os.X_OK):
-        _stop("BINARY_NOT_EXECUTABLE")
-    if path.stat().st_size > 128 * 1024 * 1024:
-        _stop("BINARY_TOO_LARGE")
+            or path.name != asset["name"]):
+        _stop("RELEASE_ARCHIVE_INPUT_INVALID")
+    if path.stat().st_size != asset["size"]:
+        _stop("RELEASE_ARCHIVE_SIZE_MISMATCH")
+
     hasher = hashlib.sha256()
     with path.open("rb") as f:
         while True:
@@ -70,9 +90,27 @@ def _verified_binary(path_arg: str, expected_digest: str) -> Path:
             if not block:
                 break
             hasher.update(block)
-    if hasher.hexdigest() != expected_digest:
-        _stop("BINARY_DIGEST_MISMATCH")
-    return path
+    if hasher.hexdigest() != asset["sha256"]:
+        _stop("RELEASE_ARCHIVE_DIGEST_MISMATCH")
+
+    binary = root / "goatcounter"
+    total = 0
+    try:
+        with gzip.open(path, "rb") as source, binary.open("xb") as target:
+            while True:
+                block = source.read(1024 * 1024)
+                if not block:
+                    break
+                total += len(block)
+                if total > MAX_BINARY_BYTES:
+                    _stop("RELEASE_BINARY_TOO_LARGE")
+                target.write(block)
+    except (OSError, EOFError, gzip.BadGzipFile):
+        _stop("RELEASE_ARCHIVE_EXTRACT_FAILED")
+    if total == 0:
+        _stop("RELEASE_ARCHIVE_EXTRACT_FAILED")
+    os.chmod(binary, 0o700)
+    return binary
 
 
 def _isolated_env(root: Path) -> dict[str, str]:
@@ -264,12 +302,12 @@ def _stop_server(proc: subprocess.Popen[bytes]) -> None:
         _stop("SERVER_UNCLEAN_EXIT")
 
 
-def run_isolated(binary_arg: str, digest_arg: str) -> str:
+def run_isolated(release_archive_arg: str) -> str:
     _host_guard()
-    binary = _verified_binary(binary_arg, digest_arg)
     with tempfile.TemporaryDirectory(prefix=PREFIX) as temp:
         root = Path(temp)
         os.chmod(root, 0o700)
+        binary = _verified_release_archive(release_archive_arg, root)
         env = _isolated_env(root)
         _version(binary, root, env)
         db = root / DB_NAME
@@ -306,11 +344,10 @@ def run_isolated(binary_arg: str, digest_arg: str) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--binary", required=True)
-    parser.add_argument("--expected-binary-sha256", required=True)
+    parser.add_argument("--release-archive", required=True)
     args = parser.parse_args()
     try:
-        result = run_isolated(args.binary, args.expected_binary_sha256)
+        result = run_isolated(args.release_archive)
     except (RuntimeStop, OSError) as exc:
         code = str(exc) if isinstance(exc, RuntimeStop) else "ISOLATION_IO_ERROR"
         print("GOATCOUNTER_ISOLATED=STOP CODE=" + code)

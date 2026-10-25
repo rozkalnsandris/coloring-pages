@@ -4,6 +4,7 @@ No GoatCounter binary is required. No subprocess is started or HTTP call made.
 Tests cannot prove the real upstream binary or German privacy compliance.
 """
 import contextlib
+import gzip
 import hashlib
 import io
 import json
@@ -68,27 +69,80 @@ class RuntimeProbeContractTests(unittest.TestCase):
         self.assertNotIn("GOATCOUNTER_DB", env)
         self.assertNotIn("AWS_SECRET_ACCESS_KEY", env)
 
-    def test_digest_verified_for_only_explicit_regular_binary(self):
-        path = self.root / "test-bin"
-        path.write_bytes(b"synthetic-goatcounter-binary")
-        os.chmod(path, 0o700)
-        digest = hashlib.sha256(path.read_bytes()).hexdigest()
-        self.assertEqual(runner._verified_binary(str(path), digest), path)
-        with self.assertRaisesRegex(
-            runner.RuntimeStop, "^BINARY_DIGEST_MISMATCH$"
-        ):
-            runner._verified_binary(str(path), "0" * 64)
+    def _synthetic_release_archive(self):
+        payload = b"synthetic-goatcounter-binary"
+        path = self.root / "goatcounter-v2.7.0-linux-amd64.gz"
+        with gzip.open(path, "wb") as f:
+            f.write(payload)
+        asset = {
+            "name": path.name,
+            "size": path.stat().st_size,
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        }
+        return path, payload, asset
 
-    def test_symlinked_binary_rejected(self):
-        path = self.root / "test-bin"
-        path.write_bytes(b"synthetic")
-        os.chmod(path, 0o700)
-        link = self.root / "bin-link"
-        link.symlink_to(path)
-        with self.assertRaisesRegex(
-            runner.RuntimeStop, "^BINARY_INPUT_INVALID$"
+    def test_official_release_asset_metadata_is_pinned(self):
+        self.assertEqual(
+            runner.RELEASE_ASSETS["amd64"],
+            {
+                "name": "goatcounter-v2.7.0-linux-amd64.gz",
+                "size": 13935060,
+                "sha256": "98d221cb9c8ef2bf76d8daa9cca647839f8d8b0bb5bc7400ff9337c5da834511",
+            },
+        )
+        self.assertEqual(
+            runner.RELEASE_ASSETS["arm64"],
+            {
+                "name": "goatcounter-v2.7.0-linux-arm64.gz",
+                "size": 12770791,
+                "sha256": "ff5b2670b858bbe48802dfdc74130b6dcde2de9f5c1229b838eb9132769307dd",
+            },
+        )
+
+    def test_pinned_release_archive_is_verified_before_extraction(self):
+        path, payload, asset = self._synthetic_release_archive()
+        with mock.patch.object(
+            runner, "_release_asset_for_host", return_value=asset
         ):
-            runner._verified_binary(str(link), "0" * 64)
+            binary = runner._verified_release_archive(str(path), self.root)
+        self.assertEqual(binary, self.root / "goatcounter")
+        self.assertEqual(binary.read_bytes(), payload)
+        self.assertTrue(os.access(binary, os.X_OK))
+
+    def test_release_archive_digest_mismatch_stops(self):
+        path, _payload, asset = self._synthetic_release_archive()
+        asset = dict(asset, sha256="0" * 64)
+        with mock.patch.object(
+            runner, "_release_asset_for_host", return_value=asset
+        ):
+            with self.assertRaisesRegex(
+                runner.RuntimeStop, "^RELEASE_ARCHIVE_DIGEST_MISMATCH$"
+            ):
+                runner._verified_release_archive(str(path), self.root)
+
+    def test_release_archive_size_mismatch_stops_before_extraction(self):
+        path, _payload, asset = self._synthetic_release_archive()
+        asset = dict(asset, size=asset["size"] + 1)
+        with mock.patch.object(
+            runner, "_release_asset_for_host", return_value=asset
+        ):
+            with self.assertRaisesRegex(
+                runner.RuntimeStop, "^RELEASE_ARCHIVE_SIZE_MISMATCH$"
+            ):
+                runner._verified_release_archive(str(path), self.root)
+
+    def test_symlinked_release_archive_rejected(self):
+        path, _payload, asset = self._synthetic_release_archive()
+        link = self.root / "release-link.gz"
+        link.symlink_to(path)
+        asset = dict(asset, name=link.name)
+        with mock.patch.object(
+            runner, "_release_asset_for_host", return_value=asset
+        ):
+            with self.assertRaisesRegex(
+                runner.RuntimeStop, "^RELEASE_ARCHIVE_INPUT_INVALID$"
+            ):
+                runner._verified_release_archive(str(link), self.root)
 
     def test_exact_outbound_schema_and_proxy_bypass(self):
         opener = mock.Mock()
@@ -348,8 +402,8 @@ class RuntimeProbeContractTests(unittest.TestCase):
         stream = io.StringIO()
         with mock.patch(
             "sys.argv",
-            ["goatcounter-probe", "--binary", "/nonexistent",
-             "--expected-binary-sha256", "0" * 64],
+            ["goatcounter-probe", "--release-archive",
+             "/nonexistent/goatcounter-v2.7.0-linux-amd64.gz"],
         ), contextlib.redirect_stdout(stream), mock.patch.object(
             runner.platform, "node", return_value="isolated-ci"
         ), mock.patch.object(runner.os, "geteuid", return_value=1000):
@@ -357,7 +411,7 @@ class RuntimeProbeContractTests(unittest.TestCase):
         self.assertEqual(result, 2)
         self.assertEqual(
             stream.getvalue().strip(),
-            "GOATCOUNTER_ISOLATED=STOP CODE=BINARY_INPUT_INVALID",
+            "GOATCOUNTER_ISOLATED=STOP CODE=RELEASE_ARCHIVE_INPUT_INVALID",
         )
 
 
