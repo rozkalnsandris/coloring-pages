@@ -7,19 +7,14 @@
 This document is a proposal under #376, **not** acceptance of new collection or
 a claim of German legal compliance.
 
-## Conflict and owner architecture gate
+**Update (2026-10-25):** Owner merged design PR #377 as `main=1cb3b0e67d20c6851592817ea5973992b9dbf707`, then explicitly closed #368 (`not_planned`) in favor of this **planned** GoatCounter direction. No GoatCounter service is installed or deployed; the existing LIVE Cloudflare-backed frontend is not replaced. The actual LIVE transition date is unset.
 
-- Current issue [#368](https://github.com/rozkalnsandris/coloring-pages/issues/368)
-  explicitly requires Cloudflare-only Traffic and **no RPi5 traffic storage**.
-  It remains OPEN. This design intentionally does not supersede its requirements.
-- The design-only #376 authorization created an issue; the subsequent START permits
-  this **docs-only source candidate**, but is **not** permission to implement
-  or install a tracker. A new explicit, recorded **owner choice** is required
-  to replace/supersede the #368 architecture **before implementation code**.
-- No changes to application inputs, `cloudflare/stats-worker.js`, D1,
-  `RPi5_main`, Cloudflare settings, LIVE containers, public pages,
-  `stats.html`, or existing Like/Print/QR/campaign counts are in this scope.
-  No historic data is overwritten, reclassified, migrated or deleted.
+## Recorded owner architecture choice and safety boundary
+
+- [Issue #368](https://github.com/rozkalnsandris/coloring-pages/issues/368) was closed on 2026-10-25 as **not planned / superseded**, after explicit owner direction to move the **future** Traffic architecture from Cloudflare-only to first-party, RPi5-hosted GoatCounter pageview counting. This does **not** complete #368's original Cloudflare-only acceptance criteria.
+- [Issue #376](https://github.com/rozkalnsandris/coloring-pages/issues/376) remains OPEN. The original `AUTHORIZE DESIGN ... NEW-ISSUE` permitted issue creation only; the subsequent START created the design document through owner-approved docs-only [PR #377](https://github.com/rozkalnsandris/coloring-pages/pull/377). Neither authorizes installation, telemetry activation, LIVE or production data access.
+- The explicit **architecture-selection gate is satisfied**, but product implementation requires separately scoped and reviewed source work after release-specific privacy/retention evidence. Any install, database, logging, service or network mutation on RPi5 requires a separate exact-owner LIVE gate in `RPi5_main`; no generic merge or `turpini` can grant it.
+- Scope of this follow-up: **source-only read-only upstream analysis and documentation**. Do not touch deployed app, Stats Worker, D1, Like/Print/QR/campaign aggregates, public tracking code, any RPi5 service, secrets, settings, or historical traffic data.
 
 ## User goal and metric contract
 
@@ -103,21 +98,44 @@ Evidence reviewed against upstream documentation on 2026-10-25:
    language, width and referrer dimensions. Disable **all** that are outside
    this page-ID-only design and test the resulting schema, not just UI toggles.
 5. [v2.7.0 release](https://github.com/arp242/goatcounter/releases/tag/v2.7.0)
-   added a separate `bots` table retaining bot pageviews for about 30 days.
-   This is a **release blocker until inspected**: identify columns, whether
-   it contains per-request records and whether it can be disabled so storage
-   remains within the agreed aggregate-only scope. **Do not claim v2.7.0 is
-   compliant by default.** If stock GoatCounter cannot satisfy this
-   requirement, STOP and return with options; do not silently weaken it.
+   added a `bots` table. **Read-only v2.7.0 source inspection below verifies
+   event-level bot records including raw User-Agent and timestamp.** A Sessions
+   OFF / Individual pageviews OFF setting does not itself prove this table
+   remains empty. Isolated runtime/schema verification is a release blocker.
+
 6. [GoatCounter upstream README](https://github.com/arp242/goatcounter)
    describes self-hosting using SQLite/Docker. A reviewed immutable image
    digest, release source/tag identity, supported RPi5 platform and license
    obligations are **not yet established**.
 
-**Unresolved:** No exact release binary/image, SQLite schema, default
-settings, `bots` table or request-handling implementation was executed or
-inspected in an isolated test. Do not promote an upstream marketing/privacy
-statement to a verified `no-IP-storage` guarantee.
+## v2.7.0 source verification — read-only, 2026-10-25
+
+The following is actual code inspection of GoatCounter tag `v2.7.0`,
+**not** execution, an immutable container image audit or an RPi5 LIVE check.
+
+| Versioned upstream file | Verified code behavior | Consequence |
+| --- | --- | --- |
+| [`db/migrate/2025-06-21-1-bots.gotxt`](https://github.com/arp242/goatcounter/blob/v2.7.0/db/migrate/2025-06-21-1-bots.gotxt) | The `bots` table columns are `site_id, path, bot, user_agent, created_at`. Migrates old bot hits into this table. | Bot records are **individual requests**, not merely aggregate counters. |
+| [`memstore.go`](https://github.com/arp242/goatcounter/blob/v2.7.0/memstore.go) | `Persist()` inserts `Hit.Bot>0` into `bots` before `processHit()` applies `CollectHits`, `CollectUserAgent` and `CollectSession` flags. | Disabling Individual pageviews, User-Agent statistics and Sessions cannot **on their own** prevent bot-record storage. |
+| [`handlers/api.go`](https://github.com/arp242/goatcounter/blob/v2.7.0/handlers/api.go) | API `/api/v0/count` populates `Hit.Bot` from supplied `bot` and classification of supplied `user_agent`; `no_sessions:true` permits requests without `session` or `user_agent` + IP. | Strict backend-only `{no_sessions:true,hits:[{path:"/coloring-page/<7-digit-id>"}]}` **may** avoid this branch; requires isolated proof and allowlist enforcement. |
+| [`cron/tasks.go`](https://github.com/arp242/goatcounter/blob/v2.7.0/cron/tasks.go) | A job deletes `bots` rows older than 30 days. | Shorter retention is **not** proof that raw event rows are acceptable. |
+| [`db/schema.gotxt`](https://github.com/arp242/goatcounter/blob/v2.7.0/db/schema.gotxt) | Contains both `hits` and `bots` tables. | Measure actual persisted rows, not only UI checkboxes or schema names. |
+
+**Conservative result:** The proposed strictly validated backend API body sends
+no bot flag, User-Agent, session or IP. Versioned source suggests these calls
+would not enter the `Hit.Bot>0` branch; however, regular `/count` endpoint,
+other requests, proxy forwarding and logs are not thereby excluded. This is
+not yet a tested no-IP/no-individual-data configuration. Reject all fields
+outside a canonical page ID before constructing the GoatCounter request;
+do not forward client headers. No automatic resend after ambiguous results.
+
+**Remaining blockers:** Pin a specific immutable release/image and verify
+RPi5 compatibility; run isolated normal/bot/invalid-event cases and inspect
+populated SQLite `hits`, `bots`, aggregate tables, error/access logs, WAL,
+exports and backups. Verify that all stored analytics information meets the
+owner's count-only scope. Independently document GDPR/TDDDG assessment; never
+assert a blanket consent exemption or conflate lack of IP **storage** with
+lack of transient IP **processing**.
 
 ## German privacy and data handling gate
 
@@ -161,18 +179,17 @@ statement to a verified `no-IP-storage` guarantee.
 | Accuracy semantics | Test each accepted detail-open counts once per intended emission; reloads count again; no pageview claimed if request is unconfirmed; handle duplicate/ambiguous responses without automatic retry. |
 | Protection/availability | Internal-only GoatCounter admin/API, protected ADMIN read endpoint, least privilege, bounded CPU/RAM/disk and startup/health; visitors can browse/print if analytics is down. |
 | Disaster recovery | Define authorized backup/restore, migration and rollback **plans**; no test runs, backups or rollback on LIVE without independent authority. |
-| Governance / rollout | Explicit decision on #368 architecture, reviewed source/test PRs, exact-head CI/reviews, separate RPi5_main owner authorization for install/data store/exposure; Cloudflare token/settings and LIVE remain out of scope here. |
+| Governance / rollout | #368 closure records the intended architecture switch, **not** a LIVE switch. Require reviewed source PRs and exact-head CI/reviews, isolated GoatCounter storage/legal evidence, and a separate exact RPi5_main owner gate for install, data store and exposure. Cloudflare tokens/settings and LIVE remain out of scope here. |
 
-### Decision needed before implementation
+### Implementation and LIVE gates after the architecture decision
 
-An explicit owner architecture decision must say whether to **replace the
-Cloudflare-only Traffic source** in #368 with first-party, RPi5-hosted,
-aggregate pageview counting, and which existing Traffic fields should remain
-N/A or be removed. It must not be inferred from opening #376, START, this
-doc PR, or a successful source CI.
+**Already recorded:** On 2026-10-25 the owner selected GoatCounter for the
+**planned** Traffic replacement and closed #368. No future switch date was
+specified and the existing Cloudflare-backed production UI is unchanged.
 
-If this direction is accepted, subsequent work must be scoped into separately
-reviewed `coloring-pages` application/ADMIN source and `RPi5_main`
-host/service integration, with independent deployment gates. Until then,
-**Cloudflare-only remains authoritative**, the old Traffic panel remains
-unchanged, and #376 is a design candidate only.
+**Still required:** Complete upstream version-specific storage proof and
+German legal/privacy assessment first. Then separate one-scope source/test PRs
+in `coloring-pages` and reviewed `RPi5_main` service design, followed
+by independently authorized LIVE installation, protections and verification.
+Do not install, enable pageview counting, merge code, reconfigure Cloudflare,
+remove old analytics, or alter historical data under this docs review.
