@@ -196,9 +196,11 @@ Evidence reviewed against upstream documentation on 2026-10-25:
 
 6. [GoatCounter upstream README](https://github.com/arp242/goatcounter)
    describes self-hosting using SQLite/Docker. The reviewed source tag and
-   license identity are now recorded below, but an independently authenticated
-   binary/container digest, release artifact provenance and RPi5 runtime
-   acceptance are **not yet established**.
+   license identity are recorded below. The official GitHub v2.7.0 Linux
+   release-asset metadata is now pinned for amd64 and arm64, but the release
+   is not GitHub-immutable, the archive digest does not cryptographically bind
+   the bytes to the reviewed source commit, and container/RPi5 runtime
+   acceptance is **not yet established**.
 
 ## v2.7.0 source verification — read-only, 2026-10-25
 
@@ -417,11 +419,13 @@ the test site is created. Disconnected tests cover the accepted amd64 profile,
 wrong OS/architecture, disabled cgo, race builds, unexpected JSON fields and
 unsupported host architectures.
 
-This narrows accidental/custom-build drift but **does not establish binary
-provenance**. The operator-supplied SHA-256 still must come from an
-independently authenticated artifact review; neither `version -json` nor a
-matching caller-provided digest proves that the executable was built from
-commit `7e91d8a9bdbb0dd48496e498c5680f8f3477a1b4`.
+This narrows accidental/custom-build drift but `version -json` alone does
+**not** establish binary provenance. The harness now also pins the official
+GitHub v2.7.0 Linux release-asset name, byte size and GitHub-published SHA-256
+for amd64 and arm64. That removes the previous caller-provided checksum trust
+loop, but it still does not prove that the release archive was built from
+commit `7e91d8a9bdbb0dd48496e498c5680f8f3477a1b4`; that source-to-binary
+reproducibility claim remains out of scope.
 
 The pinned
 [`LICENSE`](https://github.com/arp242/goatcounter/blob/v2.7.0/LICENSE)
@@ -431,6 +435,28 @@ third-party `count.js` path. License identity is source-verified here;
 distribution/notice obligations for any eventual packaged binary or container
 remain part of the separate deployment review.
 
+## Official v2.7.0 Linux release-asset snapshot — source-only
+
+GitHub release API metadata for
+[`v2.7.0`](https://github.com/arp242/goatcounter/releases/tag/v2.7.0),
+read on 2026-10-25, reports release ID `270508285`, uploader
+`arp242`, and these Linux assets:
+
+| Architecture | Asset ID | Exact filename | Bytes | GitHub `digest` |
+| --- | ---: | --- | ---: | --- |
+| amd64 | `329016647` | `goatcounter-v2.7.0-linux-amd64.gz` | `13935060` | `sha256:98d221cb9c8ef2bf76d8daa9cca647839f8d8b0bb5bc7400ff9337c5da834511` |
+| arm64 | `329016679` | `goatcounter-v2.7.0-linux-arm64.gz` | `12770791` | `sha256:ff5b2670b858bbe48802dfdc74130b6dcde2de9f5c1229b838eb9132769307dd` |
+
+The harness hard-codes the filename, byte size and SHA-256 for the host's
+supported architecture and refuses any mismatch **before extraction**. It does
+not download the asset itself. The operator must obtain the exact official
+release archive through a separately authorized/test-host workflow.
+
+This is stronger than accepting a checksum typed by the caller, but it is not
+a signed reproducible-build attestation. GitHub reports this release as
+`immutable=false`; the pinned digest therefore acts as a fail-closed snapshot:
+a later asset replacement will be rejected rather than silently trusted.
+
 ## Runnable isolated GoatCounter v2.7.0 runtime check — opt-in, not run yet
 
 Source-only harness:
@@ -439,11 +465,11 @@ Disconnected unit tests:
 [`tests/test_goatcounter_isolated_runtime_probe.py`](../tests/test_goatcounter_isolated_runtime_probe.py).
 
 The harness is **not automatically executed by CI**; CI only exercises
-the harness's mocks and Python structural probe. It needs a **separately
-obtained, independently authenticated** Linux GoatCounter `v2.7.0`
-binary and its already-reviewed exact 64-character SHA-256. The harness
-checks the digest and `goatcounter version -json`, but merely matching
-a caller-provided digest **does not establish trusted provenance**.
+the harness's mocks and Python structural probe. It needs a separately
+obtained official Linux GoatCounter `v2.7.0` `.gz` release archive for
+the authorized test host's amd64/arm64 architecture. Before extraction it
+requires the exact pinned filename, byte size and GitHub-published SHA-256,
+then it runs `goatcounter version -json` on the extracted private copy.
 It must not download binaries, build Go dependencies or use production
 services to complete the test.
 
@@ -471,21 +497,20 @@ did not suppress urllib's implicit User-Agent or its default redirect
 handler; the regression unit tests now enforce both transport gates.
 Responses, test tokens, internal errors and database rows are not printed.
 
-An example invocation **only after trusted binary acquisition,
-checksum verification and external sandbox authorization**:
+An example invocation **only after obtaining the exact official release
+archive and external sandbox authorization**:
 
 ~~~sh
 python3 tools/goatcounter_isolated_runtime_probe.py \
-  --binary /isolated/verified/goatcounter \
-  --expected-binary-sha256 VERIFIED_64_LOWERCASE_HEX_SHA256
+  --release-archive /isolated/input/goatcounter-v2.7.0-linux-arm64.gz
 ~~~
 
 The Python harness does not itself create an OS network namespace or
 firewall; this separation must be imposed by the external disposable
 test environment. It cannot certify security of an untrusted binary.
 `GOATCOUNTER_ISOLATED=PASS_SYNTHETIC_GOATCOUNTER_RUNTIME_ONLY_NOT_LIVE_OR_LEGAL_PROOF`
-means only that a **real supplied** version-checked binary accepted
-these synthetic requests and its SQLite snapshot met the narrow
+means only that a **real binary extracted from the pinned supplied release
+archive** accepted these synthetic requests and its SQLite snapshot met the narrow
 structural invariants. Otherwise it emits a fixed `STOP` code.
 Neither an HTTP `202` nor green unit tests constitute this PASS.
 
