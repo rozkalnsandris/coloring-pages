@@ -137,6 +137,78 @@ owner's count-only scope. Independently document GDPR/TDDDG assessment; never
 assert a blanket consent exemption or conflate lack of IP **storage** with
 lack of transient IP **processing**.
 
+## Strict v2.7.0 collection flags — source evidence, 2026-10-25
+
+The upstream `v2.7.0` **Git tag resolves to commit
+[`7e91d8a9bdbb0dd48496e498c5680f8f3477a1b4`](https://github.com/arp242/goatcounter/commit/7e91d8a9bdbb0dd48496e498c5680f8f3477a1b4).
+This pins the reviewed **source**, not a downloaded/reviewed image digest,
+RPi5 binary, instance configuration or actual runtime proof.
+
+Source inspection adds a critical configuration trap to the bot finding:
+
+- [`settings.go`](https://github.com/arp242/goatcounter/blob/v2.7.0/settings.go)
+  defines `CollectNothing = 1`, `CollectReferrer = 2`,
+  `CollectUserAgent = 4`, `CollectScreenSize = 8`,
+  `CollectLocation = 16`, `CollectLocationRegion = 32`,
+  `CollectLanguage = 64`, `CollectSession = 128` and
+  `CollectHits = 256`. In `SiteSettings.Defaults()`, **`Collect = 0`
+  triggers defaults**, enabling referrer, User-Agent, screen size, country,
+  region **and session** collection. A site setting of `0` is **unsafe
+  for this design**; the candidate no-optional-dimensions value is the
+  explicit `CollectNothing = 1` sentinel. Do not set a raw database value
+  on LIVE; this is a source-level requirement for a reviewed, supported
+  settings path and separate authorized runtime configuration.
+- [`handlers/api.go`](https://github.com/arp242/goatcounter/blob/v2.7.0/handlers/api.go)
+  uses `no_sessions:true` to allow backend hits without an explicit session,
+  browser or IP. **This does not turn off the site's
+  `CollectSession` flag.** The inbound JSON includes many other fields
+  (`bot`, `user_agent`, `ref`, `query`, `ip`, `session`,
+  `location`, `created_at`, `size`, `title`, `event`).
+  The planned adapter must build the only two allowed top-level keys
+  `no_sessions` and `hits`, with exactly one inner key `path`,
+  **from a validated catalog ID**; never proxy caller JSON.
+- [`memstore.go`](https://github.com/arp242/goatcounter/blob/v2.7.0/memstore.go)
+  calls `session()` if `CollectSession` is enabled, regardless of the
+  `no_sessions` request hint. It can persist a session map to the
+  database's `store` table on shutdown. With Sessions disabled, its
+  ordinary-hit path instead sets `FirstVisit=true` and clears session
+  identity, which is consistent with **each accepted event being counted**.
+  In the upstream code, the bot insertion path precedes these settings
+  checks; `CollectNothing=1` is not a global safeguard against bot rows.
+- [`db/schema.gotxt`](https://github.com/arp242/goatcounter/blob/v2.7.0/db/schema.gotxt)
+  defines aggregate `hit_counts` (per hour/path) and `hit_stats`
+  (per day/path), in addition to individual `hits` and `bots` tables
+  and optional-dimension tables. Database configuration and actual rows must
+  be inspected after **synthetic** test events to prove aggregate-only
+  counting.
+
+### Required isolated acceptance cases (not executed yet)
+
+Only against an independently created **non-production** instance and
+synthetic IDs such as `0427183`; do not access installed LIVE SQLite,
+process environment, real user data, or production logs under this design PR.
+
+| Case | Controlled input or setting | Necessary result |
+| --- | --- | --- |
+| Defaults trap | New site or test site configured with `Collect = 0` | Test **rejects** configuration: settings defaults turn on optional dimensions and Sessions. |
+| Minimal settings | Supported UI/API sets all optional Data collection flags OFF; inspect resulting effective `Collect` | Effective value is exactly `CollectNothing = 1`, not zero, and remains so after restart. |
+| No sessions | Two API hits for the same published page with `no_sessions:true`, with Sessions OFF | Two accepted pageview events, not a made-up unique-person count or a shared synthetic session. |
+| Strict outbound schema | Simulated public request for existing ID `0427183` | Internal body exactly `{"no_sessions":true,"hits":[{"path":"/coloring-page/0427183"}]}`; no copied IP, User-Agent, headers, query or referrer. |
+| Reject extra fields | Simulated browser body with `bot`, `ip`, `user_agent`, `session`, `ref`, `query`, `created_at` or arbitrary keys | Reject **before** generating GoatCounter API JSON; no partial acceptance, secret or metadata logging. |
+| Invalid/unpublished IDs | Non-7-digit, unknown or removed catalog ID; plus a valid catalog ID with a leading zero (`0427183`) | Unknown/invalid/removed IDs rejected; a valid published `0427183` is accepted and preserved as a **string**, never parsed as an integer. |
+| Bot persistence | Synthetic bot-marked/spoofed-UA browser requests pass through the proposed *adapter*; also verify the sole permitted backend route in a sealed instance | Adapter **rejects** these payloads before the GoatCounter API; ordinary accepted events leave `bots` empty. **STOP** if any prohibited bot/UA rows persist. Public `/count` and untrusted/direct `/api/v0/count` are unreachable. |
+| DB minimization | After persist/cron, restart and retention cycle inspect `hits`, `bots`, `store.session`, and all browser/location/referrer/device tables | No persistent visitor/session rows or individual events and no extra per-client dimensions; aggregate `hit_counts`/`hit_stats` may contain only allowed logical path/time/count data. |
+| Operational privacy | Inspect sanitized offline Nginx/Cloudflare edge/log/storage/backup acceptance evidence | No prohibited analytics logging or durable client metadata; existing essential security processing documented separately. No secrets/raw records in reports. |
+| Failures and double-counting | API 202/4xx/5xx, ambiguous response, CDN cache, back/forward, refresh, prefetch, disabled JS | Visitor browsing/printing always works; no automatic repeat after ambiguous success; no false unique-person claim; event-count limitations disclosed. |
+
+**Gate interpretation:** Source inspection alone does not certify that a
+stock GoatCounter `v2.7.0` deployment is aggregate-only. The above tests
+must be run on the actual *pinned* runtime before approving collector
+source or authorizing any host installation. The DSK/EDPB/GDPR/TDDDG
+assessment of the chosen first-party browser request remains an independent
+pre-activation decision; lack of IP **storage** does not mean no IP
+**processing** in the normal network path.
+
 ## German privacy and data handling gate
 
 - [TDDDG §25](https://www.gesetze-im-internet.de/ttdsg/__25.html):
