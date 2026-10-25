@@ -23,7 +23,9 @@ DB_NAME = "goatcounter-test.sqlite3"
 ID_RE = re.compile(r"[0-9]{7}\Z")
 PREFIX = "goatcounter-offline-"
 
-# Version-specific table inventory; unknown tables fail closed.
+# Version-specific v2.7.0 table inventory; unknown tables fail closed.
+# Empty referrer ref_counts are duplicate aggregate page/time/count data,
+# not an individually identifying referrer dimension.
 TABLES = frozenset({
     "sites", "users", "api_tokens", "hits", "bots", "paths", "campaigns",
     "browsers", "systems", "refs", "hit_counts", "ref_counts", "hit_stats",
@@ -32,7 +34,7 @@ TABLES = frozenset({
     "languages", "store",
 })
 DISALLOWED_ROWS = frozenset({
-    "hits", "bots", "campaigns", "browsers", "systems", "ref_counts",
+    "hits", "bots", "campaigns", "browsers", "systems",
     "browser_stats", "system_stats", "location_stats", "size_stats",
     "language_stats", "campaign_stats", "exports", "store",
 })
@@ -41,6 +43,7 @@ COLS = {
     "paths": {"site_id", "path_id", "path"},
     "refs": {"ref_id", "ref", "ref_scheme"},
     "hit_counts": {"site_id", "path_id", "hour", "total"},
+    "ref_counts": {"site_id", "path_id", "ref_id", "hour", "total"},
     "hit_stats": {"site_id", "path_id", "day", "stats"},
     "hits": {"site_id", "path_id", "created_at", "session"},
     "bots": {"site_id", "path", "user_agent", "created_at", "bot"},
@@ -89,9 +92,9 @@ def _timestamp(value: object, *, day: bool) -> bool:
     try:
         if day:
             return dt.date.fromisoformat(value).isoformat() == value
-        stamp = dt.datetime.fromisoformat(value.replace(" ", "T"))
+        stamp = dt.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
         return (stamp.minute == 0 and stamp.second == 0
-                and stamp.microsecond == 0 and stamp.tzinfo is None)
+                and stamp.microsecond == 0 and stamp.strftime("%Y-%m-%d %H:%M:%S") == value)
     except ValueError:
         return False
 
@@ -100,7 +103,7 @@ def inspect_fixture(root: str | Path, *, page_id: str, expected_views: int) -> s
     """Check synthetic fixture schema, forbidden tables and expected counts.
 
     Does not inspect raw SQLite pages, logs, backups, runtime routing,
-    hidden dimensions in opaque hit_stats.stats, or legal requirements.
+    hidden dimensions in unrelated tables or logs, or legal requirements.
     """
     if not isinstance(page_id, str) or ID_RE.fullmatch(page_id) is None:
         _stop("EXPECTED_PUBLIC_ID")
@@ -143,8 +146,13 @@ def inspect_fixture(root: str | Path, *, page_id: str, expected_views: int) -> s
                     or settings.get("ignore_ips") not in (None, [])):
                 _stop("SITE_COLLECTION_NOT_MINIMAL")
             site_id = sites[0]["site_id"]
-            refs = conn.execute("SELECT ref FROM refs").fetchall()
-            if not refs or any(row["ref"] != "" for row in refs):
+            # v2.7.0 always has a static blank-referrer sentinel (ref_id=1).
+            # Anything else would mean retaining referrer metadata.
+            refs = conn.execute(
+                "SELECT ref_id, ref, ref_scheme FROM refs"
+            ).fetchall()
+            if (len(refs) != 1 or refs[0]["ref_id"] != 1
+                    or refs[0]["ref"] != "" or refs[0]["ref_scheme"] != "o"):
                 _stop("REFERRER_STORED")
             wanted_path = "/coloring-page/" + page_id
             paths = conn.execute("SELECT site_id, path_id, path FROM paths").fetchall()
@@ -156,21 +164,69 @@ def inspect_fixture(root: str | Path, *, page_id: str, expected_views: int) -> s
             ).fetchall()
             if not counts:
                 _stop("NO_AGGREGATE_COUNTS")
-            if any(
-                r["site_id"] != site_id or r["path_id"] != path_id
-                or type(r["total"]) is not int or r["total"] < 1
-                or not _timestamp(r["hour"], day=False)
-                for r in counts
-            ):
-                _stop("AGGREGATE_ROW_INVALID")
-            if sum(r["total"] for r in counts) != expected_views:
+            hourly = {}
+            for r in counts:
+                if (r["site_id"] != site_id or r["path_id"] != path_id
+                        or type(r["total"]) is not int or r["total"] < 1
+                        or not _timestamp(r["hour"], day=False)):
+                    _stop("AGGREGATE_ROW_INVALID")
+                if r["hour"] in hourly:
+                    _stop("AGGREGATE_DUPLICATE_HOUR")
+                hourly[r["hour"]] = r["total"]
+            if sum(hourly.values()) != expected_views:
                 _stop("PAGEVIEW_TOTAL_MISMATCH")
-            daily = conn.execute(
-                "SELECT site_id, path_id, day FROM hit_stats"
+
+            # GoatCounter v2.7.0 also populates ref_counts when Referrer
+            # collection is OFF, pointing to the shared empty-ref sentinel.
+            # These contain no extra visitor dimension when they exactly
+            # duplicate the hourly per-page totals.
+            refs_hourly = {}
+            refs_count = conn.execute(
+                "SELECT site_id, path_id, ref_id, hour, total FROM ref_counts"
             ).fetchall()
-            if any(r["site_id"] != site_id or r["path_id"] != path_id
-                   or not _timestamp(r["day"], day=True) for r in daily):
-                _stop("DAILY_ROW_INVALID")
+            for r in refs_count:
+                if (r["site_id"] != site_id or r["path_id"] != path_id
+                        or r["ref_id"] != 1
+                        or type(r["total"]) is not int or r["total"] < 1
+                        or not _timestamp(r["hour"], day=False)):
+                    _stop("REF_AGGREGATE_ROW_INVALID")
+                if r["hour"] in refs_hourly:
+                    _stop("REF_AGGREGATE_DUPLICATE_HOUR")
+                refs_hourly[r["hour"]] = r["total"]
+            if refs_hourly != hourly:
+                _stop("REF_AGGREGATE_MISMATCH")
+
+            # v2.7.0 stores a JSON array of 24 hourly counts per day/path
+            # in hit_stats.stats (see cron/hit_stat.go). This must exactly
+            # match the hourly hit_counts to prevent hidden payloads and
+            # inconsistencies from receiving a false PASS.
+            daily_expected = {}
+            for hour, total in hourly.items():
+                day = hour[:10]
+                h = int(hour[11:13])
+                daily_expected.setdefault(day, [0] * 24)[h] += total
+            daily_actual = {}
+            daily = conn.execute(
+                "SELECT site_id, path_id, day, stats FROM hit_stats"
+            ).fetchall()
+            if not daily:
+                _stop("NO_DAILY_STATS")
+            for r in daily:
+                if (r["site_id"] != site_id or r["path_id"] != path_id
+                        or not _timestamp(r["day"], day=True)):
+                    _stop("DAILY_ROW_INVALID")
+                if r["day"] in daily_actual:
+                    _stop("DAILY_ROW_DUPLICATE")
+                try:
+                    stats = json.loads(r["stats"])
+                except (ValueError, TypeError):
+                    _stop("DAILY_STATS_FORMAT")
+                if (not isinstance(stats, list) or len(stats) != 24
+                        or any(type(v) is not int or v < 0 for v in stats)):
+                    _stop("DAILY_STATS_FORMAT")
+                daily_actual[r["day"]] = stats
+            if daily_actual != daily_expected:
+                _stop("DAILY_COUNTS_MISMATCH")
     except sqlite3.DatabaseError:
         _stop("SQLITE_READ_OR_SCHEMA_ERROR")
     return "PASS_STRUCTURAL_SYNTHETIC_ONLY_NOT_RUNTIME_OR_PRIVACY_PROOF"
