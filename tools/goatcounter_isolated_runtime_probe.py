@@ -172,6 +172,13 @@ def _tcp_ready(port: int, proc: subprocess.Popen[bytes]) -> None:
     _stop("LOOPBACK_NOT_READY")
 
 
+class _RejectRedirects(urllib.request.HTTPRedirectHandler):
+    """Never follow 30x; a redirect can forward synthetic bearer credentials."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
 def _count_once(port: int, token: str) -> None:
     # Never forward caller-supplied JSON, UA, IP, referrer or UTM.
     body = json.dumps(
@@ -189,8 +196,13 @@ def _count_once(port: int, token: str) -> None:
     )
     try:
         # Exactly one HTTP transmission. Never resend after ambiguity.
-        # Bypass inherited HTTP_PROXY settings as well as DNS resolution.
-        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        # Never use environment proxies or follow redirects. urllib's
+        # OpenerDirector otherwise adds "User-Agent: Python-urllib/..."
+        # and its default redirect handler may forward Authorization.
+        opener = urllib.request.build_opener(
+            urllib.request.ProxyHandler({}), _RejectRedirects()
+        )
+        opener.addheaders = []
         with opener.open(request, timeout=5) as response:
             if response.status != 202:
                 _stop("BACKEND_NOT_ACCEPTED")
