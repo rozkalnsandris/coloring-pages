@@ -98,15 +98,25 @@ class RuntimeProbeContractTests(unittest.TestCase):
         ) as make:
             runner._count_once(48721, "synthetic-key")
         make.assert_called_once()
-        self.assertEqual(type(make.call_args.args[0]),
-                         runner.urllib.request.ProxyHandler)
+        self.assertEqual(len(make.call_args.args), 2)
+        self.assertIsInstance(
+            make.call_args.args[0], runner.urllib.request.ProxyHandler
+        )
+        self.assertIsInstance(
+            make.call_args.args[1], runner._RejectRedirects
+        )
         # ProxyHandler({}) has no active proxy handlers.
         self.assertEqual(make.call_args.args[0].proxies, {})
+        # OpenerDirector defaults to Python-urllib/<version> if unset;
+        # this must be cleared to avoid an implicit outbound User-Agent.
+        self.assertEqual(opener.addheaders, [])
         opener.open.assert_called_once()
         request = opener.open.call_args.args[0]
         self.assertEqual(request.method, "POST")
         self.assertEqual(request.full_url, "http://127.0.0.1:48721/api/v0/count")
         self.assertEqual(request.get_header("Host"), runner.HOST)
+        self.assertNotIn("User-agent", request.headers)
+        self.assertNotIn("Referer", request.headers)
         self.assertEqual(
             json.loads(request.data),
             {"no_sessions": True, "hits": [{"path": "/coloring-page/0427183"}]},
@@ -115,6 +125,35 @@ class RuntimeProbeContractTests(unittest.TestCase):
         for term in (b'"ip"', b'"ref"', b'"user_agent"', b'"session"',
                      b'"query"', b'"bot"'):
             self.assertNotIn(term, request.data)
+
+    def test_redirect_handler_never_forwards_bearer_credentials(self):
+        request = runner.urllib.request.Request(
+            "http://127.0.0.1:48123/api/v0/count",
+            data=b"{}",
+            headers={"Authorization": "Bearer synthetic-secret"},
+        )
+        handler = runner._RejectRedirects()
+        self.assertIsNone(
+            handler.redirect_request(
+                request, None, 302, "Found", {},
+                "https://destination.example.invalid/",
+            )
+        )
+
+    def test_redirect_response_is_not_followed_or_retried(self):
+        opener = mock.Mock()
+        response = FakeResponse()
+        response.status = 302
+        opener.open.return_value = response
+        with mock.patch.object(
+            runner.urllib.request, "build_opener", return_value=opener
+        ) as make:
+            with self.assertRaisesRegex(
+                runner.RuntimeStop, "^BACKEND_NOT_ACCEPTED$"
+            ):
+                runner._count_once(48721, "synthetic-key")
+        self.assertIsInstance(make.call_args.args[1], runner._RejectRedirects)
+        opener.open.assert_called_once()
 
     def test_ambiguous_http_result_not_retried(self):
         opener = mock.Mock()
