@@ -417,6 +417,34 @@ actual v2.7.0 executable and its SQLite bytes. Failing any static
 lookup condition means `STOP`, not permission to delete data,
 disable safety checks or enable LIVE tracking.
 
+## Count-only API credential proof (source-only, not executed on real GoatCounter)
+
+The pinned v2.7.0
+[`api_token.go`](https://github.com/arp242/goatcounter/blob/v2.7.0/api_token.go)
+defines `APIPermCount = 2`; other flags permit exports, reading
+statistics or site management. The CLI
+[`cmd/goatcounter/db.go`](https://github.com/arp242/goatcounter/blob/v2.7.0/cmd/goatcounter/db.go)
+creates a token for a single site when passed
+`-user=<synthetic-user> -perm=count`.
+
+The offline SQLite verifier now also requires **exactly one**
+synthetic user (the local fixture account
+`goatcounter-probe@example.com`) and **exactly one** test API token.
+Its `permissions` must be the numeric value **2**, not a boolean or
+a broader permission mask. Its `sites` must be exactly the single
+synthetic `site_id` (not `[-1]`, a wildcard, a foreign site or a
+multi-site list); user/site bindings and token metadata must agree.
+The probe uses SQLite `length(token)` and **never selects or prints
+the credential value**. Synthetic unit tests reject absent/extra
+accounts, missing/extra tokens, export/admin/statistics rights,
+unparseable permission JSON, cross-site scopes and short tokens.
+
+This source-only check cannot prove operational token isolation,
+token secrecy outside SQLite, network access policy or the behavior of
+an actually running GoatCounter process. A real, independently trusted
+v2.7.0 runtime and host-side privacy review remain hard STOP gates
+before activating any LIVE analytics.
+
 ## Executable synthetic SQLite preflight (source-only)
 
 A **read-only structural verifier** now exists at
