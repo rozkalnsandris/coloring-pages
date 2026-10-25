@@ -207,15 +207,24 @@ async function prepareZip() {
       origin: window.location.origin, signal: controller.signal,
     });
     if (epoch !== zipEpoch || controller.signal.aborted || !dialog.open) return;
-    const staged = stageBasketZipDownloadLink(zip);
-    const slot = dialog.querySelector("[data-basket-zip-link]");
-    if (!slot) {
-      staged.dispose();
-      throw new Error("ZIP destination missing");
+    // Storage may change while the full-resolution PNGs are loading.
+    // Never expose a download link for a superseded selection.
+    if (JSON.stringify(readStoredBasketIds()) !== JSON.stringify(selectedIds) ||
+        JSON.stringify(basket.ids) !== JSON.stringify(selectedIds)) {
+      throw new Error("Selection changed during ZIP preparation");
     }
-    staged.link.className = "basket-zip-download";
-    slot.replaceChildren(staged.link);
-    stagedZip = staged;
+    const staged = stageBasketZipDownloadLink(zip);
+    try {
+      const slot = dialog.querySelector("[data-basket-zip-link]");
+      if (!slot) throw new Error("ZIP destination missing");
+      staged.link.className = "basket-zip-download";
+      slot.replaceChildren(staged.link);
+      stagedZip = staged;
+    } catch (error) {
+      // Release the Blob URL even if the DOM rejects inserting the link.
+      staged.dispose();
+      throw error;
+    }
     message.textContent = "ZIP bereit. Mit „Als ZIP speichern“ herunterladen.";
   } catch {
     if (epoch === zipEpoch && dialog.open && !controller.signal.aborted) {
