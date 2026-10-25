@@ -158,7 +158,7 @@ class SyntheticGoatCounterFixture(unittest.TestCase):
                 rows,
             )
         self.mutate(
-            "UPDATE languages SET name='visitor\\nheader' WHERE iso_639_3='aaa'"
+            "UPDATE languages SET name='visitor\nheader' WHERE iso_639_3='aaa'"
         )
         self.assert_stops("LANGUAGE_LOOKUP_SHAPE")
 
