@@ -75,6 +75,97 @@ The exact collection endpoint, cross-repo ownership and authentication
 mechanism require separate source review. This design does not authorize
 installing a private service or exposing even a new internal port on RPi5.
 
+## Executable first-party pageview contract — source-only, not wired
+
+The source-only contract at
+[`tools/goatcounter_pageview_contract.py`](../tools/goatcounter_pageview_contract.py)
+and its disconnected tests at
+[`tests/test_goatcounter_pageview_contract.py`](../tests/test_goatcounter_pageview_contract.py)
+turn the browser → adapter boundary into a deterministic fail-closed
+specification **without changing the deployed application**.
+
+The proposed public route is exactly `POST /api/pageview`. Its accepted body
+is exactly:
+
+~~~json
+{"page_id":"0427183"}
+~~~
+
+The contract rejects any query string on that route, non-POST methods,
+non-JSON content, bodies above 128 bytes, duplicate JSON keys, numeric/coerced
+IDs, unknown/unpublished IDs, and every extra field including `campaign`,
+`bot`, `ip`, `user_agent`, `session`, `ref`, `query`,
+`created_at` and arbitrary keys. It requires the exact configured HTTPS
+same-origin value. A valid ID remains a **string**, so leading zeroes survive.
+
+The allowlist comes from the current runtime `public/catalog.json`, which the
+README defines as RPi5 content-store state rather than GitHub source. Only
+visible/renderable **7-digit** entries are countable. Removed, hidden,
+explicitly invisible or unrenderable entries are rejected. Legacy slug IDs
+remain valid for the existing site if present, but are deliberately outside
+this analytics contract. Catalogue unavailability or malformed/duplicate
+entries fail analytics closed; they must never block browsing or printing.
+
+After validation, caller JSON is discarded and the backend object is built
+from the accepted ID alone:
+
+~~~json
+{"no_sessions":true,"hits":[{"path":"/coloring-page/0427183"}]}
+~~~
+
+The pure contract intentionally has no parameter for request IP, User-Agent,
+referrer, cookies, UTM/campaign values or an arbitrary header map, so these
+cannot be forwarded by this code path. This does not prove that Cloudflare,
+the kernel, reverse proxy or a future HTTP adapter never processes such
+network metadata transiently.
+
+### Existing application behavior is intentionally unchanged
+
+Current [`js/stats.js`](../js/stats.js) still sends the existing
+`/api/stats/view` aggregate event and may include the current legacy
+`campaign` value. This FULL slice does **not** edit `js/**`, Nginx,
+Dockerfile or any other application-image input, and therefore does not
+activate GoatCounter or change LIVE pageview behavior.
+
+A later separately reviewed activation change must **replace**, not run in
+parallel with, the old pageview emission for the GoatCounter metric. It must
+emit only `{"page_id":"<id>"}` after the detail page has resolved that ID
+against the current catalog, use no cookie/credential state for analytics,
+and make at most one transmission attempt for that page-open event. Do not
+add a beacon+fetch resend pair or automatic retry after an ambiguous result;
+otherwise one page-open can become two accepted events. Existing Like,
+Print, QR and campaign aggregates remain separate and unchanged.
+
+### Calendar-window contract
+
+Reporting labels use **Europe/Berlin calendar dates**, not fixed 24-hour
+durations:
+
+- `today`: the current Europe/Berlin calendar date;
+- `7d`: today plus the preceding six local calendar dates;
+- `30d`: today plus the preceding 29 local calendar dates;
+- `all`: no lower date bound through today's local date.
+
+The source helper computes these date bounds across DST changes. GoatCounter
+itself supports a user reporting timezone; the actual isolated runtime and
+future ADMIN reader must be configured/verified to use Europe/Berlin before
+these labels are considered accurate. Do not silently reinterpret UTC
+hour buckets as German calendar days.
+
+### Component data-handling boundary for the future activation
+
+| Component | Transient input/process | Durable analytics data allowed | Still requires runtime evidence |
+| --- | --- | --- | --- |
+| Browser detail page | Current catalog ID after successful detail resolution | None | Exact one-attempt emission and no new browser storage |
+| Cloudflare/network | Ordinary transport metadata including source IP may exist | No new GoatCounter-specific visitor profile | Existing access/security logs, retention, recipients and transfers |
+| RPi5 same-origin adapter | Method/route/content type/origin/body plus read-only current catalog lookup | No raw request/event log; no client metadata store | Reverse-proxy/app logging and failure behavior |
+| Private GoatCounter API | Internal bearer auth plus the canonical path-only JSON | Aggregate page/time/count objective only | Real v2.7.0 process/database/log proof |
+| SQLite | GoatCounter persistence/aggregation | Allowed aggregate count rows only | No hits/bots/session/personal dimensions, WAL/free-page/backup review |
+| Protected ADMIN | Aggregate date/path/count rows; title/category joined from current catalog at read time | Aggregate reporting output only | Auth, error states, retention and backup contract |
+
+This table is an **implementation acceptance boundary**, not a claim that
+those runtime properties already hold.
+
 ## GoatCounter upstream evidence and unverified release gate
 
 Evidence reviewed against upstream documentation on 2026-10-25:
