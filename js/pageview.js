@@ -1,6 +1,6 @@
 // First-party GoatCounter pageview client for issue #376.
 // Sends only a validated seven-digit page ID to the same-origin adapter.
-// No cookies, browser storage, referrer, campaign or retry queue.
+// No cookies, browser storage, referrer metadata or retry queue.
 (() => {
   const ROUTE = "/api/pageview";
   const PAGE_ID_RE = /^[0-9]{7}$/;
