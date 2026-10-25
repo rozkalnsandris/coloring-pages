@@ -44,6 +44,7 @@ def _strict_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 def _valid_origin(value: str) -> bool:
     try:
         parsed = urlsplit(value)
+        port = parsed.port
     except ValueError:
         return False
     return (
@@ -54,7 +55,7 @@ def _valid_origin(value: str) -> bool:
         and parsed.path == ""
         and parsed.query == ""
         and parsed.fragment == ""
-        and parsed.port in (None, 443)
+        and port in (None, 443)
     )
 
 
