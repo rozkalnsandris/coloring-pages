@@ -306,6 +306,70 @@ an independently reviewed, explicitly owner-authorized LIVE scope.
 No Cloudflare/Worker/D1, RPi5, actual visitor data, privacy policy
 text or live site settings are changed by this documentation.
 
+## Runnable isolated GoatCounter v2.7.0 runtime check — opt-in, not run yet
+
+Source-only harness:
+[`tools/goatcounter_isolated_runtime_probe.py`](../tools/goatcounter_isolated_runtime_probe.py).
+Disconnected unit tests:
+[`tests/test_goatcounter_isolated_runtime_probe.py`](../tests/test_goatcounter_isolated_runtime_probe.py).
+
+The harness is **not automatically executed by CI**; CI only exercises
+the harness's mocks and Python structural probe. It needs a **separately
+obtained, independently authenticated** Linux GoatCounter `v2.7.0`
+binary and its already-reviewed exact 64-character SHA-256. The harness
+checks the digest and `goatcounter version -json`, but merely matching
+a caller-provided digest **does not establish trusted provenance**.
+It must not download binaries, build Go dependencies or use production
+services to complete the test.
+
+The harness refuses root and the `rpi5` host. When explicitly
+invoked by a non-root operator **on a disposable, authorized test host**
+with an isolated network namespace permitting only loopback, it creates
+one `0700` private system-temp directory and synthetic local SQLite
+DB; creates a disposable test site, user and count-only API token;
+sets the isolated site's `CollectNothing=1`; binds GoatCounter only to
+`127.0.0.1`; sends exactly **two** synthetic API pageview requests
+for fixed ID `0427183`; waits for the delayed write, shuts down the
+test server, then runs the structural fixture audit. Its HTTP client
+explicitly disables inherited proxy settings. Responses, test tokens,
+internal errors and database rows are not printed.
+
+An example invocation **only after trusted binary acquisition,
+checksum verification and external sandbox authorization**:
+
+~~~sh
+python3 tools/goatcounter_isolated_runtime_probe.py \
+  --binary /isolated/verified/goatcounter \
+  --expected-binary-sha256 VERIFIED_64_LOWERCASE_HEX_SHA256
+~~~
+
+The Python harness does not itself create an OS network namespace or
+firewall; this separation must be imposed by the external disposable
+test environment. It cannot certify security of an untrusted binary.
+`GOATCOUNTER_ISOLATED=PASS_SYNTHETIC_GOATCOUNTER_RUNTIME_ONLY_NOT_LIVE_OR_LEGAL_PROOF`
+means only that a **real supplied** version-checked binary accepted
+these synthetic requests and its SQLite snapshot met the narrow
+structural invariants. Otherwise it emits a fixed `STOP` code.
+Neither an HTTP `202` nor green unit tests constitute this PASS.
+
+**v2.7 schema blocker corrected:** The actual tag's
+[`db/schema.gotxt`](https://github.com/arp242/goatcounter/blob/v2.7.0/db/schema.gotxt)
+also defines a `version` migration-history table (in addition to
+the earlier enumerated visitor/statistics tables). The verifier now
+requires it and the expected final v2.7 migration marker
+`2025-12-12-1-ref-scheme`; it rejects unknown or malformed migration
+names. The earlier synthetic-only fixture had omitted this table and
+could never have passed against a real unmodified v2.7 SQLite schema.
+
+**Remaining release blockers:** This harness has **not yet been run
+with an actual GoatCounter binary**. Even a future synthetic PASS is
+not a full audit of startup/error/access logs, unusual/malicious
+bot-shaped events, dynamic proxies, SQLite free pages, backups,
+real-user HTTP processing, site permissions or German GDPR/TDDDG
+lawfulness. Those independent reviews and separate owner permissions
+are required before *any* RPi5/LIVE operation or first-party tracker
+deployment.
+
 ## Executable synthetic SQLite preflight (source-only)
 
 A **read-only structural verifier** now exists at
