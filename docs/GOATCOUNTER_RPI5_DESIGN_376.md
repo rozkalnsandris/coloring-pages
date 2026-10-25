@@ -331,8 +331,13 @@ sets the isolated site's `CollectNothing=1`; binds GoatCounter only to
 `127.0.0.1`; sends exactly **two** synthetic API pageview requests
 for fixed ID `0427183`; waits for the delayed write, shuts down the
 test server, then runs the structural fixture audit. Its HTTP client
-explicitly disables inherited proxy settings. Responses, test tokens,
-internal errors and database rows are not printed.
+explicitly disables inherited proxy settings, **clears urllib's
+automatic `Python-urllib/...` User-Agent header**, and rejects all HTTP
+redirects so an internal bearer token cannot be forwarded to another
+destination. The original harness configured only its JSON body and
+did not suppress urllib's implicit User-Agent or its default redirect
+handler; the regression unit tests now enforce both transport gates.
+Responses, test tokens, internal errors and database rows are not printed.
 
 An example invocation **only after trusted binary acquisition,
 checksum verification and external sandbox authorization**:
