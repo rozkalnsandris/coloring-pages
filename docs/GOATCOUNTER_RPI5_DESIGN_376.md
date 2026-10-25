@@ -270,27 +270,41 @@ python3 tools/goatcounter_offline_privacy_probe.py \
 ~~~
 
 The probe checks the pinned v2.7.0 table inventory, CollectNothing=1
-setting, no per-event hits/bots, no session store rows,
-no stored User-Agent/referrer/device/campaign/location aggregate dimensions,
-no other paths beyond the exact seven-digit public test ID, and aggregate
-hourly totals equal to the expected number of accepted test events.
-The verifier prints only a fixed
-PASS_STRUCTURAL_SYNTHETIC_ONLY_NOT_RUNTIME_OR_PRIVACY_PROOF
-or a stable STOP code; never database values. Any mismatch fails
-closed. It tolerates only an empty refs sentinel and no ref_counts
-rows, so a default upstream aggregation pattern may itself prove this
-strict contract impossible without redesign.
+setting, no per-event hits/bots, no session store rows, no stored
+User-Agent/device/campaign/location dimensions, exactly one empty
+referrer sentinel, and no other paths beyond the exact seven-digit
+synthetic public page ID. It also validates aggregate page/time/count
+rows against the expected total and **against one another**.
+
+**v2.7.0 source-specific adjustment:** [cron/ref_count.go](https://github.com/arp242/goatcounter/blob/v2.7.0/cron/ref_count.go)
+continues creating `ref_counts` rows for the empty-referrer sentinel
+(`ref_id=1`) even when referrer collection is disabled. These are
+acceptable *only* if they contain no additional dimension and match
+`hit_counts` exactly for each hour and page. Any other referrer or
+different total fails closed. [cron/hit_stat.go](https://github.com/arp242/goatcounter/blob/v2.7.0/cron/hit_stat.go)
+stores `hit_stats.stats` as a **24-integer JSON array**, one count
+per hour of the day. The revised probe rejects missing/malformed arrays,
+non-integer values, duplicates and any disagreement with `hit_counts`.
+The original synthetic test fixture's `{}` value was not a realistic
+upstream representation; it has been corrected.
+
+The verifier prints only
+`PASS_STRUCTURAL_SYNTHETIC_ONLY_NOT_RUNTIME_OR_PRIVACY_PROOF`
+or a stable STOP code, never database values. It checks *structural
+consistency*, not the installed GoatCounter binary or all traffic routes.
 
 **Crucial boundary:** The included unit tests fabricate a minimal
 23-table *shape* for exercising the checker. Passing these tests is
 **not** proof the real GoatCounter v2.7.0 binary behaves the same way.
-The structural verifier does not parse the opaque hit_stats.stats
-payload, prove that SQLite free pages never held identifiers, rule
-out process/proxy/CDN logs or backups, or establish German consent
-requirements. Its positive output must not be called "no IP storage
-verified". A separately approved, reproducible actual **isolated**
-GoatCounter runtime test, production-edge analysis and legal review
-remain **STOP gates before enabling tracking**.
+The structural verifier parses **only** the v2.7.0 24-count
+`hit_stats.stats` array. It cannot prove that SQLite free pages never held
+identifiers, that other columns/configs did not contain unknown metadata,
+or that the process/proxy/CDN, backups and logs are free of personal
+data. It cannot establish German consent requirements. A positive output
+must not be called "no IP storage verified". A separately approved,
+reproducible actual **isolated** GoatCounter runtime test,
+production-edge analysis and legal review remain **STOP gates before
+enabling tracking**.
 
 
 ## Pre-implementation test and RPi5 acceptance matrix
