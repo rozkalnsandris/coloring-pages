@@ -238,6 +238,61 @@ pre-activation decision; lack of IP **storage** does not mean no IP
   [legal PR #158](https://github.com/rozkalnsandris/coloring-pages/pull/158)
   and privacy [#256](https://github.com/rozkalnsandris/coloring-pages/issues/256).
 
+## Executable synthetic SQLite preflight (source-only)
+
+A **read-only structural verifier** now exists at
+[tools/goatcounter_offline_privacy_probe.py](../tools/goatcounter_offline_privacy_probe.py)
+with synthetic negative tests at
+[tests/test_goatcounter_offline_privacy_probe.py](../tests/test_goatcounter_offline_privacy_probe.py).
+These files neither download nor start GoatCounter, make network requests,
+read RPi5, load real events or install production telemetry. The existing
+GitHub CI runs their Python standard-library unit tests.
+
+The test fixture must be created **from synthetic requests only**, in a
+fresh, disposable copy of the upstream GoatCounter v2.7.0 database **after
+the isolated process has stopped and the SQLite WAL is checkpointed**.
+The command reads one fixed filename (goatcounter-test.sqlite3) from a
+top-level system temporary directory named goatcounter-offline-*.
+The directory must include .ausmalwiese-goatcounter-offline-only containing
+exactly AUSMALWIESE_GOATCOUNTER_SYNTHETIC_V1 followed by a newline.
+It refuses symlinks, unknown/missing tables, WAL/SHM sidecars and
+non-isolated path shapes. Do not construct this marker for production
+files; never copy a live DB, credentials or client logs into a test fixture.
+
+Example **after a separate, permitted isolated synthetic test has
+produced such a directory** (replace its synthetic temporary path):
+
+~~~sh
+python3 tools/goatcounter_offline_privacy_probe.py \
+  --synthetic-test-root /tmp/goatcounter-offline-example \
+  --expected-page-id 0427183 \
+  --expected-views 2
+~~~
+
+The probe checks the pinned v2.7.0 table inventory, CollectNothing=1
+setting, no per-event hits/bots, no session store rows,
+no stored User-Agent/referrer/device/campaign/location aggregate dimensions,
+no other paths beyond the exact seven-digit public test ID, and aggregate
+hourly totals equal to the expected number of accepted test events.
+The verifier prints only a fixed
+PASS_STRUCTURAL_SYNTHETIC_ONLY_NOT_RUNTIME_OR_PRIVACY_PROOF
+or a stable STOP code; never database values. Any mismatch fails
+closed. It tolerates only an empty refs sentinel and no ref_counts
+rows, so a default upstream aggregation pattern may itself prove this
+strict contract impossible without redesign.
+
+**Crucial boundary:** The included unit tests fabricate a minimal
+23-table *shape* for exercising the checker. Passing these tests is
+**not** proof the real GoatCounter v2.7.0 binary behaves the same way.
+The structural verifier does not parse the opaque hit_stats.stats
+payload, prove that SQLite free pages never held identifiers, rule
+out process/proxy/CDN logs or backups, or establish German consent
+requirements. Its positive output must not be called "no IP storage
+verified". A separately approved, reproducible actual **isolated**
+GoatCounter runtime test, production-edge analysis and legal review
+remain **STOP gates before enabling tracking**.
+
+
 ## Pre-implementation test and RPi5 acceptance matrix
 
 | Gate | Evidence required before production |
