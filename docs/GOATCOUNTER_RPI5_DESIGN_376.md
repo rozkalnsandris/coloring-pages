@@ -626,7 +626,7 @@ or a stable STOP code, never database values. It checks *structural
 consistency*, not the installed GoatCounter binary or all traffic routes.
 
 **Crucial boundary:** The included unit tests fabricate a minimal
-23-table *shape* for exercising the checker. Passing these tests is
+25-table *shape* for exercising the checker. Passing these tests is
 **not** proof the real GoatCounter v2.7.0 binary behaves the same way.
 The structural verifier parses **only** the v2.7.0 24-count
 `hit_stats.stats` array. It cannot prove that SQLite free pages never held
