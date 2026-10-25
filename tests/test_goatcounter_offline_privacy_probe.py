@@ -60,7 +60,7 @@ class SyntheticGoatCounterFixture(unittest.TestCase):
                 "INSERT INTO languages VALUES('', '(unknown)')"
             )
             con.execute(
-                "INSERT INTO sites VALUES(?, ?)"
+                "INSERT INTO sites VALUES(?, ?)",
                 (1, json.dumps({"collect": 1, "ignore_ips": []})),
             )
             con.execute(
