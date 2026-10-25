@@ -224,8 +224,34 @@ class RuntimeProbeContractTests(unittest.TestCase):
         process.kill.assert_called_once_with()
         self.assertEqual(process.wait.call_count, 2)
 
+    @staticmethod
+    def _version_json(**overrides):
+        data = {
+            "version": "v2.7.0",
+            "go": "go1.23.2",
+            "GOOS": "linux",
+            "GOARCH": "amd64",
+            "race": False,
+            "cgo": True,
+        }
+        data.update(overrides)
+        return json.dumps(data).encode("ascii")
+
+    def test_exact_release_profile_accepted_on_matching_amd64_host(self):
+        process = mock.Mock(returncode=0, stdout=self._version_json())
+        with mock.patch.object(
+            runner.subprocess, "run", return_value=process
+        ), mock.patch.object(
+            runner.platform, "system", return_value="Linux"
+        ), mock.patch.object(
+            runner.platform, "machine", return_value="x86_64"
+        ):
+            runner._version(Path("/nonexistent/synthetic"), self.root, {})
+
     def test_invalid_version_stops_before_creating_site(self):
-        process = mock.Mock(returncode=0, stdout=b'{"version":"v2.8.0"}')
+        process = mock.Mock(
+            returncode=0, stdout=self._version_json(version="v2.8.0")
+        )
         with mock.patch.object(
             runner.subprocess, "run", return_value=process
         ) as called:
@@ -234,6 +260,89 @@ class RuntimeProbeContractTests(unittest.TestCase):
             ):
                 runner._version(Path("/nonexistent/synthetic"), self.root, {})
         called.assert_called_once()
+
+    def test_release_profile_rejects_non_linux_binary(self):
+        process = mock.Mock(
+            returncode=0, stdout=self._version_json(GOOS="darwin")
+        )
+        with mock.patch.object(
+            runner.subprocess, "run", return_value=process
+        ), mock.patch.object(
+            runner.platform, "system", return_value="Linux"
+        ), mock.patch.object(
+            runner.platform, "machine", return_value="x86_64"
+        ):
+            with self.assertRaisesRegex(
+                runner.RuntimeStop, "^RELEASE_BUILD_PROFILE_MISMATCH$"
+            ):
+                runner._version(Path("/nonexistent/synthetic"), self.root, {})
+
+    def test_release_profile_rejects_wrong_arch_for_host(self):
+        process = mock.Mock(
+            returncode=0, stdout=self._version_json(GOARCH="arm64")
+        )
+        with mock.patch.object(
+            runner.subprocess, "run", return_value=process
+        ), mock.patch.object(
+            runner.platform, "system", return_value="Linux"
+        ), mock.patch.object(
+            runner.platform, "machine", return_value="x86_64"
+        ):
+            with self.assertRaisesRegex(
+                runner.RuntimeStop, "^RELEASE_BUILD_PROFILE_MISMATCH$"
+            ):
+                runner._version(Path("/nonexistent/synthetic"), self.root, {})
+
+    def test_release_profile_rejects_cgo_disabled_or_race_build(self):
+        for overrides in ({"cgo": False}, {"race": True}):
+            with self.subTest(overrides=overrides):
+                process = mock.Mock(
+                    returncode=0, stdout=self._version_json(**overrides)
+                )
+                with mock.patch.object(
+                    runner.subprocess, "run", return_value=process
+                ), mock.patch.object(
+                    runner.platform, "system", return_value="Linux"
+                ), mock.patch.object(
+                    runner.platform, "machine", return_value="x86_64"
+                ):
+                    with self.assertRaisesRegex(
+                        runner.RuntimeStop,
+                        "^RELEASE_BUILD_PROFILE_MISMATCH$",
+                    ):
+                        runner._version(
+                            Path("/nonexistent/synthetic"), self.root, {}
+                        )
+
+    def test_release_profile_rejects_unexpected_json_field(self):
+        process = mock.Mock(
+            returncode=0, stdout=self._version_json(commit="synthetic")
+        )
+        with mock.patch.object(
+            runner.subprocess, "run", return_value=process
+        ), mock.patch.object(
+            runner.platform, "system", return_value="Linux"
+        ), mock.patch.object(
+            runner.platform, "machine", return_value="x86_64"
+        ):
+            with self.assertRaisesRegex(
+                runner.RuntimeStop, "^RELEASE_BUILD_PROFILE_MISMATCH$"
+            ):
+                runner._version(Path("/nonexistent/synthetic"), self.root, {})
+
+    def test_release_profile_rejects_unsupported_test_host_arch(self):
+        process = mock.Mock(returncode=0, stdout=self._version_json())
+        with mock.patch.object(
+            runner.subprocess, "run", return_value=process
+        ), mock.patch.object(
+            runner.platform, "system", return_value="Linux"
+        ), mock.patch.object(
+            runner.platform, "machine", return_value="riscv64"
+        ):
+            with self.assertRaisesRegex(
+                runner.RuntimeStop, "^UNSUPPORTED_RELEASE_HOST$"
+            ):
+                runner._version(Path("/nonexistent/synthetic"), self.root, {})
 
     def test_cli_failure_does_not_leak_stdout(self):
         stream = io.StringIO()
