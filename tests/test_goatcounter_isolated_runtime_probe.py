@@ -180,6 +180,50 @@ class RuntimeProbeContractTests(unittest.TestCase):
             ):
                 runner._count_once(48721, "synthetic-key")
 
+    def test_clean_sigint_wait_is_required_for_success(self):
+        process = mock.Mock()
+        process.poll.return_value = None
+        process.wait.return_value = 0
+        runner._stop_server(process)
+        process.send_signal.assert_called_once_with(runner.signal.SIGINT)
+        process.wait.assert_called_once_with(timeout=12)
+        process.kill.assert_not_called()
+
+    def test_nonzero_exit_after_sigint_must_not_pass(self):
+        process = mock.Mock()
+        process.poll.return_value = None
+        process.wait.return_value = 3
+        with self.assertRaisesRegex(
+            runner.RuntimeStop, "^SERVER_UNCLEAN_EXIT$"
+        ):
+            runner._stop_server(process)
+        process.send_signal.assert_called_once_with(runner.signal.SIGINT)
+
+    def test_already_crashed_process_cannot_pass_sqlite_gate(self):
+        process = mock.Mock()
+        process.poll.return_value = 42
+        process.returncode = 42
+        with self.assertRaisesRegex(
+            runner.RuntimeStop, "^SERVER_UNCLEAN_EXIT$"
+        ):
+            runner._stop_server(process)
+        process.wait.assert_not_called()
+        process.send_signal.assert_not_called()
+
+    def test_shutdown_timeout_kills_process_and_fails(self):
+        process = mock.Mock()
+        process.poll.return_value = None
+        process.wait.side_effect = [
+            runner.subprocess.TimeoutExpired(cmd="synthetic", timeout=12),
+            -9,
+        ]
+        with self.assertRaisesRegex(
+            runner.RuntimeStop, "^SERVER_SHUTDOWN_TIMEOUT$"
+        ):
+            runner._stop_server(process)
+        process.kill.assert_called_once_with()
+        self.assertEqual(process.wait.call_count, 2)
+
     def test_invalid_version_stops_before_creating_site(self):
         process = mock.Mock(returncode=0, stdout=b'{"version":"v2.8.0"}')
         with mock.patch.object(

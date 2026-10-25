@@ -212,10 +212,16 @@ def _count_once(port: int, token: str) -> None:
 
 
 def _stop_server(proc: subprocess.Popen[bytes]) -> None:
+    """Require a clean, completed upstream shutdown before inspecting SQLite.
+
+    GoatCounter v2.7.0 cmd/goatcounter/serve.go performs a final
+    cron.TaskPersistAndStat() during graceful shutdown. HTTP 202 alone
+    does not prove persistence; a crashed/unclean server cannot pass.
+    """
     if proc.poll() is None:
         proc.send_signal(signal.SIGINT)
         try:
-            proc.wait(timeout=12)
+            exit_code = proc.wait(timeout=12)
         except subprocess.TimeoutExpired:
             proc.kill()
             try:
@@ -223,6 +229,10 @@ def _stop_server(proc: subprocess.Popen[bytes]) -> None:
             except subprocess.TimeoutExpired:
                 _stop("SERVER_PROCESS_STUCK")
             _stop("SERVER_SHUTDOWN_TIMEOUT")
+    else:
+        exit_code = proc.returncode
+    if exit_code != 0:
+        _stop("SERVER_UNCLEAN_EXIT")
 
 
 def run_isolated(binary_arg: str, digest_arg: str) -> str:
@@ -251,8 +261,8 @@ def run_isolated(binary_arg: str, digest_arg: str) -> str:
             for _ in range(VIEWS):
                 _count_once(port, token)
             token = ""  # Never output or retain credential after submission.
-            # v2.7 count endpoint returns 202 before SQLite persistence.
-            time.sleep(3)
+            # HTTP 202 is only acceptance. Graceful SIGINT below flushes
+            # pending events and must exit with status 0 before DB inspection.
         except OSError:
             _stop("LOOPBACK_PROCESS_ERROR")
         finally:
