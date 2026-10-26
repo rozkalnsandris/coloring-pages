@@ -2,6 +2,10 @@ import { addBasketActivity, clearBasket, expandBasketForExport, moveBasketActivi
 import { readStoredBasketIds, restoreStoredBasket, writeStoredBasketIds } from "./print-basket-storage.mjs";
 import { prepareBasketPngZip } from "./print-basket-zip-fetch.mjs";
 import { stageBasketZipDownloadLink } from "./print-basket-zip-link.mjs";
+import { createBookCoverState } from "./book-cover-state.mjs";
+import { buildBookPreviewPlan } from "./book-preview-plan.mjs";
+import { createBookPreviewCursor, moveBookPreviewCursor } from "./book-preview-navigation.mjs";
+import { buildBookPreviewDisplay } from "./book-preview-media.mjs";
 
 const MAX_SHEETS = 5;
 const CARD_SELECTOR = ".coloring-card";
@@ -18,6 +22,8 @@ let zipController = null;
 let stagedZip = null;
 let zipBusy = false;
 let zipEpoch = 0;
+let previewPlan = null;
+let previewCursor = null;
 
 function detailIdFromCard(card) {
   const link = card.querySelector('a[href*="detail.html"]');
@@ -153,6 +159,76 @@ function panelButton(text, action, id = "") {
 }
 
 
+function resetPreview() {
+  previewPlan = null;
+  previewCursor = null;
+  if (!dialog) return;
+  const panel = dialog.querySelector("[data-basket-preview]");
+  if (panel) panel.hidden = true;
+  const image = dialog.querySelector("[data-basket-preview-image]");
+  if (image) {
+    image.removeAttribute("src");
+    image.alt = "";
+  }
+  const page = dialog.querySelector("[data-basket-preview-page]");
+  if (page) page.textContent = "";
+  const previous = dialog.querySelector("[data-basket-preview-previous]");
+  const next = dialog.querySelector("[data-basket-preview-next]");
+  if (previous) previous.disabled = true;
+  if (next) next.disabled = true;
+}
+
+function renderPreview() {
+  if (!dialog || !previewPlan || !previewCursor) return;
+  const display = buildBookPreviewDisplay(previewPlan, previewCursor, catalog);
+  if (display.content.kind !== "artwork") {
+    throw new Error("Artwork-only preview expected");
+  }
+  const entry = catalogById.get(display.content.activityId);
+  if (!entry) throw new Error("Preview activity unavailable");
+  const panel = dialog.querySelector("[data-basket-preview]");
+  const image = dialog.querySelector("[data-basket-preview-image]");
+  const page = dialog.querySelector("[data-basket-preview-page]");
+  const previous = dialog.querySelector("[data-basket-preview-previous]");
+  const next = dialog.querySelector("[data-basket-preview-next]");
+  if (!panel || !image || !page || !previous || !next) {
+    throw new Error("Preview controls unavailable");
+  }
+  image.src = display.content.previewUrl;
+  image.alt = display.content.pageCount > 1
+    ? entry.title + ", Seite " + display.content.pageIndex + " von " + display.content.pageCount
+    : entry.title;
+  page.textContent = display.pageText;
+  previous.textContent = display.previous.label;
+  previous.disabled = display.previous.disabled;
+  next.textContent = display.next.label;
+  next.disabled = display.next.disabled;
+  panel.hidden = false;
+}
+
+function openPreview() {
+  try {
+    previewPlan = buildBookPreviewPlan(basket.ids, catalog, createBookCoverState());
+    previewCursor = createBookPreviewCursor(previewPlan);
+    renderPreview();
+    dialog?.querySelector("#basket-preview-title")?.focus();
+  } catch {
+    resetPreview();
+    announce("Die Vorschau ist gerade nicht verfügbar. Bitte Auswahl prüfen.");
+  }
+}
+
+function movePreview(direction) {
+  try {
+    if (!previewPlan || !previewCursor) return;
+    previewCursor = moveBookPreviewCursor(previewPlan, previewCursor, direction);
+    renderPreview();
+  } catch {
+    resetPreview();
+    announce("Die Vorschau konnte nicht aktualisiert werden. Bitte neu öffnen.");
+  }
+}
+
 function resetZip() {
   zipEpoch++;
   zipController?.abort();
@@ -262,6 +338,39 @@ function createDialog() {
   const empty = document.createElement("p");
   empty.dataset.basketEmpty = "";
   empty.textContent = "Noch keine Malvorlagen ausgewählt.";
+  const previewOpen = panelButton("Vorschau", "preview");
+  previewOpen.dataset.basketPreviewOpen = "";
+  previewOpen.disabled = true;
+  const preview = document.createElement("section");
+  preview.className = "basket-book-preview";
+  preview.dataset.basketPreview = "";
+  preview.hidden = true;
+  preview.setAttribute("aria-labelledby", "basket-preview-title");
+  const previewHeading = document.createElement("h3");
+  previewHeading.id = "basket-preview-title";
+  previewHeading.tabIndex = -1;
+  previewHeading.textContent = "Vorschau";
+  const previewPage = document.createElement("p");
+  previewPage.dataset.basketPreviewPage = "";
+  previewPage.setAttribute("role", "status");
+  previewPage.setAttribute("aria-live", "polite");
+  const previewFrame = document.createElement("figure");
+  previewFrame.className = "basket-preview-frame";
+  const previewImage = document.createElement("img");
+  previewImage.dataset.basketPreviewImage = "";
+  previewImage.alt = "";
+  previewImage.decoding = "async";
+  previewFrame.append(previewImage);
+  const previewControls = document.createElement("div");
+  previewControls.className = "basket-preview-controls";
+  const previewPrevious = panelButton("Zurück", "preview-previous");
+  previewPrevious.dataset.basketPreviewPrevious = "";
+  previewPrevious.disabled = true;
+  const previewNext = panelButton("Weiter", "preview-next");
+  previewNext.dataset.basketPreviewNext = "";
+  previewNext.disabled = true;
+  previewControls.append(previewPrevious, previewNext);
+  preview.append(previewHeading, previewPage, previewFrame, previewControls);
   const clear = panelButton("Leeren", "clear");
   clear.dataset.basketClear = "";
   const printAction = panelButton("Alles drucken", "print");
@@ -285,7 +394,7 @@ function createDialog() {
   note.id = "basket-print-unavailable";
   note.textContent = "Alles drucken ist noch nicht verfügbar.";
   note.className = "basket-dialog-note";
-  node.append(header, count, list, empty, clear, printAction, zipPrepare, zipCancel, zipLink, zipStatus, note);
+  node.append(header, count, list, empty, previewOpen, preview, clear, printAction, zipPrepare, zipCancel, zipLink, zipStatus, note);
   document.body.append(node);
 
   node.addEventListener("click", (event) => {
@@ -294,6 +403,9 @@ function createDialog() {
     const action = button.dataset.basketAction;
     const id = button.dataset.basketId;
     if (action === "close") return node.close();
+    if (action === "preview") { openPreview(); return; }
+    if (action === "preview-previous") { movePreview(-1); return; }
+    if (action === "preview-next") { movePreview(1); return; }
     if (action === "prepare-zip") { void prepareZip(); return; }
     if (action === "cancel-zip") {
       resetZip();
@@ -312,6 +424,7 @@ function createDialog() {
     }
     if (next) commitBasket(next, action === "remove" ? "Malvorlage entfernt." : "Reihenfolge geändert.", action, id);
   });
+  node.addEventListener("close", () => { resetPreview(); });
   node.addEventListener("close", () => { resetZip(); summary?.focus(); });
   return node;
 }
@@ -362,10 +475,12 @@ function renderDialog() {
   dialog.querySelector("[data-basket-empty]").hidden = basket.ids.length !== 0;
   dialog.querySelector("[data-basket-clear]").disabled = basket.ids.length === 0;
   dialog.querySelector("[data-basket-zip-prepare]").disabled = basket.ids.length === 0 || zipBusy;
+  dialog.querySelector("[data-basket-preview-open]").disabled = basket.ids.length === 0;
 }
 
 function setUnavailable(message) {
   resetZip();
+  resetPreview();
   if (summary) {
     summary.disabled = true;
     summary.classList.add("is-unavailable");
@@ -387,6 +502,7 @@ function commitBasket(next, message, action = null, id = null) {
     return false;
   }
   resetZip();
+  resetPreview();
   basket = next;
   syncSummary();
   syncButtons();
