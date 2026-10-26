@@ -143,3 +143,40 @@
   outline-offset: 3px;
 }
 [data-basket-zip-link]:empty { display: none; }
+
+.basket-book-preview {
+  margin: 16px 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f8fbff;
+}
+.basket-book-preview h3 { margin: 0 0 4px; font-family: var(--font-display); font-size: 20px; }
+.basket-book-preview [data-basket-preview-page] { margin: 0; color: var(--muted); font-size: 13px; }
+.basket-preview-frame {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  margin: 12px 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.basket-preview-frame img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: min(58dvh, 640px);
+  object-fit: contain;
+}
+.basket-preview-controls {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.basket-preview-controls button { flex: 1; }
+@media (max-width: 480px) {
+  .basket-book-preview { padding: 10px; }
+  .basket-preview-frame { min-height: 180px; padding: 8px; }
+}
