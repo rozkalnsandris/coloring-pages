@@ -15,7 +15,7 @@ class BookPreviewUi199Tests(unittest.TestCase):
             'from "./book-preview-plan.mjs"',
             'from "./book-preview-navigation.mjs"',
             'from "./book-preview-media.mjs"',
-            "buildBookPreviewPlan(basket.ids, catalog, createBookCoverState())",
+            "buildBookPreviewPlan(basket.ids, catalog, bookCover)",
             "createBookPreviewCursor(previewPlan)",
             "moveBookPreviewCursor(previewPlan, previewCursor, direction)",
             "buildBookPreviewDisplay(previewPlan, previewCursor, catalog)",
@@ -42,14 +42,19 @@ class BookPreviewUi199Tests(unittest.TestCase):
             self.assertIn(marker, source)
         self.assertNotIn("innerHTML", source)
 
-    def test_preview_is_coverless_and_does_not_enable_export_or_print(self):
+    def test_preview_supports_in_memory_cover_without_enabling_export_or_print(self):
         source = (ROOT / "js" / "print-basket-ui.mjs").read_text(encoding="utf-8")
         preview = source.split("function resetPreview() {", 1)[1].split("\nfunction resetZip() {", 1)[0]
-        self.assertIn("createBookCoverState()", preview)
-        self.assertNotIn("updateBookCoverText", source)
-        self.assertNotIn("setBookCoverEnabled", source)
+        self.assertIn("let bookCover = createBookCoverState();", source)
+        self.assertIn("setBookCoverEnabled", source)
+        self.assertIn("updateBookCoverText", source)
+        self.assertIn("buildBookPreviewPlan(basket.ids, catalog, bookCover)", preview)
+        self.assertIn("coverTitle.textContent = display.content.title", preview)
+        self.assertIn('coverName.textContent = display.content.name ? "Für " + display.content.name : "";', preview)
+        self.assertNotIn("innerHTML", source)
         self.assertNotIn("window.print(", source)
         self.assertIn('printAction.disabled = true;', source)
+        self.assertIn("basket.ids.length === 0 || zipBusy || bookCover.enabled", source)
         self.assertNotIn("prepareBasketPngZip", preview)
 
     def test_preview_resets_when_selection_changes_or_dialog_closes(self):
