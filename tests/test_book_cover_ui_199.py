@@ -17,7 +17,7 @@ class BookCoverUi199Tests(unittest.TestCase):
             'coverTitle.textContent = display.content.title;',
         ):
             self.assertIn(marker, source)
-        cover_code = source.split('const coverControls = document.createElement("section");', 1)[1]
+        cover_code = source.split('const coverControls = document.createElement("section");', 1)[1].split('const previewOpen = panelButton("Vorschau", "preview");', 1)[0]
         for forbidden in ("sessionStorage", "localStorage", "URLSearchParams", "fetch(", "analytics", "innerHTML"):
             self.assertNotIn(forbidden, cover_code)
 

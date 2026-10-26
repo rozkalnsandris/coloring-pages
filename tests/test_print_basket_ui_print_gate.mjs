@@ -52,11 +52,13 @@ function sample(ids = []) {
     if (id) button.dataset.basketId = id;
     return button;
   }
+  const bookCover = { enabled: false, title: "Mein Ausmalbuch", name: "" };
   let prints = 0;
   const dialog = vm.runInNewContext(
     source.slice(start, end) + "\nconst dialog = createDialog(); renderDialog(); dialog;",
     { document, panelButton, basket, catalogById: new Map([[entry.id, entry]]),
-      bookCover: { enabled: false, title: "Mein Ausmalbuch", name: "" },
+      bookCover,
+      bookSheetCount: () => basket.sheetCount + (bookCover.enabled ? 1 : 0),
       window: { print() { prints++; } }, zipBusy: false },
   );
   assert.equal(appended.length, 1);
