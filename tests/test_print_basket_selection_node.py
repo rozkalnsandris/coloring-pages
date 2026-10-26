@@ -27,6 +27,7 @@ class BasketSelectionJavaScriptTests(unittest.TestCase):
                 "tests/test_book_cover_a4_contract_199.mjs",
                 "tests/test_book_preview_plan_199.mjs",
                 "tests/test_book_preview_navigation_199.mjs",
+                "tests/test_book_preview_labels_199.mjs",
                 "tests/test_print_basket_storage.mjs",
                 "tests/test_print_zip_store.mjs",
                 "tests/test_print_basket_zip_fetch.mjs",
