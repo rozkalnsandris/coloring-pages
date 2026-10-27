@@ -185,6 +185,27 @@ def _version(binary: Path, root: Path, env: dict[str, str]) -> None:
         _stop("RELEASE_BUILD_PROFILE_MISMATCH")
 
 
+def _synthetic_user_id(db: Path) -> int:
+    # The v2.7.0 token CLI accepts numeric user IDs or "site,email",
+    # not a bare email. Resolve the exact user of this disposable site.
+    try:
+        with contextlib.closing(
+            sqlite3.connect(db.as_uri() + "?mode=ro", uri=True, timeout=2)
+        ) as con:
+            rows = con.execute(
+                "SELECT u.user_id FROM users AS u "
+                "JOIN sites AS s ON s.site_id = u.site_id "
+                "WHERE u.email = ? AND s.cname = ?",
+                (EMAIL, HOST),
+            ).fetchall()
+    except (sqlite3.DatabaseError, OSError, ValueError):
+        _stop("SYNTHETIC_USER_LOOKUP_FAILED")
+    if (len(rows) != 1 or type(rows[0][0]) is not int
+            or rows[0][0] <= 0):
+        _stop("SYNTHETIC_USER_ID_INVALID")
+    return rows[0][0]
+
+
 def _make_site(binary: Path, root: Path, env: dict[str, str], db: Path) -> str:
     db_arg = "sqlite+" + str(db)
     _run(binary, root, env, "db", "newdb", "-db=" + db_arg,
@@ -196,8 +217,9 @@ def _make_site(binary: Path, root: Path, env: dict[str, str], db: Path) -> str:
          "-user.password=" + password, "-db=" + db_arg,
          stage="DB_SITE_CREATE")
     password = ""
+    user_id = _synthetic_user_id(db)
     _run(binary, root, env, "db", "create", "apitoken",
-         "-user=" + EMAIL, "-name=synthetic-count-only",
+         "-user=" + str(user_id), "-name=synthetic-count-only",
          "-perm=count", "-db=" + db_arg,
          stage="DB_TOKEN_CREATE")
     try:

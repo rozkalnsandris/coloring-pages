@@ -546,6 +546,38 @@ Docker Python base-image digest pinning, proxy/log retention, and
 RPi5/LIVE approval gates remain outstanding. PR #391 remains on
 `MERGE HOLD`.
 
+## Third manual GitHub synthetic run: token user lookup rejected (2026-10-27)
+
+[Run #40540976880](https://github.com/rozkalnsandris/coloring-pages/actions/runs/40540976880)
+on `main@a64f4d756c553f00d0a05218a015ceaa21bdb5f6`
+passed the pinned v2.7.0 release archive digest/size, version/profile,
+database and site creation, then stopped at
+`GOATCOUNTER_ISOLATED=STOP CODE=DB_TOKEN_CREATE_REJECTED`.
+No synthetic pageview was sent.
+
+The v2.7.0 upstream `cmdDBAPITokenCreate()` calls `user.Find()`,
+which accepts a numeric user ID or the `site,email` form. A bare
+email is interpreted as a site identifier, so our original
+`-user=goatcounter-probe@example.com` is invalid. See upstream
+[`cmd/goatcounter/db.go`](https://github.com/arp242/goatcounter/blob/v2.7.0/cmd/goatcounter/db.go)
+and [`user.go`](https://github.com/arp242/goatcounter/blob/v2.7.0/user.go).
+
+This source-only correction reads the real synthetic user ID from
+the disposable SQLite database in read-only mode, requiring exactly
+one positive integer for the expected email **and** site cname.
+Only then does the existing token creation command use
+`-user=<numeric ID>`; it does not assume that the ID is 1.
+On missing, mismatched, ambiguous or malformed identity it stops
+without printing IDs, secrets, SQLite rows, command arguments or
+stderr. Disconnected tests cover successful lookup, CLI args,
+ambiguous/missing/wrong identities and read errors.
+
+Source CI is **not** a GoatCounter runtime PASS. Any future
+`workflow_dispatch` requires a separate owner action. The
+Python container's unpinned image digest and all legal, privacy,
+RPi5 and LIVE gates remain outstanding. PR #391 is still on
+`MERGE HOLD`.
+
 ## Runnable isolated GoatCounter v2.7.0 runtime check — opt-in, not run yet
 
 Source-only harness:
