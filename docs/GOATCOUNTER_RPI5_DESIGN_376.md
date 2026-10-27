@@ -457,6 +457,32 @@ a signed reproducible-build attestation. GitHub reports this release as
 `immutable=false`; the pinned digest therefore acts as a fail-closed snapshot:
 a later asset replacement will be rejected rather than silently trusted.
 
+## Opt-in GitHub-hosted synthetic runtime gate — source candidate, not executed
+
+The manual-only workflow
+[goatcounter-isolated-v27.yml](../.github/workflows/goatcounter-isolated-v27.yml)
+is a proposed GitHub Actions path for testing the already-pinned v2.7.0
+Linux amd64 archive without RPi5 access. It downloads the upstream release
+asset on an ephemeral GitHub-hosted runner, verifies its exact byte size and
+pinned SHA-256, then mounts that input and only the two probe scripts read-only
+inside a non-root Docker container with \`--network none\`, read-only root
+filesystem, a limited writable temporary directory, dropped capabilities,
+no new privileges and bounded CPU, RAM and process count. The container
+runs the real synthetic two-event probe. No credentials, user analytics
+data, application deployment, external network route or RPi5 mounts are
+passed into that container. No test artifacts or database copies are uploaded.
+
+It is **workflow_dispatch only** (no push/PR execution); the workflow must
+first be reviewed and independently authorized for merge before it can be
+manually invoked from the default branch. Its Python base image currently
+uses the versioned \`python:3.12.16-slim-bookworm\` tag, **not an immutable image
+digest**, which is a residual supply-chain review item. The GoatCounter
+archive itself is pinned by exact bytes and SHA-256 in the workflow and
+runtime harness. A successful source unit test cannot be substituted for
+a real workflow-run receipt. This candidate has **not been run**, and
+even a future synthetic PASS will not establish production ingress/proxy
+logs, backups, retention, privacy law compliance or LIVE authorization.
+
 ## Runnable isolated GoatCounter v2.7.0 runtime check — opt-in, not run yet
 
 Source-only harness:

@@ -1,0 +1,55 @@
+name: GoatCounter isolated synthetic privacy probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic:
+    name: Pinned v2.7.0 synthetic-only isolated check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout exact source without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download and verify official pinned amd64 release archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/goatcounter-v2.7.0-linux-amd64.gz"
+          curl --fail --silent --show-error --location --retry 0 --max-time 120 --proto '=https' \
+            https://github.com/arp242/goatcounter/releases/download/v2.7.0/goatcounter-v2.7.0-linux-amd64.gz \
+            --output "$archive"
+          test "$(wc -c < "$archive")" -eq 13935060
+          printf '%s  %s\n' \
+            '98d221cb9c8ef2bf76d8daa9cca647839f8d8b0bb5bc7400ff9337c5da834511' "$archive" \
+            | sha256sum --check --status
+          chmod 0444 "$archive"
+
+      - name: Run synthetic GoatCounter only inside sealed ephemeral Docker network
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm --pull=always \
+            --platform linux/amd64 \
+            --network none \
+            --read-only \
+            --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --pids-limit 64 \
+            --memory 512m \
+            --cpus 1 \
+            --user 65532:65532 \
+            --tmpfs /tmp:rw,nosuid,size=192m,mode=1777 \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/tools/goatcounter_isolated_runtime_probe.py,dst=/probe/goatcounter_isolated_runtime_probe.py,readonly" \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/tools/goatcounter_offline_privacy_probe.py,dst=/probe/goatcounter_offline_privacy_probe.py,readonly" \
+            --mount "type=bind,src=$RUNNER_TEMP/goatcounter-v2.7.0-linux-amd64.gz,dst=/input/goatcounter-v2.7.0-linux-amd64.gz,readonly" \
+            --env PYTHONDONTWRITEBYTECODE=1 \
+            python:3.12.16-slim-bookworm \
+            python3 /probe/goatcounter_isolated_runtime_probe.py \
+              --release-archive /input/goatcounter-v2.7.0-linux-amd64.gz
