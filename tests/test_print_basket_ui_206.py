@@ -158,7 +158,7 @@ class PrintBasketUi206Tests(unittest.TestCase):
             'window.addEventListener("pagehide", resetZip);',
             'if (action === "cancel-zip")',
             'if (epoch !== zipEpoch || controller.signal.aborted || !dialog.open) return;',
-            'resetZip();\n  basket = next;',
+            'resetZip();\n  resetPreview();\n  basket = next;',
         ):
             self.assertIn(marker, source)
         self.assertNotIn("staged.link.click()", source)
@@ -167,7 +167,7 @@ class PrintBasketUi206Tests(unittest.TestCase):
     def test_zip_ready_link_is_accessible_and_empty_basket_blocks_prepare(self):
         source = (ROOT / "js" / "print-basket-ui.mjs").read_text(encoding="utf-8")
         self.assertIn('zipPrepare.disabled = true;', source)
-        self.assertIn('dialog.querySelector("[data-basket-zip-prepare]").disabled = basket.ids.length === 0 || zipBusy;', source)
+        self.assertIn('zipPrepare.disabled = basket.ids.length === 0 || zipBusy || bookCover.enabled;', source)
         self.assertIn('zipStatus.setAttribute("role", "status");', source)
         self.assertIn('zipStatus.setAttribute("aria-live", "polite");', source)
         css = (ROOT / "css" / "print-basket.css").read_text(encoding="utf-8")

@@ -141,6 +141,36 @@ test("a disposed document cannot be printed twice", () => {
   assert.equal(doc.disposeCalls, 1);
 });
 
+test("malformed native stages dispose once without printing partial sheets", () => {
+  for (const mutate of [
+    stage => { stage.plan.sheetCount = 0; },
+    stage => { stage.sheets[0].orientation = "sideways"; },
+    stage => { stage.sheets[0].element.isConnected = true; },
+    stage => { stage.sheets[1].element = stage.sheets[0].element; },
+  ]) {
+    const doc = staged(["portrait", "landscape"]);
+    const host = mount();
+    mutate(doc);
+    let prints = 0;
+    assert.throws(() => printStagedBasketDocumentOnce(doc, {
+      mount: host, print() { prints++; },
+    }));
+    assert.equal(prints, 0);
+    assert.equal(host.childElementCount, 0);
+    assert.equal(doc.disposed, true);
+    assert.equal(doc.disposeCalls, 1);
+  }
+});
+
+test("a previously disposed malformed stage is never disposed again", () => {
+  const doc = staged(["portrait"]);
+  doc.dispose();
+  assert.throws(() => printStagedBasketDocumentOnce(doc, {
+    mount: mount(), print() { throw new Error("must not print"); },
+  }), /undisposed/);
+  assert.equal(doc.disposeCalls, 1);
+});
+
 test("lifecycle helper has no network storage navigation timer or analytics path", () => {
   const code = readFileSync(
     new URL("../js/print-basket-print-lifecycle.mjs", import.meta.url), "utf8",
