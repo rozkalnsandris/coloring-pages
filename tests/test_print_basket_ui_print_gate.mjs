@@ -52,10 +52,13 @@ function sample(ids = []) {
     if (id) button.dataset.basketId = id;
     return button;
   }
+  const bookCover = { enabled: false, title: "Mein Ausmalbuch", name: "" };
   let prints = 0;
   const dialog = vm.runInNewContext(
     source.slice(start, end) + "\nconst dialog = createDialog(); renderDialog(); dialog;",
     { document, panelButton, basket, catalogById: new Map([[entry.id, entry]]),
+      bookCover,
+      bookSheetCount: () => basket.sheetCount + (bookCover.enabled ? 1 : 0),
       window: { print() { prints++; } }, zipBusy: false },
   );
   assert.equal(appended.length, 1);
@@ -124,6 +127,7 @@ function zipScenario({ driftDuringFetch = false, failInsert = false } = {}) {
   const dialog = { open: true, querySelector: selector => controls[selector] || null };
   const context = {
     dialog, basket: { ids: [id], pages: [page], sheetCount: 1 },
+    bookCover: { enabled: false, title: "Mein Ausmalbuch", name: "" },
     window: { location: { origin: "https://ausmalwiese.de" } },
     readStoredBasketIds: () => [...stored],
     fetch: async () => ({ ok: true, redirected: false, json: async () => [] }),
