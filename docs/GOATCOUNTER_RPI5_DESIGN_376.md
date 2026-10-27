@@ -483,6 +483,36 @@ a real workflow-run receipt. This candidate has **not been run**, and
 even a future synthetic PASS will not establish production ingress/proxy
 logs, backups, retention, privacy law compliance or LIVE authorization.
 
+## First manual GitHub synthetic run: fail-closed before counting (2026-10-27)
+
+[Workflow run #40534984806](https://github.com/rozkalnsandris/coloring-pages/actions/runs/40534984806)
+checked out `main@10264242ebd635a956bea18a1754d031abe25ebf`
+and passed the pinned official amd64 release archive byte-size/SHA-256 gate.
+The isolated container then returned
+`GOATCOUNTER_ISOLATED=STOP CODE=VERSION_READ_FAILED` before
+creating the synthetic site or sending any count event. The original
+probe intentionally suppresses subprocess stderr and emits only a
+fixed non-sensitive error code, so this receipt alone cannot prove
+the precise OS error.
+
+The reviewed narrow remediation is to explicitly set
+`--tmpfs /tmp:rw,exec,nosuid,nodev,size=192m,mode=1777`.
+The probe extracts and executes the verified binary from a private
+directory under `/tmp`; Docker's default tmpfs behavior can include
+`noexec`, producing a subprocess launch failure indistinguishable
+under the old `VERSION_READ_FAILED` code. Docker documents `exec`
+as the necessary explicit mount option. The change keeps the
+existing `--network none`, `--read-only`, non-root user,
+`--cap-drop ALL`, `no-new-privileges`, bounded tmpfs,
+CPU/memory/process limits and read-only input mounts. It does not
+authorize installing or executing GoatCounter on RPi5 or changing
+any LIVE state.
+
+This is a source-level correction, **not** an observed PASS or a
+permission to rerun. Any future attempt requires a separate exact
+operator/owner gate; record actual step results and fail closed
+on another error. Current PR #391 stays under `MERGE HOLD`.
+
 ## Runnable isolated GoatCounter v2.7.0 runtime check — opt-in, not run yet
 
 Source-only harness:

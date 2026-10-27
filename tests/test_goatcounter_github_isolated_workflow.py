@@ -43,7 +43,7 @@ class GithubIsolatedGoatCounterWorkflowTests(unittest.TestCase):
             "--security-opt no-new-privileges",
             "--user 65532:65532",
             "--pids-limit 64",
-            "--tmpfs /tmp:",
+            "--tmpfs /tmp:rw,exec,nosuid,nodev,size=192m,mode=1777",
             "PYTHONDONTWRITEBYTECODE=1",
             "goatcounter_isolated_runtime_probe.py",
             "goatcounter_offline_privacy_probe.py",
@@ -52,6 +52,8 @@ class GithubIsolatedGoatCounterWorkflowTests(unittest.TestCase):
             with self.subTest(required=required):
                 self.assertIn(required, self.source)
         self.assertEqual(self.source.count("docker run --rm"), 1)
+        self.assertEqual(self.source.count("--tmpfs /tmp:"), 1)
+        self.assertNotIn("--tmpfs /tmp:rw,noexec", self.source)
         self.assertNotIn("docker.sock", self.source)
         self.assertNotIn("upload-artifact", self.source)
         self.assertNotIn("docker compose", self.source)

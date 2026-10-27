@@ -35,6 +35,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Pinned release binary is extracted into a private /tmp; Docker tmpfs defaults to noexec.
           docker run --rm --pull=always \
             --platform linux/amd64 \
             --network none \
@@ -45,7 +46,7 @@ jobs:
             --memory 512m \
             --cpus 1 \
             --user 65532:65532 \
-            --tmpfs /tmp:rw,nosuid,size=192m,mode=1777 \
+            --tmpfs /tmp:rw,exec,nosuid,nodev,size=192m,mode=1777 \
             --mount "type=bind,src=$GITHUB_WORKSPACE/tools/goatcounter_isolated_runtime_probe.py,dst=/probe/goatcounter_isolated_runtime_probe.py,readonly" \
             --mount "type=bind,src=$GITHUB_WORKSPACE/tools/goatcounter_offline_privacy_probe.py,dst=/probe/goatcounter_offline_privacy_probe.py,readonly" \
             --mount "type=bind,src=$RUNNER_TEMP/goatcounter-v2.7.0-linux-amd64.gz,dst=/input/goatcounter-v2.7.0-linux-amd64.gz,readonly" \
