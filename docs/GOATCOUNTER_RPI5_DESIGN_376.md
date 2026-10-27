@@ -457,7 +457,7 @@ a signed reproducible-build attestation. GitHub reports this release as
 `immutable=false`; the pinned digest therefore acts as a fail-closed snapshot:
 a later asset replacement will be rejected rather than silently trusted.
 
-## Opt-in GitHub-hosted synthetic runtime gate — source candidate, not executed
+## Opt-in GitHub-hosted synthetic runtime gate — manual-only, not yet passing
 
 The manual-only workflow
 [goatcounter-isolated-v27.yml](../.github/workflows/goatcounter-isolated-v27.yml)
@@ -479,7 +479,7 @@ uses the versioned \`python:3.12.16-slim-bookworm\` tag, **not an immutable imag
 digest**, which is a residual supply-chain review item. The GoatCounter
 archive itself is pinned by exact bytes and SHA-256 in the workflow and
 runtime harness. A successful source unit test cannot be substituted for
-a real workflow-run receipt. This candidate has **not been run**, and
+a real workflow-run receipt. Two manual executions have now failed;
 even a future synthetic PASS will not establish production ingress/proxy
 logs, backups, retention, privacy law compliance or LIVE authorization.
 
@@ -512,6 +512,39 @@ This is a source-level correction, **not** an observed PASS or a
 permission to rerun. Any future attempt requires a separate exact
 operator/owner gate; record actual step results and fail closed
 on another error. Current PR #391 stays under `MERGE HOLD`.
+
+## Second manual GitHub synthetic run: fixed setup-stage diagnostics (2026-10-27)
+
+[Workflow run #40537720170](https://github.com/rozkalnsandris/coloring-pages/actions/runs/40537720170)
+on `main@57bcad72b88237c1317f160d67b18644b77ba062` again
+passed the exact official v2.7.0 Linux amd64 archive size and digest
+checks. The Docker container then produced
+`GOATCOUNTER_ISOLATED=STOP CODE=BINARY_COMMAND_REJECTED`.
+The `exec` tmpfs adjustment allowed the pinned version/profile check
+to complete, but this error was shared by **three distinct**
+setup commands: `db newdb`, `db create site` and
+`db create apitoken`. No synthetic hit was sent and no runtime
+privacy verification passed.
+
+A bounded **source-only diagnostic correction** adds these fixed,
+non-sensitive stage-specific outcomes:
+`DB_NEWDB_REJECTED`, `DB_SITE_CREATE_REJECTED`,
+`DB_TOKEN_CREATE_REJECTED`, or corresponding `*_LAUNCH_ERROR`
+codes for OS/timeout failures. It validates the stage against an
+allowlist before starting the subprocess. Child stdout and stderr
+remain discarded; no command arguments, credentials or database
+contents are logged. Disconnected tests cover all three stages and
+the no-leak / fail-closed cases. GoatCounter's upstream
+[v2.7.0 db command documentation](https://github.com/arp242/goatcounter/blob/v2.7.0/cmd/goatcounter/db.go)
+defines the relevant commands and flags, but the second run's
+redacted error alone cannot determine which one failed.
+
+This diagnostic change neither corrects an unknown upstream
+setup failure nor establishes a synthetic PASS. A new manual test
+would require a separate exact owner authorization. The separate
+Docker Python base-image digest pinning, proxy/log retention, and
+RPi5/LIVE approval gates remain outstanding. PR #391 remains on
+`MERGE HOLD`.
 
 ## Runnable isolated GoatCounter v2.7.0 runtime check — opt-in, not run yet
 
