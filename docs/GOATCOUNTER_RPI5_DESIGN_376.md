@@ -9,6 +9,80 @@ a claim of German legal compliance.
 
 **Update (2026-10-25):** Owner merged design PR #377 as `main=1cb3b0e67d20c6851592817ea5973992b9dbf707`, then explicitly closed #368 (`not_planned`) in favor of this **planned** GoatCounter direction. No GoatCounter service is installed or deployed; the existing LIVE Cloudflare-backed frontend is not replaced. The actual LIVE transition date is unset.
 
+## Canonical RPi5 proof and installation handoff (2026-10-27)
+
+**Do not reinstall or rerun the runtime proof merely because the separate
+GitHub-hosted amd64 candidate failed.** The canonical RPi5 evidence is in
+[`RPi5_main/docs/AUSMALWIESE_GOATCOUNTER_PAGEVIEW_V1.md`](https://github.com/rozkalnsandris/RPi5_main/blob/5af7a956a60ca4d0dbee0c3eb95cff03a48ab29c/docs/AUSMALWIESE_GOATCOUNTER_PAGEVIEW_V1.md)
+and the detailed
+[`AUSMALWIESE_GOATCOUNTER_ISOLATED_PROOF_V2.md`](https://github.com/rozkalnsandris/RPi5_main/blob/5af7a956a60ca4d0dbee0c3eb95cff03a48ab29c/docs/AUSMALWIESE_GOATCOUNTER_ISOLATED_PROOF_V2.md).
+The RPi5 documentation records an owner-authorized pinned **arm64**
+v2.7.0 synthetic run at source
+`4f2bd81ddc521dbb6f86df17cdb060c088a64f95` with
+`GOATCOUNTER_ISOLATED=PASS_SYNTHETIC_GOATCOUNTER_RUNTIME_ONLY_NOT_LIVE_OR_LEGAL_PROOF`.
+That is a **synthetic runtime gate only**, not evidence that a production
+GoatCounter service, database, adapter, credentials, or public ingress
+have been installed.
+
+This repository's manual-only **amd64** GitHub-hosted
+[`goatcounter-isolated-v27.yml`](../.github/workflows/goatcounter-isolated-v27.yml)
+is an independent candidate and has **not** passed. Its first four
+isolated runs are
+[`#40534984806`](https://github.com/rozkalnsandris/coloring-pages/actions/runs/40534984806),
+[`#40537720170`](https://github.com/rozkalnsandris/coloring-pages/actions/runs/40537720170),
+[`#40540976880`](https://github.com/rozkalnsandris/coloring-pages/actions/runs/40540976880)
+and [`#40550616342`](https://github.com/rozkalnsandris/coloring-pages/actions/runs/40550616342).
+The last reported `SERVER_UNCLEAN_EXIT`, which may mask an earlier
+readiness/count failure because this candidate's `finally` block
+raises its own shutdown exception. Do not infer a GoatCounter
+installation failure, an upstream shutdown defect or an RPi5 runtime
+regression from this separate failing candidate.
+
+**Reviewed installation order, not an installation authorization:**
+
+1. Use the canonical, merged
+   [RPi5 compatibility preflight contract](https://github.com/rozkalnsandris/RPi5_main/blob/5af7a956a60ca4d0dbee0c3eb95cff03a48ab29c/docs/AUSMALWIESE_GOATCOUNTER_COMPATIBILITY_PREFLIGHT_V1.md)
+   (source merge `5af7a956a60ca4d0dbee0c3eb95cff03a48ab29c`).
+   Its one **read-only** execution on `rpi5` needs its own exact
+   owner authorization and host evidence; the mere presence of source
+   and a prior chat command do not establish a PASS.
+2. Reconcile the exact two future service identities
+   `ausmalwiese-goatcounter` and `ausmalwiese-pageview`, the
+   private executable root
+   `/usr/local/libexec/ausmalwiese-goatcounter-v1`, SQLite root
+   `/var/lib/ausmalwiese-goatcounter`, credential root
+   `/etc/ausmalwiese-goatcounter`, expected catalog path and
+   free loopback ports `9194` (GoatCounter) and `9193` (adapter).
+   The preflight is non-mutating and detects conflicts before an
+   installer is designed.
+3. Independently review the exact German GDPR/TDDDG basis, Cloudflare
+   and ingress/proxy logs, retention/backup policy, and visitor-data
+   boundaries. A synthetic PASS does not resolve those questions.
+4. Only then review a **separate bounded RPi5 installation/source
+   change** and obtain a fresh exact owner LIVE authorization before
+   creating users/directories, installing the verified arm64 binary,
+   provisioning the private SQLite database and count-only systemd
+   credential, or installing/enabling the two tracked units
+   [`ausmalwiese-goatcounter.service`](https://github.com/rozkalnsandris/RPi5_main/blob/5af7a956a60ca4d0dbee0c3eb95cff03a48ab29c/ops/systemd/ausmalwiese-goatcounter.service)
+   and
+   [`ausmalwiese-goatcounter-pageview.service`](https://github.com/rozkalnsandris/RPi5_main/blob/5af7a956a60ca4d0dbee0c3eb95cff03a48ab29c/ops/systemd/ausmalwiese-goatcounter-pageview.service).
+   Both units and their loopback-only hardening are currently source
+   definitions, **not installation receipts**.
+5. Verify separately authorized private service health and exact
+   count-only functionality before a separately owner-authorized
+   **path-only** Cloudflare ingress change for `/api/pageview`.
+   Do not expose `9194`, publish a token to the browser, activate
+   pageview emission, or merge [PR #391](https://github.com/rozkalnsandris/coloring-pages/pull/391)
+   while its `MERGE HOLD` and remaining gates apply.
+
+Official [GoatCounter v2.7.0 README](https://github.com/arp242/goatcounter/blob/v2.7.0/README.md)
+documents self-hosted binary/Docker, SQLite and `serve`; pinned
+[`serve.go`](https://github.com/arp242/goatcounter/blob/v2.7.0/cmd/goatcounter/serve.go)
+supports `-db`, `-listen`, `-tls=http`, `-store-every` and
+`-automigrate`. These upstream commands explain the eventual service
+design; they are not permission to run a generic installer or migrate
+production data now. GitHub does not independently prove LIVE state.
+
 ## Recorded owner architecture choice and safety boundary
 
 - [Issue #368](https://github.com/rozkalnsandris/coloring-pages/issues/368) was closed on 2026-10-25 as **not planned / superseded**, after explicit owner direction to move the **future** Traffic architecture from Cloudflare-only to first-party, RPi5-hosted GoatCounter pageview counting. This does **not** complete #368's original Cloudflare-only acceptance criteria.
@@ -644,8 +718,10 @@ requires it and the expected final v2.7 migration marker
 names. The earlier synthetic-only fixture had omitted this table and
 could never have passed against a real unmodified v2.7 SQLite schema.
 
-**Remaining release blockers:** This harness has **not yet been run
-with an actual GoatCounter binary**. Even a future synthetic PASS is
+**Remaining release blockers:** This separate GitHub-hosted amd64 harness
+has run with a real binary but has **not yet passed**. The pinned arm64
+RPi5 synthetic v2 proof has independently passed; neither is a production
+installation, ingress/privacy compliance or LIVE readiness receipt. Even a future synthetic PASS is
 not a full audit of startup/error/access logs, unusual/malicious
 bot-shaped events, dynamic proxies, SQLite free pages, backups,
 real-user HTTP processing, site permissions or German GDPR/TDDDG
