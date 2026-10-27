@@ -121,7 +121,13 @@ def _isolated_env(root: Path) -> dict[str, str]:
     }
 
 
-def _run(binary: Path, root: Path, env: dict[str, str], *argv: str) -> None:
+def _run(
+    binary: Path, root: Path, env: dict[str, str], *argv: str, stage: str,
+) -> None:
+    # Stable, allowlisted codes identify the failed setup command; never
+    # print subprocess output, arguments, temporary credentials or DB contents.
+    if stage not in {"DB_NEWDB", "DB_SITE_CREATE", "DB_TOKEN_CREATE"}:
+        _stop("BINARY_COMMAND_STAGE_INVALID")
     try:
         result = subprocess.run(
             [str(binary), *argv], cwd=root, env=env,
@@ -130,9 +136,9 @@ def _run(binary: Path, root: Path, env: dict[str, str], *argv: str) -> None:
             timeout=20, check=False,
         )
     except (OSError, subprocess.TimeoutExpired):
-        _stop("BINARY_COMMAND_ERROR")
+        _stop(stage + "_LAUNCH_ERROR")
     if result.returncode != 0:
-        _stop("BINARY_COMMAND_REJECTED")
+        _stop(stage + "_REJECTED")
 
 
 def _expected_goarch() -> str:
@@ -181,16 +187,19 @@ def _version(binary: Path, root: Path, env: dict[str, str]) -> None:
 
 def _make_site(binary: Path, root: Path, env: dict[str, str], db: Path) -> str:
     db_arg = "sqlite+" + str(db)
-    _run(binary, root, env, "db", "newdb", "-db=" + db_arg)
+    _run(binary, root, env, "db", "newdb", "-db=" + db_arg,
+         stage="DB_NEWDB")
     # Test credentials exist only inside this temporary synthetic database.
     password = secrets.token_hex(20)
     _run(binary, root, env, "db", "create", "site",
          "-vhost=" + HOST, "-user.email=" + EMAIL,
-         "-user.password=" + password, "-db=" + db_arg)
+         "-user.password=" + password, "-db=" + db_arg,
+         stage="DB_SITE_CREATE")
     password = ""
     _run(binary, root, env, "db", "create", "apitoken",
          "-user=" + EMAIL, "-name=synthetic-count-only",
-         "-perm=count", "-db=" + db_arg)
+         "-perm=count", "-db=" + db_arg,
+         stage="DB_TOKEN_CREATE")
     try:
         with contextlib.closing(sqlite3.connect(db, timeout=2)) as con:
             con.row_factory = sqlite3.Row

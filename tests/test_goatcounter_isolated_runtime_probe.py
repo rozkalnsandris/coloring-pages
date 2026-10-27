@@ -144,6 +144,62 @@ class RuntimeProbeContractTests(unittest.TestCase):
             ):
                 runner._verified_release_archive(str(link), self.root)
 
+    def test_setup_command_rejection_identifies_stage_without_leaking(self):
+        for stage in ("DB_NEWDB", "DB_SITE_CREATE", "DB_TOKEN_CREATE"):
+            with self.subTest(stage=stage):
+                with mock.patch.object(
+                    runner.subprocess, "run",
+                    return_value=mock.Mock(
+                        returncode=2,
+                        stdout=b"synthetic-secret-in-stdout",
+                        stderr=b"synthetic-secret-in-stderr",
+                    ),
+                ) as invoked:
+                    with self.assertRaises(runner.RuntimeStop) as caught:
+                        runner._run(
+                            self.root / "goatcounter", self.root, {},
+                            "db", "synthetic", "-password=synthetic-secret",
+                            stage=stage,
+                        )
+                self.assertEqual(str(caught.exception), stage + "_REJECTED")
+                self.assertNotIn("synthetic-secret", str(caught.exception))
+                invoked.assert_called_once()
+                self.assertIs(invoked.call_args.kwargs["stdin"], runner.subprocess.DEVNULL)
+                self.assertIs(invoked.call_args.kwargs["stdout"], runner.subprocess.DEVNULL)
+                self.assertIs(invoked.call_args.kwargs["stderr"], runner.subprocess.DEVNULL)
+
+    def test_setup_command_launch_errors_are_stage_specific(self):
+        for stage in ("DB_NEWDB", "DB_SITE_CREATE", "DB_TOKEN_CREATE"):
+            for error in (
+                OSError("synthetic-secret"),
+                runner.subprocess.TimeoutExpired("synthetic-secret", timeout=20),
+            ):
+                with self.subTest(stage=stage, error=type(error).__name__):
+                    with mock.patch.object(
+                        runner.subprocess, "run", side_effect=error,
+                    ) as invoked:
+                        with self.assertRaises(runner.RuntimeStop) as caught:
+                            runner._run(
+                                self.root / "goatcounter", self.root, {},
+                                "db", "synthetic", stage=stage,
+                            )
+                    self.assertEqual(
+                        str(caught.exception), stage + "_LAUNCH_ERROR",
+                    )
+                    self.assertNotIn("synthetic-secret", str(caught.exception))
+                    invoked.assert_called_once()
+
+    def test_unknown_setup_command_stage_stops_before_subprocess(self):
+        with mock.patch.object(runner.subprocess, "run") as invoked:
+            with self.assertRaisesRegex(
+                runner.RuntimeStop, "^BINARY_COMMAND_STAGE_INVALID$"
+            ):
+                runner._run(
+                    self.root / "goatcounter", self.root, {},
+                    "db", "synthetic", stage="db passwords in logs",
+                )
+        invoked.assert_not_called()
+
     def test_exact_outbound_schema_and_proxy_bypass(self):
         opener = mock.Mock()
         opener.open.return_value = FakeResponse()
