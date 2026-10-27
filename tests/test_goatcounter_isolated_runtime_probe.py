@@ -200,6 +200,73 @@ class RuntimeProbeContractTests(unittest.TestCase):
                 )
         invoked.assert_not_called()
 
+    def _make_synthetic_identity_db(self, filename="fixture.sqlite3"):
+        db = self.root / filename
+        with contextlib.closing(runner.sqlite3.connect(db)) as con:
+            con.executescript(
+                "CREATE TABLE sites (site_id INTEGER PRIMARY KEY, "
+                "cname TEXT NOT NULL, settings TEXT NOT NULL);"
+                "CREATE TABLE users (user_id INTEGER PRIMARY KEY, "
+                "site_id INTEGER NOT NULL, email TEXT NOT NULL);"
+                "CREATE TABLE api_tokens (token TEXT NOT NULL);"
+            )
+            con.execute(
+                "INSERT INTO sites (site_id, cname, settings) VALUES (?, ?, ?)",
+                (7, runner.HOST, '{"collect":0}'),
+            )
+            con.execute(
+                "INSERT INTO users (user_id, site_id, email) VALUES (?, ?, ?)",
+                (42, 7, runner.EMAIL),
+            )
+            con.execute(
+                "INSERT INTO api_tokens (token) VALUES (?)",
+                ("synthetic-unit-test-token-not-for-use",),
+            )
+            con.commit()
+        return db
+
+    def test_token_cli_uses_actual_synthetic_user_id_not_bare_email(self):
+        db = self._make_synthetic_identity_db()
+        self.assertEqual(runner._synthetic_user_id(db), 42)
+        with mock.patch.object(runner, "_run") as run:
+            token = runner._make_site(self.root / "goatcounter", self.root, {}, db)
+        self.assertEqual(token, "synthetic-unit-test-token-not-for-use")
+        self.assertEqual(run.call_count, 3)
+        args = run.call_args_list[2].args
+        self.assertIn("-user=42", args)
+        self.assertNotIn("-user=" + runner.EMAIL, args)
+        self.assertEqual(run.call_args_list[2].kwargs["stage"], "DB_TOKEN_CREATE")
+        with contextlib.closing(runner.sqlite3.connect(db)) as con:
+            settings = runner.json.loads(con.execute(
+                "SELECT settings FROM sites WHERE site_id = 7"
+            ).fetchone()[0])
+        self.assertEqual(settings["collect"], 1)
+
+    def test_token_user_lookup_rejects_missing_wrong_or_ambiguous_identity(self):
+        for idx, sql in enumerate((
+            "DELETE FROM users",
+            "UPDATE users SET user_id = 0",
+            "UPDATE users SET site_id = 999",
+            "UPDATE sites SET cname = 'wrong.example.test'",
+            "INSERT INTO users (user_id, site_id, email) "
+            "VALUES (55, 7, 'goatcounter-probe@example.com')",
+        )):
+            with self.subTest(case=idx):
+                db = self._make_synthetic_identity_db(f"identity-{idx}.sqlite3")
+                with contextlib.closing(runner.sqlite3.connect(db)) as con:
+                    con.execute(sql)
+                    con.commit()
+                with self.assertRaisesRegex(
+                    runner.RuntimeStop, "^SYNTHETIC_USER_ID_INVALID$"
+                ):
+                    runner._synthetic_user_id(db)
+
+    def test_token_user_lookup_io_failure_stops_without_leaking(self):
+        with self.assertRaisesRegex(
+            runner.RuntimeStop, "^SYNTHETIC_USER_LOOKUP_FAILED$"
+        ):
+            runner._synthetic_user_id(self.root / "does-not-exist.sqlite3")
+
     def test_exact_outbound_schema_and_proxy_bypass(self):
         opener = mock.Mock()
         opener.open.return_value = FakeResponse()
