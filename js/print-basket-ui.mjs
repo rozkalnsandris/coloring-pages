@@ -2,6 +2,10 @@ import { addBasketActivity, clearBasket, expandBasketForExport, moveBasketActivi
 import { readStoredBasketIds, restoreStoredBasket, writeStoredBasketIds } from "./print-basket-storage.mjs";
 import { prepareBasketPngZip } from "./print-basket-zip-fetch.mjs";
 import { stageBasketZipDownloadLink } from "./print-basket-zip-link.mjs";
+import { createBookCoverState, setBookCoverEnabled, updateBookCoverText } from "./book-cover-state.mjs";
+import { buildBookPreviewPlan } from "./book-preview-plan.mjs";
+import { createBookPreviewCursor, moveBookPreviewCursor, setBookPreviewSheet } from "./book-preview-navigation.mjs";
+import { buildBookPreviewDisplay } from "./book-preview-media.mjs";
 
 const MAX_SHEETS = 5;
 const CARD_SELECTOR = ".coloring-card";
@@ -18,6 +22,9 @@ let zipController = null;
 let stagedZip = null;
 let zipBusy = false;
 let zipEpoch = 0;
+let previewPlan = null;
+let previewCursor = null;
+let bookCover = createBookCoverState();
 
 function detailIdFromCard(card) {
   const link = card.querySelector('a[href*="detail.html"]');
@@ -87,13 +94,18 @@ function announce(message) {
   queueMicrotask(() => { status.textContent = message; });
 }
 
+function bookSheetCount() {
+  return basket.sheetCount + (bookCover.enabled ? 1 : 0);
+}
+
 function syncSummary() {
   if (!summary) return;
+  const total = bookSheetCount();
   const count = summary.querySelector("[data-basket-count]");
-  if (count) count.textContent = basket.sheetCount + "/" + MAX_SHEETS + " Seiten";
+  if (count) count.textContent = total + "/" + MAX_SHEETS + " Seiten";
   summary.setAttribute(
     "aria-label",
-    "Meine Drucksammlung (" + basket.sheetCount + "/" + MAX_SHEETS + " Seiten)"
+    "Meine Drucksammlung (" + total + "/" + MAX_SHEETS + " Seiten)"
   );
 }
 
@@ -153,6 +165,110 @@ function panelButton(text, action, id = "") {
 }
 
 
+function resetPreview() {
+  previewPlan = null;
+  previewCursor = null;
+  if (!dialog) return;
+  const panel = dialog.querySelector("[data-basket-preview]");
+  if (panel) panel.hidden = true;
+  const image = dialog.querySelector("[data-basket-preview-image]");
+  if (image) {
+    image.removeAttribute("src");
+    image.alt = "";
+    image.hidden = false;
+  }
+  const cover = dialog.querySelector("[data-basket-preview-cover]");
+  const coverTitle = dialog.querySelector("[data-basket-preview-cover-title]");
+  const coverName = dialog.querySelector("[data-basket-preview-cover-name]");
+  if (cover) cover.hidden = true;
+  if (coverTitle) coverTitle.textContent = "";
+  if (coverName) coverName.textContent = "";
+  const page = dialog.querySelector("[data-basket-preview-page]");
+  if (page) page.textContent = "";
+  const previous = dialog.querySelector("[data-basket-preview-previous]");
+  const next = dialog.querySelector("[data-basket-preview-next]");
+  if (previous) previous.disabled = true;
+  if (next) next.disabled = true;
+}
+
+function renderPreview() {
+  if (!dialog || !previewPlan || !previewCursor) return;
+  const display = buildBookPreviewDisplay(previewPlan, previewCursor, catalog);
+  const panel = dialog.querySelector("[data-basket-preview]");
+  const image = dialog.querySelector("[data-basket-preview-image]");
+  const cover = dialog.querySelector("[data-basket-preview-cover]");
+  const coverTitle = dialog.querySelector("[data-basket-preview-cover-title]");
+  const coverName = dialog.querySelector("[data-basket-preview-cover-name]");
+  const page = dialog.querySelector("[data-basket-preview-page]");
+  const previous = dialog.querySelector("[data-basket-preview-previous]");
+  const next = dialog.querySelector("[data-basket-preview-next]");
+  if (!panel || !image || !cover || !coverTitle || !coverName || !page || !previous || !next) {
+    throw new Error("Preview controls unavailable");
+  }
+
+  if (display.content.kind === "cover") {
+    image.removeAttribute("src");
+    image.alt = "";
+    image.hidden = true;
+    cover.hidden = false;
+    coverTitle.textContent = display.content.title;
+    coverName.textContent = display.content.name ? "Für " + display.content.name : "";
+    coverName.hidden = !display.content.name;
+  } else {
+    const entry = catalogById.get(display.content.activityId);
+    if (!entry) throw new Error("Preview activity unavailable");
+    cover.hidden = true;
+    coverTitle.textContent = "";
+    coverName.textContent = "";
+    image.hidden = false;
+    image.src = display.content.previewUrl;
+    image.alt = display.content.pageCount > 1
+      ? entry.title + ", Seite " + display.content.pageIndex + " von " + display.content.pageCount
+      : entry.title;
+  }
+
+  page.textContent = display.pageText;
+  previous.textContent = display.previous.label;
+  previous.disabled = display.previous.disabled;
+  next.textContent = display.next.label;
+  next.disabled = display.next.disabled;
+  panel.hidden = false;
+}
+
+function openPreview() {
+  try {
+    previewPlan = buildBookPreviewPlan(basket.ids, catalog, bookCover);
+    previewCursor = createBookPreviewCursor(previewPlan);
+    renderPreview();
+    dialog?.querySelector("#basket-preview-title")?.focus();
+  } catch {
+    resetPreview();
+    announce("Die Vorschau ist gerade nicht verfügbar. Bitte Auswahl prüfen.");
+  }
+}
+
+function refreshOpenPreview() {
+  if (!previewPlan || !previewCursor) return;
+  const sheetNumber = previewCursor.sheetNumber;
+  previewPlan = buildBookPreviewPlan(basket.ids, catalog, bookCover);
+  previewCursor = setBookPreviewSheet(
+    previewPlan,
+    Math.min(sheetNumber, previewPlan.sheetCount),
+  );
+  renderPreview();
+}
+
+function movePreview(direction) {
+  try {
+    if (!previewPlan || !previewCursor) return;
+    previewCursor = moveBookPreviewCursor(previewPlan, previewCursor, direction);
+    renderPreview();
+  } catch {
+    resetPreview();
+    announce("Die Vorschau konnte nicht aktualisiert werden. Bitte neu öffnen.");
+  }
+}
+
 function resetZip() {
   zipEpoch++;
   zipController?.abort();
@@ -167,13 +283,13 @@ function resetZip() {
   const message = dialog?.querySelector("[data-basket-zip-status]");
   if (message) message.textContent = "";
   const prepare = dialog?.querySelector("[data-basket-zip-prepare]");
-  if (prepare) prepare.disabled = basket.ids.length === 0;
+  if (prepare) prepare.disabled = basket.ids.length === 0 || bookCover.enabled;
   const cancel = dialog?.querySelector("[data-basket-zip-cancel]");
   if (cancel) cancel.disabled = true;
 }
 
 async function prepareZip() {
-  if (!dialog?.open || zipBusy || basket.ids.length === 0) return;
+  if (!dialog?.open || zipBusy || basket.ids.length === 0 || bookCover.enabled) return;
   resetZip();
   const epoch = zipEpoch;
   const controller = new AbortController();
@@ -207,15 +323,24 @@ async function prepareZip() {
       origin: window.location.origin, signal: controller.signal,
     });
     if (epoch !== zipEpoch || controller.signal.aborted || !dialog.open) return;
-    const staged = stageBasketZipDownloadLink(zip);
-    const slot = dialog.querySelector("[data-basket-zip-link]");
-    if (!slot) {
-      staged.dispose();
-      throw new Error("ZIP destination missing");
+    // Storage may change while the full-resolution PNGs are loading.
+    // Never expose a download link for a superseded selection.
+    if (JSON.stringify(readStoredBasketIds()) !== JSON.stringify(selectedIds) ||
+        JSON.stringify(basket.ids) !== JSON.stringify(selectedIds)) {
+      throw new Error("Selection changed during ZIP preparation");
     }
-    staged.link.className = "basket-zip-download";
-    slot.replaceChildren(staged.link);
-    stagedZip = staged;
+    const staged = stageBasketZipDownloadLink(zip);
+    try {
+      const slot = dialog.querySelector("[data-basket-zip-link]");
+      if (!slot) throw new Error("ZIP destination missing");
+      staged.link.className = "basket-zip-download";
+      slot.replaceChildren(staged.link);
+      stagedZip = staged;
+    } catch (error) {
+      // Release the Blob URL even if the DOM rejects inserting the link.
+      staged.dispose();
+      throw error;
+    }
     message.textContent = "ZIP bereit. Mit „Als ZIP speichern“ herunterladen.";
   } catch {
     if (epoch === zipEpoch && dialog.open && !controller.signal.aborted) {
@@ -225,7 +350,7 @@ async function prepareZip() {
     if (epoch === zipEpoch) {
       zipBusy = false;
       zipController = null;
-      prepare.disabled = basket.ids.length === 0;
+      prepare.disabled = basket.ids.length === 0 || bookCover.enabled;
       cancel.disabled = true;
     }
   }
@@ -253,6 +378,91 @@ function createDialog() {
   const empty = document.createElement("p");
   empty.dataset.basketEmpty = "";
   empty.textContent = "Noch keine Malvorlagen ausgewählt.";
+
+  const coverControls = document.createElement("section");
+  coverControls.className = "basket-cover-controls";
+  coverControls.dataset.basketCoverControls = "";
+  coverControls.setAttribute("aria-labelledby", "basket-cover-title");
+  const coverHeading = document.createElement("h3");
+  coverHeading.id = "basket-cover-title";
+  coverHeading.textContent = "Deckblatt";
+  const coverToggleLabel = document.createElement("label");
+  coverToggleLabel.className = "basket-cover-toggle";
+  const coverToggle = document.createElement("input");
+  coverToggle.type = "checkbox";
+  coverToggle.dataset.basketCoverToggle = "";
+  const coverToggleText = document.createElement("span");
+  coverToggleText.textContent = "Deckblatt hinzufügen";
+  coverToggleLabel.append(coverToggle, coverToggleText);
+  const coverHint = document.createElement("p");
+  coverHint.className = "basket-dialog-note";
+  coverHint.textContent = "Das Deckblatt zählt als eine von 5 A4-Druckseiten.";
+  const coverFields = document.createElement("div");
+  coverFields.className = "basket-cover-fields";
+  const coverTitleLabel = document.createElement("label");
+  coverTitleLabel.htmlFor = "basket-cover-title-input";
+  coverTitleLabel.textContent = "Titel auf dem Deckblatt (optional)";
+  const coverTitleInput = document.createElement("input");
+  coverTitleInput.id = "basket-cover-title-input";
+  coverTitleInput.type = "text";
+  coverTitleInput.dataset.basketCoverTitle = "";
+  coverTitleInput.setAttribute("autocomplete", "off");
+  const coverNameLabel = document.createElement("label");
+  coverNameLabel.htmlFor = "basket-cover-name-input";
+  coverNameLabel.textContent = "Name auf dem Deckblatt (optional)";
+  const coverNameInput = document.createElement("input");
+  coverNameInput.id = "basket-cover-name-input";
+  coverNameInput.type = "text";
+  coverNameInput.dataset.basketCoverName = "";
+  coverNameInput.setAttribute("autocomplete", "off");
+  const coverPrivacy = document.createElement("p");
+  coverPrivacy.className = "basket-dialog-note";
+  coverPrivacy.textContent = "Titel und Name werden nicht gespeichert.";
+  coverFields.append(coverTitleLabel, coverTitleInput, coverNameLabel, coverNameInput, coverPrivacy);
+  coverControls.append(coverHeading, coverToggleLabel, coverHint, coverFields);
+
+  const previewOpen = panelButton("Vorschau", "preview");
+  previewOpen.dataset.basketPreviewOpen = "";
+  previewOpen.disabled = true;
+  const preview = document.createElement("section");
+  preview.className = "basket-book-preview";
+  preview.dataset.basketPreview = "";
+  preview.hidden = true;
+  preview.setAttribute("aria-labelledby", "basket-preview-title");
+  const previewHeading = document.createElement("h3");
+  previewHeading.id = "basket-preview-title";
+  previewHeading.tabIndex = -1;
+  previewHeading.textContent = "Vorschau";
+  const previewPage = document.createElement("p");
+  previewPage.dataset.basketPreviewPage = "";
+  previewPage.setAttribute("role", "status");
+  previewPage.setAttribute("aria-live", "polite");
+  const previewFrame = document.createElement("figure");
+  previewFrame.className = "basket-preview-frame";
+  const previewImage = document.createElement("img");
+  previewImage.dataset.basketPreviewImage = "";
+  previewImage.alt = "";
+  previewImage.decoding = "async";
+  const previewCover = document.createElement("div");
+  previewCover.className = "basket-preview-cover";
+  previewCover.dataset.basketPreviewCover = "";
+  previewCover.hidden = true;
+  const previewCoverTitle = document.createElement("strong");
+  previewCoverTitle.dataset.basketPreviewCoverTitle = "";
+  const previewCoverName = document.createElement("p");
+  previewCoverName.dataset.basketPreviewCoverName = "";
+  previewCover.append(previewCoverTitle, previewCoverName);
+  previewFrame.append(previewImage, previewCover);
+  const previewControls = document.createElement("div");
+  previewControls.className = "basket-preview-controls";
+  const previewPrevious = panelButton("Zurück", "preview-previous");
+  previewPrevious.dataset.basketPreviewPrevious = "";
+  previewPrevious.disabled = true;
+  const previewNext = panelButton("Weiter", "preview-next");
+  previewNext.dataset.basketPreviewNext = "";
+  previewNext.disabled = true;
+  previewControls.append(previewPrevious, previewNext);
+  preview.append(previewHeading, previewPage, previewFrame, previewControls);
   const clear = panelButton("Leeren", "clear");
   clear.dataset.basketClear = "";
   const printAction = panelButton("Alles drucken", "print");
@@ -276,7 +486,7 @@ function createDialog() {
   note.id = "basket-print-unavailable";
   note.textContent = "Alles drucken ist noch nicht verfügbar.";
   note.className = "basket-dialog-note";
-  node.append(header, count, list, empty, clear, printAction, zipPrepare, zipCancel, zipLink, zipStatus, note);
+  node.append(header, count, list, empty, coverControls, previewOpen, preview, clear, printAction, zipPrepare, zipCancel, zipLink, zipStatus, note);
   document.body.append(node);
 
   node.addEventListener("click", (event) => {
@@ -285,6 +495,9 @@ function createDialog() {
     const action = button.dataset.basketAction;
     const id = button.dataset.basketId;
     if (action === "close") return node.close();
+    if (action === "preview") { openPreview(); return; }
+    if (action === "preview-previous") { movePreview(-1); return; }
+    if (action === "preview-next") { movePreview(1); return; }
     if (action === "prepare-zip") { void prepareZip(); return; }
     if (action === "cancel-zip") {
       resetZip();
@@ -292,7 +505,10 @@ function createDialog() {
       return;
     }
     if (action === "clear") {
-      if (basket.ids.length) commitBasket(clearBasket(), "Drucksammlung geleert.");
+      if (basket.ids.length || bookCover.enabled) {
+        bookCover = createBookCoverState();
+        commitBasket(clearBasket(), "Drucksammlung geleert.");
+      }
       return;
     }
     if (!basket.ids.includes(id)) return;
@@ -303,6 +519,43 @@ function createDialog() {
     }
     if (next) commitBasket(next, action === "remove" ? "Malvorlage entfernt." : "Reihenfolge geändert.", action, id);
   });
+  node.addEventListener("change", (event) => {
+    const control = event.target;
+    if (!control?.dataset || !Object.hasOwn(control.dataset, "basketCoverToggle")) return;
+    try {
+      bookCover = setBookCoverEnabled(bookCover, Boolean(control.checked), basket.ids, catalog);
+      resetZip();
+      resetPreview();
+      syncSummary();
+      renderDialog();
+      announce(bookCover.enabled ? "Deckblatt hinzugefügt." : "Deckblatt entfernt.");
+    } catch (error) {
+      control.checked = bookCover.enabled;
+      announce(
+        basket.ids.length === 0
+          ? "Wähle zuerst mindestens eine Druckseite aus."
+          : "Maximal 5 A4-Druckseiten. Für ein Deckblatt muss zuerst eine Druckseite entfernt werden."
+      );
+    }
+  });
+  node.addEventListener("input", (event) => {
+    const control = event.target;
+    if (!control?.dataset) return;
+    if (Object.hasOwn(control.dataset, "basketCoverTitle")) {
+      bookCover = updateBookCoverText(bookCover, { title: control.value });
+    } else if (Object.hasOwn(control.dataset, "basketCoverName")) {
+      bookCover = updateBookCoverText(bookCover, { name: control.value });
+    } else {
+      return;
+    }
+    try {
+      refreshOpenPreview();
+    } catch {
+      resetPreview();
+      announce("Die Vorschau konnte nicht aktualisiert werden. Bitte neu öffnen.");
+    }
+  });
+  node.addEventListener("close", () => { resetPreview(); });
   node.addEventListener("close", () => { resetZip(); summary?.focus(); });
   return node;
 }
@@ -348,15 +601,37 @@ function renderDialog() {
     fragment.append(row);
   }
   dialog.querySelector("[data-basket-items]").replaceChildren(fragment);
-  dialog.querySelector("[data-basket-dialog-count]").textContent =
-    basket.sheetCount + "/5 Druckseiten ausgewählt (maximal 5).";
+  const total = bookSheetCount();
+  dialog.querySelector("[data-basket-dialog-count]").textContent = bookCover.enabled
+    ? total + "/5 Druckseiten ausgewählt (1 Deckblatt + " + basket.sheetCount + " " +
+      (basket.sheetCount === 1 ? "Ausmalseite)." : "Ausmalseiten).")
+    : total + "/5 Druckseiten ausgewählt (maximal 5).";
   dialog.querySelector("[data-basket-empty]").hidden = basket.ids.length !== 0;
   dialog.querySelector("[data-basket-clear]").disabled = basket.ids.length === 0;
-  dialog.querySelector("[data-basket-zip-prepare]").disabled = basket.ids.length === 0 || zipBusy;
+  const coverToggle = dialog.querySelector("[data-basket-cover-toggle]");
+  const coverTitle = dialog.querySelector("[data-basket-cover-title]");
+  const coverName = dialog.querySelector("[data-basket-cover-name]");
+  if (coverToggle) coverToggle.checked = bookCover.enabled;
+  if (coverTitle) {
+    coverTitle.value = bookCover.title;
+    coverTitle.disabled = !bookCover.enabled;
+  }
+  if (coverName) {
+    coverName.value = bookCover.name;
+    coverName.disabled = !bookCover.enabled;
+  }
+  const zipPrepare = dialog.querySelector("[data-basket-zip-prepare]");
+  zipPrepare.disabled = basket.ids.length === 0 || zipBusy || bookCover.enabled;
+  const zipStatus = dialog.querySelector("[data-basket-zip-status]");
+  if (bookCover.enabled && !zipBusy) {
+    zipStatus.textContent = "ZIP mit Deckblatt ist noch nicht verfügbar.";
+  }
+  dialog.querySelector("[data-basket-preview-open]").disabled = basket.ids.length === 0;
 }
 
 function setUnavailable(message) {
   resetZip();
+  resetPreview();
   if (summary) {
     summary.disabled = true;
     summary.classList.add("is-unavailable");
@@ -378,6 +653,7 @@ function commitBasket(next, message, action = null, id = null) {
     return false;
   }
   resetZip();
+  resetPreview();
   basket = next;
   syncSummary();
   syncButtons();
@@ -414,9 +690,22 @@ function handleToggle(button) {
     return;
   }
 
-  const message = selected
+  if (!selected && bookCover.enabled) {
+    try {
+      setBookCoverEnabled(bookCover, true, next.ids, catalog);
+    } catch {
+      announce("Maximal 5 A4-Druckseiten. Diese Malvorlage passt mit Deckblatt nicht mehr in deine Auswahl.");
+      return;
+    }
+  }
+
+  let message = selected
     ? entry.title + " wurde aus der Drucksammlung entfernt."
     : entry.title + " wurde zur Drucksammlung hinzugefügt.";
+  if (selected && bookCover.enabled && next.ids.length === 0) {
+    bookCover = setBookCoverEnabled(bookCover, false, next.ids, catalog);
+    message += " Das Deckblatt wurde ebenfalls entfernt.";
+  }
   commitBasket(next, message);
 }
 

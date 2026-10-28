@@ -52,10 +52,13 @@ function sample(ids = []) {
     if (id) button.dataset.basketId = id;
     return button;
   }
+  const bookCover = { enabled: false, title: "Mein Ausmalbuch", name: "" };
   let prints = 0;
   const dialog = vm.runInNewContext(
     source.slice(start, end) + "\nconst dialog = createDialog(); renderDialog(); dialog;",
     { document, panelButton, basket, catalogById: new Map([[entry.id, entry]]),
+      bookCover,
+      bookSheetCount: () => basket.sheetCount + (bookCover.enabled ? 1 : 0),
       window: { print() { prints++; } }, zipBusy: false },
   );
   assert.equal(appended.length, 1);
@@ -94,4 +97,91 @@ test("the basket UI has no print trigger or print-session wiring", () => {
     !line.trimStart().startsWith("//")).join("\n");
   assert.equal(liveCode.includes("window.print("), false);
   assert.equal(liveCode.includes("stageCurrentBasketPrintSession("), false);
+});
+
+
+const zipStart = source.indexOf("function resetZip() {");
+const zipEnd = source.indexOf("\nfunction createDialog() {", zipStart);
+if (zipStart < 0 || zipEnd <= zipStart) throw new Error("ZIP UI source unavailable");
+
+function zipScenario({ driftDuringFetch = false, failInsert = false } = {}) {
+  const id = "0000001";
+  const page = { activityId: id, pageIndex: 1, printUrl: "/media/0000001/print.png" };
+  let stored = [id], allocations = 0, disposals = 0;
+  const prepare = { disabled: false };
+  const cancel = { disabled: true };
+  const message = { textContent: "" };
+  const slot = {
+    children: [],
+    replaceChildren(...nodes) {
+      if (failInsert && nodes.length) throw new Error("DOM insertion failed");
+      this.children = nodes;
+    },
+  };
+  const controls = {
+    "[data-basket-zip-prepare]": prepare,
+    "[data-basket-zip-cancel]": cancel,
+    "[data-basket-zip-status]": message,
+    "[data-basket-zip-link]": slot,
+  };
+  const dialog = { open: true, querySelector: selector => controls[selector] || null };
+  const context = {
+    dialog, basket: { ids: [id], pages: [page], sheetCount: 1 },
+    bookCover: { enabled: false, title: "Mein Ausmalbuch", name: "" },
+    window: { location: { origin: "https://ausmalwiese.de" } },
+    readStoredBasketIds: () => [...stored],
+    fetch: async () => ({ ok: true, redirected: false, json: async () => [] }),
+    expandBasketForExport: () => [page],
+    prepareBasketPngZip: async () => {
+      if (driftDuringFetch) stored = ["0000002"];
+      return { bytes: new Uint8Array([1]) };
+    },
+    stageBasketZipDownloadLink: () => {
+      allocations++;
+      return {
+        link: { className: "", remove() {} },
+        dispose() { disposals++; },
+      };
+    },
+    AbortController,
+    zipEpoch: 0, zipController: null, zipBusy: false, stagedZip: null,
+  };
+  vm.runInNewContext(
+    source.slice(zipStart, zipEnd) + "\nthis.runZip = prepareZip;",
+    context,
+  );
+  return {
+    run: () => context.runZip(), message, slot, prepare, cancel,
+    get allocations() { return allocations; },
+    get disposals() { return disposals; },
+  };
+}
+
+test("ZIP link appears for a stable completed selection", async () => {
+  const caseZip = zipScenario();
+  await caseZip.run();
+  assert.equal(caseZip.allocations, 1);
+  assert.equal(caseZip.disposals, 0);
+  assert.equal(caseZip.slot.children.length, 1);
+  assert.match(caseZip.message.textContent, /ZIP bereit/);
+  assert.equal(caseZip.cancel.disabled, true);
+  assert.equal(caseZip.prepare.disabled, false);
+});
+
+test("ZIP link is withheld if tab selection changes while PNGs load", async () => {
+  const caseZip = zipScenario({ driftDuringFetch: true });
+  await caseZip.run();
+  assert.equal(caseZip.allocations, 0);
+  assert.equal(caseZip.disposals, 0);
+  assert.equal(caseZip.slot.children.length, 0);
+  assert.match(caseZip.message.textContent, /konnte nicht vorbereitet/);
+});
+
+test("ZIP Blob URL is disposed if final DOM attachment fails", async () => {
+  const caseZip = zipScenario({ failInsert: true });
+  await caseZip.run();
+  assert.equal(caseZip.allocations, 1);
+  assert.equal(caseZip.disposals, 1);
+  assert.equal(caseZip.slot.children.length, 0);
+  assert.match(caseZip.message.textContent, /konnte nicht vorbereitet/);
 });

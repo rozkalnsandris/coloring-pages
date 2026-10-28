@@ -9,6 +9,80 @@ a claim of German legal compliance.
 
 **Update (2026-10-25):** Owner merged design PR #377 as `main=1cb3b0e67d20c6851592817ea5973992b9dbf707`, then explicitly closed #368 (`not_planned`) in favor of this **planned** GoatCounter direction. No GoatCounter service is installed or deployed; the existing LIVE Cloudflare-backed frontend is not replaced. The actual LIVE transition date is unset.
 
+## Canonical RPi5 proof and installation handoff (2026-10-27)
+
+**Do not reinstall or rerun the runtime proof merely because the separate
+GitHub-hosted amd64 candidate failed.** The canonical RPi5 evidence is in
+[`RPi5_main/docs/AUSMALWIESE_GOATCOUNTER_PAGEVIEW_V1.md`](https://github.com/rozkalnsandris/RPi5_main/blob/5af7a956a60ca4d0dbee0c3eb95cff03a48ab29c/docs/AUSMALWIESE_GOATCOUNTER_PAGEVIEW_V1.md)
+and the detailed
+[`AUSMALWIESE_GOATCOUNTER_ISOLATED_PROOF_V2.md`](https://github.com/rozkalnsandris/RPi5_main/blob/5af7a956a60ca4d0dbee0c3eb95cff03a48ab29c/docs/AUSMALWIESE_GOATCOUNTER_ISOLATED_PROOF_V2.md).
+The RPi5 documentation records an owner-authorized pinned **arm64**
+v2.7.0 synthetic run at source
+`4f2bd81ddc521dbb6f86df17cdb060c088a64f95` with
+`GOATCOUNTER_ISOLATED=PASS_SYNTHETIC_GOATCOUNTER_RUNTIME_ONLY_NOT_LIVE_OR_LEGAL_PROOF`.
+That is a **synthetic runtime gate only**, not evidence that a production
+GoatCounter service, database, adapter, credentials, or public ingress
+have been installed.
+
+This repository's manual-only **amd64** GitHub-hosted
+[`goatcounter-isolated-v27.yml`](../.github/workflows/goatcounter-isolated-v27.yml)
+is an independent candidate and has **not** passed. Its first four
+isolated runs are
+[`#40534984806`](https://github.com/rozkalnsandris/coloring-pages/actions/runs/40534984806),
+[`#40537720170`](https://github.com/rozkalnsandris/coloring-pages/actions/runs/40537720170),
+[`#40540976880`](https://github.com/rozkalnsandris/coloring-pages/actions/runs/40540976880)
+and [`#40550616342`](https://github.com/rozkalnsandris/coloring-pages/actions/runs/40550616342).
+The last reported `SERVER_UNCLEAN_EXIT`, which may mask an earlier
+readiness/count failure because this candidate's `finally` block
+raises its own shutdown exception. Do not infer a GoatCounter
+installation failure, an upstream shutdown defect or an RPi5 runtime
+regression from this separate failing candidate.
+
+**Reviewed installation order, not an installation authorization:**
+
+1. Use the canonical, merged
+   [RPi5 compatibility preflight contract](https://github.com/rozkalnsandris/RPi5_main/blob/5af7a956a60ca4d0dbee0c3eb95cff03a48ab29c/docs/AUSMALWIESE_GOATCOUNTER_COMPATIBILITY_PREFLIGHT_V1.md)
+   (source merge `5af7a956a60ca4d0dbee0c3eb95cff03a48ab29c`).
+   Its one **read-only** execution on `rpi5` needs its own exact
+   owner authorization and host evidence; the mere presence of source
+   and a prior chat command do not establish a PASS.
+2. Reconcile the exact two future service identities
+   `ausmalwiese-goatcounter` and `ausmalwiese-pageview`, the
+   private executable root
+   `/usr/local/libexec/ausmalwiese-goatcounter-v1`, SQLite root
+   `/var/lib/ausmalwiese-goatcounter`, credential root
+   `/etc/ausmalwiese-goatcounter`, expected catalog path and
+   free loopback ports `9194` (GoatCounter) and `9193` (adapter).
+   The preflight is non-mutating and detects conflicts before an
+   installer is designed.
+3. Independently review the exact German GDPR/TDDDG basis, Cloudflare
+   and ingress/proxy logs, retention/backup policy, and visitor-data
+   boundaries. A synthetic PASS does not resolve those questions.
+4. Only then review a **separate bounded RPi5 installation/source
+   change** and obtain a fresh exact owner LIVE authorization before
+   creating users/directories, installing the verified arm64 binary,
+   provisioning the private SQLite database and count-only systemd
+   credential, or installing/enabling the two tracked units
+   [`ausmalwiese-goatcounter.service`](https://github.com/rozkalnsandris/RPi5_main/blob/5af7a956a60ca4d0dbee0c3eb95cff03a48ab29c/ops/systemd/ausmalwiese-goatcounter.service)
+   and
+   [`ausmalwiese-goatcounter-pageview.service`](https://github.com/rozkalnsandris/RPi5_main/blob/5af7a956a60ca4d0dbee0c3eb95cff03a48ab29c/ops/systemd/ausmalwiese-goatcounter-pageview.service).
+   Both units and their loopback-only hardening are currently source
+   definitions, **not installation receipts**.
+5. Verify separately authorized private service health and exact
+   count-only functionality before a separately owner-authorized
+   **path-only** Cloudflare ingress change for `/api/pageview`.
+   Do not expose `9194`, publish a token to the browser, activate
+   pageview emission, or merge [PR #391](https://github.com/rozkalnsandris/coloring-pages/pull/391)
+   while its `MERGE HOLD` and remaining gates apply.
+
+Official [GoatCounter v2.7.0 README](https://github.com/arp242/goatcounter/blob/v2.7.0/README.md)
+documents self-hosted binary/Docker, SQLite and `serve`; pinned
+[`serve.go`](https://github.com/arp242/goatcounter/blob/v2.7.0/cmd/goatcounter/serve.go)
+supports `-db`, `-listen`, `-tls=http`, `-store-every` and
+`-automigrate`. These upstream commands explain the eventual service
+design; they are not permission to run a generic installer or migrate
+production data now. GitHub does not independently prove LIVE state.
+
 ## Recorded owner architecture choice and safety boundary
 
 - [Issue #368](https://github.com/rozkalnsandris/coloring-pages/issues/368) was closed on 2026-10-25 as **not planned / superseded**, after explicit owner direction to move the **future** Traffic architecture from Cloudflare-only to first-party, RPi5-hosted GoatCounter pageview counting. This does **not** complete #368's original Cloudflare-only acceptance criteria.
@@ -457,6 +531,127 @@ a signed reproducible-build attestation. GitHub reports this release as
 `immutable=false`; the pinned digest therefore acts as a fail-closed snapshot:
 a later asset replacement will be rejected rather than silently trusted.
 
+## Opt-in GitHub-hosted synthetic runtime gate — manual-only, not yet passing
+
+The manual-only workflow
+[goatcounter-isolated-v27.yml](../.github/workflows/goatcounter-isolated-v27.yml)
+is a proposed GitHub Actions path for testing the already-pinned v2.7.0
+Linux amd64 archive without RPi5 access. It downloads the upstream release
+asset on an ephemeral GitHub-hosted runner, verifies its exact byte size and
+pinned SHA-256, then mounts that input and only the two probe scripts read-only
+inside a non-root Docker container with \`--network none\`, read-only root
+filesystem, a limited writable temporary directory, dropped capabilities,
+no new privileges and bounded CPU, RAM and process count. The container
+runs the real synthetic two-event probe. No credentials, user analytics
+data, application deployment, external network route or RPi5 mounts are
+passed into that container. No test artifacts or database copies are uploaded.
+
+It is **workflow_dispatch only** (no push/PR execution); the workflow must
+first be reviewed and independently authorized for merge before it can be
+manually invoked from the default branch. Its Python base image currently
+uses the versioned \`python:3.12.16-slim-bookworm\` tag, **not an immutable image
+digest**, which is a residual supply-chain review item. The GoatCounter
+archive itself is pinned by exact bytes and SHA-256 in the workflow and
+runtime harness. A successful source unit test cannot be substituted for
+a real workflow-run receipt. Two manual executions have now failed;
+even a future synthetic PASS will not establish production ingress/proxy
+logs, backups, retention, privacy law compliance or LIVE authorization.
+
+## First manual GitHub synthetic run: fail-closed before counting (2026-10-27)
+
+[Workflow run #40534984806](https://github.com/rozkalnsandris/coloring-pages/actions/runs/40534984806)
+checked out `main@10264242ebd635a956bea18a1754d031abe25ebf`
+and passed the pinned official amd64 release archive byte-size/SHA-256 gate.
+The isolated container then returned
+`GOATCOUNTER_ISOLATED=STOP CODE=VERSION_READ_FAILED` before
+creating the synthetic site or sending any count event. The original
+probe intentionally suppresses subprocess stderr and emits only a
+fixed non-sensitive error code, so this receipt alone cannot prove
+the precise OS error.
+
+The reviewed narrow remediation is to explicitly set
+`--tmpfs /tmp:rw,exec,nosuid,nodev,size=192m,mode=1777`.
+The probe extracts and executes the verified binary from a private
+directory under `/tmp`; Docker's default tmpfs behavior can include
+`noexec`, producing a subprocess launch failure indistinguishable
+under the old `VERSION_READ_FAILED` code. Docker documents `exec`
+as the necessary explicit mount option. The change keeps the
+existing `--network none`, `--read-only`, non-root user,
+`--cap-drop ALL`, `no-new-privileges`, bounded tmpfs,
+CPU/memory/process limits and read-only input mounts. It does not
+authorize installing or executing GoatCounter on RPi5 or changing
+any LIVE state.
+
+This is a source-level correction, **not** an observed PASS or a
+permission to rerun. Any future attempt requires a separate exact
+operator/owner gate; record actual step results and fail closed
+on another error. Current PR #391 stays under `MERGE HOLD`.
+
+## Second manual GitHub synthetic run: fixed setup-stage diagnostics (2026-10-27)
+
+[Workflow run #40537720170](https://github.com/rozkalnsandris/coloring-pages/actions/runs/40537720170)
+on `main@57bcad72b88237c1317f160d67b18644b77ba062` again
+passed the exact official v2.7.0 Linux amd64 archive size and digest
+checks. The Docker container then produced
+`GOATCOUNTER_ISOLATED=STOP CODE=BINARY_COMMAND_REJECTED`.
+The `exec` tmpfs adjustment allowed the pinned version/profile check
+to complete, but this error was shared by **three distinct**
+setup commands: `db newdb`, `db create site` and
+`db create apitoken`. No synthetic hit was sent and no runtime
+privacy verification passed.
+
+A bounded **source-only diagnostic correction** adds these fixed,
+non-sensitive stage-specific outcomes:
+`DB_NEWDB_REJECTED`, `DB_SITE_CREATE_REJECTED`,
+`DB_TOKEN_CREATE_REJECTED`, or corresponding `*_LAUNCH_ERROR`
+codes for OS/timeout failures. It validates the stage against an
+allowlist before starting the subprocess. Child stdout and stderr
+remain discarded; no command arguments, credentials or database
+contents are logged. Disconnected tests cover all three stages and
+the no-leak / fail-closed cases. GoatCounter's upstream
+[v2.7.0 db command documentation](https://github.com/arp242/goatcounter/blob/v2.7.0/cmd/goatcounter/db.go)
+defines the relevant commands and flags, but the second run's
+redacted error alone cannot determine which one failed.
+
+This diagnostic change neither corrects an unknown upstream
+setup failure nor establishes a synthetic PASS. A new manual test
+would require a separate exact owner authorization. The separate
+Docker Python base-image digest pinning, proxy/log retention, and
+RPi5/LIVE approval gates remain outstanding. PR #391 remains on
+`MERGE HOLD`.
+
+## Third manual GitHub synthetic run: token user lookup rejected (2026-10-27)
+
+[Run #40540976880](https://github.com/rozkalnsandris/coloring-pages/actions/runs/40540976880)
+on `main@a64f4d756c553f00d0a05218a015ceaa21bdb5f6`
+passed the pinned v2.7.0 release archive digest/size, version/profile,
+database and site creation, then stopped at
+`GOATCOUNTER_ISOLATED=STOP CODE=DB_TOKEN_CREATE_REJECTED`.
+No synthetic pageview was sent.
+
+The v2.7.0 upstream `cmdDBAPITokenCreate()` calls `user.Find()`,
+which accepts a numeric user ID or the `site,email` form. A bare
+email is interpreted as a site identifier, so our original
+`-user=goatcounter-probe@example.com` is invalid. See upstream
+[`cmd/goatcounter/db.go`](https://github.com/arp242/goatcounter/blob/v2.7.0/cmd/goatcounter/db.go)
+and [`user.go`](https://github.com/arp242/goatcounter/blob/v2.7.0/user.go).
+
+This source-only correction reads the real synthetic user ID from
+the disposable SQLite database in read-only mode, requiring exactly
+one positive integer for the expected email **and** site cname.
+Only then does the existing token creation command use
+`-user=<numeric ID>`; it does not assume that the ID is 1.
+On missing, mismatched, ambiguous or malformed identity it stops
+without printing IDs, secrets, SQLite rows, command arguments or
+stderr. Disconnected tests cover successful lookup, CLI args,
+ambiguous/missing/wrong identities and read errors.
+
+Source CI is **not** a GoatCounter runtime PASS. Any future
+`workflow_dispatch` requires a separate owner action. The
+Python container's unpinned image digest and all legal, privacy,
+RPi5 and LIVE gates remain outstanding. PR #391 is still on
+`MERGE HOLD`.
+
 ## Runnable isolated GoatCounter v2.7.0 runtime check — opt-in, not run yet
 
 Source-only harness:
@@ -523,8 +718,10 @@ requires it and the expected final v2.7 migration marker
 names. The earlier synthetic-only fixture had omitted this table and
 could never have passed against a real unmodified v2.7 SQLite schema.
 
-**Remaining release blockers:** This harness has **not yet been run
-with an actual GoatCounter binary**. Even a future synthetic PASS is
+**Remaining release blockers:** This separate GitHub-hosted amd64 harness
+has run with a real binary but has **not yet passed**. The pinned arm64
+RPi5 synthetic v2 proof has independently passed; neither is a production
+installation, ingress/privacy compliance or LIVE readiness receipt. Even a future synthetic PASS is
 not a full audit of startup/error/access logs, unusual/malicious
 bot-shaped events, dynamic proxies, SQLite free pages, backups,
 real-user HTTP processing, site permissions or German GDPR/TDDDG
