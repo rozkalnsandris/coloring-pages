@@ -31,6 +31,7 @@ class BasketSelectionJavaScriptTests(unittest.TestCase):
                 "tests/test_book_cover_png_decoded_verify_199.mjs",
                 "tests/test_book_cover_font_preflight_199.mjs",
                 "tests/test_book_cover_text_layout_199.mjs",
+                "tests/test_book_cover_canvas_render_199.mjs",
                 "tests/test_book_preview_plan_199.mjs",
                 "tests/test_book_preview_navigation_199.mjs",
                 "tests/test_book_preview_labels_199.mjs",
