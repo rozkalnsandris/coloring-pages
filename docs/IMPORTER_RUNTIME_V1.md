@@ -74,3 +74,35 @@ The importer runtime itself requires Docker only.
 A future Chat-to-Drive transport operator additionally uses host-managed rclone under the trusted `RPi5_main` boundary. Its Drive credentials are not part of this repository and must never be committed or emitted.
 
 Do not install host Python/Pillow merely to run the importer.
+
+## Canonical ADMIN taxonomy integration (issue #427)
+
+The immutable image now includes `metadata/categories.json` and
+`metadata/topics.json` under `/usr/local/share/coloring-pages/` for the
+networkless importer. It also serves the *same* source registries as
+`https://ausmalwiese.de/categories.json` and
+`https://ausmalwiese.de/topics.json`, revalidating via
+`Cache-Control: no-cache`. No separate taxonomy backend is deployed.
+
+The existing `--category` is mandatory. Optional
+`--topic <id>` selects exactly one registered public topic; its ID must
+match the pinned image-local registry and its kind must agree with the
+category (seasonal → `jahreszeiten`; evergreen → another category).
+Unknown, duplicate or malformed topic registry entries, invalid IDs or
+mismatched topic/category combinations fail before publication writes.
+When selected, one activity catalogue record gets
+`"topics": ["<exact-id>"]`, including multi-page activities.
+No topic is inferred from title, filenames, legacy keywords or characters.
+Without `--topic`, the old importer behavior remains unchanged, and
+existing catalogue records are preserved as-is.
+
+**Owner gates:** this is application source only; a reviewed
+`MERGE coloring-pages #<PR> HEAD=<sha>` is required before an approved
+app-image-input change may trigger the narrowly scoped SIMPLE-DEPLOY
+flow. The ready source-only `RPi5_main#1277` ADMIN change requires a
+**separate** RPi5 reviewed importer-image repin and ADMIN backend
+installation authorization after the public application's exact deployed
+registry and pinned importer have been verified. Until compatible
+preconditions are proven, ADMIN must fail closed. No source-only PR,
+merge, Docker build or documentation implies content publication or
+other host/network/settings/permission authority.

@@ -1,6 +1,8 @@
 import importlib.machinery
 import importlib.util
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -135,6 +137,75 @@ class ImportPageTests(unittest.TestCase):
             [item["id"] for item in catalog],
             [entry["id"], "z-old", "a-older"],
         )
+
+    def test_explicit_topic_persists_without_changing_legacy_entries(self):
+        existing = [{"id": "previous-001", "title": "Original", "category": "tiere"}]
+        (self.content / "public/catalog.json").write_text(
+            json.dumps(existing) + "\n", encoding="utf-8"
+        )
+        metadata = self.metadata(category="jahreszeiten", topic="weihnachten")
+        entry = importer.import_page(self.source, self.content, metadata)
+        self.assertEqual(entry["topics"], ["weihnachten"])
+        catalog = json.loads((self.content / "public/catalog.json").read_text())
+        self.assertEqual(catalog[0]["topics"], ["weihnachten"])
+        self.assertEqual(catalog[1], existing[0])
+
+    def test_optional_topic_is_not_synthesized_for_legacy_import(self):
+        entry = importer.import_page(self.source, self.content, self.metadata())
+        self.assertNotIn("topics", entry)
+
+    def test_unknown_topic_rejected_before_content_writes(self):
+        before = (self.content / "public/catalog.json").read_bytes()
+        with self.assertRaisesRegex(importer.ImportError, "canonical topic registry"):
+            importer.import_page(self.source, self.content, self.metadata(topic="not-registered"))
+        self.assertEqual((self.content / "public/catalog.json").read_bytes(), before)
+        self.assertFalse((self.content / "originals/fire-pup-001").exists())
+        self.assertFalse((self.content / "public/media/fire-pup-001").exists())
+
+    def test_topic_category_kind_and_invalid_selection_rejected(self):
+        for topic, category in [
+            ("weihnachten", "tiere"),
+            ("obst", "jahreszeiten"),
+            ("", "jahreszeiten"),
+            ("../../etc", "jahreszeiten"),
+        ]:
+            with self.subTest(topic=topic, category=category):
+                with self.assertRaises(importer.ImportError):
+                    importer.import_page(self.source, self.content, self.metadata(category=category, topic=topic))
+                self.assertFalse((self.content / "originals/fire-pup-001").exists())
+        self.assertEqual((self.content / "public/catalog.json").read_text(), "[]\n")
+
+    def test_topics_registry_validation_fail_closed_before_writes(self):
+        from unittest.mock import patch
+        path = self.root / "topics.json"
+        original = json.loads((ROOT / "metadata/topics.json").read_text(encoding="utf-8"))
+        with patch.object(importer, "topic_registry_path", return_value=path):
+            for invalid in [
+                {"schema": "wrong", "topics": original["topics"]},
+                {"schema": original["schema"], "topics": [original["topics"][0]] * 2},
+                {"schema": original["schema"], "topics": [{"id": "test", "label": "Test", "kind": "broken"}]},
+            ]:
+                with self.subTest(invalid=invalid):
+                    path.write_text(json.dumps(invalid), encoding="utf-8")
+                    with self.assertRaises(importer.ImportError):
+                        importer.import_page(
+                            self.source, self.content,
+                            self.metadata(category="jahreszeiten", topic="weihnachten")
+                        )
+        self.assertEqual((self.content / "public/catalog.json").read_text(), "[]\n")
+        self.assertFalse((self.content / "originals/fire-pup-001").exists())
+
+    def test_cli_accepts_exact_topic_and_persists_it(self):
+        run = subprocess.run(
+            [sys.executable, str(MODULE_PATH), str(self.source),
+             "--content-root", str(self.content), "--id", "fire-pup-001",
+             "--category", "jahreszeiten", "--topic", "weihnachten"],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(run.returncode, 0, run.stderr)
+        self.assertIn("IMPORTED=fire-pup-001 PAGES=1", run.stdout)
+        catalog = json.loads((self.content / "public/catalog.json").read_text())
+        self.assertEqual(catalog[0]["topics"], ["weihnachten"])
 
     def test_unknown_category_rejected_before_publication(self):
         with self.assertRaisesRegex(importer.ImportError, "category must be one of"):
@@ -349,6 +420,16 @@ class ImportPageTests(unittest.TestCase):
         )
         self.assertEqual(entry["preview"], entry["pages"][0]["preview"])
         self.assertEqual(entry["print"], entry["pages"][0]["print"])
+
+    def test_multi_page_explicit_topic_is_one_activity_topic(self):
+        second = self.content / "inbox/fire-pup-001-2.png"
+        self.write_source(path=second)
+        entry = importer.import_activity(
+            [self.source, second], self.content,
+            self.metadata(category="jahreszeiten", topic="halloween"),
+        )
+        self.assertEqual(entry["topics"], ["halloween"])
+        self.assertEqual(len(entry["pages"]), 2)
 
     def test_multi_page_duplicate_source_is_rejected(self):
         with self.assertRaisesRegex(importer.ImportError, "listed more than once"):
