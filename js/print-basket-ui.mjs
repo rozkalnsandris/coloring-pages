@@ -6,6 +6,12 @@ import { createBookCoverState, setBookCoverEnabled, updateBookCoverText } from "
 import { buildBookPreviewPlan } from "./book-preview-plan.mjs";
 import { createBookPreviewCursor, moveBookPreviewCursor, setBookPreviewSheet } from "./book-preview-navigation.mjs";
 import { buildBookPreviewDisplay } from "./book-preview-media.mjs";
+import {
+  BOOK_COVER_BROWSER_RENDER_OPTIONS,
+  BOOK_OUTPUT_RELEASE,
+  planBookOutputControls,
+} from "./book-output-release-gate.mjs";
+import { prepareCurrentBookOutputSession } from "./book-output-session.mjs";
 
 const MAX_SHEETS = 5;
 const CARD_SELECTOR = ".coloring-card";
@@ -283,13 +289,26 @@ function resetZip() {
   const message = dialog?.querySelector("[data-basket-zip-status]");
   if (message) message.textContent = "";
   const prepare = dialog?.querySelector("[data-basket-zip-prepare]");
-  if (prepare) prepare.disabled = basket.ids.length === 0 || bookCover.enabled;
+  if (prepare) {
+    const controls = planBookOutputControls({
+      basketSheetCount: basket.sheetCount,
+      coverEnabled: bookCover.enabled,
+      busy: false,
+    });
+    prepare.disabled = !controls.zipEnabled;
+  }
   const cancel = dialog?.querySelector("[data-basket-zip-cancel]");
   if (cancel) cancel.disabled = true;
 }
 
 async function prepareZip() {
-  if (!dialog?.open || zipBusy || basket.ids.length === 0 || bookCover.enabled) return;
+  const initialControls = planBookOutputControls({
+    basketSheetCount: basket.sheetCount,
+    coverEnabled: bookCover.enabled,
+    busy: zipBusy,
+  });
+  if (!dialog?.open || !initialControls.zipEnabled) return;
+
   resetZip();
   const epoch = zipEpoch;
   const controller = new AbortController();
@@ -303,33 +322,65 @@ async function prepareZip() {
   message.textContent = "Druckseiten werden geprüft und als ZIP vorbereitet …";
 
   try {
-    const selectedIds = readStoredBasketIds();
-    if (JSON.stringify(selectedIds) !== JSON.stringify(basket.ids)) {
-      throw new Error("Selection changed in sessionStorage");
+    let staged;
+
+    if (bookCover.enabled) {
+      // This branch is unreachable while the canonical production release flag
+      // is false. Keep the full fresh-catalogue/session gate ready for a later
+      // separately reviewed release without changing the existing coverless path.
+      if (!BOOK_OUTPUT_RELEASE.coveredZip) {
+        throw new Error("Covered ZIP release gate is closed");
+      }
+      const session = await prepareCurrentBookOutputSession(
+        basket,
+        bookCover,
+        {
+          mode: "zip",
+          origin: window.location.origin,
+          signal: controller.signal,
+          coverRenderOptions: BOOK_COVER_BROWSER_RENDER_OPTIONS,
+        },
+      );
+      staged = session.resource;
+      if (epoch !== zipEpoch || controller.signal.aborted || !dialog.open) {
+        staged.dispose();
+        return;
+      }
+    } else {
+      const selectedIds = readStoredBasketIds();
+      if (JSON.stringify(selectedIds) !== JSON.stringify(basket.ids)) {
+        throw new Error("Selection changed in sessionStorage");
+      }
+      const response = await fetch("/catalog.json", {
+        cache: "no-store",
+        credentials: "omit",
+        redirect: "error",
+        signal: controller.signal,
+      });
+      if (!response.ok || response.redirected) {
+        throw new Error("Fresh catalogue unavailable");
+      }
+      const catalogFresh = await response.json();
+      const pages = expandBasketForExport(selectedIds, catalogFresh);
+      if (pages.length !== basket.sheetCount ||
+          pages.some((page, index) =>
+            page.activityId !== basket.pages[index]?.activityId ||
+            page.pageIndex !== basket.pages[index]?.pageIndex ||
+            page.printUrl !== basket.pages[index]?.printUrl)) {
+        throw new Error("Published selection changed; review before export");
+      }
+      const zip = await prepareBasketPngZip(pages, {
+        origin: window.location.origin,
+        signal: controller.signal,
+      });
+      if (epoch !== zipEpoch || controller.signal.aborted || !dialog.open) return;
+      if (JSON.stringify(readStoredBasketIds()) !== JSON.stringify(selectedIds) ||
+          JSON.stringify(basket.ids) !== JSON.stringify(selectedIds)) {
+        throw new Error("Selection changed during ZIP preparation");
+      }
+      staged = stageBasketZipDownloadLink(zip);
     }
-    const response = await fetch("/catalog.json", {
-      cache: "no-store", credentials: "omit", redirect: "error", signal: controller.signal,
-    });
-    if (!response.ok || response.redirected) throw new Error("Fresh catalogue unavailable");
-    const catalogFresh = await response.json();
-    const pages = expandBasketForExport(selectedIds, catalogFresh);
-    if (pages.length !== basket.sheetCount ||
-        pages.some((page, index) => page.activityId !== basket.pages[index]?.activityId ||
-          page.pageIndex !== basket.pages[index]?.pageIndex ||
-          page.printUrl !== basket.pages[index]?.printUrl)) {
-      throw new Error("Published selection changed; review before export");
-    }
-    const zip = await prepareBasketPngZip(pages, {
-      origin: window.location.origin, signal: controller.signal,
-    });
-    if (epoch !== zipEpoch || controller.signal.aborted || !dialog.open) return;
-    // Storage may change while the full-resolution PNGs are loading.
-    // Never expose a download link for a superseded selection.
-    if (JSON.stringify(readStoredBasketIds()) !== JSON.stringify(selectedIds) ||
-        JSON.stringify(basket.ids) !== JSON.stringify(selectedIds)) {
-      throw new Error("Selection changed during ZIP preparation");
-    }
-    const staged = stageBasketZipDownloadLink(zip);
+
     try {
       const slot = dialog.querySelector("[data-basket-zip-link]");
       if (!slot) throw new Error("ZIP destination missing");
@@ -337,7 +388,6 @@ async function prepareZip() {
       slot.replaceChildren(staged.link);
       stagedZip = staged;
     } catch (error) {
-      // Release the Blob URL even if the DOM rejects inserting the link.
       staged.dispose();
       throw error;
     }
@@ -350,7 +400,12 @@ async function prepareZip() {
     if (epoch === zipEpoch) {
       zipBusy = false;
       zipController = null;
-      prepare.disabled = basket.ids.length === 0 || bookCover.enabled;
+      const controls = planBookOutputControls({
+        basketSheetCount: basket.sheetCount,
+        coverEnabled: bookCover.enabled,
+        busy: false,
+      });
+      prepare.disabled = !controls.zipEnabled;
       cancel.disabled = true;
     }
   }
@@ -620,12 +675,15 @@ function renderDialog() {
     coverName.value = bookCover.name;
     coverName.disabled = !bookCover.enabled;
   }
+  const outputControls = planBookOutputControls({
+    basketSheetCount: basket.sheetCount,
+    coverEnabled: bookCover.enabled,
+    busy: zipBusy,
+  });
   const zipPrepare = dialog.querySelector("[data-basket-zip-prepare]");
-  zipPrepare.disabled = basket.ids.length === 0 || zipBusy || bookCover.enabled;
+  zipPrepare.disabled = !outputControls.zipEnabled;
   const zipStatus = dialog.querySelector("[data-basket-zip-status]");
-  if (bookCover.enabled && !zipBusy) {
-    zipStatus.textContent = "ZIP mit Deckblatt ist noch nicht verfügbar.";
-  }
+  if (!zipBusy) zipStatus.textContent = outputControls.zipStatus;
   dialog.querySelector("[data-basket-preview-open]").disabled = basket.ids.length === 0;
 }
 
