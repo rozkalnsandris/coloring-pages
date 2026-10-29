@@ -161,7 +161,7 @@ class PrintBasketUi206Tests(unittest.TestCase):
             'window.addEventListener("pagehide", resetZip);',
             'if (action === "cancel-zip")',
             'if (epoch !== zipEpoch || controller.signal.aborted || !dialog.open) return;',
-            'resetZip();\n  resetPreview();\n  basket = next;',
+            'resetZip();\n  resetPrint();\n  resetPreview();\n  basket = next;',
         ):
             self.assertIn(marker, source)
         self.assertNotIn("staged.link.click()", source)
