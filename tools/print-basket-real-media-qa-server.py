@@ -33,7 +33,7 @@ PRINT_PATH = re.compile(
 STATIC_PREFIXES = ("/js/", "/css/", "/assets/")
 QA_HTML = "/qa/"
 QA_MODULE = "/qa/harness.mjs"
-QA_RECEIPT_MODULE = "/qa/receipt.mjs"
+QA_RECEIPT_MODULE = "/qa/print-basket-real-media-qa-receipt.mjs"
 QA_CONTEXT = "/qa/context.json"
 
 
