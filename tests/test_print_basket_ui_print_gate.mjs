@@ -112,12 +112,134 @@ test("selection enables ZIP but never enables or triggers print before QA", () =
   assert.equal(state.prints, 0);
 });
 
-test("the basket UI still has no print trigger or print lifecycle wiring before QA", () => {
+test("production UI keeps direct print API absent and combined print behind release gate", () => {
   const liveCode = source.split("\n").filter(line =>
     !line.trimStart().startsWith("//")).join("\n");
-  assert.equal(liveCode.includes("window.print("), false);
+  assert.equal(liveCode.includes("window.print"), false);
   assert.equal(liveCode.includes("printStagedBasketDocumentOnce("), false);
-  assert.equal(liveCode.includes("stageCurrentBasketPrintSession("), false);
+  assert.equal(liveCode.includes('from "./print-basket-print-host.mjs"'), true);
+  assert.equal(liveCode.includes("printStagedDocumentInBasketHost(staged"), true);
+  assert.equal(liveCode.includes("!BOOK_OUTPUT_RELEASE.combinedPrint"), true);
+});
+
+
+const printStart = source.indexOf("function resetPrint() {");
+const printEnd = source.indexOf("\nfunction resetZip() {", printStart);
+if (printStart < 0 || printEnd <= printStart) throw new Error("Print UI source unavailable");
+
+function printScenario({ released = false, sessionFails = false, dialogOpen = true } = {}) {
+  const id = "0000001";
+  const action = { disabled: false };
+  const note = { textContent: "" };
+  const controls = {
+    "[data-basket-print]": action,
+    "#basket-print-unavailable": note,
+  };
+  const dialog = {
+    open: dialogOpen,
+    querySelector: selector => controls[selector] || null,
+  };
+  let sessions = 0, hosts = 0, disposals = 0, zipResets = 0;
+  const staged = {
+    disposed: false,
+    dispose() {
+      if (!this.disposed) disposals++;
+      this.disposed = true;
+    },
+  };
+  const context = {
+    dialog,
+    basket: {
+      ids: [id],
+      pages: [{ activityId: id, pageIndex: 1, pageCount: 1, printUrl: "/media/0000001/print.png" }],
+      sheetCount: 1,
+      droppedIds: [],
+    },
+    bookCover: { enabled: false, title: "Mein Ausmalbuch", name: "" },
+    window: { location: { origin: "https://ausmalwiese.de" } },
+    document: {},
+    planBookOutputControls: state => planControls(state, {
+      coveredZip: false,
+      combinedPrint: released,
+    }),
+    BOOK_OUTPUT_RELEASE: {
+      coveredZip: false,
+      combinedPrint: released,
+    },
+    BOOK_COVER_BROWSER_RENDER_OPTIONS: { strokeWidthPx: 20, lineGapPx: 120 },
+    prepareCurrentBookOutputSession: async () => {
+      sessions++;
+      if (sessionFails) throw new Error("session failed");
+      return { resource: staged };
+    },
+    printStagedDocumentInBasketHost: resource => {
+      hosts++;
+      assert.strictEqual(resource, staged);
+      staged.dispose();
+      return { sheetCount: 1, orientations: ["portrait"] };
+    },
+    resetZip() { zipResets++; },
+    AbortController,
+    zipBusy: false,
+    printController: null,
+    printBusy: false,
+    printEpoch: 0,
+  };
+
+  vm.runInNewContext(
+    source.slice(printStart, printEnd) + "\nthis.runPrint = preparePrint;",
+    context,
+  );
+
+  return {
+    run: () => context.runPrint(),
+    action,
+    note,
+    staged,
+    get sessions() { return sessions; },
+    get hosts() { return hosts; },
+    get disposals() { return disposals; },
+    get zipResets() { return zipResets; },
+  };
+}
+
+test("production combined-print gate cannot start session, host or print resource", async () => {
+  const value = printScenario({ released: false });
+  await value.run();
+  assert.equal(value.sessions, 0);
+  assert.equal(value.hosts, 0);
+  assert.equal(value.disposals, 0);
+  assert.equal(value.zipResets, 0);
+});
+
+test("hypothetical reviewed combined-print release uses fresh session then isolated host once", async () => {
+  const value = printScenario({ released: true });
+  await value.run();
+  assert.equal(value.sessions, 1);
+  assert.equal(value.hosts, 1);
+  assert.equal(value.disposals, 1);
+  assert.equal(value.zipResets, 1);
+  assert.equal(value.action.disabled, false);
+  assert.match(value.note.textContent, /Druckdialog geschlossen/);
+  assert.equal(value.staged.disposed, true);
+});
+
+test("print preparation failure never reaches host and restores the released action", async () => {
+  const value = printScenario({ released: true, sessionFails: true });
+  await value.run();
+  assert.equal(value.sessions, 1);
+  assert.equal(value.hosts, 0);
+  assert.equal(value.disposals, 0);
+  assert.equal(value.action.disabled, false);
+  assert.match(value.note.textContent, /konnte nicht vorbereitet/);
+});
+
+test("closed dialog cannot start combined print even under hypothetical release", async () => {
+  const value = printScenario({ released: true, dialogOpen: false });
+  await value.run();
+  assert.equal(value.sessions, 0);
+  assert.equal(value.hosts, 0);
+  assert.equal(value.zipResets, 0);
 });
 
 
