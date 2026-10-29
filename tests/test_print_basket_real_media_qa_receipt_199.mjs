@@ -141,6 +141,16 @@ test("privacy audit reports only booleans/counts and detects token in browser su
   });
   assert.equal(leaked.sessionStorageClear, false);
   assert.equal(privacyAuditPass(leaked), false);
+
+  const unavailable = auditQaPrivacySurfaces(["QA Name SECRET"], {
+    locationRef: { href: "http://127.0.0.1:8765/qa/" },
+    documentRef: { get cookie() { throw new Error("blocked"); } },
+    sessionStorageRef: null,
+    localStorageRef: null,
+    performanceRef: null,
+  });
+  assert.equal(unavailable.documentCookieClear, null);
+  assert.equal(privacyAuditPass(unavailable), false);
 });
 
 test("receipt excludes canary/title/name and stores only public request paths", () => {
