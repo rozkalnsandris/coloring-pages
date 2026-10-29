@@ -1,9 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { deflateSync } from "node:zlib";
-import { buildPrintPngZip } from "../js/print-zip-store.mjs";
+import { buildBookPrintPngZip, buildPrintPngZip } from "../js/print-zip-store.mjs";
 import {
-  BASKET_ZIP_FILENAME, stageBasketZipDownloadLink,
+  BASKET_ZIP_FILENAME,
+  BOOK_COVER_ZIP_MEMBER,
+  BOOK_ZIP_FILENAME,
+  stageBasketZipDownloadLink,
+  stageBookZipDownloadLink,
 } from "../js/print-basket-zip-link.mjs";
 
 function crc32(bytes) {
@@ -41,6 +45,19 @@ function png(width = 2480, height = 3508) {
   ]);
 }
 
+function coverPng() {
+  const base = png();
+  const body = Buffer.alloc(9);
+  body.writeUInt32BE(11811, 0);
+  body.writeUInt32BE(11811, 4);
+  body[8] = 1;
+  return Buffer.concat([
+    base.subarray(0, 33),
+    chunk("pHYs", body),
+    base.subarray(33),
+  ]);
+}
+
 const page = (id, pageIndex = 1, pageCount = 1) => ({
   activityId: id,
   pageIndex,
@@ -50,6 +67,11 @@ const page = (id, pageIndex = 1, pageCount = 1) => ({
 const pages = [page("0000001"), page("cut-2", 1, 2), page("cut-2", 2, 2)];
 const images = [png(), png(3508, 2480), png()];
 const zip = buildPrintPngZip(pages, pages.map((p, i) => ({ url: p.printUrl, bytes: images[i] })));
+const bookZip = buildBookPrintPngZip(
+  pages,
+  pages.map((p, i) => ({ url: p.printUrl, bytes: images[i] })),
+  coverPng(),
+);
 
 function fakeBrowser(overrides = {}) {
   const created = [], revoked = [], nodes = [];
@@ -185,4 +207,69 @@ test("byteOffset ZIP view retains exactly its logical bytes in the download Blob
   const staged = stageBasketZipDownloadLink({ ...zip, bytes: view }, browser);
   assert.deepEqual(Buffer.from(await browser.created[0].blob.arrayBuffer()), Buffer.from(zip.bytes));
   staged.dispose();
+});
+
+
+test("book ZIP stages one generic cover member with fixed privacy-safe download filename", async () => {
+  const browser = fakeBrowser();
+  const staged = stageBookZipDownloadLink(bookZip, browser);
+  assert.equal(BOOK_COVER_ZIP_MEMBER, "00-deckblatt.png");
+  assert.equal(staged.filename, BOOK_ZIP_FILENAME);
+  assert.equal(staged.link.download, "ausmalwiese-malbuch.zip");
+  assert.equal(staged.link.textContent, "Als ZIP speichern");
+  assert.equal(browser.clicks, 0);
+  assert.equal(browser.insertions, 0);
+  assert.equal(browser.created.length, 1);
+  const materialized = Buffer.from(await browser.created[0].blob.arrayBuffer());
+  assert.deepEqual(materialized, Buffer.from(bookZip.bytes));
+  staged.dispose();
+  assert.deepEqual(browser.revoked, [browser.created[0].url]);
+});
+
+test("basket helper rejects covered archive while book helper also accepts coverless archive", () => {
+  {
+    const browser = fakeBrowser();
+    assert.throws(
+      () => stageBasketZipDownloadLink(bookZip, browser),
+      /must not contain a book cover/,
+    );
+    assert.equal(browser.created.length, 0);
+    assert.equal(browser.nodes.length, 0);
+  }
+  {
+    const browser = fakeBrowser();
+    const staged = stageBookZipDownloadLink(zip, browser);
+    assert.equal(staged.filename, BOOK_ZIP_FILENAME);
+    assert.equal(browser.created.length, 1);
+    staged.dispose();
+  }
+});
+
+test("book helper rejects misplaced or repeated cover metadata before Blob allocation", () => {
+  const invalid = [
+    {
+      ...bookZip,
+      filenames: [
+        "01-0000001.png",
+        BOOK_COVER_ZIP_MEMBER,
+        "02-cut-2.png",
+        "03-cut-2.png",
+      ],
+    },
+    {
+      ...bookZip,
+      filenames: [
+        BOOK_COVER_ZIP_MEMBER,
+        BOOK_COVER_ZIP_MEMBER,
+        "01-cut-2.png",
+        "02-cut-2.png",
+      ],
+    },
+  ];
+  for (const candidate of invalid) {
+    const browser = fakeBrowser();
+    assert.throws(() => stageBookZipDownloadLink(candidate, browser));
+    assert.equal(browser.created.length, 0);
+    assert.equal(browser.nodes.length, 0);
+  }
 });
