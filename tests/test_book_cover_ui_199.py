@@ -28,10 +28,14 @@ class BookCoverUi199Tests(unittest.TestCase):
         self.assertIn("Maximal 5 A4-Druckseiten. Diese Malvorlage passt mit Deckblatt nicht mehr in deine Auswahl.", source)
         self.assertIn("Das Deckblatt zählt als eine von 5 A4-Druckseiten.", source)
 
-    def test_cover_zip_is_held_until_conformant_renderer(self):
+    def test_cover_zip_is_held_until_release_evidence(self):
         source = (ROOT / "js" / "print-basket-ui.mjs").read_text(encoding="utf-8")
-        self.assertIn("basket.ids.length === 0 || zipBusy || bookCover.enabled", source)
-        self.assertIn("ZIP mit Deckblatt ist noch nicht verfügbar.", source)
+        gate = (ROOT / "js" / "book-output-release-gate.mjs").read_text(encoding="utf-8")
+        self.assertIn('from "./book-output-release-gate.mjs"', source)
+        self.assertIn("planBookOutputControls", source)
+        self.assertIn("if (!BOOK_OUTPUT_RELEASE.coveredZip)", source)
+        self.assertIn("coveredZip: false", gate)
+        self.assertIn('zipStatus: coverEnabled && !flags.coveredZip', gate)
         self.assertIn('printAction.disabled = true;', source)
         self.assertNotIn("window.print(", source)
 
