@@ -32,6 +32,11 @@ collector route is added. Mirror error/access logging is disabled to prevent
 proxy errors from exposing the original request query. Ordinary origin logs
 remain a separate processing/release fact and are not silently changed.
 
+The real-Nginx probe caught that a trailing `?` on a static `proxy_pass` URI does
+not discard inherited query arguments. The candidate explicitly clears `$args`
+inside the internal subrequest after freezing the eligible ID. Exact-target and
+sentinel assertions guard against forwarding any original query.
+
 ## Deliberately conservative query grammar
 
 Only GET, 1–2048 query characters, one literal case-sensitive `id` and seven

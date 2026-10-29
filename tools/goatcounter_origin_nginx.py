@@ -40,6 +40,9 @@ LOCATIONS = '''
             error_log /dev/null crit;
             if ($origin_frozen_method != GET) { return 204; }
             if ($origin_frozen_id = "") { return 204; }
+            # Clear the subrequest args explicitly; a ? in static proxy_pass
+            # is a literal URI suffix and can still append inherited args.
+            set $args "";
             proxy_method POST;
             proxy_pass_request_headers off;
             proxy_pass_request_body off;
@@ -56,8 +59,7 @@ LOCATIONS = '''
             proxy_read_timeout 200ms;
             proxy_buffering off;
             proxy_max_temp_file_size 0;
-            # Trailing ? explicitly discards inherited mirror query arguments.
-            proxy_pass http://unix:/run/ausmalwiese-pageview/origin.sock:/internal/origin-count?;
+            proxy_pass http://unix:/run/ausmalwiese-pageview/origin.sock:/internal/origin-count;
         }
 '''
 
