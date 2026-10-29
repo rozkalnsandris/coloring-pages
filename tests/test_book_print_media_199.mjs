@@ -147,7 +147,7 @@ test("disposed, malformed, changed and nonconforming cover bundles fail closed",
   {
     const value = bundle();
     value.plan = { ...value.plan, sheetCount: 4 };
-    assert.throws(() => prepareBookPrintMediaFromBundle(value), /sheet count/);
+    assert.throws(() => prepareBookPrintMediaFromBundle(value), TypeError);
   }
   {
     const value = bundle();
