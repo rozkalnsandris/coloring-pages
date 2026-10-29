@@ -433,6 +433,11 @@ async function loadDetail() {
     detailRoot?.setAttribute("data-loaded-id",entry.id);
     loadedEntryId=entry.id;
     try {
+      window.AusmalPageviews?.track?.(entry.id);
+    } catch {
+      // GoatCounter pageview telemetry is optional and must never block rendering.
+    }
+    try {
       window.ColoringStats?.trackView?.(entry.id);
     } catch {
       // Optional view telemetry must never block the preview or A4 printing.
