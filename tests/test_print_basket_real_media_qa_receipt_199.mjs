@@ -8,6 +8,7 @@ import {
   captureQaEnvironment,
   createQaAuditedFetch,
   createQaPrivacyCanary,
+  prepareQaResourceTimingAudit,
   privacyAuditPass,
   stageQaReceiptDownload,
 } from "../tools/print-basket-real-media-qa-receipt.mjs";
@@ -120,7 +121,7 @@ test("privacy audit reports only booleans/counts and detects token in browser su
         ];
       },
     },
-    resourceStartIndex: 1,
+    resourceAudit: { startIndex: 1, requestedCapacity: 512 },
   });
   assert.equal(privacyAuditPass(clear), true);
   assert.deepEqual(clear, {
@@ -128,6 +129,7 @@ test("privacy audit reports only booleans/counts and detects token in browser su
     documentCookieClear: true,
     sessionStorageClear: true,
     localStorageClear: true,
+    resourceTimingPrepared: true,
     resourceUrlsClear: true,
     resourceEntryCount: 1,
   });
@@ -150,7 +152,58 @@ test("privacy audit reports only booleans/counts and detects token in browser su
     performanceRef: null,
   });
   assert.equal(unavailable.documentCookieClear, null);
+  assert.equal(unavailable.resourceTimingPrepared, false);
   assert.equal(privacyAuditPass(unavailable), false);
+});
+
+test("resource timing audit expands a full default buffer and detects later canary URLs", () => {
+  const resources = Array.from({ length: 250 }, (_, index) => ({
+    name: "http://127.0.0.1:8765/static/" + index,
+  }));
+  let requested = null;
+  const performanceRef = {
+    getEntriesByType(type) {
+      assert.equal(type, "resource");
+      return resources;
+    },
+    setResourceTimingBufferSize(value) {
+      requested = value;
+    },
+  };
+  const resourceAudit = prepareQaResourceTimingAudit(performanceRef);
+  assert.deepEqual(resourceAudit, { startIndex: 250, requestedCapacity: 512 });
+  assert.equal(requested, 512);
+
+  resources.push({ name: "http://127.0.0.1:8765/media/QA%20Name%20SECRET.png" });
+  const result = auditQaPrivacySurfaces(["QA Name SECRET"], {
+    locationRef: { href: "http://127.0.0.1:8765/qa/" },
+    documentRef: { cookie: "" },
+    sessionStorageRef: storage(),
+    localStorageRef: storage(),
+    performanceRef,
+    resourceAudit,
+  });
+  assert.equal(result.resourceTimingPrepared, true);
+  assert.equal(result.resourceUrlsClear, false);
+  assert.equal(privacyAuditPass(result), false);
+});
+
+test("resource timing audit fails closed when buffer expansion is unavailable", () => {
+  const performanceRef = {
+    getEntriesByType() { return []; },
+  };
+  assert.equal(prepareQaResourceTimingAudit(performanceRef), null);
+  const result = auditQaPrivacySurfaces(["QA Name SECRET"], {
+    locationRef: { href: "http://127.0.0.1:8765/qa/" },
+    documentRef: { cookie: "" },
+    sessionStorageRef: storage(),
+    localStorageRef: storage(),
+    performanceRef,
+    resourceAudit: null,
+  });
+  assert.equal(result.resourceTimingPrepared, false);
+  assert.equal(result.resourceUrlsClear, null);
+  assert.equal(privacyAuditPass(result), false);
 });
 
 test("receipt excludes canary/title/name and stores only public request paths", () => {
@@ -179,6 +232,7 @@ test("receipt excludes canary/title/name and stores only public request paths", 
       documentCookieClear: true,
       sessionStorageClear: true,
       localStorageClear: true,
+      resourceTimingPrepared: true,
       resourceUrlsClear: true,
       resourceEntryCount: 2,
     },

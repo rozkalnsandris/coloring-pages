@@ -13,6 +13,7 @@ import {
   captureQaEnvironment,
   createQaAuditedFetch,
   createQaPrivacyCanary,
+  prepareQaResourceTimingAudit,
   privacyAuditPass,
   stageQaReceiptDownload,
 } from "./print-basket-real-media-qa-receipt.mjs";
@@ -233,15 +234,6 @@ async function freshBasket(fetcher) {
   return { ids, basket: buildStagingBasket(ids, catalog) };
 }
 
-function resourceEntryCount() {
-  try {
-    const entries = performance.getEntriesByType("resource");
-    return Array.isArray(entries) ? entries.length : 0;
-  } catch {
-    return 0;
-  }
-}
-
 function setStatus(message) {
   document.querySelector("#qa-status").textContent = message;
 }
@@ -275,14 +267,14 @@ function publishReceipt(receipt) {
   document.querySelector("#qa-receipt-download").replaceChildren(activeReceipt.link);
 }
 
-function operationPrivacy(tokens, startIndex) {
+function operationPrivacy(tokens, resourceAudit) {
   return auditQaPrivacySurfaces(tokens, {
     locationRef: location,
     documentRef: document,
     sessionStorageRef: globalThis.sessionStorage,
     localStorageRef: globalThis.localStorage,
     performanceRef: globalThis.performance,
-    resourceStartIndex: startIndex,
+    resourceAudit,
   });
 }
 
@@ -295,7 +287,7 @@ async function validateSelection() {
   const cover = coverState();
   const tokens = cover.enabled ? [cover.title, cover.name].filter(Boolean) : [];
   const requestAudit = [];
-  const startIndex = resourceEntryCount();
+  const resourceAudit = prepareQaResourceTimingAudit(globalThis.performance);
   const auditedFetch = createQaAuditedFetch(globalThis.fetch, {
     origin: location.origin,
     tokens,
@@ -318,7 +310,7 @@ async function validateSelection() {
       coverEnabled: cover.enabled,
       publicMedia: media,
     });
-    const privacy = operationPrivacy(tokens, startIndex);
+    const privacy = operationPrivacy(tokens, resourceAudit);
     const receipt = buildQaReceipt({
       sourceContext,
       environment: captureQaEnvironment(),
@@ -353,7 +345,7 @@ async function stage(mode) {
   const cover = coverState();
   const tokens = cover.enabled ? [cover.title, cover.name].filter(Boolean) : [];
   const requestAudit = [];
-  const startIndex = resourceEntryCount();
+  const resourceAudit = prepareQaResourceTimingAudit(globalThis.performance);
   const auditedFetch = createQaAuditedFetch(globalThis.fetch, {
     origin: location.origin,
     tokens,
@@ -408,7 +400,7 @@ async function stage(mode) {
       mode,
       coverEnabled: cover.enabled,
     });
-    const privacy = operationPrivacy(tokens, startIndex);
+    const privacy = operationPrivacy(tokens, resourceAudit);
     const receipt = buildQaReceipt({
       sourceContext,
       environment: captureQaEnvironment(),
@@ -439,7 +431,7 @@ async function runPrivacyCanary() {
   const canary = createQaPrivacyCanary(globalThis.crypto);
   const tokens = [canary.title, canary.name];
   const requestAudit = [];
-  const startIndex = resourceEntryCount();
+  const resourceAudit = prepareQaResourceTimingAudit(globalThis.performance);
   const auditedFetch = createQaAuditedFetch(globalThis.fetch, {
     origin: location.origin,
     tokens,
@@ -473,7 +465,7 @@ async function runPrivacyCanary() {
     );
     session.resource.dispose();
 
-    const privacy = operationPrivacy(tokens, startIndex);
+    const privacy = operationPrivacy(tokens, resourceAudit);
     if (!privacyAuditPass(privacy)) {
       throw new Error("Datenschutz-Canary konnte nicht vollständig als lokal bestätigt werden.");
     }

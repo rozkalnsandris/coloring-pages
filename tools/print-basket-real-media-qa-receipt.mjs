@@ -68,6 +68,24 @@ export function createQaPrivacyCanary(cryptoRef = globalThis.crypto) {
   });
 }
 
+export function prepareQaResourceTimingAudit(performanceRef = globalThis.performance) {
+  try {
+    if (!performanceRef ||
+        typeof performanceRef.getEntriesByType !== "function" ||
+        typeof performanceRef.setResourceTimingBufferSize !== "function") {
+      return null;
+    }
+    const resources = performanceRef.getEntriesByType("resource");
+    if (!Array.isArray(resources)) return null;
+    const startIndex = resources.length;
+    const requestedCapacity = Math.max(512, startIndex + 128);
+    performanceRef.setResourceTimingBufferSize(requestedCapacity);
+    return Object.freeze({ startIndex, requestedCapacity });
+  } catch {
+    return null;
+  }
+}
+
 export function captureQaEnvironment({
   navigatorRef = globalThis.navigator,
   windowRef = globalThis.window,
@@ -154,20 +172,23 @@ export function auditQaPrivacySurfaces(
     sessionStorageRef = globalThis.sessionStorage,
     localStorageRef = globalThis.localStorage,
     performanceRef = globalThis.performance,
-    resourceStartIndex = 0,
+    resourceAudit = null,
   } = {},
 ) {
   const variants = tokenVariants(tokens);
   let resourceUrlsClear = null;
   let resourceEntryCount = null;
+  const resourceTimingPrepared = Boolean(
+    resourceAudit &&
+    Number.isInteger(resourceAudit.startIndex) &&
+    resourceAudit.startIndex >= 0 &&
+    Number.isInteger(resourceAudit.requestedCapacity) &&
+    resourceAudit.requestedCapacity > resourceAudit.startIndex
+  );
   try {
     const resources = performanceRef?.getEntriesByType?.("resource");
-    if (Array.isArray(resources)) {
-      const recent = resources.slice(
-        Number.isInteger(resourceStartIndex) && resourceStartIndex >= 0
-          ? resourceStartIndex
-          : 0,
-      );
+    if (resourceTimingPrepared && Array.isArray(resources)) {
+      const recent = resources.slice(resourceAudit.startIndex);
       resourceEntryCount = recent.length;
       resourceUrlsClear = recent.every(entry => !containsToken(entry?.name, variants));
     }
@@ -188,6 +209,7 @@ export function auditQaPrivacySurfaces(
     documentCookieClear: cookieClear,
     sessionStorageClear: storageClear(sessionStorageRef, variants),
     localStorageClear: storageClear(localStorageRef, variants),
+    resourceTimingPrepared,
     resourceUrlsClear,
     resourceEntryCount,
   });
@@ -200,6 +222,7 @@ export function privacyAuditPass(audit) {
     "documentCookieClear",
     "sessionStorageClear",
     "localStorageClear",
+    "resourceTimingPrepared",
     "resourceUrlsClear",
   ].every(key => audit[key] === true);
 }
@@ -245,6 +268,7 @@ export function buildQaReceipt({
           documentCookieClear: privacyAudit.documentCookieClear,
           sessionStorageClear: privacyAudit.sessionStorageClear,
           localStorageClear: privacyAudit.localStorageClear,
+          resourceTimingPrepared: privacyAudit.resourceTimingPrepared,
           resourceUrlsClear: privacyAudit.resourceUrlsClear,
           resourceEntryCount: privacyAudit.resourceEntryCount,
         }
