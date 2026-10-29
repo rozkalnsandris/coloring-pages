@@ -123,7 +123,7 @@ test("browser QA harness has no release mutation, persistence, analytics or auto
   assert.equal(source.includes("printStagedDocumentInBasketHost"), true);
   assert.equal(source.includes("prepareCurrentBookOutputSession"), true);
   assert.equal(source.includes("collectPublicMediaEvidence"), true);
-  assert.equal(source.includes('from "./receipt.mjs"'), true);
+  assert.equal(source.includes('from "./print-basket-real-media-qa-receipt.mjs"'), true);
   assert.equal(source.includes("createQaAuditedFetch"), true);
   assert.equal(source.includes("runPrivacyCanary"), true);
   assert.equal(source.includes("globalThis.sessionStorage"), true);
