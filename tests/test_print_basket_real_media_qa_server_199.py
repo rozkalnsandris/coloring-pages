@@ -189,7 +189,7 @@ class RealMediaQaServerTests(unittest.TestCase):
         self.assertNotIn("os.system", source)
         self.assertNotIn("print-basket-real-media-qa", docker)
         self.assertIn('QA_CONTEXT = "/qa/context.json"', source)
-        self.assertIn('QA_RECEIPT_MODULE = "/qa/receipt.mjs"', source)
+        self.assertIn('QA_RECEIPT_MODULE = "/qa/print-basket-real-media-qa-receipt.mjs"', source)
 
 
 if __name__ == "__main__":
