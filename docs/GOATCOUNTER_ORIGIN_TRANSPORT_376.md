@@ -85,6 +85,11 @@ a production latency SLO or a proof against arbitrary traffic floods. Cache hits
 that never contact this origin cannot count. There is no lossless/dedup/2xx-only
 claim: repeated/conditional requests and later HTML failures can count.
 
+The pinned integration also distinguishes two failure phases: `try_files` rejects
+a missing HTML file before mirroring (no attempt), while a static-handler read
+permission failure after mirroring can count despite a final 403. The probe
+checks both. This is not a count of successful responses or all origin arrivals.
+
 ## Remaining activation prerequisites
 
 1. RPi5_main must implement the bounded Unix listener/peer checks, socket lifecycle
