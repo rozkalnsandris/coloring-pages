@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { deflateSync } from "node:zlib";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { buildPrintPngZip, MAX_ZIP_INPUT_BYTES } from "../js/print-zip-store.mjs";
+import { BOOK_COVER_ZIP_FILENAME, buildBookPrintPngZip, buildPrintPngZip, MAX_ZIP_INPUT_BYTES } from "../js/print-zip-store.mjs";
 
 // Construct valid synthetic A4 RGB PNGs in memory; never commit test image binaries.
 function crc32(bytes) {
@@ -37,6 +37,21 @@ function png(width = 2480, height = 3508) {
     chunk("IEND", Buffer.alloc(0)),
   ]);
 }
+function withPhys(base) {
+  const phys = Buffer.alloc(9);
+  phys.writeUInt32BE(11811, 0);
+  phys.writeUInt32BE(11811, 4);
+  phys[8] = 1;
+  return Buffer.concat([
+    base.subarray(0, 33),
+    chunk("pHYs", phys),
+    base.subarray(33),
+  ]);
+}
+function coverPng() {
+  return withPhys(png());
+}
+
 const page = (id, index = 1, count = 1) => ({
   activityId: id, pageIndex: index, pageCount: count,
   printUrl: "/media/" + id + "/" + (count === 1 ? "print" : "print-" + index) + ".png",
@@ -154,4 +169,52 @@ test("standard Python zipfile extracts identical ordered PNG SHA-256 without rec
     input: Buffer.from(bytes), encoding: "utf8", maxBuffer: 1024 * 1024,
   });
   assert.equal(result.status, 0, result.stderr || result.error?.message);
+});
+
+
+test("covered book ZIP reuses STORE writer with generic cover filename and exact source bytes", () => {
+  const pages = [page("1000001"), page("cut-2", 1, 2), page("cut-2", 2, 2)];
+  const artwork = [png(), png(3508, 2480), png()];
+  const cover = coverPng();
+  const result = buildBookPrintPngZip(
+    pages,
+    pages.map((p, i) => download(p, artwork[i])),
+    cover,
+  );
+  assert.deepEqual(result.filenames, [
+    BOOK_COVER_ZIP_FILENAME,
+    "01-1000001.png",
+    "02-cut-2.png",
+    "03-cut-2.png",
+  ]);
+  assert.equal(BOOK_COVER_ZIP_FILENAME, "00-deckblatt.png");
+  const files = extractedLocalEntries(result.bytes);
+  assert.deepEqual(files.map(file => file.name), result.filenames);
+  assert.deepEqual(Buffer.from(files[0].content), cover);
+  artwork.forEach((bytes, index) => {
+    assert.deepEqual(Buffer.from(files[index + 1].content), bytes);
+  });
+});
+
+test("covered ZIP requires exact portrait RGB pHYs contract and total five-sheet ceiling", () => {
+  const p = page("1");
+  const image = png();
+  assert.throws(
+    () => buildBookPrintPngZip([p], [download(p, image)], png()),
+    /exact A4 RGB 300 DPI contract/,
+  );
+  assert.throws(
+    () => buildBookPrintPngZip([p], [download(p, image)], withPhys(png(3508, 2480))),
+    /exact A4 RGB 300 DPI contract/,
+  );
+
+  const pages = ["1", "2", "3", "4", "5"].map(id => page(id));
+  assert.throws(
+    () => buildBookPrintPngZip(
+      pages,
+      pages.map(value => download(value, image)),
+      coverPng(),
+    ),
+    /bounded matching A4 artwork set/,
+  );
 });
