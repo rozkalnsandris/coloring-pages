@@ -4,9 +4,9 @@ Status: **DRAFT / SOURCE REVIEW ONLY / NO LEGAL CERTIFICATION**
 
 Issue: #256  
 Draft PR: #158  
-Source reconciliation baseline: `d1ea05c56bc77c5070f87966bf8f17ae4a4f85b4`  
+Source reconciliation baseline: `a0c40232cc32eb8880868bd6bd5368fdf4491829`  
 Last owner-provided LIVE application evidence: `a57e61e3ee022c07cb9dbd6adad29155ff8b885a`  
-Review date: 2026-10-28
+Review date: 2026-10-29
 
 ## GoatCounter public-release assessment
 
@@ -25,7 +25,7 @@ do not restore the superseded age gate or persistent Like consent system.
 | Tunnel baseline | [Sanitized receipt](https://github.com/rozkalnsandris/RPi5_main/pull/1271#issuecomment-6469926967) | Exact two path routes absent, no transformer conflicts |
 | Worker routes | [Sanitized receipt](https://github.com/rozkalnsandris/RPi5_main/pull/1271#issuecomment-6470127560) | Five routes, zero matching the two HTTPS pageview URLs; not proof about every edge feature |
 | Browser payload | #391 at `d8f0f6ea5116ec8188684d76bf4d2d75ff62ef6f` | Proposed automatic page-ID-only fetch; not deployed by this PR |
-| Retention preference | Owner selected **12 months** on 2026-10-28 | Source requirement only; no retention configuration or deletion operation performed |
+| Retention configuration | [RPi5_main #1273 execution receipt](https://github.com/rozkalnsandris/RPi5_main/pull/1273#issuecomment-6490759307), source `ecdf39a2643ff6a5b4a9c52f1d1b19aa6e07ce1d` | Native `data_retention=365` persisted and read back on 2026-10-29; empty analytics and private service health verified; not a future deletion-cycle or backup-erasure proof |
 | Collection direction | Owner retained automatic measurement and requested basis assessment on 2026-10-28 | No consent UI redesign, no legal conclusion or public activation authority |
 
 The page-ID-only client omits fetch credentials and referrer and keeps its
@@ -41,9 +41,9 @@ information; they do not establish that all request processing is anonymous.
 | TDDDG §25 / ePrivacy Art. 5(3) | No cookie is not a sufficient exemption analysis | Assess the automatic JavaScript page-ID transmission and any applicable exception; do not silently treat audience measurement as necessary for printing |
 | GDPR Arts. 5/6 | Minimized aggregate target; personal-data processing at transport/edge remains relevant | Document purpose, necessity, alternatives and balancing for the actual flow; if consent is selected, assess its implementation and the child-user context |
 | GDPR Art. 13 | Draft contact/rights text exists; no current public GoatCounter notice | Complete the actual purposes/basis, recipients/transfers and retention disclosure before collection |
-| Retention | 12-month target selected, enforcement unverified | Define calendar-month versus day-based cutoff, cleanup timing/failure monitoring, aggregate-table coverage and backup/restore treatment; verify before making a live retention promise |
+| Retention | Owner's 12-month preference implemented as a 365-day native threshold under exact authorization | Disclose daily cleanup cadence, calendar/downtime limits and separate backup/restore treatment; future cleanup success still needs operational observation |
 | GDPR Arts. 28/32 and transfers | Existing Cloudflare dependency, not a new GoatCounter SaaS recipient | Confirm applicable provider terms/transfer mechanism and actual logging/security settings; do not infer account state from generic documentation |
-| Release governance | Private install and two read-only operations completed | Fresh health and remaining bounded runtime evidence, public-gate decision, then exact separate merge/LIVE authorizations |
+| Release governance | Private install, route checks and private retention operation completed | Remaining bounded processing evidence, public-gate decision, then exact separate merge/LIVE authorizations |
 
 The [final EDPB Guidelines 2/2023, sections 3.1–3.2](https://www.edpb.europa.eu/system/files/documents/2024-10/edpb_guidelines_202302_technical_scope_art_53_eprivacydirective_v2_en_0.pdf)
 cover tracking instructions and local processing beyond cookies. Applying their
@@ -79,8 +79,8 @@ its actual data flow and accuracy rather than assuming a legal shortcut.
 
 **Balancing safeguards:** page-ID-only body, no persistent recognition,
 no client IP/UA/referrer forwarded to GoatCounter, aggregate-only storage target,
-12-month target, private admin/API and fail-open printing reduce intrusion.
-Remaining evidence gaps are edge/origin processing, retention enforcement,
+365-day native threshold, private admin/API and fail-open printing reduce intrusion.
+Remaining evidence gaps are edge/origin processing, future cleanup observation,
 request failure/log paths and effective rights handling. The preschool content
 means foreseeable child use must be considered, not dismissed by calling the
 site an adult service. A simple notice alone does not resolve these gaps.
@@ -94,6 +94,55 @@ scope does not establish a specific exception for this page-ID-only flow.
 Retaining the automatic design is a product direction, not a waiver of either
 assessment. Current conclusion: **basis not yet established for activation**.
 
+### Concrete collection alternatives — source review on 2026-10-29
+
+No architecture switch is performed by this review. The owner retained
+automatic measurement; a choice between the browser candidate and a server
+request metric is pending because their meanings differ.
+
+| Candidate | What it measures | Engineering implications |
+| --- | --- | --- |
+| Existing #391 browser POST | One attempted event after a known detail entry resolves | Additional automatic client request; current TDDDG assessment remains unresolved. Stats view still runs alongside it. |
+| Origin-side counting of ordinary detail GETs | Eligible detail HTML requests received by the origin | No new analytics request from the browser. Does not prove rendering, includes automation, and can miss responses served entirely by browser/CDN caches. |
+| Edge-side counting of ordinary detail GETs | Requests reaching the selected Cloudflare route | Can observe CDN-served requests, but adds a Worker/route/transport design and still misses browser-cache restores. This is a larger runtime change. |
+
+At main `a0c40232cc32eb8880868bd6bd5368fdf4491829`,
+`deploy/nginx.conf` sets `Cache-Control: no-cache` for HTML; that requests
+revalidation rather than prohibiting storage. It is source evidence, not an
+inspection of live edge overrides or actual request coverage.
+[Cloudflare's cache documentation](https://developers.cloudflare.com/cache/performance-review/cache-analytics/)
+distinguishes responses served without contacting the origin; its
+[cache-control reference](https://developers.cloudflare.com/cache/concepts/cache-control/)
+explains revalidation. Do not silently label origin requests as all rendered opens
+or disable caching merely to inflate measurement coverage.
+
+[GoatCounter documents backend API collection](https://www.goatcounter.com/help/backend).
+[Nginx mirror](https://nginx.org/en/docs/http/ngx_http_mirror_module.html) can
+create background subrequests, but a real integration would need a reviewed
+container-to-host path, method/status eligibility, seven-digit current-catalog
+validation, body/header minimization, and timeout/failure tests. The existing
+loopback adapter cannot simply be addressed as the host's localhost from an
+isolated container. Do not copy the upstream mirror example's original-URI or
+client-header forwarding into this privacy-minimized design.
+
+The existing `POST /api/stats/view` has two effects in
+`cloudflare/stats-worker.js`: it increments `daily_views` and, for an allowlisted
+campaign, also records a `detail` campaign event. `overviewStats` reads the former;
+campaign reporting reads the latter. Removing the client call without a
+replacement decision would alter existing campaign reporting. #391's regression
+test currently deliberately preserves that call. A future cutover must explicitly
+resolve this coupling, the pageview read/display path and historical cutover
+labels; do not implement an unreviewed endpoint removal in a legal-docs change.
+
+**Legal assessment limit:** removing the dedicated browser request can reduce
+the terminal-access issue associated with that additional script, but it is not
+blanket legal clearance. Ordinary-request metadata, logs, purposes, recipients,
+retention and any remaining browser telemetry still require assessment. The
+[DSK OH Digitale Dienste v1.2, paragraphs 77–79](https://datenschutz.sachsen-anhalt.de/fileadmin/Bibliothek/Landesaemter/LfD/Informationen/orientierungshilfen/OH_Digitale_Dienste.pdf)
+requires a concrete user-oriented function and technical necessity for the
+exception; useful audience measurement is not automatically part of browsing
+and printing. Keep the public hold until the selected flow is assessed.
+
 ### Release-copy staging
 
 The public draft now says only that GoatCounter is being prepared and public
@@ -104,13 +153,15 @@ above are resolved. The intended active notice should state, in plain German:
 - that counts are page/time aggregates rather than unique-person counts;
 - the verified absence of persistent visitor recognition in this feature;
 - actual transport/security processing, its recipients and established basis;
-- the **12-month** aggregate policy with its verified deletion semantics and
-  distinct log/backup criteria, plus applicable rights.
+- the **365-day threshold** implementing the owner's 12-month preference, daily
+  cleanup and its calendar/downtime limits, distinct log/backup criteria and rights.
 
 Do not publish a fabricated legal basis, claim guaranteed immediate deletion,
 or infer completed log/backup checks from synthetic database tests. The owner's
-retention preference is not authorization to edit the running database, add a
-timer, delete data or change backups. It creates no new public tracking consent.
+retention preference alone is not runtime authorization. The separate exact
+Composite Live operation completed the one native-setting update and service
+stop/start on 2026-10-29. That authorization is consumed; it does not authorize
+future database changes, deletion tests, backups or public tracking.
 
 This source update also reconciles #158 with application main
 `a0c40232cc32eb8880868bd6bd5368fdf4491829`; current asset versions are preserved
@@ -177,7 +228,8 @@ The public notice is deliberately shorter than the historical draft.
 2. Separate source retirement of stale personalized write routes under #256.
 3. No D1 cleanup, legacy-record deletion, Cloudflare settings change or manual
    LIVE action is authorized by this PR.
-4. Any eventual merge of application inputs still requires exact owner MERGE
-   authorization and then only the bounded SIMPLE-DEPLOY path in `AGENTS.md`.
+4. Any eventual merge requires exact owner MERGE authorization. Under the
+   owner's current session instructions, runtime/deployment also requires a
+   separate explicit authorization with the exact target and scope.
 5. This engineering review is not legal certification; the owner remains
    responsible for the final published legal notice.
