@@ -1,5 +1,15 @@
 # GoatCounter on RPi5: minimal first-party pageview design (#376)
 
+> **Current direction — 2026-10-29:** The owner selected automatic counting of
+> ordinary detail requests received at the origin. See
+> [the origin-request ADR and rollout plan](GOATCOUNTER_ORIGIN_REQUEST_PLAN_376.md).
+> It supersedes this document's browser-emission/public-collection route plan.
+> PR #391 must not be merged for the selected rollout. The older sections below
+> are historical design/proof records, not the current installation status.
+> Private GoatCounter installation and native 365-day retention are completed;
+> their receipts and limits are linked from the new ADR. Public collection is
+> not activated by this source change.
+
 **Status: DESIGN CANDIDATE / NO IMPLEMENTATION OR LIVE AUTHORITY (2026-10-25).**
 **Owner scope:** `START coloring-pages` following the design-only issue creation authorization
 `AUTHORIZE DESIGN coloring-pages GOATCOUNTER-RPI5 FIRST-PARTY-PAGEVIEWS-ONLY NO-SESSION NO-IP-STORAGE SOURCE-ONLY NEW-ISSUE NO-MERGE NO-LIVE`.
