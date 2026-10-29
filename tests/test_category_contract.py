@@ -88,6 +88,18 @@ class CategoryContractTests(unittest.TestCase):
             "COPY metadata/categories.json /usr/local/share/coloring-pages/categories.json",
             dockerfile,
         )
+        self.assertIn(
+            "COPY metadata/categories.json /usr/share/nginx/html/categories.json",
+            dockerfile,
+        )
+        self.assertIn(
+            "COPY metadata/topics.json /usr/local/share/coloring-pages/topics.json",
+            dockerfile,
+        )
+        nginx = (ROOT / "deploy/nginx.conf").read_text(encoding="utf-8")
+        for path in ("categories.json", "topics.json"):
+            self.assertIn(f"location = /{path}", nginx)
+            self.assertIn(f"try_files /{path} =404;", nginx)
 
 
 if __name__ == "__main__":
