@@ -79,7 +79,7 @@ function sample(ids = [], { release = { coveredZip: false, combinedPrint: false 
       planBookOutputControls: state => planControls(state, release),
       BOOK_OUTPUT_RELEASE: release,
       BOOK_COVER_BROWSER_RENDER_OPTIONS: { strokeWidthPx: 20, lineGapPx: 120 },
-      window: { print() { prints++; } }, zipBusy: false },
+      window: { print() { prints++; } }, zipBusy: false, printBusy: false },
   );
   assert.equal(appended.length, 1);
   assert.strictEqual(appended[0], dialog);
@@ -311,7 +311,7 @@ function zipScenario({
     },
     BOOK_COVER_BROWSER_RENDER_OPTIONS: { strokeWidthPx: 20, lineGapPx: 120 },
     AbortController,
-    zipEpoch: 0, zipController: null, zipBusy: false, stagedZip: null,
+    zipEpoch: 0, zipController: null, zipBusy: false, printBusy: false, stagedZip: null,
   };
   vm.runInNewContext(
     source.slice(zipStart, zipEnd) + "\nthis.runZip = prepareZip;",
