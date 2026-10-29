@@ -12,6 +12,7 @@ import {
   planBookOutputControls,
 } from "./book-output-release-gate.mjs";
 import { prepareCurrentBookOutputSession } from "./book-output-session.mjs";
+import { printStagedDocumentInBasketHost } from "./print-basket-print-host.mjs";
 
 const MAX_SHEETS = 5;
 const CARD_SELECTOR = ".coloring-card";
@@ -28,6 +29,9 @@ let zipController = null;
 let stagedZip = null;
 let zipBusy = false;
 let zipEpoch = 0;
+let printController = null;
+let printBusy = false;
+let printEpoch = 0;
 let previewPlan = null;
 let previewCursor = null;
 let bookCover = createBookCoverState();
@@ -275,6 +279,96 @@ function movePreview(direction) {
   }
 }
 
+function resetPrint() {
+  printEpoch++;
+  printController?.abort();
+  printController = null;
+  printBusy = false;
+  const action = dialog?.querySelector("[data-basket-print]");
+  const note = dialog?.querySelector("#basket-print-unavailable");
+  if (action || note) {
+    const controls = planBookOutputControls({
+      basketSheetCount: basket.sheetCount,
+      coverEnabled: bookCover.enabled,
+      busy: zipBusy,
+    });
+    if (action) action.disabled = !controls.printEnabled;
+    if (note) note.textContent = controls.printStatus;
+  }
+}
+
+async function preparePrint() {
+  const initialControls = planBookOutputControls({
+    basketSheetCount: basket.sheetCount,
+    coverEnabled: bookCover.enabled,
+    busy: zipBusy || printBusy,
+  });
+  if (!dialog?.open || !initialControls.printEnabled ||
+      !BOOK_OUTPUT_RELEASE.combinedPrint) return;
+
+  resetZip();
+  resetPrint();
+  const epoch = printEpoch;
+  const controller = new AbortController();
+  printController = controller;
+  printBusy = true;
+  const action = dialog.querySelector("[data-basket-print]");
+  const note = dialog.querySelector("#basket-print-unavailable");
+  action.disabled = true;
+  note.textContent = "Druckseiten werden geprüft und für den Druck vorbereitet …";
+
+  let staged = null;
+  try {
+    const session = await prepareCurrentBookOutputSession(
+      basket,
+      bookCover,
+      {
+        mode: "print",
+        origin: window.location.origin,
+        signal: controller.signal,
+        coverRenderOptions: BOOK_COVER_BROWSER_RENDER_OPTIONS,
+      },
+    );
+    staged = session.resource;
+
+    if (epoch !== printEpoch || controller.signal.aborted || !dialog.open ||
+        !BOOK_OUTPUT_RELEASE.combinedPrint) {
+      staged.dispose();
+      staged = null;
+      return;
+    }
+
+    const result = printStagedDocumentInBasketHost(staged, {
+      documentRef: document,
+      print: () => window.print(),
+      signal: controller.signal,
+    });
+    staged = null;
+    note.textContent = result.sheetCount === 1
+      ? "Druckdialog geschlossen. 1 A4-Druckseite war vorbereitet."
+      : "Druckdialog geschlossen. " + result.sheetCount + " A4-Druckseiten waren vorbereitet.";
+  } catch {
+    if (staged && staged.disposed !== true) {
+      try { staged.dispose(); } catch { /* best effort after failed print preparation */ }
+    }
+    if (epoch === printEpoch && dialog.open && !controller.signal.aborted) {
+      note.textContent = "Drucken konnte nicht vorbereitet werden. Bitte Auswahl prüfen und erneut versuchen.";
+    }
+  } finally {
+    if (epoch === printEpoch) {
+      printBusy = false;
+      printController = null;
+      const controls = planBookOutputControls({
+        basketSheetCount: basket.sheetCount,
+        coverEnabled: bookCover.enabled,
+        busy: zipBusy,
+      });
+      action.disabled = !controls.printEnabled;
+      if (!BOOK_OUTPUT_RELEASE.combinedPrint) note.textContent = controls.printStatus;
+    }
+  }
+}
+
 function resetZip() {
   zipEpoch++;
   zipController?.abort();
@@ -293,7 +387,7 @@ function resetZip() {
     const controls = planBookOutputControls({
       basketSheetCount: basket.sheetCount,
       coverEnabled: bookCover.enabled,
-      busy: false,
+      busy: printBusy,
     });
     prepare.disabled = !controls.zipEnabled;
   }
@@ -305,7 +399,7 @@ async function prepareZip() {
   const initialControls = planBookOutputControls({
     basketSheetCount: basket.sheetCount,
     coverEnabled: bookCover.enabled,
-    busy: zipBusy,
+    busy: zipBusy || printBusy,
   });
   if (!dialog?.open || !initialControls.zipEnabled) return;
 
@@ -403,7 +497,7 @@ async function prepareZip() {
       const controls = planBookOutputControls({
         basketSheetCount: basket.sheetCount,
         coverEnabled: bookCover.enabled,
-        busy: false,
+        busy: printBusy,
       });
       prepare.disabled = !controls.zipEnabled;
       cancel.disabled = true;
@@ -554,6 +648,7 @@ function createDialog() {
     if (action === "preview-previous") { movePreview(-1); return; }
     if (action === "preview-next") { movePreview(1); return; }
     if (action === "prepare-zip") { void prepareZip(); return; }
+    if (action === "print") { void preparePrint(); return; }
     if (action === "cancel-zip") {
       resetZip();
       node.querySelector("[data-basket-zip-status]").textContent = "Abgebrochen.";
@@ -580,6 +675,7 @@ function createDialog() {
     try {
       bookCover = setBookCoverEnabled(bookCover, Boolean(control.checked), basket.ids, catalog);
       resetZip();
+      resetPrint();
       resetPreview();
       syncSummary();
       renderDialog();
@@ -611,6 +707,7 @@ function createDialog() {
     }
   });
   node.addEventListener("close", () => { resetPreview(); });
+  node.addEventListener("close", () => { resetPrint(); });
   node.addEventListener("close", () => { resetZip(); summary?.focus(); });
   return node;
 }
@@ -678,12 +775,16 @@ function renderDialog() {
   const outputControls = planBookOutputControls({
     basketSheetCount: basket.sheetCount,
     coverEnabled: bookCover.enabled,
-    busy: zipBusy,
+    busy: zipBusy || printBusy,
   });
   const zipPrepare = dialog.querySelector("[data-basket-zip-prepare]");
   zipPrepare.disabled = !outputControls.zipEnabled;
   const zipStatus = dialog.querySelector("[data-basket-zip-status]");
   if (!zipBusy) zipStatus.textContent = outputControls.zipStatus;
+  const printAction = dialog.querySelector("[data-basket-print]");
+  const printNote = dialog.querySelector("#basket-print-unavailable");
+  printAction.disabled = !outputControls.printEnabled;
+  if (!printBusy) printNote.textContent = outputControls.printStatus;
   dialog.querySelector("[data-basket-preview-open]").disabled = basket.ids.length === 0;
 }
 
@@ -711,6 +812,7 @@ function commitBasket(next, message, action = null, id = null) {
     return false;
   }
   resetZip();
+  resetPrint();
   resetPreview();
   basket = next;
   syncSummary();
@@ -778,6 +880,7 @@ async function start() {
   status = makeStatusRegion();
   dialog = createDialog();
   window.addEventListener("pagehide", resetZip);
+  window.addEventListener("pagehide", resetPrint);
   summary?.addEventListener("click", () => {
     if (summary.disabled || typeof dialog.showModal !== "function") return;
     renderDialog();
