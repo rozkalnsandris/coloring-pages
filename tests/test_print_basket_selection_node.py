@@ -57,6 +57,7 @@ class BasketSelectionJavaScriptTests(unittest.TestCase):
                 "tests/test_print_basket_print_session.mjs",
                 "tests/test_print_basket_print_lifecycle.mjs",
                 "tests/test_print_basket_print_host_199.mjs",
+                "tests/test_print_basket_real_media_qa_199.mjs",
                 "tests/test_print_basket_ui_print_gate.mjs",
             ],
             cwd=ROOT,

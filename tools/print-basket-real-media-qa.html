@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ausmalwiese — Real-Media Print QA (STAGING ONLY)</title>
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/print-basket.css">
+  <style>
+    main { max-width: 760px; margin: 2rem auto; padding: 1rem; }
+    fieldset { display: grid; gap: .8rem; margin-block: 1rem; }
+    label { display: grid; gap: .35rem; }
+    input[type="text"] { min-height: 44px; padding: .5rem; }
+    .qa-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+    .qa-status, .qa-evidence { white-space: pre-wrap; }
+    .qa-warning { border: 2px solid currentColor; padding: .75rem; font-weight: 700; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Real-Media Print QA</h1>
+  <p class="qa-warning">STAGING ONLY — kein Release, kein LIVE-Nachweis, kein physischer Druck-PASS.</p>
+  <p>Dieser lokale Harness nutzt den aktuellen Repository-Code und frische öffentliche Druck-PNGs. Production-Flags bleiben unverändert geschlossen.</p>
+
+  <fieldset>
+    <legend>Testauswahl</legend>
+    <label>
+      Veröffentlichte Aktivitäts-IDs (Komma oder Leerzeichen)
+      <input id="qa-ids" type="text" autocomplete="off" spellcheck="false" placeholder="1234567 7654321">
+    </label>
+    <label>
+      <span><input id="qa-cover-enabled" type="checkbox"> Deckblatt im Staging verwenden</span>
+    </label>
+    <label>
+      Deckblatt-Titel (nur im Speicher)
+      <input id="qa-cover-title" type="text" autocomplete="off" value="Mein Ausmalbuch">
+    </label>
+    <label>
+      Name (nur im Speicher)
+      <input id="qa-cover-name" type="text" autocomplete="off">
+    </label>
+  </fieldset>
+
+  <div class="qa-actions">
+    <button id="qa-validate" type="button">Auswahl prüfen</button>
+    <button id="qa-zip" type="button">ZIP staging</button>
+    <button id="qa-print" type="button">Druck staging</button>
+    <button id="qa-clear" type="button">Entwurf löschen</button>
+  </div>
+
+  <p id="qa-status" class="qa-status" role="status" aria-live="polite">Noch nicht ausgeführt.</p>
+  <div id="qa-download"></div>
+
+  <h2>Öffentliche QA-Evidenz</h2>
+  <p>Enthält absichtlich keinen Deckblatt-Titel und keinen Namen.</p>
+  <pre id="qa-evidence" class="qa-evidence"></pre>
+</main>
+<script type="module" src="/qa/harness.mjs"></script>
+</body>
+</html>

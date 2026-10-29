@@ -1,6 +1,6 @@
 # Meine Drucksammlung — real-media, browser and device QA gate (#206)
 
-Status: **PLAN ONLY — NOT RUN / NOT APPROVED FOR RELEASE**. This is an evidence-gathering checklist, not a browser test result, an owner approval, or permission to deploy, enable `Alles drucken`, access RPi5, change catalogue media, or use a printer remotely. The current basket UI intentionally has a **disabled** `Alles drucken` button. The separately tested `stageCurrentBasketPrintSession()` returns **detached** A4 sheets and does not print. The final user-click integration is **not yet built**.
+Status: **PLAN / HARNESS AVAILABLE — QA NOT RUN / NOT APPROVED FOR RELEASE**. This is an evidence-gathering checklist plus a local staging harness, not a browser test result, owner approval, LIVE proof, or permission to enable output. Source now contains the reviewed visitor-click combined-print wiring and isolated print host from #425, but the canonical production gates remain fail-closed (`combinedPrint=false`, `coveredZip=false`). `Alles drucken` therefore remains visitor-disabled until the evidence below is actually collected and reviewed.
 
 ## Scope and evidence boundaries
 
@@ -17,9 +17,23 @@ Pick *actual published* activities that total **1, 3 and 5 physical sheets** and
 
 If verifying ZIP alongside this gate, unzip locally and compare each extracted PNG SHA-256 and byte length with its recorded public print PNG, plus filename order. ZIP must preserve **exact source bytes**; printed canvas content and its footer are a separate browser-print presentation, not a modified download.
 
+### Local real-media staging harness (source-only; never a release PASS)
+
+For desktop staging before visitor activation, run from a trusted local checkout:
+
+\`\`\`bash
+python3 tools/print-basket-real-media-qa-server.py --origin https://ausmalwiese.de
+\`\`\`
+
+Then open the printed loopback URL (default \`http://127.0.0.1:8765/qa/\`) in the browser under test. The helper binds **only** to \`127.0.0.1\`, fetches a fresh public \`/catalog.json\` once at startup, proxies only catalogue-authorized public \`/media/.../print*.png\` paths, follows no redirects, writes no media cache to disk, and is not copied into the production Nginx image. The browser harness imports the repository's real #199/#206 session, cover renderer and print-host modules; it does not alter \`BOOK_OUTPUT_RELEASE\`.
+
+Use **Auswahl prüfen** before a case to record public-only receipt fields for the selected artwork pages: activity/page order, public path, HTTP/MIME, byte count, SHA-256, intrinsic A4 dimensions and orientation. This validation fetch is deliberately separate from **Druck staging** so it does not inflate the memory profile of the actual print-staging run. The receipt deliberately excludes cover title/name.
+
+\`ZIP staging\` and \`Druck staging\` may establish **STAGING PASS** only. They do not establish \`VISITOR PASS\`, LIVE deployment, constrained-phone memory, print-dialog pagination on another browser, or physical-paper quality. Do not change \`combinedPrint\` or \`coveredZip\` merely to complete the harness.
+
 ## Gate 1 — desktop browser / print-to-file
 
-Once a **separately reviewed, still gated** visitor print flow exists, use current Chromium and Firefox on desktop, real public PNGs and the ordinary browser print dialog. Until then, a locally isolated staging harness can only be marked **STAGING PASS**, never **VISITOR PASS**.
+A **separately reviewed, still gated** visitor print flow now exists in source, but production activation remains closed. Use current Chromium and Firefox on desktop, real public PNGs and the ordinary browser print dialog. While `combinedPrint=false`, the local harness above can only be marked **STAGING PASS**, never **VISITOR PASS**; do not flip the release flag as a shortcut to finish QA.
 
 For each available 1/3/5-sheet sample:
 
@@ -29,9 +43,10 @@ For each available 1/3/5-sheet sample:
 4. Check that artwork is **fully contained** (not cropped, stretched or replaced by a preview) with 15 mm side/top paper spacing. Preserve the separate **22 mm footer region**, 15 mm paper-bottom clearance and at least 2 mm artwork/footer gap from [approved print branding](AUSMALWIESE_PRINT_BRANDING_LAYOUT_V1.md). The detached #206 text-only footer must visibly say **Noch mehr Ausmalbilder?** and **ausmalwiese.de**; do not assume QR is present. See [QR gate](PRINT_QR_V1.md) for any later QR-enabled variant.
 5. Close/cancel the preview and repeat; verify dialog dismissal, cancellation, no duplicate print invocation, no stale pages, and canvases/bitmap resources released. `afterprint`/preview closure is **not** proof a sheet came out of a printer.
 
-### Browser standards and reproducibility limits (documentation checked 2026-10-23)
+### Browser standards and reproducibility limits (documentation rechecked 2026-10-29)
 
 - **Named A4 pages:** MDN [`@page`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/%40page) describes the `page` property and named page rules, including per-page size and orientation. Support varies with browser versions and features. Capture an actual **P/L/P** or **P/L/P/L/P** print preview or print-to-file per browser; a matching CSS DOM box or `@page` declaration is not evidence that the browser generated correctly oriented paper pages.
+- **Print-media emulation is CSS evidence only:** Chrome DevTools documents **Rendering → Emulate CSS media type → print**, and Firefox DevTools documents enabling \`@media print\` emulation in the Rules view. Use these to inspect hidden/visible print DOM and CSS before opening a real dialog, but record them only as layout diagnostics. They do not prove generated page count, mixed-page paper orientation, printer settings or physical output.
 - **Do not substitute rotation:** MDN marks the [`page-orientation` descriptor](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/%40page/page-orientation) as having limited availability. Do not silently switch to `page-orientation: rotate-*` to pass mixed-A4 testing; record a failure if a target browser does not honor the selected named page `size`.
 - **Chromium PDF vs Firefox:** Playwright [`page.pdf()` reference](https://playwright.dev/python/docs/api/class-page#page-pdf) describes PDF generation as Chromium-only, with CSS `@page` precedence controlled by `prefer_css_page_size`. For Chromium, record `prefer_css_page_size=True`, any scale/margins, and inspect the actual PDF `MediaBox` of *every page*. For Firefox, use its **real browser print dialog / Save to PDF or an actual printer**, not Playwright Chromium's PDF output labeled as a Firefox result. When that cannot be performed, Firefox pagination remains **BLOCKED** regardless of synthetic layout CI.
 - **Print event is not print success:** MDN [`afterprint`](https://developer.mozilla.org/en-US/docs/Web/API/Window/afterprint_event) is dispatched after printing **starts** or preview **closes**. It cannot confirm printer delivery, output page count, or that the user accepted rather than cancelled. `afterprint` may be a cleanup signal, but physical printing requires separate direct observations. A repeated click must not re-use disposed canvases or double-count analytics.
@@ -79,4 +94,4 @@ With an explicitly available local printer, print at least one portrait, landsca
 
 A genuinely clean release path still needs: reviewed UI wiring with the **visitor's single print click**, accessible German loading/error/cancel UX, exact-head CI/reviews, public-media and device QA evidence, separate owner MERGE authority, and the repository's bounded application LIVE gate if application inputs change. Documentation or source CI never grants permission to activate printing.
 
-References: [#206 acceptance criteria](https://github.com/rozkalnsandris/coloring-pages/issues/206), [media standard](MEDIA_STANDARD_V1.md), [approved footer geometry](AUSMALWIESE_PRINT_BRANDING_LAYOUT_V1.md), [MDN `@page`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/%40page), [MDN printing](https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Media_queries/Printing), [MDN `afterprint`](https://developer.mozilla.org/en-US/docs/Web/API/Window/afterprint_event).
+References: [#206 acceptance criteria](https://github.com/rozkalnsandris/coloring-pages/issues/206), [media standard](MEDIA_STANDARD_V1.md), [approved footer geometry](AUSMALWIESE_PRINT_BRANDING_LAYOUT_V1.md), [MDN `@page`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/%40page), [MDN printing](https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Media_queries/Printing), [MDN `afterprint`](https://developer.mozilla.org/en-US/docs/Web/API/Window/afterprint_event), [Chrome DevTools print-media emulation](https://developer.chrome.com/docs/devtools/rendering/emulate-css/), [Firefox DevTools media-condition emulation](https://firefox-source-docs.mozilla.org/devtools-user/page_inspector/how_to/examine_and_edit_css/).
