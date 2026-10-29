@@ -15,7 +15,7 @@ import {
   createQaPrivacyCanary,
   privacyAuditPass,
   stageQaReceiptDownload,
-} from "./receipt.mjs";
+} from "./print-basket-real-media-qa-receipt.mjs";
 
 const ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const MAX_PUBLIC_PNG_BYTES = 32 * 1024 * 1024;
