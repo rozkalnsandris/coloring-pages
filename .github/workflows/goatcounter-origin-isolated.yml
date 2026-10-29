@@ -1,0 +1,34 @@
+name: GoatCounter origin transport proof
+
+on:
+  pull_request:
+    paths:
+      - 'tools/goatcounter_origin_*.py'
+      - 'tools/goatcounter_pageview_contract.py'
+      - 'tests/test_goatcounter_origin_contract.py'
+      - 'deploy/nginx.conf'
+      - '.github/workflows/goatcounter-origin-isolated.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/goatcounter_origin_*.py'
+      - 'tools/goatcounter_pageview_contract.py'
+      - 'tests/test_goatcounter_origin_contract.py'
+      - 'deploy/nginx.conf'
+      - '.github/workflows/goatcounter-origin-isolated.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  origin-unix-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Pure contract tests
+        run: python3 -m unittest discover -s tests -p test_goatcounter_origin_contract.py -v
+      - name: Real pinned Nginx against synthetic Unix receiver
+        run: python3 tools/goatcounter_origin_isolated_probe.py
