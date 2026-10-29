@@ -14,6 +14,7 @@
     .qa-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
     .qa-status, .qa-evidence { white-space: pre-wrap; }
     .qa-warning { border: 2px solid currentColor; padding: .75rem; font-weight: 700; }
+    #qa-download, #qa-receipt-download { margin-block: .75rem; }
   </style>
 </head>
 <body>
@@ -45,14 +46,16 @@
     <button id="qa-validate" type="button">Auswahl prüfen</button>
     <button id="qa-zip" type="button">ZIP staging</button>
     <button id="qa-print" type="button">Druck staging</button>
+    <button id="qa-privacy" type="button">Datenschutz-Canary prüfen</button>
     <button id="qa-clear" type="button">Entwurf löschen</button>
   </div>
 
   <p id="qa-status" class="qa-status" role="status" aria-live="polite">Noch nicht ausgeführt.</p>
   <div id="qa-download"></div>
+  <div id="qa-receipt-download"></div>
 
-  <h2>Öffentliche QA-Evidenz</h2>
-  <p>Enthält absichtlich keinen Deckblatt-Titel und keinen Namen.</p>
+  <h2>QA-Receipt</h2>
+  <p>Enthält Source-SHA, Browser-/Testumgebung und öffentliche Medien-Evidenz. Deckblatt-Titel, Name und Canary-Text werden absichtlich nicht gespeichert.</p>
   <pre id="qa-evidence" class="qa-evidence"></pre>
 </main>
 <script type="module" src="/qa/harness.mjs"></script>

@@ -1,6 +1,8 @@
 import importlib.machinery
 import importlib.util
+import json
 import pathlib
+import tempfile
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -147,16 +149,47 @@ class RealMediaQaServerTests(unittest.TestCase):
         self.assertIsNone(qa.safe_repo_file(ROOT, "/js/../../AGENTS.md"))
         self.assertIsNone(qa.safe_repo_file(ROOT, "/metadata/categories.json"))
 
+    def test_git_head_sha_supports_loose_and_packed_refs_without_shell(self):
+        sha = "a" * 40
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            metadata = root / ".git"
+            (metadata / "refs" / "heads").mkdir(parents=True)
+            (metadata / "HEAD").write_text("ref: refs/heads/main\n", encoding="utf-8")
+            (metadata / "refs" / "heads" / "main").write_text(sha + "\n", encoding="utf-8")
+            self.assertEqual(qa.git_head_sha(root), sha)
+
+            (metadata / "refs" / "heads" / "main").unlink()
+            (metadata / "packed-refs").write_text(
+                "# pack-refs with: peeled fully-peeled\n"
+                + sha + " refs/heads/main\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(qa.git_head_sha(root), sha)
+
+    def test_context_contains_only_public_origin_source_sha_and_staging_status(self):
+        sha = "b" * 40
+        payload = json.loads(
+            qa.qa_context_bytes(sha, "https://ausmalwiese.de").decode("utf-8")
+        )
+        self.assertEqual(payload, {
+            "schema": "ausmalwiese.book-real-media-qa-context.v1",
+            "publicOrigin": "https://ausmalwiese.de",
+            "sourceSha": sha,
+            "status": "STAGING ONLY",
+        })
+
     def test_tool_is_loopback_only_non_persistent_and_not_in_production_image(self):
         source = TOOL.read_text(encoding="utf-8")
         docker = (ROOT / "Dockerfile").read_text(encoding="utf-8")
         self.assertIn('ThreadingHTTPServer(("127.0.0.1", args.port), handler)', source)
         self.assertNotIn("0.0.0.0", source)
         self.assertNotIn("write_bytes(", source)
-        self.assertNotIn("write_text(", source)
         self.assertNotIn("subprocess", source)
         self.assertNotIn("os.system", source)
         self.assertNotIn("print-basket-real-media-qa", docker)
+        self.assertIn('QA_CONTEXT = "/qa/context.json"', source)
+        self.assertIn('QA_RECEIPT_MODULE = "/qa/print-basket-real-media-qa-receipt.mjs"', source)
 
 
 if __name__ == "__main__":

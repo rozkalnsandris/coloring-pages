@@ -7,6 +7,16 @@ import {
 } from "../js/book-output-release-gate.mjs";
 import { prepareCurrentBookOutputSession } from "../js/book-output-session.mjs";
 import { printStagedDocumentInBasketHost } from "../js/print-basket-print-host.mjs";
+import {
+  auditQaPrivacySurfaces,
+  buildQaReceipt,
+  captureQaEnvironment,
+  createQaAuditedFetch,
+  createQaPrivacyCanary,
+  prepareQaResourceTimingAudit,
+  privacyAuditPass,
+  stageQaReceiptDownload,
+} from "./print-basket-real-media-qa-receipt.mjs";
 
 const ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const MAX_PUBLIC_PNG_BYTES = 32 * 1024 * 1024;
@@ -190,9 +200,29 @@ function coverState() {
   });
 }
 
-async function freshBasket() {
+async function freshContext(fetcher) {
+  const response = await fetcher("/qa/context.json", {
+    cache: "no-store",
+    credentials: "omit",
+    redirect: "error",
+  });
+  if (!response.ok || response.redirected ||
+      response.url !== location.origin + "/qa/context.json") {
+    throw new Error("QA source context is unavailable.");
+  }
+  const value = await response.json();
+  if (!value || value.status !== "STAGING ONLY" ||
+      typeof value.sourceSha !== "string" ||
+      !/^[a-f0-9]{40}$/.test(value.sourceSha) ||
+      typeof value.publicOrigin !== "string") {
+    throw new Error("QA source context is invalid.");
+  }
+  return value;
+}
+
+async function freshBasket(fetcher) {
   const ids = parseActivityIds(document.querySelector("#qa-ids").value);
-  const response = await fetch("/catalog.json", {
+  const response = await fetcher("/catalog.json", {
     cache: "no-store",
     credentials: "omit",
     redirect: "error",
@@ -204,16 +234,12 @@ async function freshBasket() {
   return { ids, basket: buildStagingBasket(ids, catalog) };
 }
 
-function renderEvidence(basket, mode, coverEnabled, publicMedia = []) {
-  const evidence = publicEvidence(basket, { mode, coverEnabled, publicMedia });
-  document.querySelector("#qa-evidence").textContent = JSON.stringify(evidence, null, 2);
-}
-
 function setStatus(message) {
   document.querySelector("#qa-status").textContent = message;
 }
 
 let activeZip = null;
+let activeReceipt = null;
 let controller = null;
 let busy = false;
 
@@ -226,7 +252,30 @@ function resetTransient() {
     try { activeZip.dispose(); } catch {}
     activeZip = null;
   }
+  if (activeReceipt) {
+    try { activeReceipt.link.remove(); } catch {}
+    try { activeReceipt.dispose(); } catch {}
+    activeReceipt = null;
+  }
   document.querySelector("#qa-download").replaceChildren();
+  document.querySelector("#qa-receipt-download").replaceChildren();
+}
+
+function publishReceipt(receipt) {
+  document.querySelector("#qa-evidence").textContent = JSON.stringify(receipt, null, 2);
+  activeReceipt = stageQaReceiptDownload(receipt);
+  document.querySelector("#qa-receipt-download").replaceChildren(activeReceipt.link);
+}
+
+function operationPrivacy(tokens, resourceAudit) {
+  return auditQaPrivacySurfaces(tokens, {
+    locationRef: location,
+    documentRef: document,
+    sessionStorageRef: globalThis.sessionStorage,
+    localStorageRef: globalThis.localStorage,
+    performanceRef: globalThis.performance,
+    resourceAudit,
+  });
 }
 
 async function validateSelection() {
@@ -235,20 +284,48 @@ async function validateSelection() {
   busy = true;
   controller = new AbortController();
   const localController = controller;
+  const cover = coverState();
+  const tokens = cover.enabled ? [cover.title, cover.name].filter(Boolean) : [];
+  const requestAudit = [];
+  const resourceAudit = prepareQaResourceTimingAudit(globalThis.performance);
+  const auditedFetch = createQaAuditedFetch(globalThis.fetch, {
+    origin: location.origin,
+    tokens,
+    entries: requestAudit,
+  });
+
   try {
-    const { basket } = await freshBasket();
-    const cover = coverState();
+    const sourceContext = await freshContext(auditedFetch);
+    const { basket } = await freshBasket(auditedFetch);
     const total = basket.sheetCount + (cover.enabled ? 1 : 0);
     if (total > 5) throw new Error("Deckblatt würde die 5-Seiten-Grenze überschreiten.");
     const media = await collectPublicMediaEvidence(basket, {
       origin: location.origin,
-      fetcher: globalThis.fetch,
+      fetcher: auditedFetch,
       cryptoRef: globalThis.crypto,
       signal: localController.signal,
     });
-    renderEvidence(basket, "validate", cover.enabled, media);
+    const evidence = publicEvidence(basket, {
+      mode: "validate",
+      coverEnabled: cover.enabled,
+      publicMedia: media,
+    });
+    const privacy = operationPrivacy(tokens, resourceAudit);
+    const receipt = buildQaReceipt({
+      sourceContext,
+      environment: captureQaEnvironment(),
+      publicEvidence: evidence,
+      requestAudit,
+      privacyAudit: privacy,
+      outcome: {
+        mode: "validate",
+        result: "STAGING PASS",
+        note: "Public PNG bytes, SHA-256 and canonical A4 geometry recorded.",
+      },
+    });
+    publishReceipt(receipt);
     setStatus(
-      "STAGING CHECK: Öffentliche Print-PNGs sind vollständig; SHA-256/Bytes/A4-Geometrie wurden erfasst."
+      "STAGING CHECK: Öffentliche Print-PNGs sind vollständig; Receipt ist speicherbar."
     );
   } catch (error) {
     document.querySelector("#qa-evidence").textContent = "";
@@ -265,9 +342,19 @@ async function stage(mode) {
   busy = true;
   controller = new AbortController();
   const localController = controller;
+  const cover = coverState();
+  const tokens = cover.enabled ? [cover.title, cover.name].filter(Boolean) : [];
+  const requestAudit = [];
+  const resourceAudit = prepareQaResourceTimingAudit(globalThis.performance);
+  const auditedFetch = createQaAuditedFetch(globalThis.fetch, {
+    origin: location.origin,
+    tokens,
+    entries: requestAudit,
+  });
+
   try {
-    const { ids, basket } = await freshBasket();
-    const cover = coverState();
+    const sourceContext = await freshContext(auditedFetch);
+    const { ids, basket } = await freshBasket(auditedFetch);
     if (basket.sheetCount + (cover.enabled ? 1 : 0) > 5) {
       throw new Error("Deckblatt würde die 5-Seiten-Grenze überschreiten.");
     }
@@ -279,7 +366,7 @@ async function stage(mode) {
         mode,
         origin: location.origin,
         readIds: () => [...ids],
-        fetcher: globalThis.fetch,
+        fetcher: auditedFetch,
         signal: localController.signal,
         documentRef: document,
         fonts: document.fonts,
@@ -287,27 +374,121 @@ async function stage(mode) {
       },
     );
 
+    let note;
     if (mode === "zip") {
       activeZip = session.resource;
       activeZip.link.textContent = "Staging-ZIP speichern";
       activeZip.link.setAttribute("aria-label", "Staging-ZIP speichern");
       document.querySelector("#qa-download").replaceChildren(activeZip.link);
-      renderEvidence(basket, "zip", cover.enabled);
+      note = "ZIP was staged from the reviewed output session.";
       setStatus(
-        "STAGING PASS: ZIP wurde aus frischen öffentlichen Print-PNGs vorbereitet. " +
-        "Dies ist kein Visitor- oder Release-PASS."
+        "STAGING PASS: ZIP wurde vorbereitet. Dies ist kein Visitor- oder Release-PASS."
       );
     } else {
       const result = printStagedDocumentInBasketHost(session.resource, {
         documentRef: document,
         signal: localController.signal,
       });
-      renderEvidence(basket, "print", cover.enabled);
+      note = result.sheetCount + " A4 sheet(s) were staged before the print dialog closed.";
       setStatus(
         "STAGING PRINT DIALOG CLOSED: " + result.sheetCount +
-        " A4-Seite(n) waren vorbereitet. Preview/Schließen ist kein physischer Druck-PASS."
+        " A4-Seite(n) waren vorbereitet. Dies ist kein physischer Druck-PASS."
       );
     }
+
+    const evidence = publicEvidence(basket, {
+      mode,
+      coverEnabled: cover.enabled,
+    });
+    const privacy = operationPrivacy(tokens, resourceAudit);
+    const receipt = buildQaReceipt({
+      sourceContext,
+      environment: captureQaEnvironment(),
+      publicEvidence: evidence,
+      requestAudit,
+      privacyAudit: privacy,
+      outcome: {
+        mode,
+        result: "STAGING PASS",
+        note,
+      },
+    });
+    publishReceipt(receipt);
+  } catch (error) {
+    setStatus("FAIL/BLOCKED: " + (error?.message || "Unbekannter Fehler."));
+  } finally {
+    if (controller === localController) controller = null;
+    busy = false;
+  }
+}
+
+async function runPrivacyCanary() {
+  if (busy) return;
+  resetTransient();
+  busy = true;
+  controller = new AbortController();
+  const localController = controller;
+  const canary = createQaPrivacyCanary(globalThis.crypto);
+  const tokens = [canary.title, canary.name];
+  const requestAudit = [];
+  const resourceAudit = prepareQaResourceTimingAudit(globalThis.performance);
+  const auditedFetch = createQaAuditedFetch(globalThis.fetch, {
+    origin: location.origin,
+    tokens,
+    entries: requestAudit,
+  });
+
+  try {
+    const sourceContext = await freshContext(auditedFetch);
+    const { ids, basket } = await freshBasket(auditedFetch);
+    if (basket.sheetCount + 1 > 5) {
+      throw new Error("Datenschutz-Canary benötigt eine freie Deckblatt-Seite.");
+    }
+
+    const session = await prepareCurrentBookOutputSession(
+      basket,
+      Object.freeze({
+        enabled: true,
+        title: canary.title,
+        name: canary.name,
+      }),
+      {
+        mode: "zip",
+        origin: location.origin,
+        readIds: () => [...ids],
+        fetcher: auditedFetch,
+        signal: localController.signal,
+        documentRef: document,
+        fonts: document.fonts,
+        coverRenderOptions: BOOK_COVER_BROWSER_RENDER_OPTIONS,
+      },
+    );
+    session.resource.dispose();
+
+    const privacy = operationPrivacy(tokens, resourceAudit);
+    if (!privacyAuditPass(privacy)) {
+      throw new Error("Datenschutz-Canary konnte nicht vollständig als lokal bestätigt werden.");
+    }
+    const evidence = publicEvidence(basket, {
+      mode: "privacy-canary",
+      coverEnabled: true,
+    });
+    const receipt = buildQaReceipt({
+      sourceContext,
+      environment: captureQaEnvironment(),
+      publicEvidence: evidence,
+      requestAudit,
+      privacyAudit: privacy,
+      outcome: {
+        mode: "privacy-canary",
+        result: "STAGING PASS",
+        note: "Synthetic cover canary stayed out of audited request URLs, storage and resource URLs.",
+      },
+    });
+    publishReceipt(receipt);
+    setStatus(
+      "STAGING PRIVACY PASS: Synthetischer Deckblatt-Canary blieb außerhalb der geprüften Netzwerk-/Storage-Flächen."
+    );
   } catch (error) {
     setStatus("FAIL/BLOCKED: " + (error?.message || "Unbekannter Fehler."));
   } finally {
@@ -330,6 +511,7 @@ function startHarness() {
   document.querySelector("#qa-validate").addEventListener("click", () => { void validateSelection(); });
   document.querySelector("#qa-zip").addEventListener("click", () => { void stage("zip"); });
   document.querySelector("#qa-print").addEventListener("click", () => { void stage("print"); });
+  document.querySelector("#qa-privacy").addEventListener("click", () => { void runPrivacyCanary(); });
   document.querySelector("#qa-clear").addEventListener("click", clearDraft);
   window.addEventListener("pagehide", resetTransient);
 }

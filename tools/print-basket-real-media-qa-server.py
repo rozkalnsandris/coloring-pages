@@ -24,6 +24,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 MAX_CATALOG_BYTES = 8 * 1024 * 1024
 MAX_PRINT_BYTES = 32 * 1024 * 1024
+SHA40 = re.compile(r"^[a-f0-9]{40}$")
 ACTIVITY_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 PRINT_PATH = re.compile(
     r"^/media/([a-z0-9]+(?:-[a-z0-9]+)*)/"
@@ -32,6 +33,8 @@ PRINT_PATH = re.compile(
 STATIC_PREFIXES = ("/js/", "/css/", "/assets/")
 QA_HTML = "/qa/"
 QA_MODULE = "/qa/harness.mjs"
+QA_RECEIPT_MODULE = "/qa/print-basket-real-media-qa-receipt.mjs"
+QA_CONTEXT = "/qa/context.json"
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -175,6 +178,66 @@ def safe_repo_file(repo_root: pathlib.Path, request_path: str) -> pathlib.Path |
     return candidate
 
 
+def git_dir(repo_root: pathlib.Path) -> pathlib.Path:
+    dotgit = repo_root / ".git"
+    if dotgit.is_dir():
+        return dotgit.resolve()
+    if dotgit.is_file():
+        text = dotgit.read_text(encoding="utf-8").strip()
+        if not text.startswith("gitdir: "):
+            raise RuntimeError("unsupported .git file")
+        target = pathlib.Path(text[8:].strip())
+        if not target.is_absolute():
+            target = (repo_root / target).resolve()
+        return target
+    raise RuntimeError("repository git metadata unavailable")
+
+
+def git_head_sha(repo_root: pathlib.Path) -> str:
+    metadata = git_dir(repo_root)
+    head = (metadata / "HEAD").read_text(encoding="utf-8").strip()
+    if SHA40.fullmatch(head):
+        return head
+    if not head.startswith("ref: "):
+        raise RuntimeError("git HEAD is not a SHA or ref")
+    ref = head[5:].strip()
+    loose = metadata / ref
+    if loose.is_file():
+        value = loose.read_text(encoding="utf-8").strip()
+        if SHA40.fullmatch(value):
+            return value
+    packed = metadata / "packed-refs"
+    if packed.is_file():
+        for line in packed.read_text(encoding="utf-8").splitlines():
+            if not line or line.startswith(("#", "^")):
+                continue
+            try:
+                value, name = line.split(" ", 1)
+            except ValueError:
+                continue
+            if name == ref and SHA40.fullmatch(value):
+                return value
+    raise RuntimeError("git HEAD ref could not be resolved")
+
+
+def qa_context_bytes(source_sha: str, public_origin: str) -> bytes:
+    if not SHA40.fullmatch(source_sha):
+        raise RuntimeError("invalid source SHA")
+    return (
+        json.dumps(
+            {
+                "schema": "ausmalwiese.book-real-media-qa-context.v1",
+                "sourceSha": source_sha,
+                "publicOrigin": public_origin,
+                "status": "STAGING ONLY",
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        + "\n"
+    ).encode("utf-8")
+
+
 def make_handler(
     *,
     repo_root: pathlib.Path,
@@ -182,12 +245,14 @@ def make_handler(
     opener,
     catalog_bytes: bytes,
     allowed_paths: frozenset[str],
+    context_bytes: bytes,
 ):
     qa_html = repo_root / "tools" / "print-basket-real-media-qa.html"
     qa_module = repo_root / "tools" / "print-basket-real-media-qa.mjs"
+    qa_receipt_module = repo_root / "tools" / "print-basket-real-media-qa-receipt.mjs"
 
     class Handler(BaseHTTPRequestHandler):
-        server_version = "AusmalwieseQAServer/1.0"
+        server_version = "AusmalwieseQAServer/1.1"
 
         def log_message(self, format, *args):
             return
@@ -234,6 +299,12 @@ def make_handler(
                 return
             if path == QA_MODULE:
                 self._file(qa_module, "application/javascript; charset=utf-8")
+                return
+            if path == QA_RECEIPT_MODULE:
+                self._file(qa_receipt_module, "application/javascript; charset=utf-8")
+                return
+            if path == QA_CONTEXT:
+                self._bytes(200, "application/json; charset=utf-8", context_bytes)
                 return
             if path == "/catalog.json":
                 self._bytes(200, "application/json; charset=utf-8", catalog_bytes)
@@ -301,6 +372,8 @@ def main(argv=None) -> int:
         repo_root = pathlib.Path(args.repo_root).resolve()
         if not (repo_root / "js" / "book-output-session.mjs").is_file():
             raise RuntimeError("repo root does not contain expected #199 source")
+        source_sha = git_head_sha(repo_root)
+        context = qa_context_bytes(source_sha, origin)
         opener = build_opener()
         catalog_url = origin + "/catalog.json"
         catalog_bytes, content_type = fetch_exact(
@@ -315,7 +388,7 @@ def main(argv=None) -> int:
         allowed = allowed_public_print_paths(catalog)
         if not allowed:
             raise RuntimeError("public catalogue contains no allowlisted print PNGs")
-    except (ValueError, RuntimeError) as exc:
+    except (OSError, ValueError, RuntimeError) as exc:
         print(f"STOP: {exc}", file=sys.stderr)
         return 2
 
@@ -325,11 +398,12 @@ def main(argv=None) -> int:
         opener=opener,
         catalog_bytes=catalog_bytes,
         allowed_paths=allowed,
+        context_bytes=context,
     )
     server = ThreadingHTTPServer(("127.0.0.1", args.port), handler)
 
     print(
-        f"QA_STAGING_SERVER=READY origin={origin} "
+        f"QA_STAGING_SERVER=READY source_sha={source_sha} origin={origin} "
         f"allowlisted_print_paths={len(allowed)} "
         f"url=http://127.0.0.1:{args.port}/qa/"
     )
