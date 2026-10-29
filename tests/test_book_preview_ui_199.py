@@ -54,7 +54,8 @@ class BookPreviewUi199Tests(unittest.TestCase):
         self.assertNotIn("innerHTML", source)
         self.assertNotIn("window.print(", source)
         self.assertIn('printAction.disabled = true;', source)
-        self.assertIn("basket.ids.length === 0 || zipBusy || bookCover.enabled", source)
+        self.assertIn("planBookOutputControls", source)
+        self.assertIn("coveredZip: false", (ROOT / "js" / "book-output-release-gate.mjs").read_text(encoding="utf-8"))
         self.assertNotIn("prepareBasketPngZip", preview)
 
     def test_preview_resets_when_selection_changes_or_dialog_closes(self):

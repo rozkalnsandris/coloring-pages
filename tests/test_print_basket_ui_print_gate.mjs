@@ -32,7 +32,24 @@ function node(tag) {
     },
   };
 }
-function sample(ids = []) {
+function planControls(
+  { basketSheetCount, coverEnabled, busy = false },
+  release = { coveredZip: false, combinedPrint: false },
+) {
+  const hasSelection = basketSheetCount > 0;
+  return {
+    zipEnabled: hasSelection && !busy && (!coverEnabled || release.coveredZip),
+    printEnabled: hasSelection && !busy && release.combinedPrint,
+    zipStatus: coverEnabled && !release.coveredZip
+      ? "ZIP mit Deckblatt ist noch nicht verfügbar."
+      : "",
+    printStatus: release.combinedPrint
+      ? ""
+      : "Alles drucken ist noch nicht verfügbar.",
+  };
+}
+
+function sample(ids = [], { release = { coveredZip: false, combinedPrint: false } } = {}) {
   const appended = [];
   const document = {
     createElement: node,
@@ -59,6 +76,9 @@ function sample(ids = []) {
     { document, panelButton, basket, catalogById: new Map([[entry.id, entry]]),
       bookCover,
       bookSheetCount: () => basket.sheetCount + (bookCover.enabled ? 1 : 0),
+      planBookOutputControls: state => planControls(state, release),
+      BOOK_OUTPUT_RELEASE: release,
+      BOOK_COVER_BROWSER_RENDER_OPTIONS: { strokeWidthPx: 20, lineGapPx: 120 },
       window: { print() { prints++; } }, zipBusy: false },
   );
   assert.equal(appended.length, 1);
@@ -92,10 +112,11 @@ test("selection enables ZIP but never enables or triggers print before QA", () =
   assert.equal(state.prints, 0);
 });
 
-test("the basket UI has no print trigger or print-session wiring", () => {
+test("the basket UI still has no print trigger or print lifecycle wiring before QA", () => {
   const liveCode = source.split("\n").filter(line =>
     !line.trimStart().startsWith("//")).join("\n");
   assert.equal(liveCode.includes("window.print("), false);
+  assert.equal(liveCode.includes("printStagedBasketDocumentOnce("), false);
   assert.equal(liveCode.includes("stageCurrentBasketPrintSession("), false);
 });
 
@@ -104,10 +125,15 @@ const zipStart = source.indexOf("function resetZip() {");
 const zipEnd = source.indexOf("\nfunction createDialog() {", zipStart);
 if (zipStart < 0 || zipEnd <= zipStart) throw new Error("ZIP UI source unavailable");
 
-function zipScenario({ driftDuringFetch = false, failInsert = false } = {}) {
+function zipScenario({
+  driftDuringFetch = false,
+  failInsert = false,
+  coverEnabled = false,
+  coveredZipReleased = false,
+} = {}) {
   const id = "0000001";
   const page = { activityId: id, pageIndex: 1, printUrl: "/media/0000001/print.png" };
-  let stored = [id], allocations = 0, disposals = 0;
+  let stored = [id], allocations = 0, disposals = 0, bookSessions = 0;
   const prepare = { disabled: false };
   const cancel = { disabled: true };
   const message = { textContent: "" };
@@ -127,7 +153,7 @@ function zipScenario({ driftDuringFetch = false, failInsert = false } = {}) {
   const dialog = { open: true, querySelector: selector => controls[selector] || null };
   const context = {
     dialog, basket: { ids: [id], pages: [page], sheetCount: 1 },
-    bookCover: { enabled: false, title: "Mein Ausmalbuch", name: "" },
+    bookCover: { enabled: coverEnabled, title: "Mein Ausmalbuch", name: "Mia" },
     window: { location: { origin: "https://ausmalwiese.de" } },
     readStoredBasketIds: () => [...stored],
     fetch: async () => ({ ok: true, redirected: false, json: async () => [] }),
@@ -143,6 +169,25 @@ function zipScenario({ driftDuringFetch = false, failInsert = false } = {}) {
         dispose() { disposals++; },
       };
     },
+    prepareCurrentBookOutputSession: async () => {
+      bookSessions++;
+      allocations++;
+      return {
+        resource: {
+          link: { className: "", remove() {} },
+          dispose() { disposals++; },
+        },
+      };
+    },
+    planBookOutputControls: state => planControls(state, {
+      coveredZip: coveredZipReleased,
+      combinedPrint: false,
+    }),
+    BOOK_OUTPUT_RELEASE: {
+      coveredZip: coveredZipReleased,
+      combinedPrint: false,
+    },
+    BOOK_COVER_BROWSER_RENDER_OPTIONS: { strokeWidthPx: 20, lineGapPx: 120 },
     AbortController,
     zipEpoch: 0, zipController: null, zipBusy: false, stagedZip: null,
   };
@@ -154,6 +199,7 @@ function zipScenario({ driftDuringFetch = false, failInsert = false } = {}) {
     run: () => context.runZip(), message, slot, prepare, cancel,
     get allocations() { return allocations; },
     get disposals() { return disposals; },
+    get bookSessions() { return bookSessions; },
   };
 }
 
@@ -184,4 +230,26 @@ test("ZIP Blob URL is disposed if final DOM attachment fails", async () => {
   assert.equal(caseZip.disposals, 1);
   assert.equal(caseZip.slot.children.length, 0);
   assert.match(caseZip.message.textContent, /konnte nicht vorbereitet/);
+});
+
+
+test("covered ZIP remains disabled in production gate and cannot start a book session", async () => {
+  const caseZip = zipScenario({ coverEnabled: true, coveredZipReleased: false });
+  assert.equal(caseZip.prepare.disabled, false, "fixture starts neutral before reset/render");
+  await caseZip.run();
+  assert.equal(caseZip.bookSessions, 0);
+  assert.equal(caseZip.allocations, 0);
+  assert.equal(caseZip.slot.children.length, 0);
+});
+
+test("hypothetical covered-ZIP release uses the fresh book session and not coverless exporter", async () => {
+  const caseZip = zipScenario({ coverEnabled: true, coveredZipReleased: true });
+  await caseZip.run();
+  assert.equal(caseZip.bookSessions, 1);
+  assert.equal(caseZip.allocations, 1);
+  assert.equal(caseZip.disposals, 0);
+  assert.equal(caseZip.slot.children.length, 1);
+  assert.match(caseZip.message.textContent, /ZIP bereit/);
+  assert.equal(caseZip.cancel.disabled, true);
+  assert.equal(caseZip.prepare.disabled, false);
 });

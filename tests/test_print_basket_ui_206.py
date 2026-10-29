@@ -139,12 +139,15 @@ class PrintBasketUi206Tests(unittest.TestCase):
             'readStoredBasketIds()',
             'JSON.stringify(selectedIds) !== JSON.stringify(basket.ids)',
             'fetch("/catalog.json", {',
-            'cache: "no-store", credentials: "omit", redirect: "error", signal: controller.signal',
+            'cache: "no-store"',
+            'credentials: "omit"',
+            'redirect: "error"',
+            'signal: controller.signal',
             'expandBasketForExport(selectedIds, catalogFresh)',
             'pages.length !== basket.sheetCount',
             'page.printUrl !== basket.pages[index]?.printUrl',
             'prepareBasketPngZip(pages, {',
-            'origin: window.location.origin, signal: controller.signal',
+            'origin: window.location.origin',
         ):
             self.assertIn(marker, source)
 
@@ -167,7 +170,8 @@ class PrintBasketUi206Tests(unittest.TestCase):
     def test_zip_ready_link_is_accessible_and_empty_basket_blocks_prepare(self):
         source = (ROOT / "js" / "print-basket-ui.mjs").read_text(encoding="utf-8")
         self.assertIn('zipPrepare.disabled = true;', source)
-        self.assertIn('zipPrepare.disabled = basket.ids.length === 0 || zipBusy || bookCover.enabled;', source)
+        self.assertIn('zipPrepare.disabled = !outputControls.zipEnabled;', source)
+        self.assertIn('planBookOutputControls({', source)
         self.assertIn('zipStatus.setAttribute("role", "status");', source)
         self.assertIn('zipStatus.setAttribute("aria-live", "polite");', source)
         css = (ROOT / "css" / "print-basket.css").read_text(encoding="utf-8")
