@@ -61,7 +61,7 @@ class BookPreviewUi199Tests(unittest.TestCase):
     def test_preview_resets_when_selection_changes_or_dialog_closes(self):
         source = (ROOT / "js" / "print-basket-ui.mjs").read_text(encoding="utf-8")
         self.assertIn('node.addEventListener("close", () => { resetPreview(); });', source)
-        self.assertIn("resetZip();\n  resetPreview();\n  basket = next;", source)
+        self.assertIn("resetZip();\n  resetPrint();\n  resetPreview();\n  basket = next;", source)
 
     def test_mobile_preview_media_is_bounded(self):
         css = (ROOT / "css" / "print-basket.css").read_text(encoding="utf-8")

@@ -230,3 +230,27 @@
   .basket-cover-toggle { min-height: 48px; }
   .basket-cover-fields input { min-height: 48px; }
 }
+
+
+/* #199/#206 combined print host. Hidden during normal browsing. During one
+   reviewed print session the body class isolates only the staged A4 sheets;
+   existing app.css @page/size/orientation rules remain authoritative. */
+.basket-print-mount { display: none; }
+
+@media print {
+  body.basket-print-active > *:not([data-basket-print-mount]) {
+    display: none !important;
+  }
+
+  body.basket-print-active > [data-basket-print-mount] {
+    display: block !important;
+  }
+
+  body.basket-print-active {
+    background: #fff;
+  }
+
+  .basket-print-mount .print-sheet {
+    margin: 0;
+  }
+}
