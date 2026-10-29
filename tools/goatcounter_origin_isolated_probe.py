@@ -136,17 +136,13 @@ def probe():
             assert b"nginx/1.29.1" in version.stderr
             run("docker", "exec", container, "nginx", "-t")
 
-            def request(target, method="GET", body=b"", status=200, conditional="",
-                        ordinary_error=False):
+            def request(target, method="GET", body=b"", status=200, conditional=""):
                 raw = (f"{method} {target} HTTP/1.1\r\nHost: example.invalid\r\n"
                        "Connection: close\r\nCookie: PRIVATE_COOKIE\r\n"
                        "Authorization: Bearer PRIVATE_AUTH\r\nUser-Agent: PRIVATE_UA\r\n"
                        "Referer: https://example.invalid/PRIVATE_REF\r\n"
                        "X-Forwarded-For: 192.0.2.99\r\nOrigin: https://example.invalid\r\n"
                        f"Content-Length: {len(body)}\r\n{conditional}\r\n").encode() + body
-                if ordinary_error:
-                    # Existing main-request error logging is outside mirror privacy.
-                    raw = raw.replace(b"PRIVATE_", b"SYNTHETIC_")
                 start = time.monotonic()
                 response = run("docker", "exec", "-i", container, "nc", "-w", "3",
                                "127.0.0.1", "8080", data=raw).stdout
@@ -204,7 +200,7 @@ def probe():
             (html / "detail.html").write_text("synthetic page\n")
             # A later static-handler permission failure occurs after mirror.
             os.chmod(html / "detail.html", 0o000)
-            request("/detail.html?id=0123456", status=403, ordinary_error=True)
+            request("/detail.html?id=0123456", status=403)
             assert receiver.counts() == (before[0] + 1, before[1] + 1)
             os.chmod(html / "detail.html", 0o644)
 

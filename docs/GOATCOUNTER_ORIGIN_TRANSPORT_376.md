@@ -28,9 +28,14 @@ the exact normalized `/detail.html` route gains an internal mirror. The original
 method and validated ID are frozen before the subrequest changes URI context.
 The upstream target, method, headers, length and body are constructed afresh;
 inherited query arguments are discarded. No retry, raw event spool or public
-collector route is added. Mirror error/access logging is disabled to prevent
-proxy errors from exposing the original request query. Ordinary origin logs
-remain a separate processing/release fact and are not silently changed.
+collector route is added. Mirror access logging and **both mirror and main detail
+route error logging** are disabled. The real failure probe showed that suppressing
+only the mirror location's error log still exposed the original URL/referrer
+through the main connection's error log. This deliberately removes ordinary
+detail-route error diagnostics too; the eventual collector must use bounded,
+sanitized health/error classes, not raw requests. Existing origin access logging
+and error logs for other routes are unchanged and remain a separate processing/
+release assessment. This is not a claim that all origin logs are anonymous.
 
 The real-Nginx probe caught that a trailing `?` on a static `proxy_pass` URI does
 not discard inherited query arguments. The candidate explicitly clears `$args`

@@ -25,6 +25,10 @@ MAP = '''
 LOCATIONS = '''
         # Candidate only: ordinary HTML delivery retains its original cache policy.
         location = /detail.html {
+            # Mirror failures use the main connection log as well. The isolated
+            # failure probe proves that suppressing only the mirror log leaks
+            # original query/referrer; suppress detail-route error logs too.
+            error_log /dev/null crit;
             set $origin_frozen_id $origin_query_id;
             set $origin_frozen_method $request_method;
             mirror /__origin_count;
