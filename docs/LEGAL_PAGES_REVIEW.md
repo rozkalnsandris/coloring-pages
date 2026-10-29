@@ -24,11 +24,11 @@ do not restore the superseded age gate or persistent Like consent system.
 | Exact tunnel-route operator | RPi5_main #1271 merged at `9b681d0f4b0f19125982efa94a7d54ee55fbd91a` | Source readiness, not exposure authority |
 | Tunnel baseline | [Sanitized receipt](https://github.com/rozkalnsandris/RPi5_main/pull/1271#issuecomment-6469926967) | Exact two path routes absent, no transformer conflicts |
 | Worker routes | [Sanitized receipt](https://github.com/rozkalnsandris/RPi5_main/pull/1271#issuecomment-6470127560) | Five routes, zero matching the two HTTPS pageview URLs; not proof about every edge feature |
-| Browser payload | #391 at `d8f0f6ea5116ec8188684d76bf4d2d75ff62ef6f` | Proposed automatic page-ID-only fetch; not deployed by this PR |
+| Superseded browser payload | #391 at `d8f0f6ea5116ec8188684d76bf4d2d75ff62ef6f` | Historical automatic page-ID-only fetch; superseded by the selected origin-request direction, not deployed |
 | Retention configuration | [RPi5_main #1273 execution receipt](https://github.com/rozkalnsandris/RPi5_main/pull/1273#issuecomment-6490759307), source `ecdf39a2643ff6a5b4a9c52f1d1b19aa6e07ce1d` | Native `data_retention=365` persisted and read back on 2026-10-29; empty analytics and private service health verified; not a future deletion-cycle or backup-erasure proof |
-| Collection direction | Owner retained automatic measurement and requested basis assessment on 2026-10-28 | No consent UI redesign, no legal conclusion or public activation authority |
+| Collection direction | Owner selected automatic origin detail-request counting on 2026-10-29; architecture in [#419](https://github.com/rozkalnsandris/coloring-pages/pull/419) | No additional GoatCounter browser request; implementation, actual-flow assessment and public activation remain outstanding |
 
-The page-ID-only client omits fetch credentials and referrer and keeps its
+The superseded page-ID-only client omits fetch credentials and referrer and keeps its
 per-page attempted-ID set only in memory. The adapter sends a new loopback
 request with no client IP/UA/referrer forwarding. These are narrow source
 properties. The browser-to-Cloudflare connection still processes transport
@@ -38,7 +38,7 @@ information; they do not establish that all request processing is anonymous.
 
 | Requirement | Assessment | Remaining action |
 | --- | --- | --- |
-| TDDDG §25 / ePrivacy Art. 5(3) | No cookie is not a sufficient exemption analysis | Assess the automatic JavaScript page-ID transmission and any applicable exception; do not silently treat audience measurement as necessary for printing |
+| TDDDG §25 / ePrivacy Art. 5(3) | No cookie is not a sufficient exemption analysis | Assess the selected ordinary-request server flow and remaining browser telemetry; do not carry over a browser-candidate conclusion or assume that server counting is automatically cleared |
 | GDPR Arts. 5/6 | Minimized aggregate target; personal-data processing at transport/edge remains relevant | Document purpose, necessity, alternatives and balancing for the actual flow; if consent is selected, assess its implementation and the child-user context |
 | GDPR Art. 13 | Draft contact/rights text exists; no current public GoatCounter notice | Complete the actual purposes/basis, recipients/transfers and retention disclosure before collection |
 | Retention | Owner's 12-month preference implemented as a 365-day native threshold under exact authorization | Disclose daily cleanup cadence, calendar/downtime limits and separate backup/restore treatment; future cleanup success still needs operational observation |
@@ -60,7 +60,7 @@ This is not a reason to reinstate a blanket 18+ browsing/printing restriction.
 Qualified legal review is recommended for the unresolved automatic-collection
 scope/exception and basis before public activation; no sign-off is asserted.
 
-### Automatic-collection basis assessment
+### Automatic-collection basis assessment — historical browser candidate
 
 **Purpose (proposed):** understand which public templates are opened so the
 operator can maintain and improve the catalogue. Count template opens, not
@@ -96,14 +96,17 @@ assessment. Current conclusion: **basis not yet established for activation**.
 
 ### Concrete collection alternatives — source review on 2026-10-29
 
-No architecture switch is performed by this review. The owner retained
-automatic measurement; a choice between the browser candidate and a server
-request metric is pending because their meanings differ.
+The owner selected **automatic origin detail-request counting** on 2026-10-29.
+The [selected architecture and rollout plan (#419)](https://github.com/rozkalnsandris/coloring-pages/pull/419)
+replaces the additional browser request with an internal Nginx mirror over a
+private Unix socket. This records the decision; integration is not deployed.
+The browser-candidate assessment above is historical and is not a conclusion
+about the selected server flow. PR #391 is superseded and must not be merged.
 
 | Candidate | What it measures | Engineering implications |
 | --- | --- | --- |
-| Existing #391 browser POST | One attempted event after a known detail entry resolves | Additional automatic client request; current TDDDG assessment remains unresolved. Stats view still runs alongside it. |
-| Origin-side counting of ordinary detail GETs | Eligible detail HTML requests received by the origin | No new analytics request from the browser. Does not prove rendering, includes automation, and can miss responses served entirely by browser/CDN caches. |
+| Superseded #391 browser POST | One attempted event after a known detail entry resolves | Additional automatic client request; current TDDDG assessment remains unresolved. Stats view still runs alongside it. |
+| Selected: origin-side counting of ordinary detail GETs | Eligible detail HTML requests received by the origin | No new analytics request from the browser. Does not prove rendering, includes automation, and can miss responses served entirely by browser/CDN caches. |
 | Edge-side counting of ordinary detail GETs | Requests reaching the selected Cloudflare route | Can observe CDN-served requests, but adds a Worker/route/transport design and still misses browser-cache restores. This is a larger runtime change. |
 
 At main `a0c40232cc32eb8880868bd6bd5368fdf4491829`,
@@ -149,7 +152,9 @@ The public draft now says only that GoatCounter is being prepared and public
 collection is not active. It must be replaced before activation, after the gates
 above are resolved. The intended active notice should state, in plain German:
 
-- which template-open event is counted and that the body contains its template ID;
+- which eligible origin detail HTTP request is counted, with its template ID in
+  an internal server message; distinguish requests from successful renders and
+  explain cache, bot, repeated-request and delivery-failure limits;
 - that counts are page/time aggregates rather than unique-person counts;
 - the verified absence of persistent visitor recognition in this feature;
 - actual transport/security processing, its recipients and established basis;
@@ -165,7 +170,8 @@ future database changes, deletion tests, backups or public tracking.
 
 This source update also reconciles #158 with application main
 `a0c40232cc32eb8880868bd6bd5368fdf4491829`; current asset versions are preserved
-while legal footer links are retained. #391 and the ingress write remain held.
+while legal footer links are retained. #391 and the public pageview ingress
+write are superseded by #419; public server collection still remains held.
 
 ## Current factual source/runtime model
 
