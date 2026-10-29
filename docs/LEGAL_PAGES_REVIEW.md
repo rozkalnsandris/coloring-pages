@@ -99,9 +99,16 @@ assessment. Current conclusion: **basis not yet established for activation**.
 The owner selected **automatic origin detail-request counting** on 2026-10-29.
 The [selected architecture and rollout plan (#419)](https://github.com/rozkalnsandris/coloring-pages/pull/419)
 replaces the additional browser request with an internal Nginx mirror over a
-private Unix socket. This records the decision; integration is not deployed.
-The browser-candidate assessment above is historical and is not a conclusion
-about the selected server flow. PR #391 is superseded and must not be merged.
+private Unix socket. The transport proof in
+[#424](https://github.com/rozkalnsandris/coloring-pages/pull/424) is now merged
+source evidence (reviewed head `dbb14e441a6906e230e7f3a675d7ddf75fa2bb9b`,
+squash merge `5a88082bcbdf97ee5280117c3eed3cf33a13db46`): it proves a
+strict minimized wire/catalog contract against pinned real Nginx in synthetic
+GitHub-hosted isolation. It does **not** wire the production Nginx config,
+Dockerfile/Compose, RPi5 listener or GoatCounter sender, and collection remains
+undeployed. The browser-candidate assessment above is historical and is not a
+conclusion about the selected server flow. PR #391 is superseded and must not be
+merged.
 
 | Candidate | What it measures | Engineering implications |
 | --- | --- | --- |
@@ -121,12 +128,16 @@ or disable caching merely to inflate measurement coverage.
 
 [GoatCounter documents backend API collection](https://www.goatcounter.com/help/backend).
 [Nginx mirror](https://nginx.org/en/docs/http/ngx_http_mirror_module.html) can
-create background subrequests, but a real integration would need a reviewed
-container-to-host path, method/status eligibility, seven-digit current-catalog
-validation, body/header minimization, and timeout/failure tests. The existing
-loopback adapter cannot simply be addressed as the host's localhost from an
-isolated container. Do not copy the upstream mirror example's original-URI or
-client-header forwarding into this privacy-minimized design.
+create background subrequests. Merged #424 now supplies source-level evidence
+for method/query eligibility, seven-digit current-catalog validation, a fixed
+body/header shape, query stripping, bounded timeouts/fail-open behavior and a
+private Unix-socket transport. Its real-Nginx probe also found two privacy
+defects before merge: inherited original query arguments and main-connection
+error logging that could expose original URL/referrer. The candidate explicitly
+clears subrequest arguments and suppresses detail-route error logging. This is
+still synthetic source evidence: final RPi5 peer identity/socket lifecycle,
+service integration, actual origin access/error logs, GoatCounter processing,
+backups and public activation require separate evidence and authorization.
 
 The existing `POST /api/stats/view` has two effects in
 `cloudflare/stats-worker.js`: it increments `daily_views` and, for an allowlisted
@@ -168,10 +179,11 @@ Composite Live operation completed the one native-setting update and service
 stop/start on 2026-10-29. That authorization is consumed; it does not authorize
 future database changes, deletion tests, backups or public tracking.
 
-This source update also reconciles #158 with application main
-`a0c40232cc32eb8880868bd6bd5368fdf4491829`; current asset versions are preserved
-while legal footer links are retained. #391 and the public pageview ingress
-write are superseded by #419; public server collection still remains held.
+This documentation update was reviewed against application
+`main=0d1e8222b90497b2a6a0f4574239f5124a012f82`. It does not claim that this
+long-lived Draft PR has been fully rebased/reconciled with current main.
+#391 and the public pageview ingress write remain superseded by #419; #424 is
+merged source proof only, and public server collection still remains held.
 
 ## Current factual source/runtime model
 
