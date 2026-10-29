@@ -17,18 +17,24 @@ function node(tag) {
     replaceChildren(...items) { this.children = items; },
     addEventListener(key, listener) { this.events.set(key, listener); },
     querySelector(selector) {
-      const match = selector.startsWith("[data-") && selector.endsWith("]") ? [null, selector.slice(6, -1)] : null;
-      if (!match) throw new Error("Unknown selector " + selector);
-      const key = match[1].replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-      const visit = element => {
-        if (Object.hasOwn(element.dataset, key)) return element;
+      const visit = (element, predicate) => {
+        if (predicate(element)) return element;
         for (const child of element.children) {
-          const found = visit(child);
+          const found = visit(child, predicate);
           if (found) return found;
         }
         return null;
       };
-      return visit(this);
+      if (selector.startsWith("#")) {
+        const id = selector.slice(1);
+        return visit(this, element => element.id === id);
+      }
+      const match = selector.startsWith("[data-") && selector.endsWith("]")
+        ? [null, selector.slice(6, -1)]
+        : null;
+      if (!match) throw new Error("Unknown selector " + selector);
+      const key = match[1].replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+      return visit(this, element => Object.hasOwn(element.dataset, key));
     },
   };
 }
