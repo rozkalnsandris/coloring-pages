@@ -24,6 +24,15 @@ function normalizeTopicText(value) {
   return String(value || "").trim().toLocaleLowerCase("de")
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "").replaceAll("ß", "ss");
 }
+function entryCategoryIds(entry) {
+  const primary = String(entry?.category || "");
+  const assigned = entry?.categories;
+  if (Array.isArray(assigned) && assigned.length > 0 && assigned[0] === primary &&
+    assigned.every((id) => typeof id === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)) &&
+    new Set(assigned).size === assigned.length) return assigned;
+  return primary ? [primary] : [];
+}
+
 function entryTopicIds(entry) {
   const known = new Set(topicRegistry.map((topic) => topic.id));
   if (Array.isArray(entry?.topics)) {
@@ -236,7 +245,7 @@ async function loadCategory() {
 
     const entries = catalog.filter((entry) => {
       if (!(entry && entry.id && entry.title && entry.thumb)) return false;
-      if (entry.category === category) return true;
+      if (entryCategoryIds(entry).includes(category)) return true;
       return categoryTopics.size > 0 && entryTopicIds(entry).some((topicId) => categoryTopics.has(topicId));
     });
     categoryEntries = entries;

@@ -163,6 +163,17 @@ function topicIsCurrent(topic, date = new Date()) {
   return start <= end ? current >= start && current <= end : current >= start || current <= end;
 }
 
+// Explicit membership is optional; legacy entries retain their single category.
+// Invalid catalogue metadata never creates new category matches.
+function entryCategoryIds(entry) {
+  const primary = normalize(entry?.category);
+  const assigned = entry?.categories;
+  if (Array.isArray(assigned) && assigned.length > 0 && assigned[0] === primary &&
+    assigned.every((id) => typeof id === "string" && Object.hasOwn(CATEGORY_LABELS, id)) &&
+    new Set(assigned).size === assigned.length) return assigned;
+  return primary ? [primary] : [];
+}
+
 function entryTopicIds(entry) {
   const known = new Set(topicRegistry.map((topic) => topic.id));
   if (Array.isArray(entry?.topics)) {
@@ -270,15 +281,15 @@ function currentCards() {
 
 function updateCatalogCounts(entries = null) {
   const cards = Array.isArray(entries) ? [] : currentCards();
-  const categories = Array.isArray(entries)
-    ? entries.map((entry) => entry.category)
-    : cards.map((card) => card.dataset.category);
+  const memberships = Array.isArray(entries)
+    ? entries.map(entryCategoryIds)
+    : cards.map((card) => card.dataset.categories ? card.dataset.categories.split(",") : [card.dataset.category]);
   const counts = new Map();
 
-  categories.forEach((value) => {
-    const category = normalize(value ?? "");
-    if (!category) return;
-    counts.set(category, (counts.get(category) || 0) + 1);
+  memberships.forEach((categories) => {
+    new Set(categories.map((value) => normalize(value))).forEach((category) => {
+      if (category) counts.set(category, (counts.get(category) || 0) + 1);
+    });
   });
 
   categoryButtons.forEach((button) => {
@@ -308,17 +319,17 @@ function updateCount(totalMatches) {
   }
 }
 
-function matchesFilters(titleValue, categoryValue, topicValues = [], ageValue = "", difficultyValue = "") {
+function matchesFilters(titleValue, categoryValues, topicValues = [], ageValue = "", difficultyValue = "") {
   const query = normalize(searchInput?.value ?? "");
   const title = normalize(titleValue ?? "");
-  const category = normalize(categoryValue ?? "");
-  const categoryLabel = normalize(CATEGORY_LABELS[category] || category);
-  const matchesQuery = !query || title.includes(query) || category.includes(query) || categoryLabel.includes(query);
+  const categories = (Array.isArray(categoryValues) ? categoryValues : [categoryValues]).map(normalize).filter(Boolean);
+  const matchesQuery = !query || title.includes(query) || categories.some((id) =>
+    id.includes(query) || normalize(CATEGORY_LABELS[id] || id).includes(query));
   const collectionTopics = DISCOVERY_COLLECTION_TOPICS[activeCategory];
   const matchesCategory = !activeCategory ||
     (collectionTopics
       ? topicValues.some((topicId) => collectionTopics.has(topicId))
-      : category === activeCategory);
+      : categories.includes(activeCategory));
   const matchesTopic = !activeTopic || topicValues.includes(activeTopic);
   return matchesQuery && matchesCategory && matchesTopic && matchesMetadata(ageValue, difficultyValue);
 }
@@ -326,7 +337,7 @@ function matchesFilters(titleValue, categoryValue, topicValues = [], ageValue = 
 function renderCatalog() {
   if (!gallery || !Array.isArray(catalogEntries)) return;
 
-  const matches = catalogEntries.filter((entry) => matchesFilters(entry.title, entry.category, entryTopicIds(entry), entry.age, entry.difficulty));
+  const matches = catalogEntries.filter((entry) => matchesFilters(entry.title, entryCategoryIds(entry), entryTopicIds(entry), entry.age, entry.difficulty));
   const visibleEntries = matches.slice(0, visibleLimit);
   const fragment = document.createDocumentFragment();
 
@@ -351,7 +362,7 @@ function applyFilters({ resetLimit = true } = {}) {
 
   let visible = 0;
   currentCards().forEach((card) => {
-    const show = matchesFilters(card.dataset.title, card.dataset.category, [], card.dataset.age, card.dataset.difficulty);
+    const show = matchesFilters(card.dataset.title, card.dataset.categories ? card.dataset.categories.split(",") : [card.dataset.category], [], card.dataset.age, card.dataset.difficulty);
     card.hidden = !show;
     if (show) visible += 1;
   });
@@ -399,6 +410,7 @@ function createCatalogCard(entry, stats = null) {
   card.className = "coloring-card";
   card.dataset.title = entry.title || "";
   card.dataset.category = entry.category || "";
+  card.dataset.categories = entryCategoryIds(entry).join(",");
 
   const previewLink = document.createElement("a");
   previewLink.className = "preview-image";
