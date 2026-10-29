@@ -163,3 +163,22 @@ test("host module has no network, storage, timer, popup or afterprint dependency
     assert.equal(code.includes(forbidden), false, forbidden);
   }
 });
+
+
+test("print-basket CSS isolates only the staged mount during active print media", () => {
+  const css = readFileSync(
+    new URL("../css/print-basket.css", import.meta.url),
+    "utf8",
+  );
+  for (const required of [
+    ".basket-print-mount { display: none; }",
+    "@media print",
+    "body.basket-print-active > *:not([data-basket-print-mount])",
+    "display: none !important;",
+    "body.basket-print-active > [data-basket-print-mount]",
+    "display: block !important;",
+  ]) {
+    assert.equal(css.includes(required), true, required);
+  }
+  assert.equal(css.includes("page-orientation:"), false);
+});
