@@ -106,8 +106,6 @@ test("browser QA harness has no release mutation, persistence, analytics or auto
   );
   for (const forbidden of [
     "BOOK_OUTPUT_RELEASE",
-    "sessionStorage",
-    "localStorage",
     "URLSearchParams",
     "sendBeacon(",
     "analytics",
@@ -115,6 +113,9 @@ test("browser QA harness has no release mutation, persistence, analytics or auto
     ".click(",
     "location.search",
     "location.hash",
+    ".setItem(",
+    ".removeItem(",
+    ".clear(",
   ]) {
     assert.equal(source.includes(forbidden), false, forbidden);
   }
@@ -122,4 +123,9 @@ test("browser QA harness has no release mutation, persistence, analytics or auto
   assert.equal(source.includes("printStagedDocumentInBasketHost"), true);
   assert.equal(source.includes("prepareCurrentBookOutputSession"), true);
   assert.equal(source.includes("collectPublicMediaEvidence"), true);
+  assert.equal(source.includes('from "./receipt.mjs"'), true);
+  assert.equal(source.includes("createQaAuditedFetch"), true);
+  assert.equal(source.includes("runPrivacyCanary"), true);
+  assert.equal(source.includes("globalThis.sessionStorage"), true);
+  assert.equal(source.includes("globalThis.localStorage"), true);
 });
