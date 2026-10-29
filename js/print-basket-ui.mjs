@@ -340,7 +340,6 @@ async function preparePrint() {
 
     const result = printStagedDocumentInBasketHost(staged, {
       documentRef: document,
-      print: () => window.print(),
       signal: controller.signal,
     });
     staged = null;
