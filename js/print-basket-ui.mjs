@@ -8,11 +8,15 @@ import { createBookPreviewCursor, moveBookPreviewCursor, setBookPreviewSheet } f
 import { buildBookPreviewDisplay } from "./book-preview-media.mjs";
 import {
   BOOK_COVER_BROWSER_RENDER_OPTIONS,
-  BOOK_OUTPUT_RELEASE,
+  BOOK_OUTPUT_ACTIVE_RELEASE,
   planBookOutputControls,
 } from "./book-output-release-gate.mjs";
 import { prepareCurrentBookOutputSession } from "./book-output-session.mjs";
 import { printStagedDocumentInBasketHost } from "./print-basket-print-host.mjs";
+
+// Keep the historical local release-gate name used by source-level regression
+// tests, but resolve it once from production-closed / loopback-QA-aware policy.
+const BOOK_OUTPUT_RELEASE = BOOK_OUTPUT_ACTIVE_RELEASE;
 
 const MAX_SHEETS = 5;
 const CARD_SELECTOR = ".coloring-card";

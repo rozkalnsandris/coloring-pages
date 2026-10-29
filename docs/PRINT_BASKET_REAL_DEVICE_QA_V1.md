@@ -33,6 +33,22 @@ Use **Auswahl prüfen** before a case to record public-only receipt fields for t
 
 **Datenschutz-Canary prüfen** uses generated, non-personal cover text only in browser memory, runs the reviewed covered ZIP preparation path without exposing a download, and immediately disposes the result. Its audited fetch wrapper permits only same-origin `GET` requests with no body and records only request paths/statuses. The resulting privacy receipt checks the canary against the current page URL, cookies, `sessionStorage`, `localStorage` and newly observed `PerformanceResourceTiming` resource URLs. Before the operation, the harness requires `Performance.setResourceTimingBufferSize()` and expands the resource buffer so a full default buffer cannot silently drop the canary request; MDN documents an initial resource-timing buffer of 250 entries and explicit buffer-size management. If that preparation or any storage/performance surface is unavailable, the canary result is **BLOCKED**, not PASS. This automated check is useful evidence but **does not replace** the manual DevTools Network/Console inspection required before public privacy copy is approved.
 
+
+### Loopback visitor-mode QA — production flag remains closed
+
+The same loopback server also exposes `/qa/visitor/`. This page sets a QA-only
+release override **before** importing the real production
+`js/print-basket-ui.mjs`, so the normal `Hinzufügen` → `Meine Drucksammlung`
+→ `Alles drucken` / covered-ZIP click wiring can be exercised with fresh public
+media without changing `BOOK_OUTPUT_RELEASE`.
+
+The override is accepted only for plain-HTTP `127.0.0.1` or `localhost`.
+On `https://ausmalwiese.de` and every other host it is ignored and the canonical
+production flags remain `coveredZip=false` and `combinedPrint=false`. Record
+this as **VISITOR-STAGING** evidence only. It is not LIVE deployment evidence,
+physical-paper proof, constrained-phone evidence or release approval.
+
+
 ## Gate 1 — desktop browser / print-to-file
 
 A **separately reviewed, still gated** visitor print flow now exists in source, but production activation remains closed. Use current Chromium and Firefox on desktop, real public PNGs and the ordinary browser print dialog. While `combinedPrint=false`, the local harness above can only be marked **STAGING PASS**, never **VISITOR PASS**; do not flip the release flag as a shortcut to finish QA.
