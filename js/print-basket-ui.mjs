@@ -14,6 +14,10 @@ import {
 import { prepareCurrentBookOutputSession } from "./book-output-session.mjs";
 import { printStagedDocumentInBasketHost } from "./print-basket-print-host.mjs";
 
+// Keep the historical local release-gate name used by source-level regression
+// tests, but resolve it once from production-closed / loopback-QA-aware policy.
+const BOOK_OUTPUT_RELEASE = BOOK_OUTPUT_ACTIVE_RELEASE;
+
 const MAX_SHEETS = 5;
 const CARD_SELECTOR = ".coloring-card";
 const TOGGLE_SELECTOR = "[data-basket-toggle]";
@@ -304,7 +308,7 @@ async function preparePrint() {
     busy: zipBusy || printBusy,
   });
   if (!dialog?.open || !initialControls.printEnabled ||
-      !BOOK_OUTPUT_ACTIVE_RELEASE.combinedPrint) return;
+      !BOOK_OUTPUT_RELEASE.combinedPrint) return;
 
   resetZip();
   resetPrint();
@@ -332,7 +336,7 @@ async function preparePrint() {
     staged = session.resource;
 
     if (epoch !== printEpoch || controller.signal.aborted || !dialog.open ||
-        !BOOK_OUTPUT_ACTIVE_RELEASE.combinedPrint) {
+        !BOOK_OUTPUT_RELEASE.combinedPrint) {
       staged.dispose();
       staged = null;
       return;
@@ -363,7 +367,7 @@ async function preparePrint() {
         busy: zipBusy,
       });
       action.disabled = !controls.printEnabled;
-      if (!BOOK_OUTPUT_ACTIVE_RELEASE.combinedPrint) note.textContent = controls.printStatus;
+      if (!BOOK_OUTPUT_RELEASE.combinedPrint) note.textContent = controls.printStatus;
     }
   }
 }
@@ -421,7 +425,7 @@ async function prepareZip() {
       // This branch is unreachable while the canonical production release flag
       // is false. Keep the full fresh-catalogue/session gate ready for a later
       // separately reviewed release without changing the existing coverless path.
-      if (!BOOK_OUTPUT_ACTIVE_RELEASE.coveredZip) {
+      if (!BOOK_OUTPUT_RELEASE.coveredZip) {
         throw new Error("Covered ZIP release gate is closed");
       }
       const session = await prepareCurrentBookOutputSession(
