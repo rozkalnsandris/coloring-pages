@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Visitor-Flow Print QA</title>
+  <link rel="stylesheet" href="/css/fonts.css">
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/print-basket.css">
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <strong>Ausmalwiese Visitor-Flow QA</strong>
+      <div class="header-actions"></div>
+    </div>
+  </header>
+  <main>
+    <h1>Meine Drucksammlung — Visitor-Flow QA</h1>
+    <p><strong>STAGING ONLY</strong> — production release flags bleiben geschlossen.</p>
+    <p>Veröffentlichte Aktivitäts-IDs eingeben, Karten laden, dann die normalen
+      „Hinzufügen“- und „Meine Drucksammlung“-Bedienelemente verwenden.</p>
+    <label for="qa-visitor-ids">Veröffentlichte Aktivitäts-IDs</label>
+    <input id="qa-visitor-ids" type="text" autocomplete="off"
+      placeholder="1234567 7654321">
+    <button id="qa-visitor-load" type="button">Auswahlkarten laden</button>
+    <p id="qa-visitor-status" role="status" aria-live="polite">Noch nicht geladen.</p>
+    <section id="qa-visitor-cards" aria-label="QA-Auswahlkarten"></section>
+  </main>
+  <script type="module" src="/qa/visitor-bootstrap.mjs"></script>
+</body>
+</html>

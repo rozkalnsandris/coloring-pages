@@ -8,7 +8,7 @@ import { createBookPreviewCursor, moveBookPreviewCursor, setBookPreviewSheet } f
 import { buildBookPreviewDisplay } from "./book-preview-media.mjs";
 import {
   BOOK_COVER_BROWSER_RENDER_OPTIONS,
-  BOOK_OUTPUT_RELEASE,
+  BOOK_OUTPUT_ACTIVE_RELEASE,
   planBookOutputControls,
 } from "./book-output-release-gate.mjs";
 import { prepareCurrentBookOutputSession } from "./book-output-session.mjs";
@@ -304,7 +304,7 @@ async function preparePrint() {
     busy: zipBusy || printBusy,
   });
   if (!dialog?.open || !initialControls.printEnabled ||
-      !BOOK_OUTPUT_RELEASE.combinedPrint) return;
+      !BOOK_OUTPUT_ACTIVE_RELEASE.combinedPrint) return;
 
   resetZip();
   resetPrint();
@@ -332,7 +332,7 @@ async function preparePrint() {
     staged = session.resource;
 
     if (epoch !== printEpoch || controller.signal.aborted || !dialog.open ||
-        !BOOK_OUTPUT_RELEASE.combinedPrint) {
+        !BOOK_OUTPUT_ACTIVE_RELEASE.combinedPrint) {
       staged.dispose();
       staged = null;
       return;
@@ -363,7 +363,7 @@ async function preparePrint() {
         busy: zipBusy,
       });
       action.disabled = !controls.printEnabled;
-      if (!BOOK_OUTPUT_RELEASE.combinedPrint) note.textContent = controls.printStatus;
+      if (!BOOK_OUTPUT_ACTIVE_RELEASE.combinedPrint) note.textContent = controls.printStatus;
     }
   }
 }
@@ -421,7 +421,7 @@ async function prepareZip() {
       // This branch is unreachable while the canonical production release flag
       // is false. Keep the full fresh-catalogue/session gate ready for a later
       // separately reviewed release without changing the existing coverless path.
-      if (!BOOK_OUTPUT_RELEASE.coveredZip) {
+      if (!BOOK_OUTPUT_ACTIVE_RELEASE.coveredZip) {
         throw new Error("Covered ZIP release gate is closed");
       }
       const session = await prepareCurrentBookOutputSession(

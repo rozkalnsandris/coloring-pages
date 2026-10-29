@@ -190,6 +190,18 @@ class RealMediaQaServerTests(unittest.TestCase):
         self.assertNotIn("print-basket-real-media-qa", docker)
         self.assertIn('QA_CONTEXT = "/qa/context.json"', source)
         self.assertIn('QA_RECEIPT_MODULE = "/qa/print-basket-real-media-qa-receipt.mjs"', source)
+        self.assertIn('QA_VISITOR_HTML = "/qa/visitor/"', source)
+        self.assertIn('QA_VISITOR_BOOTSTRAP = "/qa/visitor-bootstrap.mjs"', source)
+
+        visitor_html = (ROOT / "tools" / "print-basket-visitor-qa.html").read_text(encoding="utf-8")
+        visitor_bootstrap = (ROOT / "tools" / "print-basket-visitor-qa-bootstrap.mjs").read_text(encoding="utf-8")
+        production_html = (ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn("STAGING ONLY", visitor_html)
+        self.assertIn("__AUSMALWIESE_BOOK_OUTPUT_QA_RELEASE__", visitor_bootstrap)
+        self.assertIn("combinedPrint: true", visitor_bootstrap)
+        self.assertIn("coveredZip: true", visitor_bootstrap)
+        self.assertIn('import("/js/print-basket-ui.mjs")', visitor_bootstrap)
+        self.assertNotIn("__AUSMALWIESE_BOOK_OUTPUT_QA_RELEASE__", production_html)
 
 
 if __name__ == "__main__":

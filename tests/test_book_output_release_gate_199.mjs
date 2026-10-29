@@ -2,8 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   BOOK_COVER_BROWSER_RENDER_OPTIONS,
+  BOOK_OUTPUT_ACTIVE_RELEASE,
+  BOOK_OUTPUT_QA_OVERRIDE_KEY,
   BOOK_OUTPUT_RELEASE,
   planBookOutputControls,
+  resolveBookOutputRelease,
 } from "../js/book-output-release-gate.mjs";
 
 test("production release flags fail closed for covered ZIP and all combined printing", () => {
@@ -29,6 +32,36 @@ test("production release flags fail closed for covered ZIP and all combined prin
   assert.equal(covered.zipEnabled, false);
   assert.equal(covered.printEnabled, false);
   assert.match(covered.zipStatus, /Deckblatt.*noch nicht verfügbar/);
+});
+
+test("production active release ignores QA override outside loopback", () => {
+  assert.deepEqual(BOOK_OUTPUT_ACTIVE_RELEASE, BOOK_OUTPUT_RELEASE);
+  assert.equal(BOOK_OUTPUT_QA_OVERRIDE_KEY, "__AUSMALWIESE_BOOK_OUTPUT_QA_RELEASE__");
+
+  const override = { coveredZip: true, combinedPrint: true };
+  assert.deepEqual(resolveBookOutputRelease({
+    locationRef: { protocol: "https:", hostname: "ausmalwiese.de" },
+    override,
+  }), BOOK_OUTPUT_RELEASE);
+  assert.deepEqual(resolveBookOutputRelease({
+    locationRef: { protocol: "http:", hostname: "example.test" },
+    override,
+  }), BOOK_OUTPUT_RELEASE);
+});
+
+test("loopback QA may enable visitor output wiring without changing production flags", () => {
+  const release = resolveBookOutputRelease({
+    locationRef: { protocol: "http:", hostname: "127.0.0.1" },
+    override: { coveredZip: true, combinedPrint: true },
+  });
+  assert.deepEqual(release, { coveredZip: true, combinedPrint: true });
+  assert.equal(Object.isFrozen(release), true);
+  assert.deepEqual(BOOK_OUTPUT_RELEASE, { coveredZip: false, combinedPrint: false });
+
+  assert.throws(() => resolveBookOutputRelease({
+    locationRef: { protocol: "http:", hostname: "localhost" },
+    override: { combinedPrint: true },
+  }), TypeError);
 });
 
 test("hypothetical reviewed release can enable only the explicitly approved action", () => {

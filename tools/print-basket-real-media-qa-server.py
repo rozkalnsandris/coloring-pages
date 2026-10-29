@@ -35,6 +35,8 @@ QA_HTML = "/qa/"
 QA_MODULE = "/qa/harness.mjs"
 QA_RECEIPT_MODULE = "/qa/print-basket-real-media-qa-receipt.mjs"
 QA_CONTEXT = "/qa/context.json"
+QA_VISITOR_HTML = "/qa/visitor/"
+QA_VISITOR_BOOTSTRAP = "/qa/visitor-bootstrap.mjs"
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -250,6 +252,8 @@ def make_handler(
     qa_html = repo_root / "tools" / "print-basket-real-media-qa.html"
     qa_module = repo_root / "tools" / "print-basket-real-media-qa.mjs"
     qa_receipt_module = repo_root / "tools" / "print-basket-real-media-qa-receipt.mjs"
+    qa_visitor_html = repo_root / "tools" / "print-basket-visitor-qa.html"
+    qa_visitor_bootstrap = repo_root / "tools" / "print-basket-visitor-qa-bootstrap.mjs"
 
     class Handler(BaseHTTPRequestHandler):
         server_version = "AusmalwieseQAServer/1.1"
@@ -305,6 +309,12 @@ def make_handler(
                 return
             if path == QA_CONTEXT:
                 self._bytes(200, "application/json; charset=utf-8", context_bytes)
+                return
+            if path == QA_VISITOR_HTML:
+                self._file(qa_visitor_html, "text/html; charset=utf-8")
+                return
+            if path == QA_VISITOR_BOOTSTRAP:
+                self._file(qa_visitor_bootstrap, "application/javascript; charset=utf-8")
                 return
             if path == "/catalog.json":
                 self._bytes(200, "application/json; charset=utf-8", catalog_bytes)
