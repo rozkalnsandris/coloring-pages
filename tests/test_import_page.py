@@ -138,6 +138,72 @@ class ImportPageTests(unittest.TestCase):
             [entry["id"], "z-old", "a-older"],
         )
 
+    def test_multi_category_one_activity_and_legacy_remain_unchanged(self):
+        existing = [{"id": "previous-001", "category": "tiere"}]
+        (self.content / "public/catalog.json").write_text(
+            json.dumps(existing) + "\n", encoding="utf-8"
+        )
+        source_bytes = self.source.read_bytes()
+        entry = importer.import_page(
+            self.source, self.content,
+            self.metadata(categories=["tiere", "jahreszeiten"]),
+        )
+        self.assertEqual(entry["category"], "tiere")
+        self.assertEqual(entry["categories"], ["tiere", "jahreszeiten"])
+        self.assertEqual((self.content / "originals/fire-pup-001/source.png").read_bytes(), source_bytes)
+        catalog = json.loads((self.content / "public/catalog.json").read_text())
+        self.assertEqual(len(catalog), 2)
+        self.assertEqual(catalog[0], entry)
+        self.assertEqual(catalog[1], existing[0])
+        self.assertNotIn("categories", catalog[1])
+        self.assertEqual(len(list((self.content / "public/media").iterdir())), 1)
+
+    def test_malformed_multi_categories_fail_before_any_content_mutation(self):
+        original = (self.content / "public/catalog.json").read_bytes()
+        invalid = [[], ["jahreszeiten", "tiere"], ["tiere", "tiere"],
+                   ["tiere", "unknown"], ["tiere", ""], ["tiere", 1],
+                   ["tiere", None], "tiere", None, {"tiere": True},
+                   ["tiere"] * 7]
+        for categories in invalid:
+            with self.subTest(categories=categories):
+                with self.assertRaises(importer.ImportError):
+                    importer.import_page(
+                        self.source, self.content, self.metadata(categories=categories)
+                    )
+                self.assertEqual((self.content / "public/catalog.json").read_bytes(), original)
+                self.assertFalse((self.content / "originals/fire-pup-001").exists())
+                self.assertFalse((self.content / "public/media/fire-pup-001").exists())
+
+    def test_secondary_category_permits_matching_explicit_topic(self):
+        entry = importer.import_page(
+            self.source, self.content,
+            self.metadata(category="tiere", categories=["tiere", "jahreszeiten"],
+                          topic="weihnachten"),
+        )
+        self.assertEqual(entry["topics"], ["weihnachten"])
+        self.assertEqual(entry["categories"], ["tiere", "jahreszeiten"])
+
+    def test_cli_repeated_additional_categories_and_duplicate_rejection(self):
+        base = [sys.executable, str(MODULE_PATH), str(self.source),
+                "--content-root", str(self.content), "--id", "fire-pup-001",
+                "--category", "tiere"]
+        bad = subprocess.run(
+            [*base, "--additional-category", "lernen",
+             "--additional-category", "lernen"],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertNotEqual(bad.returncode, 0)
+        self.assertEqual((self.content / "public/catalog.json").read_text(), "[]\n")
+        good = subprocess.run(
+            [*base, "--additional-category", "lernen",
+             "--additional-category", "jahreszeiten"],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(good.returncode, 0, good.stderr)
+        published = json.loads((self.content / "public/catalog.json").read_text())
+        self.assertEqual(published[0]["categories"], ["tiere", "lernen", "jahreszeiten"])
+        self.assertEqual(published[0]["category"], "tiere")
+
     def test_explicit_topic_persists_without_changing_legacy_entries(self):
         existing = [{"id": "previous-001", "title": "Original", "category": "tiere"}]
         (self.content / "public/catalog.json").write_text(

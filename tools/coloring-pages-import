@@ -130,7 +130,7 @@ def default_title(page_id: str) -> str:
     return " ".join(part.capitalize() for part in page_id.split("-"))
 
 
-def validate_metadata(metadata: dict[str, str]) -> None:
+def validate_metadata(metadata: dict[str, Any]) -> None:
     page_id = metadata["id"]
     if not ID_PATTERN.fullmatch(page_id):
         raise ImportError(f"id must match {ID_PATTERN.pattern}")
@@ -152,6 +152,20 @@ def validate_metadata(metadata: dict[str, str]) -> None:
             f"category must be one of {', '.join(sorted(allowed_categories))}"
         )
 
+    # Legacy publishers keep the single required primary category. Only explicit
+    # multi-category callers add an ordered categories[] field.
+    categories = [metadata["category"]]
+    if "categories" in metadata:
+        categories = metadata["categories"]
+        if (
+            not isinstance(categories, list)
+            or not 1 <= len(categories) <= len(allowed_categories)
+            or any(not isinstance(item, str) or item not in allowed_categories for item in categories)
+            or len(set(categories)) != len(categories)
+            or categories[0] != metadata["category"]
+        ):
+            raise ImportError("categories must be unique canonical IDs with category first")
+
     # Exact optional ADMIN selection. Old callers omit this key entirely.
     if "topic" in metadata:
         topic = metadata["topic"]
@@ -165,8 +179,8 @@ def validate_metadata(metadata: dict[str, str]) -> None:
         kind = allowed_topics.get(topic)
         if kind is None:
             raise ImportError("topic is not in the canonical topic registry")
-        if (kind == "seasonal") != (metadata["category"] == "jahreszeiten"):
-            raise ImportError("topic kind does not match the selected category")
+        if not any((item == "jahreszeiten") == (kind == "seasonal") for item in categories):
+            raise ImportError("topic kind does not match the selected categories")
 
 
 def validate_source_paths(source_paths: list[Path], inbox_root: Path) -> list[Path]:
@@ -394,6 +408,8 @@ def build_catalog_entry(
     ]
     if "topic" in metadata:
         entry["topics"] = [metadata["topic"]]
+    if "categories" in metadata:
+        entry["categories"] = list(metadata["categories"])
     entry["preview"] = pages[0]["preview"]
     entry["print"] = pages[0]["print"]
     if page_count > 1:
@@ -498,6 +514,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--title")
     parser.add_argument("--character", default="")
     parser.add_argument("--category", required=True)
+    parser.add_argument(
+        "--additional-category", action="append", default=[],
+        help="repeatable canonical secondary category; first --category remains primary",
+    )
     parser.add_argument("--topic", help="optional exact ID from canonical topics.json")
     parser.add_argument("--age", default="3-6")
     parser.add_argument("--difficulty", default="easy")
@@ -524,6 +544,8 @@ def main() -> int:
             "difficulty": args.difficulty.strip(),
             "language": args.language.strip(),
         }
+        if args.additional_category:
+            metadata["categories"] = [metadata["category"], *args.additional_category]
         if args.topic is not None:
             metadata["topic"] = args.topic.strip()
         entry = import_activity(args.source, args.content_root, metadata)

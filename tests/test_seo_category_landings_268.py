@@ -1,4 +1,5 @@
 """SEO contract for issue #268 category landing pages."""
+import hashlib
 import html as html_lib
 import json
 import re
@@ -71,8 +72,11 @@ class SeoCategoryLandingTests(unittest.TestCase):
         js = read("js/category.js")
         self.assertIn('fetch("/catalog.json"', js)
         self.assertIn('fetch("/topics.json"', js)
-        self.assertIn("entry.category === category", js)
+        self.assertIn("entryCategoryIds(entry).includes(category)", js)
         self.assertIn("categoryTopics.has(topicId)", js)
+        version = hashlib.sha256((ROOT / "js/category.js").read_bytes()).hexdigest()[:16]
+        for category_id in (*self.ids, "essen-natur"):
+            self.assertIn(f'src="/js/category.js?v={version}"', read(f"{category_id}.html"))
         self.assertIn("topic.legacy_terms.some", js)
         self.assertIn("encodeURIComponent(String(id))", js)
         self.assertNotIn(OLD, js)

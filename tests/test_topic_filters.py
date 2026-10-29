@@ -54,6 +54,17 @@ class TopicFilterTests(unittest.TestCase):
         version = hashlib.sha256((ROOT / "css/home-discovery.css").read_bytes()).hexdigest()[:16]
         self.assertIn(f"css/home-discovery.css?v={version}", page)
 
+    def test_public_filters_use_explicit_category_memberships(self):
+        home = (ROOT / "js/app.js").read_text(encoding="utf-8")
+        landing = (ROOT / "js/category.js").read_text(encoding="utf-8")
+        self.assertIn("function entryCategoryIds(entry)", home)
+        self.assertIn("entries.map(entryCategoryIds)", home)
+        self.assertIn("categories.includes(activeCategory)", home)
+        self.assertIn("entryCategoryIds(entry).join", home)
+        self.assertIn("function entryCategoryIds(entry)", landing)
+        self.assertIn("entryCategoryIds(entry).includes(category)", landing)
+        self.assertNotIn("if (entry.category === category)", landing)
+
     def test_runtime_prefers_explicit_topics_and_keeps_legacy_fallback(self):
         source = (ROOT / "js/app.js").read_text(encoding="utf-8")
         self.assertIn('fetch("/topics.json"', source)
