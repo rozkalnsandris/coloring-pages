@@ -195,16 +195,13 @@ export function auditQaPrivacySurfaces(
 
 export function privacyAuditPass(audit) {
   if (!audit || typeof audit !== "object") return false;
-  for (const key of [
+  return [
     "locationUrlClear",
     "documentCookieClear",
     "sessionStorageClear",
     "localStorageClear",
     "resourceUrlsClear",
-  ]) {
-    if (audit[key] === false) return false;
-  }
-  return true;
+  ].every(key => audit[key] === true);
 }
 
 export function buildQaReceipt({
