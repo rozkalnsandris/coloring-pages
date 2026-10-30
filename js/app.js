@@ -206,7 +206,7 @@ async function loadCategoryRegistry() {
   }
 }
 
-
+function normalizeTopicText(value) {
   return normalize(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replaceAll("ß", "ss");
 }
 

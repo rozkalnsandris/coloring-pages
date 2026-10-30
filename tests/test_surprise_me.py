@@ -29,8 +29,15 @@ const window={location:{hash:"",assign(url){navigated=url;}},addEventListener(){
 const pseudoMath=Object.create(Math);
 pseudoMath.random=()=>f.random===undefined?0:f.random;
 const context={window,location,document,URLSearchParams,Intl,Math:pseudoMath,
- fetch:async()=>{
+ fetch:async(url)=>{
    fetchCalls++;
+   if(url==="/categories.json")return {ok:true,json:async()=>({
+     schema:"rozkalns.coloring-pages.categories.v2", revision:1, categories:[
+       {id:"tiere",label:"Tiere"},{id:"fahrzeuge",label:"Fahrzeuge"},
+       {id:"alphabet",label:"Alphabet"},{id:"lernen",label:"Lernen"},
+       {id:"figuren",label:"Figuren & Helden"},{id:"jahreszeiten",label:"Jahreszeiten & Feste"}
+     ]})};
+   if(url==="/topics.json")return {ok:true,json:async()=>({schema:"rozkalns.coloring-pages.topics.v1",topics:[]})};
    if(f.mode==="network")throw Error("offline");
    if(f.mode==="http")return {ok:false};
    return {ok:true,json:async()=>f.mode==="invalid"?{}:f.items};
@@ -68,7 +75,7 @@ class SurpriseMeTests(unittest.TestCase):
         result=self.run_case([{"id":"3147286","title":"Ein Hund","thumb":"media/h.webp"}],random=0.99)
         self.assertFalse(result["disabled"])
         self.assertEqual(result["navigated"],"detail.html?id=3147286")
-        self.assertEqual(result["fetchCalls"],2)
+        self.assertEqual(result["fetchCalls"],3)
         self.assertEqual(result["cardCount"],1)
 
     def test_multi_page_set_is_one_activity_and_preserves_campaign(self):
@@ -78,7 +85,7 @@ class SurpriseMeTests(unittest.TestCase):
              "pages":[{"source":"one"},{"source":"two"}]},
         ],random=.99,campaign=True)
         self.assertEqual(result["navigated"],"detail.html?id=2222222&campaign=dortmund-01")
-        self.assertEqual(result["fetchCalls"],2)
+        self.assertEqual(result["fetchCalls"],3)
         self.assertEqual(result["cardCount"],2)
 
     def test_skips_invalid_items_before_random_selection(self):
@@ -98,4 +105,4 @@ class SurpriseMeTests(unittest.TestCase):
                 self.assertEqual(result["navigated"],"")
                 self.assertFalse(result["statusHidden"])
                 self.assertTrue(result["statusText"])
-                self.assertEqual(result["fetchCalls"],2)
+                self.assertEqual(result["fetchCalls"],3)

@@ -50,7 +50,14 @@ const document = {
 const location = {search:''};
 const window = {location:{hash:''}, addEventListener(){}};
 const ctx = {window, document, location, URLSearchParams, Intl,
-  fetch: async () => {
+  fetch: async (url) => {
+    if (url === '/categories.json') return {ok:true,json:async()=>({
+      schema:"rozkalns.coloring-pages.categories.v2", revision:1, categories:[
+        {id:"tiere",label:"Tiere"},{id:"fahrzeuge",label:"Fahrzeuge"},
+        {id:"alphabet",label:"Alphabet"},{id:"lernen",label:"Lernen"},
+        {id:"figuren",label:"Figuren & Helden"},{id:"jahreszeiten",label:"Jahreszeiten & Feste"}
+      ]})};
+    if (url === '/topics.json') return {ok:true,json:async()=>({schema:"rozkalns.coloring-pages.topics.v1",topics:[]})};
     if (f.mode === 'network') throw new Error('offline');
     return {ok:f.mode !== 'http', json: async () => f.catalog};
   },
