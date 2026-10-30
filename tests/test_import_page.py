@@ -216,6 +216,80 @@ class ImportPageTests(unittest.TestCase):
         self.assertEqual(catalog[0]["topics"], ["weihnachten"])
         self.assertEqual(catalog[1], existing[0])
 
+    def test_multiple_topics_persist_in_order_on_one_activity(self):
+        before = self.source.read_bytes()
+        entry = importer.import_page(
+            self.source, self.content,
+            self.metadata(category="tiere", categories=["tiere", "jahreszeiten"],
+                          topics=["bauernhof", "weihnachten", "blumen"]),
+        )
+        self.assertEqual(entry["topics"], ["bauernhof", "weihnachten", "blumen"])
+        self.assertEqual(entry["categories"], ["tiere", "jahreszeiten"])
+        self.assertEqual((self.content / "originals/fire-pup-001/source.png").read_bytes(), before)
+        self.assertTrue((self.content / "public/media/fire-pup-001/print.png").is_file())
+        self.assertEqual(json.loads((self.content / "public/catalog.json").read_text())[0], entry)
+
+    def test_one_item_topics_array_and_legacy_single_topic_are_compatible(self):
+        entry = importer.import_page(
+            self.source, self.content, self.metadata(topics=["bauernhof"]),
+        )
+        self.assertEqual(entry["topics"], ["bauernhof"])
+
+    def test_repeated_additional_topics_cli_and_duplicate_rejection(self):
+        base = [
+            sys.executable, str(MODULE_PATH), str(self.source),
+            "--content-root", str(self.content), "--id", "fire-pup-001",
+            "--category", "tiere", "--additional-category", "jahreszeiten",
+        ]
+        bad_cases = [
+            ["--additional-topic", "bauernhof"],
+            ["--topic", "bauernhof", "--additional-topic", "bauernhof"],
+            ["--topic", "bauernhof", "--additional-topic", "not-registered"],
+        ]
+        for extra in bad_cases:
+            with self.subTest(extra=extra):
+                bad = subprocess.run([*base, *extra], capture_output=True, text=True, check=False)
+                self.assertNotEqual(bad.returncode, 0)
+                self.assertEqual((self.content / "public/catalog.json").read_text(), "[]\n")
+                self.assertFalse((self.content / "originals/fire-pup-001").exists())
+        good = subprocess.run(
+            [*base, "--topic", "bauernhof", "--additional-topic", "weihnachten",
+             "--additional-topic", "blumen"],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(good.returncode, 0, good.stderr)
+        published = json.loads((self.content / "public/catalog.json").read_text())
+        self.assertEqual(published[0]["topics"], ["bauernhof", "weihnachten", "blumen"])
+
+    def test_invalid_topic_sets_fail_before_content_writes(self):
+        before = (self.content / "public/catalog.json").read_bytes()
+        invalid = [
+            [], ["bauernhof", "bauernhof"], ["bauernhof", "not-registered"],
+            ["bauernhof", ""], ["bauernhof", 1], ["bauernhof", None],
+            "bauernhof", None, {"topic": "bauernhof"}, ["bauernhof"] * 22,
+            ["weihnachten"], ["bauernhof", "weihnachten"],
+        ]
+        for topics in invalid:
+            with self.subTest(topics=topics):
+                with self.assertRaises(importer.ImportError):
+                    importer.import_page(self.source, self.content, self.metadata(topics=topics))
+                self.assertEqual((self.content / "public/catalog.json").read_bytes(), before)
+                self.assertFalse((self.content / "originals/fire-pup-001").exists())
+                self.assertFalse((self.content / "public/media/fire-pup-001").exists())
+        with self.assertRaisesRegex(importer.ImportError, "primary topic"):
+            importer.import_page(
+                self.source, self.content,
+                self.metadata(topic="bauernhof", topics=["blumen", "bauernhof"]),
+            )
+        self.assertEqual((self.content / "public/catalog.json").read_bytes(), before)
+
+    def test_multiple_seasonal_topics_require_seasonal_category(self):
+        entry = importer.import_page(
+            self.source, self.content,
+            self.metadata(category="jahreszeiten", topics=["weihnachten", "winter"]),
+        )
+        self.assertEqual(entry["topics"], ["weihnachten", "winter"])
+
     def test_optional_topic_is_not_synthesized_for_legacy_import(self):
         entry = importer.import_page(self.source, self.content, self.metadata())
         self.assertNotIn("topics", entry)
@@ -496,6 +570,18 @@ class ImportPageTests(unittest.TestCase):
         )
         self.assertEqual(entry["topics"], ["halloween"])
         self.assertEqual(len(entry["pages"]), 2)
+
+    def test_multi_page_multiple_topics_stay_on_one_activity(self):
+        second = self.content / "inbox/fire-pup-001-2.png"
+        self.write_source(path=second)
+        entry = importer.import_activity(
+            [self.source, second], self.content,
+            self.metadata(category="tiere", categories=["tiere", "jahreszeiten"],
+                          topics=["bauernhof", "weihnachten"]),
+        )
+        self.assertEqual(entry["topics"], ["bauernhof", "weihnachten"])
+        self.assertEqual(len(entry["pages"]), 2)
+        self.assertEqual(len(json.loads((self.content / "public/catalog.json").read_text())), 1)
 
     def test_multi_page_duplicate_source_is_rejected(self):
         with self.assertRaisesRegex(importer.ImportError, "listed more than once"):
