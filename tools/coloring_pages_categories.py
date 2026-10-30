@@ -19,6 +19,8 @@ CORE_IDS = ("tiere", "fahrzeuge", "alphabet", "lernen", "figuren", "jahreszeiten
 ID_RE = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
 MAX_BYTES = 16384
 MAX_CATEGORIES = 64
+# Reserved virtual collection/legacy aliases must not become canonical IDs.
+RESERVED_IDS = frozenset({"essen-natur", "seasonal"})
 
 
 class RegistryError(ValueError):
@@ -41,7 +43,8 @@ def validate_document(document):
         if type(item) is not dict or set(item) != {"id", "label"}:
             raise RegistryError("category registry entry keys are invalid")
         identifier, label = item["id"], item["label"]
-        if type(identifier) is not str or len(identifier) > 48 or not ID_RE.fullmatch(identifier):
+        if (type(identifier) is not str or len(identifier) > 48
+                or not ID_RE.fullmatch(identifier) or identifier in RESERVED_IDS):
             raise RegistryError("category registry id is invalid")
         if (type(label) is not str or not 1 <= len(label) <= 80
                 or label != label.strip() or unicodedata.normalize("NFC", label) != label

@@ -52,6 +52,8 @@ class ManagedCategoryTests(unittest.TestCase):
             dict(self.seed, categories=self.seed["categories"][:-1]),
             dict(self.seed, categories=[*self.seed["categories"], self.seed["categories"][0]]),
             dict(self.seed, categories=[*self.seed["categories"], {"id": "../unsafe", "label": "X"}]),
+            dict(self.seed, categories=[*self.seed["categories"], {"id": "essen-natur", "label": "Wrong"}]),
+            dict(self.seed, categories=[*self.seed["categories"], {"id": "seasonal", "label": "Wrong"}]),
             dict(self.seed, categories=[*self.seed["categories"], {"id": "valid", "label": "\x00no"}]),
             dict(self.seed, categories=[*self.seed["categories"], {"id": "valid", "label": " é "}]),
             dict(self.seed, unexpected="x"),

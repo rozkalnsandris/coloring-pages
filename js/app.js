@@ -168,6 +168,7 @@ async function loadCategoryRegistry() {
     if (!item || Object.keys(item).sort().join(",") !== "id,label" ||
       typeof item.id !== "string" ||
       !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item.id) || item.id.length > 48 ||
+      ["essen-natur", "seasonal"].includes(item.id) ||
       typeof item.label !== "string" || item.label.length < 1 || item.label.length > 80 ||
       item.label !== item.label.trim() || item.label !== item.label.normalize("NFC") ||
       /[\x00-\x1f\x7f]/.test(item.label) || ids.has(item.id)) {

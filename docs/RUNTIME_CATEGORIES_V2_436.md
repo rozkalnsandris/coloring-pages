@@ -24,7 +24,7 @@ Managed schema:
 }
 ~~~
 
-Canonical serialization: \`json.dumps(..., ensure_ascii=False, indent=2) + "\\n"\`, UTF-8; 16 KiB maximum. Exactly 3 document keys, positive bounded integer revision (max 2^31-1), 6–64 unique ASCII lowercase slug IDs (1–48 characters), and German Unicode NFC labels (1–80 code points, trimmed, no control characters). IDs cannot be renamed in place. Every mutation increments \`revision\` by exactly one, including label edits. Structural IDs remain in place. No user-controlled path or URLs enter the runtime file.
+Canonical serialization: \`json.dumps(..., ensure_ascii=False, indent=2) + "\\n"\`, UTF-8; 16 KiB maximum. Exactly 3 document keys, positive bounded integer revision (max 2^31-1), 6–64 unique ASCII lowercase slug IDs (1–48 characters), and German Unicode NFC labels (1–80 code points, trimmed, no control characters). IDs cannot be renamed in place. Every mutation increments \`revision\` by exactly one, including label edits. Structural IDs remain in place. The virtual collection `essen-natur` and legacy alias `seasonal` are reserved from managed IDs, preventing ambiguous public filters. No user-controlled path or URLs enter the runtime file.
 
 ## Trusted source-free LIVE migration: owner gate
 
