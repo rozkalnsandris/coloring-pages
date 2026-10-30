@@ -26,3 +26,11 @@ The CLI keeps `--category <primary>` and adds repeatable `--additional-category 
 4. No historical entries, production PNGs or LIVE catalogue records are mutated by this source change. Any actual publication still requires a separate owner action.
 
 The direct Chat-to-Drive manifest remains one-category-only until its separate explicit contract is reviewed. Never silently repurpose `categories` as a Drive manifest attribute.
+
+## Multiple canonical topics per activity (issue #434)
+
+The importer now accepts ordered, unique explicit topics for one existing activity, without creating duplicate catalogue entries, originals or derivative sets. Its legacy single `--topic <id>` behavior remains unchanged; to add more, supply `--topic <primary>` and repeat `--additional-topic <id>` for each additional canonical ID. Bare `--additional-topic` without a primary, duplicates, unknown IDs, invalid types and missing category kinds are rejected before any published content writes. The programmatic importer also accepts `topics: [id, ...]` (1–21 canonical unique IDs, bounded by the current registry), optionally paired with a matching `topic` primary. No topic key continues to produce no `topics` catalogue property.
+
+A saved catalogue entry uses `"topics": ["bauernhof", "weihnachten"]` in exact selection order. Each **seasonal** topic requires `jahreszeiten` among its selected categories; each **evergreen** topic requires at least one other category. A mix requires both. The existing public home and category gallery filters already iterate every explicit `topics[]` membership and only count each page once in each topic; legacy title-based fallback remains for older records without explicit topics.
+
+This is a source-only upstream prerequisite for `RPi5_main#1287`. The protected ADMIN currently accepts one `topic` only; it must be updated and its immutable importer image repinned through independently reviewed source and separate exact LIVE approval. No ZIP publication or LIVE changes are authorized here. Reference: Python `argparse` repeatable `action="append"` and JSON Schema `uniqueItems`.
