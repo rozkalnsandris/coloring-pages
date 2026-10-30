@@ -166,21 +166,42 @@ def validate_metadata(metadata: dict[str, Any]) -> None:
         ):
             raise ImportError("categories must be unique canonical IDs with category first")
 
-    # Exact optional ADMIN selection. Old callers omit this key entirely.
-    if "topic" in metadata:
-        topic = metadata["topic"]
-        if (
-            not isinstance(topic, str)
-            or not ID_PATTERN.fullmatch(topic)
-            or len(topic) > 48
+    # One legacy topic, or an explicitly ordered set of canonical topic IDs.
+    # Validate the entire set before creating originals, media or catalogue data.
+    if "topic" in metadata or "topics" in metadata:
+        primary_topic = metadata.get("topic")
+        if "topic" in metadata and (
+            not isinstance(primary_topic, str)
+            or not ID_PATTERN.fullmatch(primary_topic)
+            or len(primary_topic) > 48
         ):
             raise ImportError("topic must be a non-empty safe topic ID")
         allowed_topics = load_allowed_topics()
-        kind = allowed_topics.get(topic)
-        if kind is None:
-            raise ImportError("topic is not in the canonical topic registry")
-        if not any((item == "jahreszeiten") == (kind == "seasonal") for item in categories):
-            raise ImportError("topic kind does not match the selected categories")
+        topics = metadata["topics"] if "topics" in metadata else [primary_topic]
+        if (
+            not isinstance(topics, list)
+            or not 1 <= len(topics) <= len(allowed_topics)
+            or any(
+                not isinstance(topic, str)
+                or not ID_PATTERN.fullmatch(topic)
+                or len(topic) > 48
+                for topic in topics
+            )
+        ):
+            raise ImportError("topics must be a non-empty list of safe topic IDs")
+        if len(set(topics)) != len(topics):
+            raise ImportError("topics must be unique canonical IDs")
+        if "topic" in metadata and topics[0] != primary_topic:
+            raise ImportError("topics must begin with the primary topic")
+        for topic in topics:
+            kind = allowed_topics.get(topic)
+            if kind is None:
+                raise ImportError("topic is not in the canonical topic registry")
+            if not any(
+                (item == "jahreszeiten") == (kind == "seasonal")
+                for item in categories
+            ):
+                raise ImportError("topic kind does not match the selected categories")
 
 
 def validate_source_paths(source_paths: list[Path], inbox_root: Path) -> list[Path]:
@@ -406,7 +427,9 @@ def build_catalog_entry(
         }
         for index in range(1, page_count + 1)
     ]
-    if "topic" in metadata:
+    if "topics" in metadata:
+        entry["topics"] = list(metadata["topics"])
+    elif "topic" in metadata:
         entry["topics"] = [metadata["topic"]]
     if "categories" in metadata:
         entry["categories"] = list(metadata["categories"])
@@ -425,7 +448,7 @@ def serialize_catalog(entries: list[dict[str, Any]]) -> str:
 def import_activity(
     source_paths: list[Path],
     content_root: Path,
-    metadata: dict[str, str],
+    metadata: dict[str, Any],
 ) -> dict[str, Any]:
     content_root = content_root.resolve()
 
@@ -518,7 +541,11 @@ def parse_args() -> argparse.Namespace:
         "--additional-category", action="append", default=[],
         help="repeatable canonical secondary category; first --category remains primary",
     )
-    parser.add_argument("--topic", help="optional exact ID from canonical topics.json")
+    parser.add_argument("--topic", help="optional primary ID from canonical topics.json")
+    parser.add_argument(
+        "--additional-topic", action="append", default=[],
+        help="repeatable canonical secondary topic; requires --topic",
+    )
     parser.add_argument("--age", default="3-6")
     parser.add_argument("--difficulty", default="easy")
     parser.add_argument("--language", default="de")
@@ -548,6 +575,10 @@ def main() -> int:
             metadata["categories"] = [metadata["category"], *args.additional_category]
         if args.topic is not None:
             metadata["topic"] = args.topic.strip()
+        if args.additional_topic:
+            if args.topic is None:
+                raise ImportError("--additional-topic requires --topic")
+            metadata["topics"] = [metadata["topic"], *args.additional_topic]
         entry = import_activity(args.source, args.content_root, metadata)
     except ImportError as exc:
         print(f"IMPORT_ERROR: {exc}", file=sys.stderr)
