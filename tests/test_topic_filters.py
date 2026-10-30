@@ -83,7 +83,7 @@ class TopicFilterTests(unittest.TestCase):
         landing = (ROOT / "js/category.js").read_text(encoding="utf-8")
         self.assertIn("new Set(entry.topics.map", home)
         self.assertIn("entryTopicIds(entry).forEach", home)
-        self.assertIn("entryTopicIds(entry).includes(activeTopic)", home)
+        self.assertIn("topicValues.includes(activeTopic)", home)
         self.assertIn("new Set(entry.topics.map", landing)
         self.assertIn("entryTopicIds(entry).forEach", landing)
         self.assertIn("entryTopicIds(entry).includes(activeTopic.id)", landing)
