@@ -28,6 +28,10 @@ class ImportPageTests(unittest.TestCase):
         for relative in ("inbox", "originals", "public/media", "state"):
             (self.content / relative).mkdir(parents=True, exist_ok=True)
         (self.content / "public/catalog.json").write_text("[]\n", encoding="utf-8")
+        from coloring_pages_categories import seed_from_source, serialize_registry
+        (self.content / "public/categories.json").write_bytes(
+            serialize_registry(seed_from_source(ROOT / "metadata/categories.json"))
+        )
         self.source = self.content / "inbox/fire-pup-001.png"
         self.write_source()
 

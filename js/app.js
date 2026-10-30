@@ -31,6 +31,8 @@ const RANKING_DESCRIPTIONS = {
   popular: "Nach den meisten A4-Druckaktionen.",
 };
 
+const CORE_CATEGORY_IDS = ["tiere", "fahrzeuge", "alphabet", "lernen", "figuren", "jahreszeiten"];
+let runtimeCategoryIds = new Set();
 const CATEGORY_LABELS = {
   tiere: "Tiere",
   fahrzeuge: "Fahrzeuge",
@@ -88,6 +90,8 @@ function syncCatalogFilterUrl() {
   else url.searchParams.delete("difficulty");
   if (activeTopic) url.searchParams.set("topic", activeTopic);
   else url.searchParams.delete("topic");
+  if (activeCategory && runtimeCategoryIds.has(activeCategory)) url.searchParams.set("category", activeCategory);
+  else url.searchParams.delete("category");
   const next = url.pathname + url.search + url.hash;
   const now = location.pathname + location.search + location.hash;
   if (next !== now) history.pushState(null, "", next);
@@ -142,7 +146,67 @@ function normalize(value) {
   return String(value || "").trim().toLocaleLowerCase("de");
 }
 
-function normalizeTopicText(value) {
+function readCategoryFilterFromUrl() {
+  const requested = new URLSearchParams(location.search).get("category") || "";
+  activeCategory = runtimeCategoryIds.has(requested) ? requested : "";
+}
+
+async function loadCategoryRegistry() {
+  const response = await fetch("/categories.json", { cache: "no-store" });
+  if (!response.ok) throw new Error("managed categories unavailable");
+  const doc = await response.json();
+  if (!doc || doc.schema !== "rozkalns.coloring-pages.categories.v2" ||
+    !Number.isSafeInteger(doc.revision) || doc.revision < 1 ||
+    !Array.isArray(doc.categories) || doc.categories.length < CORE_CATEGORY_IDS.length ||
+    doc.categories.length > 64 ||
+    Object.keys(doc).sort().join(",") !== "categories,revision,schema") {
+    throw new Error("invalid managed category registry");
+  }
+  const ids = new Set();
+  const labels = new Map();
+  for (const item of doc.categories) {
+    if (!item || Object.keys(item).sort().join(",") !== "id,label" ||
+      typeof item.id !== "string" ||
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item.id) || item.id.length > 48 ||
+      typeof item.label !== "string" || item.label.length < 1 || item.label.length > 80 ||
+      item.label !== item.label.trim() || item.label !== item.label.normalize("NFC") ||
+      /[\x00-\x1f\x7f]/.test(item.label) || ids.has(item.id)) {
+      throw new Error("invalid managed category entry");
+    }
+    ids.add(item.id);
+    labels.set(item.id, item.label);
+  }
+  if (!CORE_CATEGORY_IDS.every((id, i) => doc.categories[i].id === id)) {
+    throw new Error("missing structural categories");
+  }
+  runtimeCategoryIds = ids;
+  for (const [id, label] of labels) CATEGORY_LABELS[id] = label;
+  const browser = document.querySelector(".category-browser");
+  if (!browser) return;
+  browser.querySelectorAll("[data-runtime-category]").forEach((item) => item.remove());
+  for (const item of doc.categories.slice(CORE_CATEGORY_IDS.length)) {
+    const link = document.createElement("a");
+    link.className = "category-group category-group-vehicles category-direct";
+    link.href = `index.html?category=${encodeURIComponent(item.id)}#neu`;
+    link.dataset.runtimeCategory = item.id;
+    link.dataset.filter = item.id;
+    const copy = document.createElement("span");
+    copy.className = "category-group-copy";
+    const title = document.createElement("span");
+    title.className = "category-group-name";
+    title.textContent = item.label;
+    copy.append(title);
+    const arrow = document.createElement("span");
+    arrow.className = "category-direct-arrow";
+    arrow.setAttribute("aria-hidden", "true");
+    arrow.textContent = "→";
+    link.append(copy, arrow);
+    browser.append(link);
+    categoryButtons.push(link);
+  }
+}
+
+
   return normalize(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replaceAll("ß", "ss");
 }
 
@@ -169,9 +233,9 @@ function entryCategoryIds(entry) {
   const primary = normalize(entry?.category);
   const assigned = entry?.categories;
   if (Array.isArray(assigned) && assigned.length > 0 && assigned[0] === primary &&
-    assigned.every((id) => typeof id === "string" && Object.hasOwn(CATEGORY_LABELS, id)) &&
+    assigned.every((id) => typeof id === "string" && runtimeCategoryIds.has(id)) &&
     new Set(assigned).size === assigned.length) return assigned;
-  return primary ? [primary] : [];
+  return runtimeCategoryIds.has(primary) ? [primary] : [];
 }
 
 function entryTopicIds(entry) {
@@ -550,6 +614,8 @@ async function hydrateCatalog() {
   if (!gallery) return;
 
   try {
+    await loadCategoryRegistry();
+    readCategoryFilterFromUrl();
     await loadTopicRegistry();
     readTopicFilterFromUrl();
     const response = await fetch("catalog.json", { cache: "no-store" });
@@ -642,6 +708,7 @@ searchInput?.addEventListener("input", applyFilters);
 });
 window.addEventListener("popstate", () => {
   readMetadataFiltersFromUrl();
+  readCategoryFilterFromUrl();
   readTopicFilterFromUrl();
   updateTopicButtons();
   applyFilters();

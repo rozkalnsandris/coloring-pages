@@ -91,3 +91,5 @@ Existing one-page records remain valid. A multi-page activity adds an ordered `p
 ```
 
 The order of `pages` is the print order. The detail UI lets the user switch previews and download the selected PNG; `A4 drucken` prints every page in one browser print session.
+
+Managed categories v2 are documented in [runtime categories #436](../docs/RUNTIME_CATEGORIES_V2_436.md). This `metadata/categories.json` v1 registry remains only the immutable six-ID seed; LIVE taxonomy uses the mounted public file.

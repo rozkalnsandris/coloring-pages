@@ -17,6 +17,10 @@ from typing import Any
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps, UnidentifiedImageError
 
+# The helper is adjacent to the importer both in source and immutable image.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from coloring_pages_categories import RegistryError, read_registry
+
 ID_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 A4_WIDTH_MM = 210
 A4_HEIGHT_MM = 297
@@ -130,7 +134,9 @@ def default_title(page_id: str) -> str:
     return " ".join(part.capitalize() for part in page_id.split("-"))
 
 
-def validate_metadata(metadata: dict[str, Any]) -> None:
+def validate_metadata(
+    metadata: dict[str, Any], allowed_categories: frozenset[str] | None = None,
+) -> None:
     page_id = metadata["id"]
     if not ID_PATTERN.fullmatch(page_id):
         raise ImportError(f"id must match {ID_PATTERN.pattern}")
@@ -146,7 +152,8 @@ def validate_metadata(metadata: dict[str, Any]) -> None:
         )
     if not metadata["title"].strip():
         raise ImportError("title must be a non-empty string")
-    allowed_categories = load_allowed_categories()
+    if allowed_categories is None:
+        raise ImportError("runtime category registry snapshot is required")
     if metadata["category"] not in allowed_categories:
         raise ImportError(
             f"category must be one of {', '.join(sorted(allowed_categories))}"
@@ -474,7 +481,20 @@ def import_activity(
         raise ImportError("published catalog must already exist")
 
     sources = validate_source_paths(source_paths, inbox_root)
-    validate_metadata(metadata)
+    registry_path = public_root / "categories.json"
+    try:
+        category_registry, category_digest = read_registry(registry_path)
+    except RegistryError as exc:
+        raise ImportError(str(exc)) from exc
+    expected_digest = metadata.get("category_registry_sha256")
+    if expected_digest is not None and (
+        not isinstance(expected_digest, str)
+        or not re.fullmatch(r"[0-9a-f]{64}", expected_digest)
+        or expected_digest != category_digest
+    ):
+        raise ImportError("category registry SHA-256 precondition failed")
+    allowed_categories = frozenset(item["id"] for item in category_registry["categories"])
+    validate_metadata(metadata, allowed_categories)
     images = [open_validated_source(path) for path in sources]
 
     page_id = metadata["id"]
@@ -505,6 +525,14 @@ def import_activity(
         build_derivatives(images, stage_media)
         stage_catalog.write_text(new_catalog, encoding="utf-8")
 
+        # A host publication lock is mandatory. Re-read before first final
+        # content mutation to also detect any unexpected taxonomy drift.
+        try:
+            _, current_digest = read_registry(registry_path)
+        except RegistryError as exc:
+            raise ImportError(str(exc)) from exc
+        if current_digest != category_digest:
+            raise ImportError("category registry changed before publication")
         os.replace(stage_original, final_original)
         os.replace(stage_media, final_media)
 
@@ -537,6 +565,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--title")
     parser.add_argument("--character", default="")
     parser.add_argument("--category", required=True)
+    parser.add_argument("--categories-sha256", help="exact managed registry SHA-256 from the shared publication lock")
     parser.add_argument(
         "--additional-category", action="append", default=[],
         help="repeatable canonical secondary category; first --category remains primary",
@@ -571,6 +600,8 @@ def main() -> int:
             "difficulty": args.difficulty.strip(),
             "language": args.language.strip(),
         }
+        if args.categories_sha256 is not None:
+            metadata["category_registry_sha256"] = args.categories_sha256
         if args.additional_category:
             metadata["categories"] = [metadata["category"], *args.additional_category]
         if args.topic is not None:
