@@ -77,6 +77,17 @@ class TopicFilterTests(unittest.TestCase):
         self.assertIn('new URLSearchParams(location.search).get("topic")', source)
         self.assertIn('url.searchParams.set("topic", activeTopic)', source)
 
+    def test_public_topic_filters_match_each_explicit_membership(self):
+        # A page with two canonical topics must appear once under either filter.
+        home = (ROOT / "js/app.js").read_text(encoding="utf-8")
+        landing = (ROOT / "js/category.js").read_text(encoding="utf-8")
+        self.assertIn("new Set(entry.topics.map", home)
+        self.assertIn("entryTopicIds(entry).forEach", home)
+        self.assertIn("entryTopicIds(entry).includes(activeTopic)", home)
+        self.assertIn("new Set(entry.topics.map", landing)
+        self.assertIn("entryTopicIds(entry).forEach", landing)
+        self.assertIn("entryTopicIds(entry).includes(activeTopic.id)", landing)
+
     def test_topic_chips_keep_mobile_touch_targets_and_horizontal_scroll(self):
         css = (ROOT / "css/app.css").read_text(encoding="utf-8")
         self.assertIn(".topic-chip", css)
