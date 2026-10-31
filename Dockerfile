@@ -4,6 +4,7 @@ USER root
 RUN apk add --no-cache python3 py3-pillow
 COPY tools/coloring-pages-import /usr/local/bin/coloring-pages-import
 COPY tools/coloring_pages_categories.py /usr/local/bin/coloring_pages_categories.py
+COPY tools/coloring_pages_topics.py /usr/local/bin/coloring_pages_topics.py
 COPY tools/coloring-pages-regenerate-derivatives /usr/local/bin/coloring-pages-regenerate-derivatives
 COPY tools/coloring-pages-print-master /usr/local/bin/coloring-pages-print-master
 COPY metadata/categories.json /usr/local/share/coloring-pages/categories.json
@@ -22,7 +23,6 @@ COPY index.html detail.html print.html /usr/share/nginx/html/
 COPY tiere.html fahrzeuge.html alphabet.html lernen.html figuren.html jahreszeiten.html essen-natur.html /usr/share/nginx/html/
 COPY stats.html traffic.html kita.html kalender.html /usr/share/nginx/html/
 COPY robots.txt sitemap.xml /usr/share/nginx/html/
-COPY metadata/topics.json /usr/share/nginx/html/topics.json
 COPY google7e69cee667102729.html /usr/share/nginx/html/
 COPY css /usr/share/nginx/html/css
 COPY js /usr/share/nginx/html/js

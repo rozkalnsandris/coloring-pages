@@ -32,6 +32,10 @@ class ImportPageTests(unittest.TestCase):
         (self.content / "public/categories.json").write_bytes(
             serialize_registry(seed_from_source(ROOT / "metadata/categories.json"))
         )
+        from coloring_pages_topics import seed_from_source as seed_topics, serialize_registry as serialize_topics
+        (self.content / "public/topics.json").write_bytes(
+            serialize_topics(seed_topics(ROOT / "metadata/topics.json"))
+        )
         self.source = self.content / "inbox/fire-pup-001.png"
         self.write_source()
 
@@ -322,12 +326,13 @@ class ImportPageTests(unittest.TestCase):
     def test_topics_registry_validation_fail_closed_before_writes(self):
         from unittest.mock import patch
         path = self.root / "topics.json"
-        original = json.loads((ROOT / "metadata/topics.json").read_text(encoding="utf-8"))
+        from coloring_pages_topics import seed_from_source
+        original = seed_from_source(ROOT / "metadata/topics.json")
         with patch.object(importer, "topic_registry_path", return_value=path):
             for invalid in [
-                {"schema": "wrong", "topics": original["topics"]},
-                {"schema": original["schema"], "topics": [original["topics"][0]] * 2},
-                {"schema": original["schema"], "topics": [{"id": "test", "label": "Test", "kind": "broken"}]},
+                {"schema": "wrong", "revision": 1, "topics": original["topics"]},
+                {"schema": original["schema"], "revision": 1, "topics": [original["topics"][0]] * 2},
+                {"schema": original["schema"], "revision": 1, "topics": [{"id": "test", "label": "Test", "kind": "broken"}]},
             ]:
                 with self.subTest(invalid=invalid):
                     path.write_text(json.dumps(invalid), encoding="utf-8")

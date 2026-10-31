@@ -110,3 +110,7 @@ other host/network/settings/permission authority.
 ## Managed runtime categories (#436)
 
 The original immutable categories v1 registry has been superseded for import validation by the **mandatory** mounted v2 runtime registry. Refer to [RUNTIME_CATEGORIES_V2_436.md](RUNTIME_CATEGORIES_V2_436.md) for exact canonical host path, version/SHA256 lock checks, rollout and safety. The image-local v1 JSON remains an immutable seed only; without a valid v2 live registry all imports fail before mutation. This source change grants no host seed/mount/restart, importer repin, publication or ADMIN write authority.
+
+## Managed runtime Topics v2 (#438)
+
+The immutable `metadata/topics.json` stays a v1 seed only. Public and networkless importer read managed `/srv/coloring-pages-content/public/topics.json`, requiring exact canonical v2 JSON for every import, even those without topic metadata. Optional `--topics-sha256` guards an ADMIN snapshot and the importer rechecks the topic digest before the first permanent media/catalog change. See [RUNTIME_TOPICS_V2_438.md](RUNTIME_TOPICS_V2_438.md). Missing v2 file yields HTTP 503 and importer fails closed. Neither source merge nor CI authorizes host seed/mount, importer repin, ADMIN backend upgrade/restart, content or LIVE operations.
