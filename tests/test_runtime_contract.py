@@ -172,8 +172,9 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertEqual(contract["content_mount"], "read-write")
         self.assertEqual(
             contract["category_registry"],
-            "/usr/local/share/coloring-pages/categories.json",
+            "/srv/coloring-pages-content/public/categories.json",
         )
+        self.assertEqual(contract["category_registry_schema"], "rozkalns.coloring-pages.categories.v2")
         self.assertTrue(contract["category_argument_required"])
         self.assertEqual(contract["host_dependencies"], ["docker"])
         self.assertEqual(

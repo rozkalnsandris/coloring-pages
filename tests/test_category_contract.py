@@ -89,6 +89,10 @@ class CategoryContractTests(unittest.TestCase):
             dockerfile,
         )
         self.assertIn(
+            "COPY tools/coloring_pages_categories.py /usr/local/bin/coloring_pages_categories.py",
+            dockerfile,
+        )
+        self.assertNotIn(
             "COPY metadata/categories.json /usr/share/nginx/html/categories.json",
             dockerfile,
         )
@@ -97,9 +101,11 @@ class CategoryContractTests(unittest.TestCase):
             dockerfile,
         )
         nginx = (ROOT / "deploy/nginx.conf").read_text(encoding="utf-8")
-        for path in ("categories.json", "topics.json"):
-            self.assertIn(f"location = /{path}", nginx)
-            self.assertIn(f"try_files /{path} =404;", nginx)
+        self.assertIn("location = /categories.json", nginx)
+        self.assertIn("try_files /categories.json =503;", nginx)
+        self.assertIn("root /var/lib/coloring-pages/public;", nginx)
+        self.assertIn("location = /topics.json", nginx)
+        self.assertIn("try_files /topics.json =404;", nginx)
 
 
 if __name__ == "__main__":

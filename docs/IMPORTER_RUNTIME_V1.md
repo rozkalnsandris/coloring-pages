@@ -106,3 +106,7 @@ registry and pinned importer have been verified. Until compatible
 preconditions are proven, ADMIN must fail closed. No source-only PR,
 merge, Docker build or documentation implies content publication or
 other host/network/settings/permission authority.
+
+## Managed runtime categories (#436)
+
+The original immutable categories v1 registry has been superseded for import validation by the **mandatory** mounted v2 runtime registry. Refer to [RUNTIME_CATEGORIES_V2_436.md](RUNTIME_CATEGORIES_V2_436.md) for exact canonical host path, version/SHA256 lock checks, rollout and safety. The image-local v1 JSON remains an immutable seed only; without a valid v2 live registry all imports fail before mutation. This source change grants no host seed/mount/restart, importer repin, publication or ADMIN write authority.

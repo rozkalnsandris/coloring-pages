@@ -32,6 +32,10 @@
     "privileged-container",
     "production-image-redeploy-per-import"
   ],
-  "category_registry": "/usr/local/share/coloring-pages/categories.json",
-  "category_argument_required": true
+  "category_registry": "/srv/coloring-pages-content/public/categories.json",
+  "category_argument_required": true,
+  "category_registry_schema": "rozkalns.coloring-pages.categories.v2",
+  "category_registry_version_argument": "--categories-sha256",
+  "category_registry_source": "shared-public-content-mounted-read-only-by-nginx",
+  "category_registry_missing": "fail-closed"
 }
