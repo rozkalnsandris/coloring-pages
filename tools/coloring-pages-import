@@ -20,6 +20,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps, UnidentifiedImageError
 # The helper is adjacent to the importer both in source and immutable image.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from coloring_pages_categories import RegistryError, read_registry
+from coloring_pages_topics import RegistryError as TopicRegistryError, read_registry as read_topics_registry
 
 ID_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 A4_WIDTH_MM = 210
@@ -38,8 +39,8 @@ ALLOWED_DIFFICULTIES = {"easy", "normal", "detailed"}
 ALLOWED_LANGUAGES = {"de"}
 CATEGORY_REGISTRY_SCHEMA = "rozkalns.coloring-pages.categories.v1"
 CONTAINER_CATEGORY_REGISTRY = Path("/usr/local/share/coloring-pages/categories.json")
-TOPIC_REGISTRY_SCHEMA = "rozkalns.coloring-pages.topics.v1"
-CONTAINER_TOPIC_REGISTRY = Path("/usr/local/share/coloring-pages/topics.json")
+TOPIC_REGISTRY_SCHEMA = "rozkalns.coloring-pages.topics.v2"
+CONTAINER_TOPIC_REGISTRY = Path("/srv/coloring-pages-content/public/topics.json")
 
 
 class ImportError(ValueError):
@@ -85,42 +86,19 @@ def load_allowed_categories() -> frozenset[str]:
     return frozenset(ids)
 
 
-def topic_registry_path() -> Path:
-    if CONTAINER_TOPIC_REGISTRY.is_file():
-        return CONTAINER_TOPIC_REGISTRY
-    return Path(__file__).resolve().parents[1] / "metadata/topics.json"
+def topic_registry_path(content_root: Path | None = None) -> Path:
+    """No immutable-image fallback, including for legacy callers."""
+    return (Path(content_root) / "public/topics.json" if content_root is not None
+            else CONTAINER_TOPIC_REGISTRY)
 
 
-def load_allowed_topics() -> dict[str, str]:
-    """Canonical image-local topic IDs and kind, not titles or inferred keywords."""
-    path = topic_registry_path()
+def load_allowed_topics(content_root: Path | None = None) -> dict[str, str]:
+    """Read managed Topics v2, not image-local values."""
     try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise ImportError(f"topic registry is unavailable or invalid: {path}") from exc
-    if not isinstance(raw, dict) or raw.get("schema") != TOPIC_REGISTRY_SCHEMA:
-        raise ImportError("topic registry schema is invalid")
-    topics = raw.get("topics")
-    if not isinstance(topics, list) or not 0 < len(topics) <= 128:
-        raise ImportError("topic registry must contain between 1 and 128 topics")
-    allowed: dict[str, str] = {}
-    for topic in topics:
-        if not isinstance(topic, dict):
-            raise ImportError("topic registry contains invalid entry")
-        topic_id, label, kind = topic.get("id"), topic.get("label"), topic.get("kind")
-        if (
-            not isinstance(topic_id, str)
-            or not ID_PATTERN.fullmatch(topic_id)
-            or len(topic_id) > 48
-            or not isinstance(label, str)
-            or not label.strip()
-            or kind not in {"seasonal", "evergreen"}
-        ):
-            raise ImportError("topic registry contains an invalid id, label or kind")
-        if topic_id in allowed:
-            raise ImportError(f"topic registry contains duplicate id: {topic_id}")
-        allowed[topic_id] = kind
-    return allowed
+        document, _ = read_topics_registry(topic_registry_path(content_root))
+    except TopicRegistryError as exc:
+        raise ImportError(str(exc)) from exc
+    return {topic["id"]: topic["kind"] for topic in document["topics"]}
 
 
 def slug_from_path(path: Path) -> str:
@@ -136,6 +114,7 @@ def default_title(page_id: str) -> str:
 
 def validate_metadata(
     metadata: dict[str, Any], allowed_categories: frozenset[str] | None = None,
+    allowed_topics: dict[str, str] | None = None,
 ) -> None:
     page_id = metadata["id"]
     if not ID_PATTERN.fullmatch(page_id):
@@ -183,7 +162,8 @@ def validate_metadata(
             or len(primary_topic) > 48
         ):
             raise ImportError("topic must be a non-empty safe topic ID")
-        allowed_topics = load_allowed_topics()
+        if allowed_topics is None:
+            raise ImportError("runtime topic registry snapshot is required")
         topics = metadata["topics"] if "topics" in metadata else [primary_topic]
         if (
             not isinstance(topics, list)
@@ -494,7 +474,20 @@ def import_activity(
     ):
         raise ImportError("category registry SHA-256 precondition failed")
     allowed_categories = frozenset(item["id"] for item in category_registry["categories"])
-    validate_metadata(metadata, allowed_categories)
+    topic_path = topic_registry_path(content_root)
+    try:
+        topic_registry, topic_digest = read_topics_registry(topic_path)
+    except TopicRegistryError as exc:
+        raise ImportError(str(exc)) from exc
+    expected_topic_digest = metadata.get("topic_registry_sha256")
+    if expected_topic_digest is not None and (
+        not isinstance(expected_topic_digest, str)
+        or not re.fullmatch(r"[0-9a-f]{64}", expected_topic_digest)
+        or expected_topic_digest != topic_digest
+    ):
+        raise ImportError("topic registry SHA-256 precondition failed")
+    allowed_topics = {item["id"]: item["kind"] for item in topic_registry["topics"]}
+    validate_metadata(metadata, allowed_categories, allowed_topics)
     images = [open_validated_source(path) for path in sources]
 
     page_id = metadata["id"]
@@ -533,6 +526,12 @@ def import_activity(
             raise ImportError(str(exc)) from exc
         if current_digest != category_digest:
             raise ImportError("category registry changed before publication")
+        try:
+            _, current_topic_digest = read_topics_registry(topic_path)
+        except TopicRegistryError as exc:
+            raise ImportError(str(exc)) from exc
+        if current_topic_digest != topic_digest:
+            raise ImportError("topic registry changed before publication")
         os.replace(stage_original, final_original)
         os.replace(stage_media, final_media)
 
@@ -566,6 +565,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--character", default="")
     parser.add_argument("--category", required=True)
     parser.add_argument("--categories-sha256", help="exact managed registry SHA-256 from the shared publication lock")
+    parser.add_argument("--topics-sha256", help="exact managed Topics SHA-256 from the shared publication lock")
     parser.add_argument(
         "--additional-category", action="append", default=[],
         help="repeatable canonical secondary category; first --category remains primary",
@@ -602,6 +602,8 @@ def main() -> int:
         }
         if args.categories_sha256 is not None:
             metadata["category_registry_sha256"] = args.categories_sha256
+        if args.topics_sha256 is not None:
+            metadata["topic_registry_sha256"] = args.topics_sha256
         if args.additional_category:
             metadata["categories"] = [metadata["category"], *args.additional_category]
         if args.topic is not None:

@@ -328,12 +328,24 @@ async function loadTopicRegistry() {
     const response = await fetch("/topics.json", { cache: "no-store" });
     if (!response.ok) throw new Error("topic registry unavailable");
     const payload = await response.json();
-    if (payload?.schema !== "rozkalns.coloring-pages.topics.v1" || !Array.isArray(payload.topics)) {
+    if (payload?.schema !== "rozkalns.coloring-pages.topics.v2" ||
+        !Number.isInteger(payload.revision) || payload.revision < 1 ||
+        !Array.isArray(payload.topics) || payload.topics.length < 1 || payload.topics.length > 128) {
       throw new Error("invalid topic registry");
     }
-    topicRegistry = payload.topics.filter((topic) =>
-      topic && typeof topic.id === "string" && typeof topic.label === "string" && ["seasonal", "evergreen"].includes(topic.kind)
-    );
+    const ids = new Set();
+    for (const topic of payload.topics) {
+      if (!topic || typeof topic.id !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(topic.id) ||
+          ids.has(topic.id) || typeof topic.label !== "string" || !topic.label.trim() ||
+          typeof topic.icon !== "string" ||
+          !["seasonal", "evergreen"].includes(topic.kind) ||
+          !Array.isArray(topic.legacy_terms) ||
+          (topic.kind === "seasonal" && (!parseMonthDay(topic.active_from) || !parseMonthDay(topic.active_to)))) {
+        throw new Error("invalid topic registry");
+      }
+      ids.add(topic.id);
+    }
+    topicRegistry = payload.topics;
   } catch {
     topicRegistry = [];
     if (topicExplorer) topicExplorer.hidden = true;

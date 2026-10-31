@@ -105,7 +105,7 @@ class CategoryContractTests(unittest.TestCase):
         self.assertIn("try_files /categories.json =503;", nginx)
         self.assertIn("root /var/lib/coloring-pages/public;", nginx)
         self.assertIn("location = /topics.json", nginx)
-        self.assertIn("try_files /topics.json =404;", nginx)
+        self.assertIn("try_files /topics.json =503;", nginx)
 
 
 if __name__ == "__main__":

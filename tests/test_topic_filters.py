@@ -138,7 +138,11 @@ class TopicFilterTests(unittest.TestCase):
 
     def test_container_serves_topic_registry(self):
         dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
-        self.assertIn("COPY metadata/topics.json /usr/share/nginx/html/topics.json", dockerfile)
+        self.assertNotIn("COPY metadata/topics.json /usr/share/nginx/html/topics.json", dockerfile)
+        self.assertIn("COPY tools/coloring_pages_topics.py /usr/local/bin/coloring_pages_topics.py", dockerfile)
+        nginx = (ROOT / "deploy/nginx.conf").read_text(encoding="utf-8")
+        self.assertIn("location = /topics.json", nginx)
+        self.assertIn("try_files /topics.json =503;", nginx)
         self.assertIn("COPY metadata/topics.json /usr/local/share/coloring-pages/topics.json", dockerfile)
 
 
