@@ -37,7 +37,7 @@ const context={window,location,document,URLSearchParams,Intl,Math:pseudoMath,
        {id:"alphabet",label:"Alphabet"},{id:"lernen",label:"Lernen"},
        {id:"figuren",label:"Figuren & Helden"},{id:"jahreszeiten",label:"Jahreszeiten & Feste"}
      ]})};
-   if(url==="/topics.json")return {ok:true,json:async()=>({schema:"rozkalns.coloring-pages.topics.v1",topics:[]})};
+   if(url==="/topics.json")return {ok:true,json:async()=>({schema:"rozkalns.coloring-pages.topics.v2",revision:1,topics:[{id:"winter",label:"Winter",icon:"❄️",kind:"seasonal",active_from:"12-01",active_to:"02-29",legacy_terms:[]}]})};
    if(f.mode==="network")throw Error("offline");
    if(f.mode==="http")return {ok:false};
    return {ok:true,json:async()=>f.mode==="invalid"?{}:f.items};

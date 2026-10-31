@@ -37,5 +37,10 @@
   "category_registry_schema": "rozkalns.coloring-pages.categories.v2",
   "category_registry_version_argument": "--categories-sha256",
   "category_registry_source": "shared-public-content-mounted-read-only-by-nginx",
-  "category_registry_missing": "fail-closed"
+  "category_registry_missing": "fail-closed",
+  "topic_registry": "/srv/coloring-pages-content/public/topics.json",
+  "topic_registry_schema": "rozkalns.coloring-pages.topics.v2",
+  "topic_registry_version_argument": "--topics-sha256",
+  "topic_registry_source": "shared-public-content-mounted-read-only-by-nginx",
+  "topic_registry_missing": "fail-closed"
 }
