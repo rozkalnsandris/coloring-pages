@@ -43,9 +43,23 @@ def verify_compose(root):
     assert len(after["volumes"]) == len(before["volumes"]) + 1
     socket = [v for v in after["volumes"] if v["target"] == "/run/ausmalwiese-pageview"]
     assert len(socket) == 1
-    assert socket[0] == {"type": "bind", "source": "/run/ausmalwiese-pageview",
-                         "target": "/run/ausmalwiese-pageview", "read_only": True,
-                         "bind": {"create_host_path": False}}
+    assert {k: v for k, v in socket[0].items() if k != "bind"} == {
+        "type": "bind", "source": "/run/ausmalwiese-pageview",
+        "target": "/run/ausmalwiese-pageview", "read_only": True}
+    # Older compose-go omits false in normalized JSON; newer releases preserve
+    # explicit false. Verify semantics against a permissive negative control,
+    # rather than mistaking serialization differences for a bad mount.
+    binding = socket[0].get("bind", {})
+    assert set(binding) <= {"create_host_path"}
+    assert binding.get("create_host_path", False) is False
+    permissive = override(FIXTURE_DIGEST, "1234")
+    permissive["services"]["coloring-pages"]["volumes"][0]["bind"]["create_host_path"] = True
+    control = root / "permissive.compose.json"
+    control.write_text(json.dumps(permissive))
+    normalized_control = config(ROOT / "deploy/docker-compose.simple.yml", control)
+    control_socket = [v for v in normalized_control["services"]["coloring-pages"]["volumes"]
+                      if v["target"] == "/run/ausmalwiese-pageview"]
+    assert control_socket != socket, "Compose must retain false/true bind distinction"
     assert after["image"] == FIXTURE_DIGEST
     assert after["platform"] == "linux/arm64" and after["group_add"] == ["1234"]
     rest = {k: v for k, v in after.items() if k not in ("image", "platform", "group_add", "volumes")}

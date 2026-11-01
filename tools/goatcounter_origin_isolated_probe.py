@@ -128,17 +128,20 @@ def probe(application_image=False):
             config_args = [] if application_image else [
                 "--mount", f"type=bind,src={config},dst=/etc/nginx/nginx.conf,readonly"]
             command_args = [] if application_image else ["-g", "daemon off;"]
+            # Overriding ENTRYPOINT also clears the image's CMD. The derivative
+            # proof must use its real ENTRYPOINT, CMD and USER without overrides.
+            identity_args = [] if application_image else ["--user=101:101", "--entrypoint=nginx"]
             container = run("docker", "run", "-d",
                             "--pull=never" if application_image else "--pull=always",
                             "--platform=linux/amd64",
-                            "--network=none", "--read-only", "--user=101:101",
+                            "--network=none", "--read-only", *identity_args,
                             "--group-add=" + str(os.getgid()), "--cap-drop=ALL",
                             "--security-opt=no-new-privileges", "--pids-limit=32",
                             "--memory=64m", "--cpus=1", "--tmpfs=/tmp:rw,nosuid,nodev,size=16m",
                             *config_args,
                             "--mount", f"type=bind,src={ipc},dst=/run/ausmalwiese-pageview,readonly",
                             "--mount", f"type=bind,src={html},dst=/usr/share/nginx/html,readonly",
-                            "--entrypoint=nginx", selected_image, *command_args).stdout.decode().strip()
+                            selected_image, *command_args).stdout.decode().strip()
             version = run("docker", "exec", container, "nginx", "-v")
             assert b"nginx/1.29.1" in version.stderr
             active_config = "/etc/nginx/nginx-origin.conf" if application_image else "/etc/nginx/nginx.conf"
