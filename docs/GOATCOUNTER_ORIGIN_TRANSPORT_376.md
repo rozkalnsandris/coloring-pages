@@ -4,8 +4,9 @@ Implements the first transport boundary from the accepted
 [origin-request plan](GOATCOUNTER_ORIGIN_REQUEST_PLAN_376.md), merged in #419.
 This source produces and tests a candidate Nginx configuration; it does not
 modify the application's current `deploy/nginx.conf`, Dockerfile or Compose.
-No deployed component references this generator, and merging it does not activate
-collection. Public collection remains held.
+The separate [opt-in application image](GOATCOUNTER_ORIGIN_APP_376.md) now bakes
+this generator's output. Default deployment still does not select it, and merging
+its source does not activate collection. Public collection remains held.
 
 ## Source components
 
@@ -28,12 +29,12 @@ the exact normalized `/detail.html` route gains an internal mirror. The original
 method and validated ID are frozen before the subrequest changes URI context.
 The upstream target, method, headers, length and body are constructed afresh;
 inherited query arguments are discarded. No retry, raw event spool or public
-collector route is added. Mirror access logging and **both mirror and main detail
+collector route is added. Main detail and mirror access logging and **both mirror and main detail
 route error logging** are disabled. The real failure probe showed that suppressing
 only the mirror location's error log still exposed the original URL/referrer
 through the main connection's error log. This deliberately removes ordinary
 detail-route error diagnostics too; the eventual collector must use bounded,
-sanitized health/error classes, not raw requests. Existing origin access logging
+sanitized health/error classes, not raw requests. Origin access logging
 and error logs for other routes are unchanged and remain a separate processing/
 release assessment. This is not a claim that all origin logs are anonymous.
 

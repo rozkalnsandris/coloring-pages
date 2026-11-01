@@ -1,0 +1,15 @@
+# Opt-in derivative only. Supply a reviewed application image by immutable digest.
+# The default Dockerfile and SIMPLE-DEPLOY pipeline do not use this recipe.
+ARG APPLICATION_IMAGE
+FROM ${APPLICATION_IMAGE}
+
+USER root
+COPY tools/goatcounter_origin_nginx.py /usr/local/libexec/goatcounter_origin_nginx.py
+RUN python3 /usr/local/libexec/goatcounter_origin_nginx.py \
+    --base /etc/nginx/nginx.conf --output /etc/nginx/nginx-origin.conf \
+    && chmod 0444 /etc/nginx/nginx-origin.conf
+USER 101
+
+# No environment-templating entrypoint; use the exact baked configuration.
+ENTRYPOINT ["nginx"]
+CMD ["-c", "/etc/nginx/nginx-origin.conf", "-g", "daemon off;"]

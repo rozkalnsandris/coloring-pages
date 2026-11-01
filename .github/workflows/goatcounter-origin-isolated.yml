@@ -5,7 +5,10 @@ on:
     paths:
       - 'tools/goatcounter_origin_*.py'
       - 'tools/goatcounter_pageview_contract.py'
-      - 'tests/test_goatcounter_origin_contract.py'
+      - 'tests/test_goatcounter_origin_*.py'
+      - 'Dockerfile'
+      - 'deploy/Dockerfile.origin-counting'
+      - 'deploy/docker-compose.simple.yml'
       - 'deploy/nginx.conf'
       - '.github/workflows/goatcounter-origin-isolated.yml'
   push:
@@ -13,7 +16,10 @@ on:
     paths:
       - 'tools/goatcounter_origin_*.py'
       - 'tools/goatcounter_pageview_contract.py'
-      - 'tests/test_goatcounter_origin_contract.py'
+      - 'tests/test_goatcounter_origin_*.py'
+      - 'Dockerfile'
+      - 'deploy/Dockerfile.origin-counting'
+      - 'deploy/docker-compose.simple.yml'
       - 'deploy/nginx.conf'
       - '.github/workflows/goatcounter-origin-isolated.yml'
 
@@ -23,12 +29,14 @@ permissions:
 jobs:
   origin-unix-proof:
     runs-on: ubuntu-24.04
-    timeout-minutes: 6
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Pure contract tests
-        run: python3 -m unittest discover -s tests -p test_goatcounter_origin_contract.py -v
+        run: python3 -m unittest discover -s tests -p 'test_goatcounter_origin_*.py' -v
       - name: Real pinned Nginx against synthetic Unix receiver
         run: python3 tools/goatcounter_origin_isolated_probe.py
+      - name: Build actual opt-in application image and prove baked configuration
+        run: python3 tools/goatcounter_origin_app_probe.py

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Render a candidate origin mirror config to a NEW file; never activate it.
 
-Production Dockerfile/Compose do not reference this tool or its output. A future
-reviewed deployment must explicitly wire the Unix collector and generated config.
+Default Dockerfile/Compose do not reference this tool or its output. The separate
+opt-in Dockerfile.origin-counting bakes it in; activation requires explicit wiring.
 """
 from __future__ import annotations
 
@@ -25,6 +25,8 @@ MAP = '''
 LOCATIONS = '''
         # Candidate only: ordinary HTML delivery retains its original cache policy.
         location = /detail.html {
+            # The counting variant does not retain original detail request URLs.
+            access_log off;
             # Mirror failures use the main connection log as well. The isolated
             # failure probe proves that suppressing only the mirror log leaks
             # original query/referrer; suppress detail-route error logs too.
