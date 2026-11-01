@@ -7,6 +7,7 @@ Only a pinned network-isolated test container and newly created /tmp files.
 from __future__ import annotations
 
 import concurrent.futures
+import argparse
 from email.utils import formatdate
 from http.server import BaseHTTPRequestHandler
 import json
@@ -103,7 +104,7 @@ class Receiver:
             return len(self.records), len(self.backend)
 
 
-def probe():
+def probe(application_image=False):
     if os.environ.get("GITHUB_ACTIONS") != "true" or os.environ.get("RUNNER_ENVIRONMENT") != "github-hosted":
         raise RuntimeError("EPHEMERAL_GITHUB_RUNNER_REQUIRED")
     with tempfile.TemporaryDirectory(prefix="origin-probe-") as temp:
@@ -123,18 +124,28 @@ def probe():
         receiver.start()
         container = None
         try:
-            container = run("docker", "run", "-d", "--pull=always", "--platform=linux/amd64",
+            selected_image = "coloring-pages-origin-app:ci" if application_image else IMAGE
+            config_args = [] if application_image else [
+                "--mount", f"type=bind,src={config},dst=/etc/nginx/nginx.conf,readonly"]
+            command_args = [] if application_image else ["-g", "daemon off;"]
+            container = run("docker", "run", "-d",
+                            "--pull=never" if application_image else "--pull=always",
+                            "--platform=linux/amd64",
                             "--network=none", "--read-only", "--user=101:101",
                             "--group-add=" + str(os.getgid()), "--cap-drop=ALL",
                             "--security-opt=no-new-privileges", "--pids-limit=32",
                             "--memory=64m", "--cpus=1", "--tmpfs=/tmp:rw,nosuid,nodev,size=16m",
-                            "--mount", f"type=bind,src={config},dst=/etc/nginx/nginx.conf,readonly",
+                            *config_args,
                             "--mount", f"type=bind,src={ipc},dst=/run/ausmalwiese-pageview,readonly",
                             "--mount", f"type=bind,src={html},dst=/usr/share/nginx/html,readonly",
-                            "--entrypoint=nginx", IMAGE, "-g", "daemon off;").stdout.decode().strip()
+                            "--entrypoint=nginx", selected_image, *command_args).stdout.decode().strip()
             version = run("docker", "exec", container, "nginx", "-v")
             assert b"nginx/1.29.1" in version.stderr
-            run("docker", "exec", container, "nginx", "-t")
+            active_config = "/etc/nginx/nginx-origin.conf" if application_image else "/etc/nginx/nginx.conf"
+            run("docker", "exec", container, "nginx", "-t", "-c", active_config)
+            if application_image:
+                baked = run("docker", "exec", container, "cat", active_config).stdout.decode()
+                assert baked == candidate, "derivative must use exact rendered source configuration"
 
             def request(target, method="GET", body=b"", status=200, conditional=""):
                 raw = (f"{method} {target} HTTP/1.1\r\nHost: example.invalid\r\n"
@@ -232,8 +243,16 @@ def probe():
                 assert b"PRIVATE_" not in body
                 assert "PRIVATE_" not in str(headers)
             logs = run("docker", "logs", container)
-            assert b"PRIVATE_" not in logs.stdout + logs.stderr
-            print(json.dumps({"result": "PASS", "image": IMAGE,
+            if application_image:
+                # Other routes keep ordinary access logs. Detail requests and
+                # mirror failure diagnostics must not disclose their sentinels.
+                assert b"PRIVATE_QUERY" not in logs.stdout + logs.stderr
+                assert b"PRIVATE_" not in logs.stderr
+                assert b" /detail.html" not in logs.stdout
+            else:
+                assert b"PRIVATE_" not in logs.stdout + logs.stderr
+            print(json.dumps({"result": "PASS", "image": selected_image,
+                              "baked_application_config": application_image,
                               "synthetic_wire_requests": receiver.counts()[0],
                               "synthetic_backend_payloads": receiver.counts()[1],
                               "live_data": False, "production_activation": False}))
@@ -249,4 +268,6 @@ def probe():
 
 
 if __name__ == "__main__":
-    probe()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--application-image", action="store_true")
+    probe(parser.parse_args().application_image)
