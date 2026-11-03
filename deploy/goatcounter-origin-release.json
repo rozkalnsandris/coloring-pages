@@ -2,7 +2,7 @@
   "schema": "rozkalns.origin-release-candidate.v1",
   "application_source_sha": "0930f938f957e29c8d6597acbf2b49e0dba37eda",
   "recipe_source_sha": "8d0de541e03f2db1196fb89569d549fb2294abfb",
-  "rpi_source_sha": "92a5f4bf4d1b471d823a0c115eab71d98ff736b8",
+  "rpi_source_sha": "ccd468de5ae6ea76cdc3dd009bd06812c20e6874",
   "shared_workflow_sha": "94187cc447fc80757db10ac25d49717d00dc8430",
   "base_digest": "sha256:d5546fac6922c3b01645f59d8c7d0658cbbcbe1a4eac3ccdd629621da863777c",
   "base_platform_digest": "sha256:22b7015e9b9105f5ee9f0e4e3b2bd1c77f3e9c752c67839fa85e5f6b85d20891"

@@ -58,7 +58,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: rozkalnsandris/RPi5_main
-          ref: 92a5f4bf4d1b471d823a0c115eab71d98ff736b8
+          ref: ccd468de5ae6ea76cdc3dd009bd06812c20e6874
           path: .rpi-release
           persist-credentials: false
           sparse-checkout: |
@@ -107,7 +107,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: rozkalnsandris/RPi5_main
-          ref: 92a5f4bf4d1b471d823a0c115eab71d98ff736b8
+          ref: ccd468de5ae6ea76cdc3dd009bd06812c20e6874
           path: .rpi-release
           persist-credentials: false
           sparse-checkout: |

@@ -80,6 +80,13 @@ def archive_fixture(path, *, config_change=None, statement_change=None, corrupt=
 
 
 class ReleaseBoundaryTests(unittest.TestCase):
+    def test_reviewed_rpi_validator_pin_consistency(self):
+        accepted = "ccd468de5ae6ea76cdc3dd009bd06812c20e6874"
+        workflow = (ROOT / ".github/workflows/goatcounter-origin-release.yml").read_text()
+        self.assertEqual(workflow.count("ref: " + accepted), 2)
+        self.assertEqual(CONTRACT["rpi_source_sha"], accepted)
+        self.assertEqual(release.RPI, accepted)
+
     def test_candidate_is_strict_and_immutable(self):
         self.assertEqual(release.candidate(copy.deepcopy(CONTRACT)), CONTRACT)
         for key, value in (("base_digest", "production"), ("recipe_source_sha", "b" * 40),

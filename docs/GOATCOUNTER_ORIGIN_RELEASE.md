@@ -18,7 +18,7 @@ and immediately before/after publication. Pointer drift refuses the operation.
 
 The recipe remains at `8d0de541e03f2db1196fb89569d549fb2294abfb`; this PR extends
 the proof tooling, not the recipe or Nginx renderer. The RPi5 parser is checked out
-at `92a5f4bf4d1b471d823a0c115eab71d98ff736b8`. Its original validation functions
+at `ccd468de5ae6ea76cdc3dd009bd06812c20e6874`. Its original validation functions
 check the real unmodified in-toto statement and derivative configuration. A changed
 recipe/parser requires coordinated source review, not relaxed validation.
 
@@ -99,7 +99,7 @@ Successful publication still needs fresh RPi5 primary-peer/group/socket evidence
 the actual-flow notice/assessment in legal draft #158, a reviewed request/bundle and
 separate exact runtime/public-activation authorization. Private GoatCounter and
 ADMIN reporting are not reinstalled. Follow the accepted
-[RPi5 deployment procedure](https://github.com/rozkalnsandris/RPi5_main/blob/92a5f4bf4d1b471d823a0c115eab71d98ff736b8/docs/GOATCOUNTER_ORIGIN_DEPLOY_V1.md).
+[RPi5 deployment procedure](https://github.com/rozkalnsandris/RPi5_main/blob/ccd468de5ae6ea76cdc3dd009bd06812c20e6874/docs/GOATCOUNTER_ORIGIN_DEPLOY_V1.md).
 
 Later ordinary application updates require a newly reviewed candidate contract
 and artifact pair. The opted-in reconciler deliberately holds rather than falling
