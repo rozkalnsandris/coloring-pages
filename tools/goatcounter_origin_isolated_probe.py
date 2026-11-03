@@ -104,7 +104,9 @@ class Receiver:
             return len(self.records), len(self.backend)
 
 
-def probe(application_image=False):
+def probe(application_image=False, *, platform="linux/amd64"):
+    if platform not in ("linux/amd64", "linux/arm64") or (not application_image and platform != "linux/amd64"):
+        raise ValueError("unsupported fixture platform")
     if os.environ.get("GITHUB_ACTIONS") != "true" or os.environ.get("RUNNER_ENVIRONMENT") != "github-hosted":
         raise RuntimeError("EPHEMERAL_GITHUB_RUNNER_REQUIRED")
     with tempfile.TemporaryDirectory(prefix="origin-probe-") as temp:
@@ -133,7 +135,7 @@ def probe(application_image=False):
             identity_args = [] if application_image else ["--user=101:101", "--entrypoint=nginx"]
             container = run("docker", "run", "-d",
                             "--pull=never" if application_image else "--pull=always",
-                            "--platform=linux/amd64",
+                            "--platform=" + platform,
                             "--network=none", "--read-only", *identity_args,
                             "--group-add=" + str(os.getgid()), "--cap-drop=ALL",
                             "--security-opt=no-new-privileges", "--pids-limit=32",

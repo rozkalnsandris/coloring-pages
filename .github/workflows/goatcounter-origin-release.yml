@@ -1,0 +1,145 @@
+name: GoatCounter ARM64 origin release
+
+on:
+  pull_request:
+    paths:
+      - 'tools/goatcounter_origin_*.py'
+      - 'tools/goatcounter_pageview_contract.py'
+      - 'tests/test_goatcounter_origin_*.py'
+      - 'deploy/goatcounter-origin-release.json'
+      - 'deploy/Dockerfile.origin-counting'
+      - 'deploy/nginx.conf'
+      - 'deploy/docker-compose.simple.yml'
+      - '.github/workflows/goatcounter-origin-release.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/goatcounter_origin_*.py'
+      - 'tools/goatcounter_pageview_contract.py'
+      - 'tests/test_goatcounter_origin_*.py'
+      - 'deploy/goatcounter-origin-release.json'
+      - 'deploy/Dockerfile.origin-counting'
+      - 'deploy/nginx.conf'
+      - 'deploy/docker-compose.simple.yml'
+      - '.github/workflows/goatcounter-origin-release.yml'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish the proven OCI candidate (requires exact separate owner authority)'
+        type: boolean
+        default: false
+      expected_source_sha:
+        description: 'Exact reviewed merged workflow SHA; required for publication'
+        type: string
+        default: ''
+      authorization:
+        description: 'Exact PUBLISH GOATCOUNTER-ORIGIN command from the release documentation'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  arm64-proof:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate explicit publication authority before publication-mode work
+        if: github.event_name == 'workflow_dispatch' && inputs.publish
+        env:
+          EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
+          PUBLICATION_AUTHORIZATION: ${{ inputs.authorization }}
+        run: python3 tools/goatcounter_origin_release.py authorize
+      - name: Checkout accepted RPi5 evidence validator
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: rozkalnsandris/RPi5_main
+          ref: 92a5f4bf4d1b471d823a0c115eab71d98ff736b8
+          path: .rpi-release
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/prepare-goatcounter-origin-deploy-v1.py
+            ops/lib/deploy_executor/simple_deploy_v1.py
+          sparse-checkout-cone-mode: false
+      - name: Offline origin regression and release refusal tests
+        run: python3 -m unittest discover -s tests -p 'test_goatcounter_origin_*.py' -v
+      - name: Install OCI transfer tool on ephemeral runner
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends skopeo
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build OCI once and prove its ARM64 image with synthetic data
+        run: python3 tools/goatcounter_origin_release.py prove
+      - name: Retain candidate and evidence, including on proof failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: origin-release-candidate
+          path: origin-release-artifact/
+          if-no-files-found: ignore
+          compression-level: 0
+          retention-days: 7
+
+  publish:
+    needs: arm64-proof
+    if: github.event_name == 'workflow_dispatch' && inputs.publish
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: write
+    concurrency:
+      group: goatcounter-origin-publication
+      cancel-in-progress: false
+    env:
+      EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
+      PUBLICATION_AUTHORIZATION: ${{ inputs.authorization }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check exact owner, source and first-attempt authority
+        run: python3 tools/goatcounter_origin_release.py authorize
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: rozkalnsandris/RPi5_main
+          ref: 92a5f4bf4d1b471d823a0c115eab71d98ff736b8
+          path: .rpi-release
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/prepare-goatcounter-origin-deploy-v1.py
+            ops/lib/deploy_executor/simple_deploy_v1.py
+          sparse-checkout-cone-mode: false
+      - name: Download only this run's candidate
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: origin-release-candidate
+          path: origin-release-artifact
+      - name: Install OCI transfer tool on ephemeral runner
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends skopeo
+      - name: Authenticate and copy the exact tested OCI artifact once
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export DOCKER_CONFIG="${RUNNER_TEMP}/origin-publication-docker"
+          export REGISTRY_AUTH_FILE="${DOCKER_CONFIG}/config.json"
+          mkdir -m 700 "${DOCKER_CONFIG}"
+          printf '%s' "${GHCR_TOKEN}" | skopeo login --authfile "${REGISTRY_AUTH_FILE}" --username "${GITHUB_ACTOR}" --password-stdin ghcr.io >/dev/null
+          unset GHCR_TOKEN
+          python3 tools/goatcounter_origin_release.py publish
+      - name: Retain publication receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: origin-publication-receipt
+          path: origin-release-artifact/publication.json
+          if-no-files-found: ignore
+          retention-days: 30
