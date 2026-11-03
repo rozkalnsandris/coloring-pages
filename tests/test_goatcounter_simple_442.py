@@ -12,7 +12,7 @@ class GoatCounterSimple442(unittest.TestCase):
         for name in ("index.html", "detail.html"):
             html = (ROOT / name).read_text(encoding="utf-8")
             self.assertIn('data-goatcounter-simple="off"', html)
-            self.assertIn('src="js/goatcounter-simple.js?v=442"', html)
+            self.assertIn('src="js/goatcounter-simple.js?v=4e990c3037de8331"', html)
         detail = (ROOT / "js/detail.js").read_text(encoding="utf-8")
         self.assertIn('window.GoatCounterSimple?.detail?.(entry.id, entry.title)', detail)
         self.assertIn('window.ColoringStats?.trackView?.(entry.id)', detail)
