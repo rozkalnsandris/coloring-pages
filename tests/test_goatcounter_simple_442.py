@@ -16,7 +16,7 @@ class GoatCounterSimple442(unittest.TestCase):
             self.assertIn('data-analytics-settings', html)
             self.assertIn('href="/datenschutz.html"', html)
             self.assertIn('<meta name="referrer" content="origin">', html)
-            self.assertIn('src="js/goatcounter-simple.js?v=20261106consent1"', html)
+            self.assertIn('src="js/goatcounter-simple.js?v=172b875f6a600999"', html)
         notice = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
         self.assertIn("Analyse erlauben", notice)
         self.assertIn("Art. 6 Abs. 1 lit. a DSGVO", notice)
