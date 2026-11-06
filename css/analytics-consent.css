@@ -44,10 +44,26 @@
 }
 
 .analytics-consent-actions button {
-  min-height: 36px;
-  padding: 7px 13px;
+  min-height: 40px;
+  padding: 8px 14px;
   font-size: 12px;
   white-space: nowrap;
+}
+
+.analytics-consent-primary,
+.analytics-consent-secondary {
+  border: 1px solid #b8c7dd;
+  background: #fff;
+  color: var(--blue-deep);
+}
+
+.analytics-consent-primary:hover,
+.analytics-consent-primary:focus-visible,
+.analytics-consent-secondary:hover,
+.analytics-consent-secondary:focus-visible {
+  border-color: var(--blue);
+  background: #f4f8fd;
+  color: var(--blue-deep);
 }
 
 @media (max-width: 900px) {
@@ -81,6 +97,7 @@
 
   .analytics-consent-actions button {
     min-width: 0;
+    min-height: 44px;
     width: 100%;
     padding-inline: 10px;
   }
