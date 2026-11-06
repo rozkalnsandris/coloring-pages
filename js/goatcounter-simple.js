@@ -15,7 +15,10 @@
   function campaignQuery() {
     const params = new URLSearchParams(location.search);
     const allowed = ["utm_source", "utm_medium", "utm_campaign"];
-    if ([...params.keys()].some(key => !allowed.includes(key))) return "";
+    // The public detail URL carries an ID; it must never enter `q`.
+    if ([...params.keys()].some(key => !allowed.includes(key) && key !== "id")) return "";
+    if (params.has("id") && (params.getAll("id").length !== 1
+        || !/^[0-9]{7}$/.test(params.get("id")))) return "";
     if (params.getAll("utm_source").length !== 1 || params.get("utm_source") !== "instagram"
         || params.getAll("utm_medium").length !== 1 || params.get("utm_medium") !== "social"
         || params.getAll("utm_campaign").length !== 1
