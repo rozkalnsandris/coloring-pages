@@ -21,7 +21,9 @@ function mount({enabled="off", pathname="/", search="", hostname="ausmalwiese.de
   vm.runInNewContext(source,{window,document:page,location,URL,URLSearchParams});
   function activate(filter=false){
     assert.equal(loaded.length,1);
-    window.goatcounter.count=(data)=>dispatched.push(data);
+    // Pinned count.v5.js merges raw location.search as q independently of path.
+    window.goatcounter.get_data=(data)=>({...data,q:location.search});
+    window.goatcounter.count=(data)=>dispatched.push(window.goatcounter.get_data(data));
     window.goatcounter.filter=()=>filter;
     loaded[0].load();
   }
@@ -48,6 +50,7 @@ function mount({enabled="off", pathname="/", search="", hostname="ausmalwiese.de
   assert.equal(x.dispatched.length,1);
   assert.equal(x.dispatched[0].path,"/");
   assert.equal(x.dispatched[0].referrer,"https://example.org");
+  assert.equal(x.dispatched[0].q,"");
   x.window.GoatCounterSimple.home();
   assert.equal(x.dispatched.length,1, "No duplicate home hits");
 }
@@ -60,6 +63,7 @@ function mount({enabled="off", pathname="/", search="", hostname="ausmalwiese.de
   assert.equal(x.dispatched[0].path,"/ausmalbild/1234567");
   assert.equal(x.dispatched[0].title,"Hund mit Hut");
   assert.equal(x.dispatched[0].referrer,"https://other.com");
+  assert.equal(x.dispatched[0].q,"", "Never forward detail IDs or private URL parameters");
   x.window.GoatCounterSimple.detail("7654321","Ignored twice");
   assert.equal(x.dispatched.length,1);
 }
@@ -74,5 +78,30 @@ function mount({enabled="off", pathname="/", search="", hostname="ausmalwiese.de
   x.window.GoatCounterSimple.detail("7654321","Katze");
   x.activate();
   assert.equal(x.dispatched[0].referrer,"Instagram profile");
+  assert.equal(x.dispatched[0].q,"?utm_source=instagram&utm_medium=social&utm_campaign=profile");
+}
+{
+  const x=mount({enabled:"enabled",search:"?id=1234567&utm_source=instagram&utm_medium=social&utm_campaign=reel&email=private"});
+  x.activate();
+  assert.equal(x.dispatched.length,1);
+  assert.equal(x.dispatched[0].referrer,"Instagram reel");
+  assert.equal(x.dispatched[0].q,"?utm_source=instagram&utm_medium=social&utm_campaign=reel");
+  assert.ok(!JSON.stringify(x.dispatched[0]).includes("private"));
+}
+{
+  const x=mount({enabled:"enabled",search:"?utm_source=instagram&utm_medium=social&utm_campaign=story&utm_campaign=private&token=secret"});
+  x.activate();
+  assert.equal(x.dispatched[0].q,"", "Duplicate campaign keys must not be forwarded");
+  assert.ok(!JSON.stringify(x.dispatched[0]).includes("secret"));
+}
+{
+  const x=mount({enabled:"enabled",search:"?utm_campaign=private&token=secret"});
+  x.activate();
+  assert.equal(x.dispatched[0].q,"", "Unknown campaigns must not be forwarded");
+}
+{
+  const x=mount({enabled:"enabled",search:"?utm_source=instagram&utm_medium=social&utm_campaign=story"});
+  x.loaded[0].load(); // Missing official get_data(): fail closed without a hit.
+  assert.equal(x.dispatched.length,0);
 }
 console.log("goatcounter-simple #442: PASS");
