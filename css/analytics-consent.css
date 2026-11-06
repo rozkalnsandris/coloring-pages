@@ -1,41 +1,25 @@
 .analytics-consent {
-  right: 0;
-  bottom: 0;
-  left: 0;
-  max-width: none;
-  margin: 0;
-  padding: 10px 20px;
-  border-right: 0;
-  border-bottom: 0;
-  border-left: 0;
-  border-radius: 0;
-  box-shadow: 0 -8px 26px rgb(16 40 77 / 12%);
+  right: 16px;
+  left: auto;
+  max-width: 560px;
+  margin-inline: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
 }
 
 .analytics-consent-inner {
-  max-width: 1320px;
-  margin-inline: auto;
-  align-items: center;
-  gap: 18px;
-}
-
-.analytics-consent-inner > div:first-child {
-  display: flex;
-  min-width: 0;
-  align-items: baseline;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 14px;
 }
 
 .analytics-consent strong {
-  flex: 0 0 auto;
-  margin-bottom: 0;
-  font-size: 15px;
+  margin-bottom: 2px;
+  font-size: 16px;
 }
 
 .analytics-consent p {
-  margin: 0;
-  font-size: 12.5px;
-  line-height: 1.35;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .analytics-consent-actions {
@@ -45,60 +29,32 @@
 
 .analytics-consent-actions button {
   min-height: 40px;
-  padding: 8px 14px;
+  padding: 8px 13px;
   font-size: 12px;
-  white-space: nowrap;
 }
 
-.analytics-consent-primary,
-.analytics-consent-secondary {
-  border: 1px solid #b8c7dd;
-  background: #fff;
-  color: var(--blue-deep);
-}
-
-.analytics-consent-primary:hover,
-.analytics-consent-primary:focus-visible,
-.analytics-consent-secondary:hover,
-.analytics-consent-secondary:focus-visible {
-  border-color: var(--blue);
-  background: #f4f8fd;
-  color: var(--blue-deep);
-}
-
-@media (max-width: 900px) {
+@media (max-width: 720px) {
   .analytics-consent {
-    padding: 9px 12px calc(9px + env(safe-area-inset-bottom));
+    right: 10px;
+    left: 10px;
+    max-width: none;
+    padding: 13px;
   }
 
   .analytics-consent-inner {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .analytics-consent-inner > div:first-child {
-    display: block;
-  }
-
-  .analytics-consent strong {
-    display: block;
-    margin-bottom: 2px;
+    gap: 10px;
   }
 
   .analytics-consent p {
-    font-size: 12px;
+    font-size: 12.5px;
   }
 
   .analytics-consent-actions {
-    display: grid;
     grid-template-columns: 1fr 1fr;
   }
 
   .analytics-consent-actions button {
     min-width: 0;
-    min-height: 44px;
-    width: 100%;
     padding-inline: 10px;
   }
 }
