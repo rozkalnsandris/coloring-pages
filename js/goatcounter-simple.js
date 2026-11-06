@@ -10,13 +10,24 @@
   let queued = null;
   let attempted = false;
 
-  function referrer() {
+  // Upstream count.v5.js includes the entire location.search as `q`.
+  // Permit only the three exact, known Instagram campaign parameters.
+  function campaignQuery() {
     const params = new URLSearchParams(location.search);
-    if (params.getAll("utm_source").length === 1 && params.get("utm_source") === "instagram"
-        && params.getAll("utm_medium").length === 1 && params.get("utm_medium") === "social"
-        && params.getAll("utm_campaign").length === 1
-        && ["profile", "story", "reel"].includes(params.get("utm_campaign"))) {
-      return "Instagram " + params.get("utm_campaign");
+    const allowed = ["utm_source", "utm_medium", "utm_campaign"];
+    if ([...params.keys()].some(key => !allowed.includes(key))) return "";
+    if (params.getAll("utm_source").length !== 1 || params.get("utm_source") !== "instagram"
+        || params.getAll("utm_medium").length !== 1 || params.get("utm_medium") !== "social"
+        || params.getAll("utm_campaign").length !== 1
+        || !["profile", "story", "reel"].includes(params.get("utm_campaign"))) return "";
+    return "?" + allowed.map(key =>
+      encodeURIComponent(key) + "=" + encodeURIComponent(params.get(key))).join("&");
+  }
+
+  function referrer() {
+    const campaign = campaignQuery();
+    if (campaign) {
+      return "Instagram " + new URLSearchParams(campaign).get("utm_campaign");
     }
     try {
       const source = new URL(document.referrer);
@@ -64,7 +75,21 @@
   remote.async = true;
   remote.crossOrigin = "anonymous";
   remote.integrity = "sha384-atnOLvQb9t+jTSipvd75X2yginT4PjVbqDdlJAmxMm+wYElFmeR6EmLP5bYeoRVQ";
-  remote.addEventListener("load", flush, {once: true});
+  remote.addEventListener("load", () => {
+    // Keep upstream bot filtering, sessions and transport unchanged.
+    // Override only its undocumented raw-query inclusion before the first count.
+    if (typeof window.goatcounter?.get_data !== "function") {
+      queued = null;
+      return;
+    }
+    const originalGetData = window.goatcounter.get_data;
+    window.goatcounter.get_data = function(vars) {
+      const data = originalGetData(vars);
+      data.q = campaignQuery();
+      return data;
+    };
+    flush();
+  }, {once: true});
   remote.addEventListener("error", () => { queued = null; }, {once: true});
   document.head.append(remote);
 
