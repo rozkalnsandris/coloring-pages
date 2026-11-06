@@ -10,7 +10,7 @@
   <link rel="preload" href="assets/fonts/baloo2-latin-vf-26fb4610d4bc976d.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/nunito-latin-vf-ba344451eab25b21.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/fonts.css?v=e8c09f4e07f0c140">
-  <link rel="stylesheet" href="css/app.css?v=a7c40bb6d6111c9c">
+  <link rel="stylesheet" href="css/app.css?v=744d9f1eb74c6062">
   <link rel="stylesheet" href="css/detail-related.css?v=7175bae1c3fbe42e">
   <link rel="stylesheet" href="css/report.css?v=c4bbcbf15f18a836">
   <link rel="stylesheet" href="css/social-footer.css?v=092268d2fc5c2826">
@@ -133,7 +133,28 @@
     </div>
   </main>
 
-  <script src="js/goatcounter-simple.js?v=20261106q1" data-goatcounter-simple="off" defer></script>
+  <footer class="legal-footer" aria-label="Rechtliche Informationen">
+    <div class="container legal-footer-inner">
+      <a href="/datenschutz.html">Datenschutz</a>
+      <button type="button" data-analytics-settings hidden>Analyse-Einstellungen</button>
+    </div>
+  </footer>
+
+  <section class="analytics-consent" data-analytics-consent hidden role="region"
+    aria-labelledby="analytics-consent-title" aria-describedby="analytics-consent-copy">
+    <div class="analytics-consent-inner">
+      <div>
+        <strong id="analytics-consent-title">Optionale Besuchsstatistik</strong>
+        <p id="analytics-consent-copy">Mit deiner Zustimmung möchten wir mit unserem selbst betriebenen GoatCounter sehen, welche Seiten genutzt werden. Ohne Zustimmung funktioniert Ausmalwiese vollständig und es wird kein Analyse-Skript geladen. <a href="/datenschutz.html">Mehr im Datenschutz</a>.</p>
+      </div>
+      <div class="analytics-consent-actions">
+        <button type="button" class="analytics-consent-secondary" data-analytics-deny>Nur notwendige</button>
+        <button type="button" class="analytics-consent-primary" data-analytics-allow>Analyse erlauben</button>
+      </div>
+    </div>
+  </section>
+
+  <script src="js/goatcounter-simple.js?v=172b875f6a600999" data-goatcounter-simple="consent" defer></script>
   <script src="js/stats.js?v=a4c560562b9267fe" defer></script>
   <script src="js/app.js?v=b7d164907bbfa96e" defer></script>
   <script src="js/detail.js?v=f87cebade81c8cee" defer></script>
