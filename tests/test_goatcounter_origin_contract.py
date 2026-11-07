@@ -48,7 +48,7 @@ class OriginContractTests(unittest.TestCase):
         for method, target in [("GET", contract.ROUTE), ("POST", contract.ROUTE + "?id=0123456")]:
             with self.assertRaises(ValueError):
                 contract.backend_message(method, target, HEADERS, BODY, CATALOG)
-    def test_renderer_keeps_original_config_and_refuses_double_insertion(self):
+    def test_renderer_supports_current_and_pre_detail_location_bases(self):
         base = (ROOT / "deploy/nginx.conf").read_text()
         result = nginx.render(base)
         restored = result.replace(nginx.MAP + "\n", "", 1).replace(
@@ -56,8 +56,27 @@ class OriginContractTests(unittest.TestCase):
         self.assertEqual(restored, base)
         self.assertEqual(result.count("location = /detail.html"), 1)
         self.assertIn("mirror /__origin_count;", result)
-        with self.assertRaises(ValueError):
-            nginx.render(result)
+
+        legacy = """http {
+    server {
+        location ~* \\.html$ {
+            add_header Cache-Control "no-cache" always;
+            try_files $uri =404;
+        }
+        location = /health {
+            return 200 "ok";
+        }
+    }
+}
+"""
+        legacy_result = nginx.render(legacy)
+        self.assertEqual(legacy_result.count("location = /detail.html"), 1)
+        self.assertIn(nginx.LEGACY_DETAIL_LOCATION.strip(), legacy_result)
+        self.assertIn("mirror /__origin_count;", legacy_result)
+
+        for rendered in (result, legacy_result):
+            with self.assertRaises(ValueError):
+                nginx.render(rendered)
 
 if __name__ == "__main__":
     unittest.main()

@@ -33,6 +33,15 @@ DETAIL_DIRECTIVES = '''            # The counting variant does not retain origin
             mirror_request_body off;
 '''
 
+LEGACY_DETAIL_LOCATION = '''
+        # Candidate only: ordinary HTML delivery retains its original cache policy.
+        location = /detail.html {
+''' + DETAIL_DIRECTIVES + '''            add_header Cache-Control "no-cache" always;
+            try_files $uri =404;
+        }
+
+'''
+
 LOCATIONS = '''
         location = /__origin_count {
             internal;
@@ -67,13 +76,18 @@ LOCATIONS = '''
 def render(base: str) -> str:
     health_anchor = "        location = /health {"
     detail_anchor = "        location = /detail.html {\n"
+    detail_count = base.count(detail_anchor)
     if (base.count("http {") != 1 or base.count(health_anchor) != 1
-            or base.count(detail_anchor) != 1 or "origin_frozen_id" in base
+            or detail_count not in (0, 1) or "origin_frozen_id" in base
             or "location = /__origin_count" in base):
         raise ValueError("NGINX_BASE_DRIFT")
-    return (base.replace("http {", "http {\n" + MAP, 1)
-            .replace(detail_anchor, detail_anchor + DETAIL_DIRECTIVES, 1)
-            .replace(health_anchor, LOCATIONS + "\n" + health_anchor, 1))
+    result = base.replace("http {", "http {\n" + MAP, 1)
+    if detail_count:
+        result = result.replace(detail_anchor, detail_anchor + DETAIL_DIRECTIVES, 1)
+        addition = LOCATIONS
+    else:
+        addition = LEGACY_DETAIL_LOCATION + LOCATIONS
+    return result.replace(health_anchor, addition + "\n" + health_anchor, 1)
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)

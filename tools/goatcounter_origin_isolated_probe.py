@@ -158,7 +158,11 @@ def probe(application_image=False, *, platform="linux/amd64"):
             run("docker", "exec", container, "nginx", "-t", "-c", active_config)
             if application_image:
                 baked = run("docker", "exec", container, "cat", active_config).stdout.decode()
-                assert baked == candidate, "derivative must use exact rendered source configuration"
+                inherited = run("docker", "exec", container, "cat", "/etc/nginx/nginx.conf").stdout.decode()
+                expected_baked = render(inherited)
+                assert baked == expected_baked, (
+                    "derivative must equal renderer output for its inherited base configuration"
+                )
 
             def request(target, method="GET", body=b"", status=200, conditional=""):
                 raw = (f"{method} {target} HTTP/1.1\r\nHost: example.invalid\r\n"
