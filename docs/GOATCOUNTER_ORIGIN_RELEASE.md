@@ -24,7 +24,7 @@ and its `linux/arm64` manifest
 The evidence is SIMPLE-DEPLOY run `42305541900`; later merges #453 and #456 do
 not touch application-image inputs and therefore do not supersede this base.
 
-The recipe remains at `8d0de541e03f2db1196fb89569d549fb2294abfb`; this PR extends
+The recipe remains at `bca36e1ef516e370e880c44b3c27785e82f0d9e0`; this PR extends
 the proof tooling, not the recipe or Nginx renderer. The RPi5 parser is checked out
 at `ccd468de5ae6ea76cdc3dd009bd06812c20e6874`. Its original validation functions
 check the real unmodified in-toto statement and derivative configuration. A changed
@@ -71,7 +71,7 @@ merge, a separately authorized owner dispatch on `main` must supply:
   reviewed base digest from the candidate contract:
 
 ```text
-PUBLISH GOATCOUNTER-ORIGIN WORKFLOW=<40-character-merged-workflow-sha> BASE=<sha256:reviewed-base-index> RECIPE=8d0de541e03f2db1196fb89569d549fb2294abfb
+PUBLISH GOATCOUNTER-ORIGIN WORKFLOW=<40-character-merged-workflow-sha> BASE=<sha256:reviewed-base-index> RECIPE=bca36e1ef516e370e880c44b3c27785e82f0d9e0
 ```
 
 Both actor and triggering actor must be the repository owner; a rerun attempt is
