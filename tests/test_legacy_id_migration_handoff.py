@@ -78,7 +78,7 @@ class LegacyIdMigrationHandoffTests(unittest.TestCase):
         self.assertTrue(all(value is False for value in self.handoff["authority"].values()))
         self.assertIn("does not change the normal", self.docs)
         self.assertIn("issue #455 forbids", self.docs)
-        self.assertIn("separate owner", self.docs)
+        self.assertIn("separately reviewed", self.docs)
 
 
 if __name__ == "__main__":
