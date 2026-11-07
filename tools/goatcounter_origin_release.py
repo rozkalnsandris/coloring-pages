@@ -19,7 +19,7 @@ import tarfile
 ROOT = Path(__file__).resolve().parents[1]
 BASE = "ghcr.io/rozkalnsandris/coloring-pages"
 IMAGE = BASE + "-origin"
-RECIPE = "8d0de541e03f2db1196fb89569d549fb2294abfb"
+RECIPE = "bca36e1ef516e370e880c44b3c27785e82f0d9e0"
 RPI = "ccd468de5ae6ea76cdc3dd009bd06812c20e6874"
 DIGEST = re.compile(r"sha256:[0-9a-f]{64}\Z")
 SHA = re.compile(r"[0-9a-f]{40}\Z")
