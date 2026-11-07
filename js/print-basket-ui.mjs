@@ -1,5 +1,6 @@
 import { addBasketActivity, clearBasket, expandBasketForExport, moveBasketActivity, removeBasketActivity } from "./print-basket-selection.mjs";
 import { readStoredBasketIds, restoreStoredBasket, writeStoredBasketIds } from "./print-basket-storage.mjs";
+import { loadLegacyIdAliases } from "./legacy-id-aliases.mjs";
 import { prepareBasketPngZip } from "./print-basket-zip-fetch.mjs";
 import { stageBasketZipDownloadLink } from "./print-basket-zip-link.mjs";
 import { createBookCoverState, setBookCoverEnabled, updateBookCoverText } from "./book-cover-state.mjs";
@@ -896,6 +897,7 @@ async function start() {
     const payload = await response.json();
     if (!Array.isArray(payload)) throw new Error("invalid catalog");
     catalog = payload;
+    const legacyAliases = await loadLegacyIdAliases();
 
     const counts = new Map();
     for (const entry of catalog) {
@@ -907,7 +909,7 @@ async function start() {
         .map((entry) => [entry.id, entry])
     );
 
-    basket = restoreStoredBasket(catalog);
+    basket = restoreStoredBasket(catalog, legacyAliases);
     syncSummary();
     renderDialog();
     if (summary && typeof dialog.showModal === "function") summary.disabled = false;

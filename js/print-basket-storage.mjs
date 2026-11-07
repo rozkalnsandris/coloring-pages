@@ -1,4 +1,5 @@
 import { reconcileBasket } from "./print-basket-selection.mjs";
+import { translateLegacyBasketIds } from "./legacy-id-aliases.mjs";
 
 export const BASKET_STORAGE_KEY = "ausmalwiese-print-basket-v1";
 const MAX_STORED_ACTIVITIES = 5;
@@ -57,12 +58,13 @@ export function clearStoredBasketIds() {
   sessionStore().removeItem(BASKET_STORAGE_KEY);
 }
 
-export function restoreStoredBasket(catalog) {
+export function restoreStoredBasket(catalog, aliasDocument = null) {
   const savedIds = readStoredBasketIds();
-  const state = reconcileBasket(savedIds, catalog);
+  const translated = translateLegacyBasketIds(savedIds, catalog, aliasDocument);
+  const state = reconcileBasket(translated.ids, catalog);
 
-  // Only a successfully loaded, valid fresh catalogue may prune stale IDs.
-  // Catalogue errors throw inside reconcileBasket before storage is touched.
-  if (state.droppedIds.length) writeStoredBasketIds(state.ids);
+  // Alias translation happens before fresh-catalogue pruning. The old ID is
+  // retained until its exact new target exists, so pre-cutover deploys are safe.
+  if (translated.changed || state.droppedIds.length) writeStoredBasketIds(state.ids);
   return state;
 }

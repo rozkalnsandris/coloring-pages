@@ -122,13 +122,21 @@ def probe(application_image=False, *, platform="linux/amd64"):
         # is a separate release assessment; renderer preserves its configuration.
         candidate = render((ROOT / "deploy/nginx.conf").read_text())
         config.write_text(candidate.replace("access_log /dev/stdout;", "access_log off;"))
+        alias_config = root / "legacy-id-aliases.conf"
+        alias_config.write_bytes(run(
+            "python3", str(ROOT / "tools" / "coloring-pages-legacy-id-compat"),
+            "--aliases", str(ROOT / "metadata" / "legacy-id-aliases.json"),
+            "--render-nginx",
+        ).stdout)
         receiver = Receiver(ipc / "origin.sock")
         receiver.start()
         container = None
         try:
             selected_image = "coloring-pages-origin-app:ci" if application_image else IMAGE
             config_args = [] if application_image else [
-                "--mount", f"type=bind,src={config},dst=/etc/nginx/nginx.conf,readonly"]
+                "--mount", f"type=bind,src={config},dst=/etc/nginx/nginx.conf,readonly",
+                "--mount", f"type=bind,src={alias_config},dst=/etc/nginx/legacy-id-aliases.conf,readonly",
+            ]
             command_args = [] if application_image else ["-g", "daemon off;"]
             # Overriding ENTRYPOINT also clears the image's CMD. The derivative
             # proof must use its real ENTRYPOINT, CMD and USER without overrides.

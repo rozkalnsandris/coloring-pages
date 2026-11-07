@@ -5,7 +5,6 @@ Default Dockerfile/Compose do not reference this tool or its output. The separat
 opt-in Dockerfile.origin-counting bakes it in; activation requires explicit wiring.
 """
 from __future__ import annotations
-
 import argparse
 from pathlib import Path
 
@@ -22,10 +21,7 @@ MAP = '''
     }
 '''.replace("QUERY_RE", QUERY_RE)
 
-LOCATIONS = '''
-        # Candidate only: ordinary HTML delivery retains its original cache policy.
-        location = /detail.html {
-            # The counting variant does not retain original detail request URLs.
+DETAIL_DIRECTIVES = '''            # The counting variant does not retain original detail request URLs.
             access_log off;
             # Mirror failures use the main connection log as well. The isolated
             # failure probe proves that suppressing only the mirror log leaks
@@ -35,10 +31,9 @@ LOCATIONS = '''
             set $origin_frozen_method $request_method;
             mirror /__origin_count;
             mirror_request_body off;
-            add_header Cache-Control "no-cache" always;
-            try_files $uri =404;
-        }
+'''
 
+LOCATIONS = '''
         location = /__origin_count {
             internal;
             access_log off;
@@ -69,15 +64,16 @@ LOCATIONS = '''
         }
 '''
 
-
 def render(base: str) -> str:
-    anchor = "        location = /health {"
-    if (base.count("http {") != 1 or base.count(anchor) != 1
-            or "origin_frozen_id" in base or "location = /detail.html" in base):
+    health_anchor = "        location = /health {"
+    detail_anchor = "        location = /detail.html {\n"
+    if (base.count("http {") != 1 or base.count(health_anchor) != 1
+            or base.count(detail_anchor) != 1 or "origin_frozen_id" in base
+            or "location = /__origin_count" in base):
         raise ValueError("NGINX_BASE_DRIFT")
-    return base.replace("http {", "http {\n" + MAP, 1).replace(
-        anchor, LOCATIONS + "\n" + anchor, 1)
-
+    return (base.replace("http {", "http {\n" + MAP, 1)
+            .replace(detail_anchor, detail_anchor + DETAIL_DIRECTIVES, 1)
+            .replace(health_anchor, LOCATIONS + "\n" + health_anchor, 1))
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -87,7 +83,6 @@ def main():
     text = render(args.base.read_text(encoding="utf-8"))
     with args.output.open("x", encoding="utf-8") as handle:
         handle.write(text)
-
 
 if __name__ == "__main__":
     main()
