@@ -1,6 +1,9 @@
 const detailRoot = document.querySelector("[data-detail-root]");
 const detailTitle = document.querySelector("[data-detail-title]");
 const detailCategory = document.querySelector("[data-detail-category]");
+const detailTopicNav = document.querySelector("[data-detail-topic-nav]");
+const detailTopicLinks = document.querySelector("[data-detail-topic-links]");
+const detailTopicBadges = document.querySelector("[data-detail-topic-badges]");
 const detailCharacter = document.querySelector("[data-detail-character]");
 const detailAge = document.querySelector("[data-detail-age]");
 const detailDifficulty = document.querySelector("[data-detail-difficulty]");
@@ -81,6 +84,75 @@ function relatedTopicIds(entry) {
       .map((value) => String(value || "").trim().toLocaleLowerCase("de"))
       .filter(Boolean)
   )];
+}
+
+function detailTopicHref(topicId) {
+  const params = new URLSearchParams({ topic: String(topicId || "") });
+  const campaign = new URLSearchParams(window.location.search).get("campaign");
+  if (campaign === "dortmund-01") params.set("campaign", campaign);
+  return `index.html?${params.toString()}#neu`;
+}
+
+function parseDetailTopicRegistry(payload) {
+  if (payload?.schema !== "rozkalns.coloring-pages.topics.v2" ||
+      !Number.isInteger(payload.revision) || payload.revision < 1 ||
+      !Array.isArray(payload.topics) || payload.topics.length < 1 || payload.topics.length > 128) {
+    return new Map();
+  }
+
+  const topics = new Map();
+  for (const topic of payload.topics) {
+    if (!topic || typeof topic.id !== "string" ||
+        !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(topic.id) ||
+        topics.has(topic.id) ||
+        typeof topic.label !== "string" || !topic.label.trim() ||
+        typeof topic.icon !== "string") {
+      return new Map();
+    }
+    topics.set(topic.id, {
+      id: topic.id,
+      label: topic.label.trim(),
+      icon: topic.icon,
+    });
+  }
+  return topics;
+}
+
+async function loadDetailTopicRegistry() {
+  try {
+    const response = await fetch("/topics.json", { cache: "no-store" });
+    if (!response.ok) return new Map();
+    return parseDetailTopicRegistry(await response.json());
+  } catch {
+    return new Map();
+  }
+}
+
+function resolvedDetailTopics(entry, registry) {
+  if (!(registry instanceof Map)) return [];
+  return relatedTopicIds(entry)
+    .map((topicId) => registry.get(topicId))
+    .filter(Boolean);
+}
+
+function createDetailTopicLink(topic) {
+  const link = document.createElement("a");
+  link.className = "detail-topic-link";
+  link.href = detailTopicHref(topic.id);
+  link.dataset.topicId = topic.id;
+  link.textContent = topic.icon ? `${topic.icon} ${topic.label}` : topic.label;
+  link.setAttribute("aria-label", `${topic.label} – weitere Malvorlagen anzeigen`);
+  return link;
+}
+
+function renderDetailTopics(entry, registry) {
+  const topics = resolvedDetailTopics(entry, registry);
+  [detailTopicLinks, detailTopicBadges].forEach((target) => {
+    if (!target) return;
+    target.replaceChildren(...topics.map(createDetailTopicLink));
+    target.hidden = topics.length === 0;
+  });
+  if (detailTopicNav) detailTopicNav.hidden = topics.length === 0;
 }
 
 function relatedCandidate(entry, currentId) {
@@ -473,6 +545,8 @@ async function loadDetail() {
 
     const breadcrumbCategory = document.querySelector("[data-breadcrumb-category]");
     if (breadcrumbCategory) breadcrumbCategory.textContent = categoryLabel;
+
+    void loadDetailTopicRegistry().then((registry) => renderDetailTopics(entry, registry));
 
     const requestedPage = new URLSearchParams(window.location.search).get("page");
     const requestedNumber = /^\d{1,2}$/.test(requestedPage || "") ? Number(requestedPage) : 0;

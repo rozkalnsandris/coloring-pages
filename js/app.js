@@ -212,7 +212,7 @@ function normalizeTopicText(value) {
 }
 
 function parseMonthDay(value) {
-  const match = /^(\\d{2})-(\\d{2})$/.exec(String(value || ""));
+  const match = /^(\d{2})-(\d{2})$/.exec(String(value || ""));
   if (!match) return null;
   const month = Number(match[1]);
   const day = Number(match[2]);

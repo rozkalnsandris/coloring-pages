@@ -7,15 +7,18 @@ COPY tools/coloring_pages_categories.py /usr/local/bin/coloring_pages_categories
 COPY tools/coloring_pages_topics.py /usr/local/bin/coloring_pages_topics.py
 COPY tools/coloring-pages-regenerate-derivatives /usr/local/bin/coloring-pages-regenerate-derivatives
 COPY tools/coloring-pages-print-master /usr/local/bin/coloring-pages-print-master
+COPY tools/coloring-pages-legacy-id-compat /usr/local/bin/coloring-pages-legacy-id-compat
 COPY metadata/categories.json /usr/local/share/coloring-pages/categories.json
 COPY metadata/topics.json /usr/local/share/coloring-pages/topics.json
+COPY metadata/legacy-id-aliases.json /usr/local/share/coloring-pages/legacy-id-aliases.json
 COPY deploy/existing-derivative-regeneration-v1.json /usr/local/share/coloring-pages/existing-derivative-regeneration-v1.json
-RUN chmod 0555 /usr/local/bin/coloring-pages-import /usr/local/bin/coloring-pages-regenerate-derivatives /usr/local/bin/coloring-pages-print-master \
+RUN chmod 0555 /usr/local/bin/coloring-pages-import /usr/local/bin/coloring-pages-regenerate-derivatives /usr/local/bin/coloring-pages-print-master /usr/local/bin/coloring-pages-legacy-id-compat \
     && test -x /usr/local/bin/coloring-pages-regenerate-derivatives \
     && test -x /usr/local/bin/coloring-pages-print-master \
     && python3 -c 'import json; p="/usr/local/share/coloring-pages/existing-derivative-regeneration-v1.json"; d=json.load(open(p, encoding="utf-8")); assert d["schema"] == "rozkalns.coloring-pages.existing-derivative-regeneration.v1"; assert d["issue"] == 74' \
     && python3 -c 'from PIL import ImageFont; ImageFont.load_default(size=24)' \
-    && python3 -c 'import importlib.machinery, importlib.util; p="/usr/local/bin/coloring-pages-print-master"; l=importlib.machinery.SourceFileLoader("cp_print_master", p); s=importlib.util.spec_from_loader(l.name, l); m=importlib.util.module_from_spec(s); l.exec_module(m); assert m.TARGET_SIZE == (2480, 3508); assert m.OUTER_WHITE_BORDER == 1; assert m.PRINT_SAFE_MARGIN_PX == 177; assert m.PNG_COMPRESS_LEVEL == 6'
+    && python3 -c 'import importlib.machinery, importlib.util; p="/usr/local/bin/coloring-pages-print-master"; l=importlib.machinery.SourceFileLoader("cp_print_master", p); s=importlib.util.spec_from_loader(l.name, l); m=importlib.util.module_from_spec(s); l.exec_module(m); assert m.TARGET_SIZE == (2480, 3508); assert m.OUTER_WHITE_BORDER == 1; assert m.PRINT_SAFE_MARGIN_PX == 177; assert m.PNG_COMPRESS_LEVEL == 6' \
+    && /usr/local/bin/coloring-pages-legacy-id-compat --aliases /usr/local/share/coloring-pages/legacy-id-aliases.json --render-nginx > /etc/nginx/legacy-id-aliases.conf
 USER 101
 
 COPY deploy/nginx.conf /etc/nginx/nginx.conf
@@ -26,6 +29,7 @@ COPY robots.txt sitemap.xml /usr/share/nginx/html/
 COPY google7e69cee667102729.html /usr/share/nginx/html/
 COPY css /usr/share/nginx/html/css
 COPY js /usr/share/nginx/html/js
+COPY metadata/legacy-id-aliases.json /usr/share/nginx/html/legacy-id-aliases.json
 COPY assets /usr/share/nginx/html/assets
 
 EXPOSE 8080

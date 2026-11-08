@@ -1,0 +1,82 @@
+{
+  "schema": "rozkalns.coloring-pages.legacy-id-migration-handoff.v1",
+  "issue": 455,
+  "status": "SOURCE_ONLY_NOT_AUTHORIZED_FOR_LIVE",
+  "planner": "tools/coloring-pages-legacy-id-plan",
+  "baseline": {
+    "catalog_sha256": "efa6a736839657f849606f665b09bd51dff1165a1c9c2038e9d5b7e720cc7ba9",
+    "catalog_count": 477,
+    "legacy_id_count": 30
+  },
+  "normal_id_policy": {
+    "source": "metadata/id-policy.json",
+    "new_publication_pattern": "^[0-9]{7}$",
+    "allocation": "random-with-collision-check",
+    "legacy_immutable_until_separate_cutover": true,
+    "general_rename_tool_allowed": false
+  },
+  "required_before_data_cutover": [
+    {
+      "surface": "public_detail_and_print_urls",
+      "required_source_behavior": "exact old-id to new-id permanent server-side 308 redirects",
+      "activation": "separate reviewed application-input PR and owner merge"
+    },
+    {
+      "surface": "public_media_urls",
+      "required_source_behavior": "exact old media URI to corresponding new media URI permanent 308 redirects",
+      "activation": "same reviewed compatibility PR before any media rename"
+    },
+    {
+      "surface": "print_basket_local_storage",
+      "required_source_behavior": "translate stored legacy IDs through the exact approved alias map before fresh-catalog reconciliation",
+      "activation": "same reviewed compatibility PR"
+    },
+    {
+      "surface": "aggregate_like_print_state",
+      "required_source_behavior": "migrate or alias every old page_id to the approved new ID without counter reset",
+      "activation": "separate worker/data owner gate"
+    },
+    {
+      "surface": "error_reports",
+      "required_source_behavior": "new detail pages submit new IDs; historical reports remain historical and are not rewritten",
+      "activation": "verify compatibility source; no report-history mutation"
+    },
+    {
+      "surface": "goatcounter",
+      "required_source_behavior": "new pageviews use /ausmalbild/<new-id>; preserve old analytics history as historical data",
+      "activation": "verify title lookup and do not rewrite historical events"
+    },
+    {
+      "surface": "sitemap_and_internal_links",
+      "required_source_behavior": "regenerate sitemap from post-cutover catalog; app links and canonicals resolve only new catalog IDs",
+      "activation": "separately authorized sitemap publication after catalog migration"
+    },
+    {
+      "surface": "admin_archive_jobs_and_host_state",
+      "required_source_behavior": "inventory exact ID-keyed records and migrate or alias under the same one-shot host plan",
+      "activation": "separate RPi5 source issue and exact LIVE authorization"
+    }
+  ],
+  "seo_contract": {
+    "redirect_status": 308,
+    "server_side": true,
+    "one_to_one": true,
+    "redirect_chains_forbidden": true,
+    "old_redirect_retention": "at-least-one-year-prefer-indefinite",
+    "new_urls_only_in_internal_links_canonical_and_sitemap": true,
+    "references": [
+      "https://developers.google.com/search/docs/crawling-indexing/site-move-with-url-changes",
+      "https://developers.google.com/search/docs/crawling-indexing/301-redirects",
+      "https://developers.google.com/search/docs/crawling-indexing/url-structure"
+    ]
+  },
+  "authority": {
+    "merge": false,
+    "application_deploy": false,
+    "catalog_or_media_write": false,
+    "runtime_or_worker_data_write": false,
+    "rpi5_operator_install_or_run": false,
+    "cloudflare_change": false,
+    "sitemap_publication": false
+  }
+}

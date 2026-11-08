@@ -174,3 +174,14 @@ test("unavailable sessionStorage fails closed", () => {
     assert.throws(() => clearStoredBasketIds(), TypeError);
   });
 });
+
+test("legacy ID persists as new ID only after the new catalogue target exists", () => {
+  const aliases={schema:"rozkalns.coloring-pages.legacy-id-aliases.v1",issue:457,source_catalog_sha256:"a".repeat(64),source_catalog_count:10,source_legacy_count:1,source_plan_manifest_sha256:"b".repeat(64),aliases_sha256:"c".repeat(64),aliases:[{old_id:"legacy-1",new_id:"1234567"}]};
+  const storage=new FakeStorage({[BASKET_STORAGE_KEY]:'["legacy-1","1234567"]'});
+  withSessionStorage(storage,()=>{const state=restoreStoredBasket([one("1234567")],aliases);assert.deepEqual(state.ids,["1234567"]);assert.equal(state.sheetCount,1);assert.equal(storage.values.get(BASKET_STORAGE_KEY),'["1234567"]');assert.equal(storage.setCalls,1);});
+});
+test("pre-cutover catalogue keeps a legacy basket ID unchanged", () => {
+  const aliases={schema:"rozkalns.coloring-pages.legacy-id-aliases.v1",issue:457,source_catalog_sha256:"a".repeat(64),source_catalog_count:10,source_legacy_count:1,source_plan_manifest_sha256:"b".repeat(64),aliases_sha256:"c".repeat(64),aliases:[{old_id:"legacy-1",new_id:"1234567"}]};
+  const storage=new FakeStorage({[BASKET_STORAGE_KEY]:'["legacy-1"]'});
+  withSessionStorage(storage,()=>{const state=restoreStoredBasket([one("legacy-1")],aliases);assert.deepEqual(state.ids,["legacy-1"]);assert.equal(storage.values.get(BASKET_STORAGE_KEY),'["legacy-1"]');assert.equal(storage.setCalls,0);});
+});

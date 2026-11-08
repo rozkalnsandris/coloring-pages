@@ -1,0 +1,365 @@
+#!/usr/bin/env python3
+"""Build or verify a read-only one-time legacy-ID migration plan.
+
+The helper never writes catalogue/media/runtime state. It reads one exact catalogue
+snapshot, allocates collision-free seven-digit candidate IDs, and emits a bounded
+DRY_RUN_ONLY manifest or reviewed NGINX compatibility source to stdout.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import re
+import secrets
+import sys
+from pathlib import Path
+from typing import Any
+from urllib.parse import quote
+
+SCHEMA = "rozkalns.coloring-pages.legacy-id-migration-plan.v1"
+MODE = "DRY_RUN_ONLY"
+ISSUE = 455
+MAX_CATALOG = 10_000
+MAX_LEGACY = 1_000
+MAX_MEDIA_REDIRECTS = 20_000
+NEW_ID_RE = re.compile(r"^[0-9]{7}$")
+LEGACY_ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+MEDIA_FIELDS = ("thumb", "preview", "print")
+
+
+class PlanError(ValueError):
+    pass
+
+
+def canonical_bytes(value: object) -> bytes:
+    return json.dumps(
+        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+
+
+def manifest_digest(document: dict[str, Any]) -> str:
+    unsigned = dict(document)
+    unsigned.pop("manifest_sha256", None)
+    return hashlib.sha256(canonical_bytes(unsigned)).hexdigest()
+
+
+def read_catalog(path: Path, expected_sha256: str) -> tuple[list[dict[str, Any]], str]:
+    if not SHA256_RE.fullmatch(expected_sha256):
+        raise PlanError("expected catalogue SHA-256 must be 64 lowercase hex")
+    raw = path.read_bytes()
+    digest = hashlib.sha256(raw).hexdigest()
+    if digest != expected_sha256:
+        raise PlanError("catalogue SHA-256 does not match the expected snapshot")
+    try:
+        value = json.loads(raw.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise PlanError("catalogue is not canonical UTF-8 JSON") from exc
+    if not isinstance(value, list) or len(value) > MAX_CATALOG:
+        raise PlanError("catalogue must be a bounded array")
+    return value, digest
+
+
+def safe_id(value: object) -> str:
+    if (
+        not isinstance(value, str)
+        or len(value) > 96
+        or not LEGACY_ID_RE.fullmatch(value)
+    ):
+        raise PlanError("catalogue contains an unsafe activity ID")
+    return value
+
+
+def media_paths(entry: dict[str, Any], activity_id: str) -> list[str]:
+    prefix = f"/media/{activity_id}/"
+    paths: list[str] = []
+
+    def add(value: object) -> None:
+        if not isinstance(value, str) or not value.startswith(prefix):
+            raise PlanError(f"media path is not ID-bound: {activity_id}")
+        suffix = value[len(prefix):]
+        if (
+            not suffix
+            or "/" in suffix
+            or ".." in suffix
+            or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", suffix)
+        ):
+            raise PlanError(f"unsafe media filename for {activity_id}")
+        if value not in paths:
+            paths.append(value)
+
+    for field in MEDIA_FIELDS:
+        value = entry.get(field)
+        if value is not None:
+            add(value)
+
+    if "pages" in entry:
+        pages = entry["pages"]
+        if not isinstance(pages, list) or not pages or len(pages) > 32:
+            raise PlanError(f"invalid pages list for {activity_id}")
+        for page in pages:
+            if not isinstance(page, dict):
+                raise PlanError(f"invalid page record for {activity_id}")
+            for field in ("preview", "print"):
+                if field not in page:
+                    raise PlanError(f"missing page {field} for {activity_id}")
+                add(page[field])
+
+    if not paths:
+        raise PlanError(f"catalogue entry has no media paths: {activity_id}")
+    return paths
+
+
+def validate_catalog(catalog: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], set[str]]:
+    seen: set[str] = set()
+    normalized: list[dict[str, Any]] = []
+    for index, entry in enumerate(catalog):
+        if not isinstance(entry, dict):
+            raise PlanError("catalogue contains a non-object entry")
+        activity_id = safe_id(entry.get("id"))
+        if activity_id in seen:
+            raise PlanError(f"duplicate catalogue ID: {activity_id}")
+        seen.add(activity_id)
+        if not isinstance(entry.get("title"), str) or not entry["title"].strip():
+            raise PlanError(f"missing title for {activity_id}")
+        normalized.append(
+            {
+                "index": index,
+                "id": activity_id,
+                "media": media_paths(entry, activity_id),
+            }
+        )
+    return normalized, seen
+
+
+def allocate_id(occupied: set[str]) -> str:
+    # Ten million values are available. A bounded retry prevents an accidental loop.
+    for _ in range(10_000):
+        candidate = f"{secrets.randbelow(10_000_000):07d}"
+        if candidate not in occupied:
+            occupied.add(candidate)
+            return candidate
+    raise PlanError("unable to allocate a collision-free seven-digit ID")
+
+
+def redirect_record(old_id: str, new_id: str, paths: list[str]) -> dict[str, Any]:
+    old_prefix = f"/media/{old_id}/"
+    new_prefix = f"/media/{new_id}/"
+    media = []
+    for source in paths:
+        target = new_prefix + source[len(old_prefix):]
+        media.append({"from": source, "to": target})
+    return {
+        "old_id": old_id,
+        "new_id": new_id,
+        "detail": {
+            "from": f"/detail.html?id={quote(old_id, safe='')}",
+            "to": f"/detail.html?id={new_id}",
+        },
+        "print": {
+            "from": f"/print.html?id={quote(old_id, safe='')}",
+            "to": f"/print.html?id={new_id}",
+        },
+        "media": media,
+    }
+
+
+def build_plan(
+    catalog: list[dict[str, Any]],
+    catalog_sha256: str,
+    expected_legacy_count: int,
+) -> dict[str, Any]:
+    if not 0 <= expected_legacy_count <= MAX_LEGACY:
+        raise PlanError("expected legacy count is outside the bounded range")
+    rows, all_ids = validate_catalog(catalog)
+    legacy = [row for row in rows if not NEW_ID_RE.fullmatch(row["id"])]
+    if len(legacy) != expected_legacy_count:
+        raise PlanError(
+            f"legacy ID count mismatch: expected {expected_legacy_count}, found {len(legacy)}"
+        )
+
+    occupied = set(all_ids)
+    mappings = []
+    media_count = 0
+    for row in legacy:
+        new_id = allocate_id(occupied)
+        redirects = redirect_record(row["id"], new_id, row["media"])
+        media_count += len(redirects["media"])
+        mappings.append(
+            {
+                "catalog_index": row["index"],
+                **redirects,
+            }
+        )
+    if media_count > MAX_MEDIA_REDIRECTS:
+        raise PlanError("media redirect plan exceeds safety bound")
+
+    document: dict[str, Any] = {
+        "schema": SCHEMA,
+        "mode": MODE,
+        "issue": ISSUE,
+        "catalog_sha256": catalog_sha256,
+        "catalog_count": len(catalog),
+        "legacy_count": len(mappings),
+        "new_id_policy": {
+            "pattern": "^[0-9]{7}$",
+            "allocation": "random-with-collision-check",
+            "normal_importer_rename_existing": False,
+        },
+        "mappings": mappings,
+        "required_pre_cutover_gates": [
+            "review-and-freeze-exact-manifest",
+            "activate-server-side-detail-print-media-redirects-before-data-cutover",
+            "migrate-or-alias-id-keyed-like-print-and-report-state",
+            "regenerate-sitemap-from-post-cutover-catalog",
+            "separate-owner-authorized-rpi5-one-shot-data-migration",
+        ],
+    }
+    document["manifest_sha256"] = manifest_digest(document)
+    return document
+
+
+def verify_manifest(
+    document: object,
+    catalog: list[dict[str, Any]],
+    catalog_sha256: str,
+    expected_legacy_count: int,
+) -> dict[str, Any]:
+    if not isinstance(document, dict):
+        raise PlanError("manifest must be an object")
+    if document.get("schema") != SCHEMA or document.get("mode") != MODE:
+        raise PlanError("manifest schema or mode mismatch")
+    digest = document.get("manifest_sha256")
+    if not isinstance(digest, str) or not SHA256_RE.fullmatch(digest):
+        raise PlanError("manifest digest is missing or malformed")
+    if manifest_digest(document) != digest:
+        raise PlanError("manifest digest mismatch")
+    if document.get("catalog_sha256") != catalog_sha256:
+        raise PlanError("manifest is bound to another catalogue snapshot")
+    if document.get("catalog_count") != len(catalog):
+        raise PlanError("manifest catalogue count mismatch")
+
+    rows, all_ids = validate_catalog(catalog)
+    legacy = [row for row in rows if not NEW_ID_RE.fullmatch(row["id"])]
+    if len(legacy) != expected_legacy_count:
+        raise PlanError("current legacy count does not match the approved expectation")
+    mappings = document.get("mappings")
+    if not isinstance(mappings, list) or len(mappings) != len(legacy):
+        raise PlanError("manifest mapping count mismatch")
+
+    by_old = {row["id"]: row for row in legacy}
+    if len(by_old) != len(legacy):
+        raise PlanError("legacy catalogue contains duplicate IDs")
+    seen_new: set[str] = set()
+    seen_old: set[str] = set()
+    for item in mappings:
+        if not isinstance(item, dict):
+            raise PlanError("manifest contains a non-object mapping")
+        old_id, new_id = item.get("old_id"), item.get("new_id")
+        if old_id not in by_old or old_id in seen_old:
+            raise PlanError("manifest contains unknown or duplicate legacy ID")
+        if not isinstance(new_id, str) or not NEW_ID_RE.fullmatch(new_id):
+            raise PlanError("manifest contains invalid new ID")
+        if new_id in all_ids or new_id in seen_new:
+            raise PlanError("manifest new ID collides with catalogue or batch")
+        row = by_old[old_id]
+        expected = {"catalog_index": row["index"], **redirect_record(old_id, new_id, row["media"])}
+        if item != expected:
+            raise PlanError(f"manifest redirect payload mismatch for {old_id}")
+        seen_old.add(old_id)
+        seen_new.add(new_id)
+
+    if seen_old != set(by_old):
+        raise PlanError("manifest does not cover every legacy ID exactly once")
+    if document.get("legacy_count") != len(legacy):
+        raise PlanError("manifest legacy count mismatch")
+    return document
+
+
+def nginx_quote(value: str) -> str:
+    if any(ch in value for ch in ('"', "\\", "\n", "\r")):
+        raise PlanError("unsafe value for NGINX map")
+    return f'"{value}"'
+
+
+def render_nginx_snippet(document: dict[str, Any]) -> str:
+    mappings = sorted(document["mappings"], key=lambda item: item["old_id"])
+    detail_lines = [
+        f"    {nginx_quote(item['old_id'])} {nginx_quote(item['new_id'])};"
+        for item in mappings
+    ]
+    media_pairs = []
+    for item in mappings:
+        for pair in item["media"]:
+            media_pairs.append((pair["from"], pair["to"]))
+    media_pairs.sort()
+    media_lines = [
+        f"    {nginx_quote(source)} {nginx_quote(target)};"
+        for source, target in media_pairs
+    ]
+    return "\n".join(
+        [
+            "# GENERATED SOURCE CANDIDATE — issue #455; not active until reviewed/merged/deployed.",
+            "# Insert at nginx http{} scope:",
+            "map $arg_id $legacy_activity_redirect_id {",
+            '    default "";',
+            *detail_lines,
+            "}",
+            "",
+            "map $uri $legacy_media_redirect_uri {",
+            '    default "";',
+            *media_lines,
+            "}",
+            "",
+            "# Exact locations must return 308 only when the map target is non-empty.",
+            "# detail.html -> /detail.html?id=$legacy_activity_redirect_id",
+            "# print.html  -> /print.html?id=$legacy_activity_redirect_id",
+            "# /media/    -> $legacy_media_redirect_uri",
+            "",
+        ]
+    )
+
+
+def load_manifest(path: Path) -> object:
+    raw = path.read_bytes()
+    if len(raw) > 4_000_000:
+        raise PlanError("manifest exceeds safety bound")
+    try:
+        return json.loads(raw.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise PlanError("manifest is not valid UTF-8 JSON") from exc
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--catalog", type=Path, required=True)
+    parser.add_argument("--expected-catalog-sha256", required=True)
+    parser.add_argument("--expected-legacy-count", type=int, required=True)
+    parser.add_argument("--verify-manifest", type=Path)
+    parser.add_argument("--render-nginx-snippet", type=Path)
+    args = parser.parse_args()
+    try:
+        if args.verify_manifest and args.render_nginx_snippet:
+            raise PlanError("choose verify or render mode, not both")
+        catalog, digest = read_catalog(args.catalog, args.expected_catalog_sha256)
+        if args.verify_manifest or args.render_nginx_snippet:
+            path = args.verify_manifest or args.render_nginx_snippet
+            document = verify_manifest(
+                load_manifest(path), catalog, digest, args.expected_legacy_count
+            )
+            if args.render_nginx_snippet:
+                sys.stdout.write(render_nginx_snippet(document))
+            return 0
+
+        document = build_plan(catalog, digest, args.expected_legacy_count)
+        sys.stdout.write(json.dumps(document, ensure_ascii=False, indent=2) + "\n")
+        return 0
+    except (OSError, PlanError) as exc:
+        print(f"LEGACY_ID_PLAN_ERROR: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

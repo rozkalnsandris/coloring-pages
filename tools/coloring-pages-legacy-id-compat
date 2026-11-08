@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+"""Validate the frozen #457 legacy-ID alias source and render latent nginx maps."""
+from __future__ import annotations
+import argparse, hashlib, json, re, sys
+from pathlib import Path
+SCHEMA="rozkalns.coloring-pages.legacy-id-aliases.v1"
+TOP_KEYS={"schema","issue","source_catalog_sha256","source_catalog_count","source_legacy_count","source_plan_manifest_sha256","aliases_sha256","aliases"}
+ALIAS_KEYS={"old_id","new_id"}
+OLD_ID=re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+NEW_ID=re.compile(r"^[0-9]{7}$")
+SHA256=re.compile(r"^[a-f0-9]{64}$")
+class AliasError(ValueError): pass
+def load_aliases(path: Path)->dict:
+    raw=path.read_bytes()
+    if len(raw)>256_000: raise AliasError("alias document exceeds safety bound")
+    try: doc=json.loads(raw.decode("utf-8"))
+    except (UnicodeError,json.JSONDecodeError) as exc: raise AliasError("alias document is not valid UTF-8 JSON") from exc
+    if not isinstance(doc,dict) or set(doc)!=TOP_KEYS: raise AliasError("unexpected alias document shape")
+    if doc["schema"]!=SCHEMA or doc["issue"]!=457: raise AliasError("alias identity mismatch")
+    if not SHA256.fullmatch(str(doc["source_catalog_sha256"])) or not SHA256.fullmatch(str(doc["source_plan_manifest_sha256"])) or not SHA256.fullmatch(str(doc["aliases_sha256"])): raise AliasError("invalid digest")
+    if not isinstance(doc["source_catalog_count"],int) or doc["source_catalog_count"]<1: raise AliasError("invalid source catalog count")
+    aliases=doc["aliases"]
+    if not isinstance(aliases,list) or not 1<=len(aliases)<=200 or doc["source_legacy_count"]!=len(aliases): raise AliasError("legacy count mismatch")
+    old_seen=set(); new_seen=set(); normalized=[]
+    for item in aliases:
+        if not isinstance(item,dict) or set(item)!=ALIAS_KEYS: raise AliasError("invalid alias entry shape")
+        old_id,new_id=item["old_id"],item["new_id"]
+        if not isinstance(old_id,str) or not OLD_ID.fullmatch(old_id) or NEW_ID.fullmatch(old_id): raise AliasError("invalid legacy ID")
+        if not isinstance(new_id,str) or not NEW_ID.fullmatch(new_id): raise AliasError("invalid new ID")
+        if old_id in old_seen or new_id in new_seen: raise AliasError("duplicate alias endpoint")
+        old_seen.add(old_id); new_seen.add(new_id); normalized.append({"old_id":old_id,"new_id":new_id})
+    payload=json.dumps(normalized,ensure_ascii=False,sort_keys=True,separators=(",",":")).encode("utf-8")
+    if hashlib.sha256(payload).hexdigest()!=doc["aliases_sha256"]: raise AliasError("aliases digest mismatch")
+    return doc
+def render_nginx(doc:dict)->str:
+    marker="/var/lib/coloring-pages/public/.legacy-id-aliases-"+doc["source_plan_manifest_sha256"]+".active"
+    lines=["# Generated from metadata/legacy-id-aliases.json. Do not hand-edit.","map $host $legacy_id_activation_marker {",f'    default "{marker}";',"}","","map $arg_id $legacy_activity_redirect_id {",'    default "";']
+    for item in doc["aliases"]: lines.append(f'    "{item["old_id"]}" "{item["new_id"]}";')
+    lines+=["}","","map $uri $legacy_media_redirect_uri {",'    default "";']
+    for item in doc["aliases"]:
+        lines.append(f'    ~^/media/{re.escape(item["old_id"])}/([A-Za-z0-9][A-Za-z0-9._-]*)$ "/media/{item["new_id"]}/$1";')
+    lines+=["}",""]
+    return "\n".join(lines)
+def main()->int:
+    p=argparse.ArgumentParser(); p.add_argument("--aliases",required=True,type=Path); p.add_argument("--render-nginx",action="store_true"); args=p.parse_args()
+    try:
+        doc=load_aliases(args.aliases)
+        if args.render_nginx: sys.stdout.write(render_nginx(doc))
+        return 0
+    except (OSError,AliasError) as exc:
+        print(f"LEGACY_ID_COMPAT_ERROR: {exc}",file=sys.stderr); return 1
+if __name__=="__main__": raise SystemExit(main())

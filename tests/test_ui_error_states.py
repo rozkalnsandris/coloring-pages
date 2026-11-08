@@ -167,12 +167,14 @@ const ctx = {
   window: {location: {search: fixture.search}, ColoringStats: {}},
   detailRoot: null, detailTitle: {textContent: ''},
   detailDescription: {textContent: ''},
-  detailCategory: null, detailCharacter: null, detailAge: null,
+  detailCategory: null, detailTopicNav: null, detailTopicLinks: null, detailTopicBadges: null,
+  detailCharacter: null, detailAge: null,
   detailDifficulty: null, detailPagesBadge: null,
   printLink: null, printLabel: null,
   entryPages: entry => entry.pages || [{preview:'/preview.webp', print:'/print.png'}],
   DETAIL_CATEGORY_LABELS: {}, DETAIL_DIFFICULTY_LABELS: {},
   renderPageSwitcher() {}, selectPage() {}, setAction() {},
+  loadDetailTopicRegistry: async () => new Map(), renderDetailTopics() {},
   hydrateLikeState: async () => {},
   fetch: async () => {
     if (fixture.mode === 'network') throw Error('temporary network failure');

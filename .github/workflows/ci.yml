@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   source:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
       - name: Checkout exact source
