@@ -159,6 +159,7 @@ const ctx = {
   entryPages(entry){return [{preview:entry.preview,print:entry.print}];},
   setAction(link,url){if(link) link.href=url;},
   renderPageSwitcher(){}, selectPage(){}, hydrateLikeState:async()=>{},
+  loadDetailTopicRegistry:async()=>new Map(), renderDetailTopics(){},
   fetch:async()=>({ok:true,json:async()=>[{
     id:'sample',title:'Beispiel',category:'tiere',age:'3-6',difficulty:'easy',
     preview:'/media/sample/preview.webp',print:'/media/sample/print.png'
