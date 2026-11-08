@@ -76,8 +76,8 @@ class TopicFilterTests(unittest.TestCase):
         self.assertIn("collectionTopics.has(topicId)", source)
         self.assertIn('new URLSearchParams(location.search).get("topic")', source)
         self.assertIn('url.searchParams.set("topic", activeTopic)', source)
-        self.assertIn(r'const match = /^(\\d{2})-(\\d{2})$/.exec', source)
-        self.assertNotIn(r'const match = /^(\\\\d{2})-(\\\\d{2})$/.exec', source)
+        self.assertIn(r'const match = /^(\d{2})-(\d{2})$/.exec', source)
+        self.assertNotIn(r'const match = /^(\\d{2})-(\\d{2})$/.exec', source)
 
     def test_public_topic_filters_match_each_explicit_membership(self):
         # A page with two canonical topics must appear once under either filter.
