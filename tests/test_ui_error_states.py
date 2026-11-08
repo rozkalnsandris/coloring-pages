@@ -174,6 +174,7 @@ const ctx = {
   entryPages: entry => entry.pages || [{preview:'/preview.webp', print:'/print.png'}],
   DETAIL_CATEGORY_LABELS: {}, DETAIL_DIFFICULTY_LABELS: {},
   renderPageSwitcher() {}, selectPage() {}, setAction() {},
+  loadDetailTopicRegistry: async () => new Map(), renderDetailTopics() {},
   hydrateLikeState: async () => {},
   fetch: async () => {
     if (fixture.mode === 'network') throw Error('temporary network failure');
