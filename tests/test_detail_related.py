@@ -35,6 +35,44 @@ const selected = context.selectRelatedEntries(
 console.log(JSON.stringify(selected.map((entry) => String(entry.id))));
 """
 
+TOPIC_HARNESS = r"""
+const fs = require("node:fs");
+const vm = require("node:vm");
+const fixture = JSON.parse(process.argv[1]);
+const source = fs.readFileSync("js/detail.js", "utf8");
+const start = source.indexOf("function relatedTopicIds(");
+const end = source.indexOf("function createDetailTopicLink(", start);
+if (start < 0 || end < 0) throw new Error("detail topic segment absent");
+const context = {
+  URLSearchParams,
+  window: {location: {search: fixture.search || ""}},
+};
+vm.runInNewContext(source.slice(start, end), context);
+const registry = context.parseDetailTopicRegistry(fixture.registry);
+const topics = context.resolvedDetailTopics(fixture.entry, registry);
+console.log(JSON.stringify({
+  ids: topics.map((topic) => topic.id),
+  hrefs: topics.map((topic) => context.detailTopicHref(topic.id)),
+}));
+"""
+
+
+def topic_context(entry_value, registry, search=""):
+    if not shutil.which("node"):
+        raise unittest.SkipTest("Node is needed for detail-topic behavior tests")
+    result = subprocess.run(
+        ["node", "-e", TOPIC_HARNESS, json.dumps({
+            "entry": entry_value,
+            "registry": registry,
+            "search": search,
+        })],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return json.loads(result.stdout)
+
 
 def related_ids(current, catalog, limit=6):
     if not shutil.which("node"):
@@ -68,6 +106,46 @@ def entry(entry_id, category="tiere", topics=None, **extra):
 
 
 class DetailRelatedTests(unittest.TestCase):
+    def test_detail_topics_resolve_all_known_memberships_and_build_filter_links(self):
+        registry = {
+            "schema": "rozkalns.coloring-pages.topics.v2",
+            "revision": 2,
+            "topics": [
+                {"id": "weihnachten", "label": "Weihnachten", "icon": "🎄"},
+                {"id": "winter", "label": "Winter", "icon": "❄️"},
+            ],
+        }
+        result = topic_context(
+            {"topics": ["weihnachten", "unknown", "winter", "weihnachten"]},
+            registry,
+        )
+        self.assertEqual(result["ids"], ["weihnachten", "winter"])
+        self.assertEqual(result["hrefs"], [
+            "index.html?topic=weihnachten#neu",
+            "index.html?topic=winter#neu",
+        ])
+
+    def test_detail_topic_links_preserve_allowlisted_campaign_and_invalid_registry_fails_closed(self):
+        registry = {
+            "schema": "rozkalns.coloring-pages.topics.v2",
+            "revision": 2,
+            "topics": [{"id": "weihnachten", "label": "Weihnachten", "icon": "🎄"}],
+        }
+        result = topic_context(
+            {"topics": ["weihnachten"]},
+            registry,
+            "?campaign=dortmund-01",
+        )
+        self.assertEqual(
+            result["hrefs"],
+            ["index.html?topic=weihnachten&campaign=dortmund-01#neu"],
+        )
+        invalid = topic_context(
+            {"topics": ["weihnachten"]},
+            {**registry, "schema": "invalid"},
+        )
+        self.assertEqual(invalid, {"ids": [], "hrefs": []})
+
     def test_topics_outrank_same_category_and_invalid_items_are_excluded(self):
         current = entry("current", topics=["wald", "hase"])
         catalog = [
@@ -124,6 +202,13 @@ class DetailRelatedTests(unittest.TestCase):
         self.assertIn('aria-labelledby="related-title" hidden', html)
         self.assertIn('<h2 id="related-title">Ähnliche Ausmalbilder</h2>', html)
         self.assertIn('data-related-grid', html)
+        self.assertIn('aria-label="Themen dieser Malvorlage"', html)
+        self.assertIn("data-detail-topic-nav", html)
+        self.assertIn("data-detail-topic-links", html)
+        self.assertIn("data-detail-topic-badges", html)
+        self.assertIn(".detail-topic-link", css)
+        self.assertIn("min-height: 44px", css)
+        self.assertIn("scroll-snap-type: x proximity", css)
         self.assertIn("grid-template-columns: repeat(2, minmax(0, 1fr))", css)
         self.assertIn("@media (min-width: 760px)", css)
         self.assertIn("grid-template-columns: repeat(3, minmax(0, 1fr))", css)

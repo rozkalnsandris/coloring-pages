@@ -151,13 +151,15 @@ const ctx = {
   DETAIL_CATEGORY_LABELS:{tiere:'Tiere'},
   DETAIL_DIFFICULTY_LABELS:{easy:'Einfach'},
   detailRoot:{setAttribute(){}}, detailTitle:title, detailDescription:description,
-  detailCategory:null, detailCharacter:null, detailAge:null,
+  detailCategory:null, detailTopicNav:null, detailTopicLinks:null, detailTopicBadges:null,
+  detailCharacter:null, detailAge:null,
   detailDifficulty:null, detailPagesBadge:null, printLink,
   printLabel:null, pngLink:null, pngLabel:null, loadedEntryId:'',
   addVerifiedDetailCanonical(){}, markMissingDetailNoindex(){},
   entryPages(entry){return [{preview:entry.preview,print:entry.print}];},
   setAction(link,url){if(link) link.href=url;},
   renderPageSwitcher(){}, selectPage(){}, hydrateLikeState:async()=>{},
+  loadDetailTopicRegistry:async()=>new Map(), renderDetailTopics(){},
   fetch:async()=>({ok:true,json:async()=>[{
     id:'sample',title:'Beispiel',category:'tiere',age:'3-6',difficulty:'easy',
     preview:'/media/sample/preview.webp',print:'/media/sample/print.png'
