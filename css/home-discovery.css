@@ -139,3 +139,17 @@
 @media (forced-colors: active) {
   .category-group, .category-subtopics { border-color: ButtonText; }
 }
+
+/* #186: shorten mobile discovery without hiding native topic disclosures. */
+@media (min-width: 361px) and (max-width: 540px) {
+  .category-browser { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .category-group summary, .category-direct { gap: 8px; min-height: 76px; padding: 10px 9px; }
+  .category-group-icon { flex-basis: 34px; width: 34px; height: 34px; font-size: 22px; }
+  .category-group-name { font-size: 14px; }
+  .category-group-hint { display: none; }
+  .category-group-chevron { flex-basis: 7px; width: 7px; height: 7px; }
+  .category-direct-arrow { font-size: 17px; }
+  .category-group[open] { grid-column: 1 / -1; }
+  .category-group[open] .category-subtopics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .category-subtopics a { gap: 6px; padding: 8px; }
+}
