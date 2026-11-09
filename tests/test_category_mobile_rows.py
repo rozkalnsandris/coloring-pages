@@ -46,6 +46,18 @@ class MobileCategoryRowsTests(unittest.TestCase):
             digest = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()[:16]
             self.assertIn(f'{name}?v={digest}', self.home)
 
+    def test_open_topic_panel_has_distinct_surface_and_high_contrast_fallback(self):
+        self.assertIn("border-top-width: 5px;", self.css)
+        self.assertIn("box-shadow: 0 8px 20px", self.css)
+        self.assertIn("background: var(--topic-panel-background);", self.css)
+        self.assertIn("border-color: var(--topic-panel-accent);", self.css)
+        for category in ("animals", "figures", "food", "nature", "seasons", "learning"):
+            self.assertIn(f".category-group-{category}[open]", self.css)
+        self.assertIn("border: 2px solid CanvasText;", self.css)
+        self.assertIn("background: Canvas;", self.css)
+        self.assertIn("box-shadow: none;", self.css)
+        self.assertNotIn("grid-auto-flow: dense", self.css)
+
     def test_gallery_print_and_consent_untouched(self):
         self.assertIn('data-search-form', self.home)
         self.assertIn('data-gallery', self.home)

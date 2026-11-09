@@ -79,7 +79,7 @@ class CompactCategoryDiscovery186Tests(unittest.TestCase):
 
     def test_existing_find_preview_print_contract_untouched(self):
         self.assertIn(
-            "css/home-discovery.css?v=2e247df6237ad8c9", self.home
+            "css/home-discovery.css?v=3c0db56e326f0fb8", self.home
         )
         self.assertIn('data-search-form', self.home)
         self.assertIn('data-gallery', self.home)
