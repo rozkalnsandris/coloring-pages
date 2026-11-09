@@ -2,6 +2,8 @@
 
 **Status (2026-10-17): SOURCE/DOCS ONLY — jaunais sikspārņa kandidāts nav publicēts.** Šis ir ilgtermiņa *authoring + QA playbook* visiem sezonu tēliem, nevis pierādījums, ka rīks autonomi izpilda katru soli. Šīs lapas autorēšana/merge nekad nepiešķir `PUBLISH`, Drive, RPi5/LIVE, DNS/Cloudflare, permissions vai secrets tiesības.
 
+**Continuity correction for #218:** issue #218 is an older planning draft and still contains a historical instruction to print a small assembled preview on page 1. That instruction is **superseded** by the implemented #220/#221 contract: printed page 1 contains only the base/body, printed page 2 contains only cutouts, and the assembled proof is QA-only. When #218 conflicts with this playbook, `docs/CUT_PASTE_EXPORTER_V1.md`, or `docs/CUT_PASTE_QA_V1.md`, the implemented docs/code contract wins. This clarification does not complete #221's required physical bat + non-bat QA and does not authorize publication.
+
 **Publikācijas gate:** globāls Cut & Paste `PUBLISH` HOLD vairs nav spēkā. Katrai precīzajai divu lapu versijai joprojām vajag obligāto art/geometry/print/physical QA, īpašnieka apstiprinājumu un pēc tam svaigu `PUBLISH` komandu, kas autorizē tikai šo exact version. `PHYSICAL_QA` var balstīties uz īpašnieka skaidru apstiprinājumu par reāli izdrukātu, izgrieztu un salīmētu exact version; foto/izmēri nav obligāti. Vecs QA, iepriekšējs `PUBLISH`, GitHub merge vai HTTP pieejamība nav publikācijas atļauja citai versijai.
 
 ## 1. Komandas un nepārprotamas robežas
