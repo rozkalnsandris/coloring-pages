@@ -49,12 +49,17 @@ class CompactCategoryDiscovery186Tests(unittest.TestCase):
 
 
     def test_open_category_keeps_consistent_mobile_card_widths(self):
-        compact = self.css.split(
-            "@media (min-width: 361px) and (max-width: 540px) {", 2
-        )[2].split("}", 1)[0]
+        self.assertNotIn(
+            ".category-browser:has(> details[open])",
+            self.css,
+        )
         self.assertIn(
-            ".category-browser:has(> details[open]) { grid-template-columns: minmax(0, 1fr);",
-            compact,
+            ".category-browser[data-category-mobile-rows] > details[open]",
+            self.css,
+        )
+        self.assertIn(
+            ".category-browser[data-category-mobile-rows] > .category-row-topics",
+            self.css,
         )
         self.assertIn(
             ".category-browser { grid-template-columns: repeat(2, minmax(0, 1fr)); }",
@@ -74,7 +79,7 @@ class CompactCategoryDiscovery186Tests(unittest.TestCase):
 
     def test_existing_find_preview_print_contract_untouched(self):
         self.assertIn(
-            "css/home-discovery.css?v=27ed4ed986a5a1cf", self.home
+            "css/home-discovery.css?v=2e247df6237ad8c9", self.home
         )
         self.assertIn('data-search-form', self.home)
         self.assertIn('data-gallery', self.home)
