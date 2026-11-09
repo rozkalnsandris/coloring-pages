@@ -196,9 +196,37 @@ async function deflate(bytes) {
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
+async function verifyDeflateRoundTrip(compressed, expected) {
+  if (typeof DecompressionStream !== "function") throw new Error("DECOMPRESSION_STREAM_UNAVAILABLE");
+  const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream("deflate"));
+  const decoded = new Uint8Array(await new Response(stream).arrayBuffer());
+  if (decoded.length !== expected.length) throw new Error("PNG_DEFLATE_LENGTH");
+  for (let i = 0; i < decoded.length; i += 1) {
+    if (decoded[i] !== expected[i]) throw new Error("PNG_DEFLATE_ROUNDTRIP");
+  }
+}
+
+function assertExactWhiteSafeBands(image) {
+  const rgba = image.data;
+  const whiteAt = (x, y) => {
+    const i = (y * WIDTH + x) * 4;
+    return rgba[i] === 255 && rgba[i + 1] === 255 && rgba[i + 2] === 255 && rgba[i + 3] === 255;
+  };
+
+  for (let y = 0; y < HEIGHT; y += 1) {
+    const edgeRow = y < SAFE || y >= HEIGHT - SAFE;
+    for (let x = 0; x < WIDTH; x += 1) {
+      if ((edgeRow || x < SAFE || x >= WIDTH - SAFE) && !whiteAt(x, y)) {
+        throw new Error("PNG_SAFE_BAND_NOT_WHITE");
+      }
+    }
+  }
+}
+
 async function encodeRgbPng(sourceCanvas) {
   const ctx = sourceCanvas.getContext("2d", { alpha: false, willReadFrequently: true });
   const image = ctx.getImageData(0, 0, WIDTH, HEIGHT);
+  assertExactWhiteSafeBands(image);
   const rgba = image.data;
   const raw = new Uint8Array(HEIGHT * (1 + WIDTH * 3));
 
@@ -215,6 +243,7 @@ async function encodeRgbPng(sourceCanvas) {
   }
 
   const compressed = await deflate(raw);
+  await verifyDeflateRoundTrip(compressed, raw);
   const ihdr = concat([
     u32(WIDTH),
     u32(HEIGHT),
