@@ -47,9 +47,34 @@ class CompactCategoryDiscovery186Tests(unittest.TestCase):
             self.css,
         )
 
+
+    def test_open_category_keeps_consistent_mobile_card_widths(self):
+        compact = self.css.split(
+            "@media (min-width: 361px) and (max-width: 540px) {", 2
+        )[2].split("}", 1)[0]
+        self.assertIn(
+            ".category-browser:has(> details[open]) { grid-template-columns: minmax(0, 1fr);",
+            compact,
+        )
+        self.assertIn(
+            ".category-browser { grid-template-columns: repeat(2, minmax(0, 1fr)); }",
+            self.css,
+        )
+        self.assertNotIn("grid-auto-flow: dense", self.css)
+
+    def test_runtime_category_icon_matches_core_card_slot(self):
+        self.assertIn(".category-direct[data-runtime-category]::before", self.css)
+        self.assertIn('content: "\\1f3a8";', self.css)
+        self.assertIn("flex: 0 0 48px;", self.css)
+        self.assertIn("flex-basis: 34px;", self.css)
+        self.assertIn("overflow-wrap: anywhere;", self.css)
+        js = (ROOT / "js/app.js").read_text(encoding="utf-8")
+        self.assertIn('link.dataset.runtimeCategory = item.id;', js)
+        self.assertIn('link.className = "category-group category-group-vehicles category-direct";', js)
+
     def test_existing_find_preview_print_contract_untouched(self):
         self.assertIn(
-            "css/home-discovery.css?v=ba20bf8164b675be", self.home
+            "css/home-discovery.css?v=27ed4ed986a5a1cf", self.home
         )
         self.assertIn('data-search-form', self.home)
         self.assertIn('data-gallery', self.home)

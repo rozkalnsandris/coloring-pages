@@ -153,3 +153,41 @@
   .category-group[open] .category-subtopics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .category-subtopics a { gap: 6px; padding: 8px; }
 }
+
+/* #186 follow-up: expanded mobile categories use one equal-width column.
+   Closed cards retain two columns; native details and DOM order are unchanged. */
+@media (min-width: 361px) and (max-width: 540px) {
+  .category-browser:has(> details[open]) { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Runtime-managed categories use the same decorative icon slot as core cards. */
+.category-direct[data-runtime-category] { --category-tint: #f3edff; }
+.category-direct[data-runtime-category]::before {
+  content: "\1f3a8";
+  display: grid;
+  place-items: center;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--category-tint);
+  font-size: 30px;
+  line-height: 1;
+}
+.category-direct[data-runtime-category] .category-group-name { overflow-wrap: anywhere; }
+@media (max-width: 540px) {
+  .category-direct[data-runtime-category]::before {
+    flex-basis: 44px;
+    width: 44px;
+    height: 44px;
+    font-size: 28px;
+  }
+}
+@media (min-width: 361px) and (max-width: 540px) {
+  .category-direct[data-runtime-category]::before {
+    flex-basis: 34px;
+    width: 34px;
+    height: 34px;
+    font-size: 22px;
+  }
+}
