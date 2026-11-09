@@ -154,12 +154,6 @@
   .category-subtopics a { gap: 6px; padding: 8px; }
 }
 
-/* #186 follow-up: expanded mobile categories use one equal-width column.
-   Closed cards retain two columns; native details and DOM order are unchanged. */
-@media (min-width: 361px) and (max-width: 540px) {
-  .category-browser:has(> details[open]) { grid-template-columns: minmax(0, 1fr); }
-}
-
 /* Runtime-managed categories use the same decorative icon slot as core cards. */
 .category-direct[data-runtime-category] { --category-tint: #f3edff; }
 .category-direct[data-runtime-category]::before {
@@ -189,5 +183,32 @@
     width: 34px;
     height: 34px;
     font-size: 22px;
+  }
+}
+/* Mobile: two card columns at rest AND when a disclosure opens.
+   The enhanced view moves the original UL into a full-width row panel. */
+@media (min-width: 361px) and (max-width: 540px) {
+  .category-browser[data-category-mobile-rows] { align-items: stretch; }
+  .category-browser[data-category-mobile-rows] > details > summary {
+    height: 100%;
+    box-sizing: border-box;
+  }
+  .category-browser[data-category-mobile-rows] > details[open] {
+    grid-column: auto;
+  }
+  .category-browser[data-category-mobile-rows] > .category-row-topics {
+    grid-column: 1 / -1;
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: #fff;
+  }
+  .category-browser[data-category-mobile-rows] > .category-row-topics[hidden] {
+    display: none;
+  }
+  .category-browser[data-category-mobile-rows] > .category-row-topics > .category-subtopics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: 0;
+    padding: 10px;
   }
 }
