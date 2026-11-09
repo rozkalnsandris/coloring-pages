@@ -212,3 +212,55 @@
     padding: 10px;
   }
 }
+
+/* Give an open mobile category's topic panel its own visual surface.
+   The source order, two-column card layout and topic hit areas are unchanged. */
+@media (min-width: 361px) and (max-width: 540px) {
+  .category-browser[data-category-mobile-rows] {
+    --topic-panel-accent: #456f9d;
+    --topic-panel-background: #edf5fe;
+  }
+  .category-browser[data-category-mobile-rows]:has(> .category-group-animals[open]) {
+    --topic-panel-accent: #4f8664;
+    --topic-panel-background: #edf8f0;
+  }
+  .category-browser[data-category-mobile-rows]:has(> .category-group-figures[open]) {
+    --topic-panel-accent: #a55778;
+    --topic-panel-background: #fff0f5;
+  }
+  .category-browser[data-category-mobile-rows]:has(> .category-group-food[open]) {
+    --topic-panel-accent: #a27435;
+    --topic-panel-background: #fff5e8;
+  }
+  .category-browser[data-category-mobile-rows]:has(> .category-group-nature[open]) {
+    --topic-panel-accent: #62874b;
+    --topic-panel-background: #f0f7e9;
+  }
+  .category-browser[data-category-mobile-rows]:has(> .category-group-seasons[open]) {
+    --topic-panel-accent: #ac7550;
+    --topic-panel-background: #fff2e8;
+  }
+  .category-browser[data-category-mobile-rows]:has(> .category-group-learning[open]) {
+    --topic-panel-accent: #8568a9;
+    --topic-panel-background: #f5f0ff;
+  }
+  .category-browser[data-category-mobile-rows] > details[open] {
+    border-color: var(--topic-panel-accent);
+  }
+  .category-browser[data-category-mobile-rows] > .category-row-topics:not([hidden]) {
+    border: 2px solid var(--topic-panel-accent);
+    border-top-width: 5px;
+    background: var(--topic-panel-background);
+    box-shadow: 0 8px 20px rgb(16 40 77 / 13%);
+  }
+  .category-browser[data-category-mobile-rows] > .category-row-topics .category-subtopics a:hover {
+    background: #fff;
+  }
+}
+@media (forced-colors: active) {
+  .category-browser[data-category-mobile-rows] > .category-row-topics:not([hidden]) {
+    border: 2px solid CanvasText;
+    background: Canvas;
+    box-shadow: none;
+  }
+}
