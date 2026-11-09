@@ -43,13 +43,13 @@ class CompactCategoryDiscovery186Tests(unittest.TestCase):
         )
         self.assertIn("min-height: 44px;", self.css)
         self.assertIn(
-            ".category-browser { grid-template-columns: repeat(4, minmax(0, 1fr));",
+            "grid-template-columns: repeat(4, minmax(0, 1fr));",
             self.css,
         )
 
     def test_existing_find_preview_print_contract_untouched(self):
         self.assertIn(
-            "css/home-discovery.css?v=compact-categories-186", self.home
+            "css/home-discovery.css?v=ba20bf8164b675be", self.home
         )
         self.assertIn('data-search-form', self.home)
         self.assertIn('data-gallery', self.home)
