@@ -48,6 +48,7 @@ class CanonicalDomainSourceTests(unittest.TestCase):
                 f"{NEW}/figuren",
                 f"{NEW}/jahreszeiten",
                 f"{NEW}/essen-natur",
+                f"{NEW}/kalender.html",
             ],
         )
         generator = read("tools/coloring-pages-sitemap")

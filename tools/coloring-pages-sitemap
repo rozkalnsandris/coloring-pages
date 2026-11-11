@@ -22,6 +22,7 @@ STATIC_URLS = (
     f"{ORIGIN}/",
     f"{ORIGIN}/kita",
     *(f"{ORIGIN}/{route}" for route in CATEGORY_ROUTES),
+    f"{ORIGIN}/kalender.html",
 )
 MAX_URLS = 50_000
 MAX_BYTES = 50_000_000

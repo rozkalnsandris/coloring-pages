@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 HELPER = ROOT / "tools" / "coloring-pages-sitemap"
 ORIGIN = "https://ausmalwiese.de"
 CATEGORY_ROUTES = ("tiere", "fahrzeuge", "alphabet", "lernen", "figuren", "jahreszeiten", "essen-natur")
-STATIC_URLS = [f"{ORIGIN}/", f"{ORIGIN}/kita", *(f"{ORIGIN}/{route}" for route in CATEGORY_ROUTES)]
+STATIC_URLS = [f"{ORIGIN}/", f"{ORIGIN}/kita", *(f"{ORIGIN}/{route}" for route in CATEGORY_ROUTES), f"{ORIGIN}/kalender.html"]
 
 
 def entry(activity_id):
