@@ -53,6 +53,7 @@ class SitemapPublisherHandoffTests(unittest.TestCase):
                 "https://ausmalwiese.de/figuren",
                 "https://ausmalwiese.de/jahreszeiten",
                 "https://ausmalwiese.de/essen-natur",
+                "https://ausmalwiese.de/kalender.html",
             ],
         )
 
