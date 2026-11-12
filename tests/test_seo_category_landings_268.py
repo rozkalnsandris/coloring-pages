@@ -82,7 +82,7 @@ class SeoCategoryLandingTests(unittest.TestCase):
         self.assertNotIn(OLD, js)
 
     def test_static_and_generated_sitemaps_include_landings_once(self):
-        expected = [f"{ORIGIN}/", f"{ORIGIN}/kita", *(f"{ORIGIN}/{x}" for x in self.ids), f"{ORIGIN}/essen-natur", f"{ORIGIN}/kalender.html"]
+        expected = [f"{ORIGIN}/", f"{ORIGIN}/kita", *(f"{ORIGIN}/{x}" for x in self.ids), f"{ORIGIN}/essen-natur", f"{ORIGIN}/herbst", f"{ORIGIN}/kalender.html"]
         root = ET.fromstring(read("sitemap.xml"))
         ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
         urls = [loc.text for loc in root.findall("sm:url/sm:loc", ns)]

@@ -18,10 +18,12 @@ from xml.sax.saxutils import escape
 
 ORIGIN = "https://ausmalwiese.de"
 CATEGORY_ROUTES = ("tiere", "fahrzeuge", "alphabet", "lernen", "figuren", "jahreszeiten", "essen-natur")
+PILOT_TOPIC_ROUTES = ("herbst",)
 STATIC_URLS = (
     f"{ORIGIN}/",
     f"{ORIGIN}/kita",
     *(f"{ORIGIN}/{route}" for route in CATEGORY_ROUTES),
+    *(f"{ORIGIN}/{route}" for route in PILOT_TOPIC_ROUTES),
     f"{ORIGIN}/kalender.html",
 )
 MAX_URLS = 50_000
