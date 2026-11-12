@@ -48,6 +48,7 @@ class CanonicalDomainSourceTests(unittest.TestCase):
                 f"{NEW}/figuren",
                 f"{NEW}/jahreszeiten",
                 f"{NEW}/essen-natur",
+                f"{NEW}/herbst",
                 f"{NEW}/kalender.html",
             ],
         )

@@ -47,7 +47,8 @@ class TopicFilterTests(unittest.TestCase):
         registry = json.loads((ROOT / "metadata/topics.json").read_text(encoding="utf-8"))
         ids = {topic["id"] for topic in registry["topics"]}
         links = re.findall(r'href="([^"]+)" data-browse-topic="([^"]+)"', page)
-        self.assertEqual({topic for _, topic in links}, ids)
+        self.assertEqual({topic for _, topic in links}, ids - {"herbst"})
+        self.assertIn('<a href="/herbst"><span class="category-subtopic-icon" aria-hidden="true">🍂</span><span class="category-subtopic-label">Herbst</span></a>', page)
         for href, topic in links:
             self.assertEqual(parse_qs(urlsplit(href).query), {"topic": [topic]})
             self.assertEqual(urlsplit(href).fragment, "neu")
