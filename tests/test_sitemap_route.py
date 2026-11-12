@@ -60,6 +60,7 @@ class SitemapRouteTests(unittest.TestCase):
                 "https://ausmalwiese.de/figuren",
                 "https://ausmalwiese.de/jahreszeiten",
                 "https://ausmalwiese.de/essen-natur",
+                "https://ausmalwiese.de/herbst",
                 "https://ausmalwiese.de/kalender.html",
             ],
         )
