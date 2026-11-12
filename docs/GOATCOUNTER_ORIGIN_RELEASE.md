@@ -16,13 +16,15 @@ recipe revision. The selected base was verified against public registry metadata
 and its successful ordinary publication run in #1348; it is refreshed during proof
 and immediately before/after publication. Pointer drift refuses the operation.
 
-Baseline refresh #459 binds the ordinary application to the latest GitHub-proven
-SIMPLE-DEPLOY publication from source `3231e678b0214d52a0db4aafeb5647bf5d07dae0`:
-index `sha256:128cfaf14542e7811f5d2c2d4cf5e29b3b9b61d55849844f536d27af0398609d`
-and its `linux/arm64` manifest
-`sha256:b6bfc551ab39239ce500328c8a9ec018b1913790d5180b464df63ea4034766cb`.
-The evidence is SIMPLE-DEPLOY run `42305541900`; later merges #453 and #456 do
-not touch application-image inputs and therefore do not supersede this base.
+Baseline refresh #492 binds the ordinary application to the current published
+Ausmalwiese application from source `837a576ce2f7be6c8155cddaa61cfe4f9687ed05`:
+index `sha256:d7fd8c522a432f43afd5ef8e41f1d75f3b8a1c7f14603a83ab3da161751f04e7`
+and its exact `linux/arm64` manifest
+`sha256:4f627ecda7d6c89b03e8b3f1afcdafadcd242c942100fe559390d5b2e05fc43b`.
+GitHub Packages identifies that source tag and production index, while the child
+manifest was verified by one owner-authorized read-only public GHCR manifest
+inspection on 2026-11-12. No runtime state, credentials or mutable registry action
+is part of this baseline evidence.
 
 The recipe remains at `bca36e1ef516e370e880c44b3c27785e82f0d9e0`; this PR extends
 the proof tooling, not the recipe or Nginx renderer. The RPi5 parser is checked out
