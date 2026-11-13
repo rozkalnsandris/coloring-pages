@@ -58,9 +58,13 @@ class HerbstLandingTests(unittest.TestCase):
     def test_homepage_exposes_native_canonical_herbst_link_only_for_pilot(self):
         index = read("index.html")
         self.assertIn('<a href="/herbst"><span class="category-subtopic-icon" aria-hidden="true">🍂</span><span class="category-subtopic-label">Herbst</span></a>', index)
+        self.assertIn('data-static-topic="herbst"', index)
         self.assertNotIn('topic=herbst#neu', index)
+        helper = read("js/category-topic-discovery.js")
+        self.assertIn('herbst: "/herbst"', helper)
+        self.assertIn('index.html?topic=', helper)
         for topic in ("winter", "sommer", "dinosaurier", "sport", "weihnachten"):
-            self.assertIn(f"topic={topic}#neu", index)
+            self.assertNotIn(f"topic={topic}#neu", index)
 
     def test_container_and_clean_route_include_only_single_topic_pilot(self):
         docker = read("Dockerfile")
