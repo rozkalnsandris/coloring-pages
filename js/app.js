@@ -67,8 +67,13 @@ let catalogEntries = null;
 let visibleLimit = CATALOG_PAGE_SIZE;
 let catalogIssueText = "";
 
-// URL only stores explicit catalogue facet values; other parameters (including
-// campaign) and fragments are preserved. History back/forward restores controls.
+// URL stores explicit catalogue facets plus a submitted search query. Other
+// parameters (including campaign) and fragments are preserved.
+function readSearchFromUrl() {
+  if (!searchInput) return;
+  searchInput.value = new URLSearchParams(location.search).get("q") || "";
+}
+
 function readMetadataFiltersFromUrl() {
   if (!ageFilter && !difficultyFilter) return;
   const params = new URLSearchParams(location.search);
@@ -86,6 +91,9 @@ function readTopicFilterFromUrl() {
 
 function syncCatalogFilterUrl() {
   const url = new URL(location.href);
+  const q = searchInput?.value.trim() || "";
+  if (q) url.searchParams.set("q", q);
+  else url.searchParams.delete("q");
   if (ageFilter?.value) url.searchParams.set("age", ageFilter.value);
   else url.searchParams.delete("age");
   if (difficultyFilter?.value) url.searchParams.set("difficulty", difficultyFilter.value);
@@ -555,11 +563,14 @@ function updateCount(totalMatches) {
 }
 
 function matchesFilters(titleValue, categoryValues, topicValues = [], ageValue = "", difficultyValue = "") {
-  const query = normalize(searchInput?.value ?? "");
-  const title = normalize(titleValue ?? "");
+  const query = searchInput?.value ?? "";
   const categories = (Array.isArray(categoryValues) ? categoryValues : [categoryValues]).map(normalize).filter(Boolean);
-  const matchesQuery = !query || title.includes(query) || categories.some((id) =>
-    id.includes(query) || normalize(CATEGORY_LABELS[id] || id).includes(query));
+  const categoryTerms = categories.flatMap((id) => [id, CATEGORY_LABELS[id] || id]);
+  const search = globalThis.AusmalSearch;
+  const topicTerms = search?.topicTerms(topicValues, topicRegistry) || [];
+  const matchesQuery = !query.trim() || (search
+    ? search.matches(query, [titleValue, ...categoryTerms, ...topicTerms])
+    : normalize(titleValue).includes(normalize(query)));
   const collectionTopics = DISCOVERY_COLLECTION_TOPICS[activeCategory];
   const matchesCategory = !activeCategory ||
     (collectionTopics
@@ -873,6 +884,7 @@ headerSearch?.addEventListener("click", () => {
 
 searchForm?.addEventListener("submit", (event) => {
   event.preventDefault();
+  syncCatalogFilterUrl();
   applyFilters();
   updateNavigation("#neu");
   document.querySelector("#neu")?.scrollIntoView({ block: "start" });
@@ -887,6 +899,7 @@ searchInput?.addEventListener("input", applyFilters);
   });
 });
 window.addEventListener("popstate", () => {
+  readSearchFromUrl();
   readMetadataFiltersFromUrl();
   readCategoryFilterFromUrl();
   readTopicFilterFromUrl();
@@ -943,6 +956,7 @@ document.querySelectorAll("[data-reset-filters]").forEach((link) => link.addEven
   applyFilters();
 }));
 
+readSearchFromUrl();
 readMetadataFiltersFromUrl();
 
 if (gallery) {
