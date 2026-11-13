@@ -49,8 +49,9 @@ async function loadTopicRegistry() {
     const response = await fetch("/topics.json", { cache: "no-store" });
     if (!response.ok) throw new Error("topic registry unavailable");
     const payload = await response.json();
-    if (payload?.schema !== "rozkalns.coloring-pages.topics.v1" || !Array.isArray(payload.topics)) throw new Error("invalid topic registry");
-    topicRegistry = payload.topics.filter((topic) => topic && typeof topic.id === "string" && typeof topic.label === "string");
+    await import("/js/topic-registry.js");
+    if (!globalThis.AusmalTopicRegistry) throw new Error("topic registry parser unavailable");
+    topicRegistry = globalThis.AusmalTopicRegistry.parse(payload);
   } catch (error) {
     topicRegistry = [];
     if (categoryTopics.size) throw error;
