@@ -76,7 +76,29 @@ def run_case(browser, origin: str, width: int):
         if metrics["innerWidth"] != width:
             raise AssertionError(f"viewport drift: requested {width}, got {metrics}")
         if metrics["doc"] > width + 1 or metrics["body"] > width + 1:
-            raise AssertionError(f"{width}px horizontal overflow: {metrics}")
+            offenders = page.evaluate(
+                """() => [...document.querySelectorAll('body *')].map(node => {
+                  const style = getComputedStyle(node);
+                  const rect = node.getBoundingClientRect();
+                  return {
+                    tag: node.tagName.toLowerCase(),
+                    cls: typeof node.className === 'string' ? node.className : '',
+                    id: node.id || '',
+                    left: Math.round(rect.left),
+                    right: Math.round(rect.right),
+                    width: Math.round(rect.width),
+                    display: style.display,
+                    visibility: style.visibility,
+                    text: (node.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 80),
+                  };
+                }).filter(item =>
+                  item.display !== 'none' && item.visibility !== 'hidden' &&
+                  (item.left < -1 || item.right > window.innerWidth + 1)
+                ).slice(0, 20)"""
+            )
+            raise AssertionError(
+                f"{width}px horizontal overflow: {metrics}; offenders={offenders}"
+            )
 
         expected_mobile_rows = 361 <= width <= 540
         if metrics["mobileRows"] != expected_mobile_rows:
