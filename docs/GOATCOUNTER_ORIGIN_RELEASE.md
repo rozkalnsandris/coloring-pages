@@ -16,15 +16,15 @@ recipe revision. The selected base was verified against public registry metadata
 and its successful ordinary publication run in #1348; it is refreshed during proof
 and immediately before/after publication. Pointer drift refuses the operation.
 
-Baseline refresh #492 binds the ordinary application to the current published
-Ausmalwiese application from source `837a576ce2f7be6c8155cddaa61cfe4f9687ed05`:
-index `sha256:d7fd8c522a432f43afd5ef8e41f1d75f3b8a1c7f14603a83ab3da161751f04e7`
+Baseline refresh #499 binds the ordinary application to the current published
+Ausmalwiese application from source `7cc89e99f172a51b1167ff99dbc38b9a54eac9e1`:
+index `sha256:2c95a59da0a9f4dc9f68185b087a46b0d0ac36fe8fb2b3756d938976f56aa45d`
 and its exact `linux/arm64` manifest
-`sha256:4f627ecda7d6c89b03e8b3f1afcdafadcd242c942100fe559390d5b2e05fc43b`.
-GitHub Packages identifies that source tag and production index, while the child
-manifest was verified by one owner-authorized read-only public GHCR manifest
-inspection on 2026-11-12. No runtime state, credentials or mutable registry action
-is part of this baseline evidence.
+`sha256:60a5bf8ca917cd3f54fff79df0145dad6385b895309fef9c626c073f761d578e`.
+GitHub Packages identifies that source tag and production index, and a bounded
+read-only public GHCR manifest inspection on 2026-11-13 verified exactly one
+`linux/arm64` child at that digest. No runtime state, credentials or mutable
+registry action is part of this baseline evidence.
 
 The recipe remains at `bca36e1ef516e370e880c44b3c27785e82f0d9e0`; this PR extends
 the proof tooling, not the recipe or Nginx renderer. The RPi5 parser is checked out
