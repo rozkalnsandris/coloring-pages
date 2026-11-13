@@ -130,7 +130,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--firefox", default=None,
                         help="override Playwright-managed Firefox executable")
-    parser.add_argument("--sequences", nargs="+", default=["P", "PLP", "PLPLP"])
+    parser.add_argument("--sequences", nargs="+", default=["P", "L", "PP", "LL", "PL", "PPPPP", "LLLLL", "PLPLP"])
     parser.add_argument("--viewports", nargs="+", type=int, default=[375, 1280])
     args = parser.parse_args()
     for sequence in args.sequences:
