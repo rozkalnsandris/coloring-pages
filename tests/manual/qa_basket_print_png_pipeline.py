@@ -325,7 +325,7 @@ def main():
                  missing=PATHS[1], viewport_width=375)
             case(browser, css, pngs, "PL", CASES[1][1], CASES[1][2],
                  corrupt=PATHS[1], viewport_width=375)
-            case(browser, css, pngs, "PL", CASES[1][1], CASES[1][2],
+            case(browser, css, pngs, "PLP", CASES[2][1], CASES[2][2],
                  drift=True, viewport_width=375)
             case(browser, css, pngs, "PL", CASES[1][1], CASES[1][2],
                  abort_media=True, viewport_width=375)
