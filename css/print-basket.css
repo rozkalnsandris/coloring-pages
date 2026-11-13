@@ -79,6 +79,11 @@
   .basket-summary strong { padding-inline: 6px; font-size: 11px; }
 }
 
+@media (max-width: 360px) {
+  .basket-summary-short { display: none; }
+  .basket-summary strong { padding-inline: 5px; font-size: 10px; }
+}
+
 .basket-summary:focus-visible,
 .basket-dialog :is(button, a):focus-visible {
   outline: 3px solid var(--blue);
