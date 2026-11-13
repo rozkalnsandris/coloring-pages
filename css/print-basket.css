@@ -64,6 +64,15 @@
   font-size: 17px;
 }
 
+@media (max-width: 900px) {
+  .basket-summary-long { display: none; }
+  .basket-summary-short { display: inline; }
+}
+
+@media (min-width: 721px) and (max-width: 900px) {
+  .basket-summary-short { display: none; }
+}
+
 @media (max-width: 720px) {
   .basket-summary {
     min-height: 48px;
@@ -77,6 +86,11 @@
 @media (max-width: 380px) {
   .basket-summary { gap: 5px; padding-inline: 7px; }
   .basket-summary strong { padding-inline: 6px; font-size: 11px; }
+}
+
+@media (max-width: 360px) {
+  .basket-summary-short { display: none; }
+  .basket-summary strong { padding-inline: 5px; font-size: 10px; }
 }
 
 .basket-summary:focus-visible,

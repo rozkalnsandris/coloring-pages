@@ -822,7 +822,7 @@ function setUnavailable(message) {
     summary.classList.add("is-unavailable");
     summary.setAttribute("aria-label", "Drucksammlung nicht verfügbar");
     const count = summary.querySelector("[data-basket-count]");
-    if (count) count.textContent = "nicht verfügbar";
+    if (count) count.textContent = "–";
   }
   document.querySelectorAll(TOGGLE_SELECTOR).forEach((button) => {
     button.disabled = true;
