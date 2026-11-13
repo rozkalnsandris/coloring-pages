@@ -69,9 +69,11 @@ let catalogIssueText = "";
 
 // URL stores explicit catalogue facets plus a submitted search query. Other
 // parameters (including campaign) and fragments are preserved.
-function readSearchFromUrl() {
+function readSearchFromUrl({ preserveWhenMissing = false } = {}) {
   if (!searchInput) return;
-  searchInput.value = new URLSearchParams(location.search).get("q") || "";
+  const q = new URLSearchParams(location.search).get("q");
+  if (q !== null) searchInput.value = q;
+  else if (!preserveWhenMissing) searchInput.value = "";
 }
 
 function readMetadataFiltersFromUrl() {
@@ -956,7 +958,7 @@ document.querySelectorAll("[data-reset-filters]").forEach((link) => link.addEven
   applyFilters();
 }));
 
-readSearchFromUrl();
+readSearchFromUrl({ preserveWhenMissing: true });
 readMetadataFiltersFromUrl();
 
 if (gallery) {
