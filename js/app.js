@@ -299,6 +299,14 @@ function createRuntimeCategory(item, topics) {
   return details;
 }
 
+function categoryTopicList(group) {
+  const direct = group.querySelector(":scope > .category-subtopics");
+  if (direct) return direct;
+  const panelId = group.querySelector(":scope > summary")?.getAttribute("aria-controls");
+  const panel = panelId ? document.getElementById(panelId) : null;
+  return panel?.querySelector(".category-subtopics") || null;
+}
+
 function renderCategoryDiscovery(byCategory = new Map()) {
   if (!categoryBrowser) return;
 
@@ -308,7 +316,7 @@ function renderCategoryDiscovery(byCategory = new Map()) {
   }
 
   categoryBrowser.querySelectorAll("[data-category-ids]").forEach((group) => {
-    const list = group.querySelector(":scope > .category-subtopics");
+    const list = categoryTopicList(group);
     if (!list) return;
     list.querySelectorAll("[data-managed-topic]").forEach((item) => item.remove());
     const categoryIds = (group.dataset.categoryIds || "").split(/\s+/).filter(Boolean);
