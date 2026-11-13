@@ -27,6 +27,9 @@ class Search513Tests(unittest.TestCase):
 
     def test_q_is_persisted_and_restored(self):
         self.assertIn('new URLSearchParams(location.search).get("q")', self.app)
+        self.assertIn("function readSearchFromUrl({ preserveWhenMissing = false } = {})", self.app)
+        self.assertIn("else if (!preserveWhenMissing) searchInput.value = \"\";", self.app)
+        self.assertIn("readSearchFromUrl({ preserveWhenMissing: true });", self.app)
         self.assertIn('url.searchParams.set("q", q)', self.app)
         self.assertIn('url.searchParams.delete("q")', self.app)
         self.assertIn('searchForm?.addEventListener("submit"', self.app)
