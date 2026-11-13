@@ -53,7 +53,7 @@ class ManagedCategoryTopicDiscovery507Tests(unittest.TestCase):
 
     def test_consumer_validates_exact_registry_bytes_and_fails_relationship_only(self):
         helper_pos = self.home.index("js/category-topic-discovery.js")
-        app_pos = self.home.index("js/app.js?v=507")
+        app_pos = self.home.index('src="js/app.js?v=')
         self.assertLess(helper_pos, app_pos)
         self.assertIn('fetch("/category-topics.json", { cache: "no-store" })', self.app)
         self.assertIn('globalThis.crypto.subtle.digest("SHA-256", bytes)', self.app)
