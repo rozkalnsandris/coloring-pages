@@ -48,9 +48,7 @@ class SimpleDeployPublishTests(unittest.TestCase):
             "Dockerfile",
             "tools/coloring-pages-import",
             "deploy/nginx.conf",
-            "index.html",
-            "detail.html",
-            "print.html",
+            "*.html",
             "css/**",
             "js/**",
             "assets/**",
@@ -58,6 +56,10 @@ class SimpleDeployPublishTests(unittest.TestCase):
         self.assertIn("paths:", workflow)
         for path in required_paths:
             self.assertIn(f'      - "{path}"', workflow)
+
+        self.assertNotIn('      - "**/*.html"', workflow)
+        for legacy_narrow_html in ("index.html", "detail.html", "print.html"):
+            self.assertNotIn(f'      - "{legacy_narrow_html}"', workflow)
 
         for non_image_input in (
             ".github/workflows/simple-deploy.yml",
