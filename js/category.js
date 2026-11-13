@@ -10,10 +10,13 @@ let activeCategoryTopic = "";
 let activeAge = "";
 let activeDifficulty = "";
 const MAX_CATEGORY_TOPICS = 8;
+const CATEGORY_PAGE_SIZE = 20;
 const AGE_FILTER_VALUES = new Set(["3-6", "4-8"]);
 const gallery = document.querySelector("[data-category-gallery]");
 const status = document.querySelector("[data-category-status]");
 const total = document.querySelector("[data-category-total]");
+const loadMoreButton = document.querySelector("[data-category-load-more]");
+let categoryVisibleLimit = CATEGORY_PAGE_SIZE;
 let ageFilter = null;
 let difficultyFilter = null;
 let metadataReset = null;
@@ -154,12 +157,12 @@ function ensureCategoryMetadataFilters() {
   ageFilter.addEventListener("change", () => {
     activeAge = ageFilter.value;
     syncMetadataFilterUrl();
-    renderCategoryEntries(categoryEntries);
+    renderCategoryEntries(categoryEntries, { resetLimit: true });
   });
   difficultyFilter.addEventListener("change", () => {
     activeDifficulty = difficultyFilter.value;
     syncMetadataFilterUrl();
-    renderCategoryEntries(categoryEntries);
+    renderCategoryEntries(categoryEntries, { resetLimit: true });
   });
   metadataReset.addEventListener("click", () => {
     activeAge = "";
@@ -167,7 +170,7 @@ function ensureCategoryMetadataFilters() {
     ageFilter.value = "";
     difficultyFilter.value = "";
     syncMetadataFilterUrl();
-    renderCategoryEntries(categoryEntries);
+    renderCategoryEntries(categoryEntries, { resetLimit: true });
   });
   updateMetadataFilterUi();
   return root;
@@ -265,7 +268,7 @@ function ensureCategoryTopicFilter(entries) {
           String(candidate.dataset.categoryTopic === activeCategoryTopic)
         );
       });
-      renderCategoryEntries(categoryEntries);
+      renderCategoryEntries(categoryEntries, { resetLimit: true });
     });
     return button;
   };
@@ -278,21 +281,24 @@ function ensureCategoryTopicFilter(entries) {
   );
 }
 
-function renderCategoryEntries(entries) {
+function renderCategoryEntries(entries, { resetLimit = false } = {}) {
+  if (resetLimit) categoryVisibleLimit = CATEGORY_PAGE_SIZE;
   const activeTopic = activeCategoryTopic
     ? topicRegistry.find((topic) => topic.id === activeCategoryTopic)
     : null;
-  let visibleEntries = activeTopic
+  let filteredEntries = activeTopic
     ? entries.filter((entry) => entryTopicIds(entry).includes(activeTopic.id))
     : entries;
   const api = globalThis.AusmalCategoryMetadataFilters;
-  if (api) visibleEntries = visibleEntries.filter((entry) => api.matches(entry, metadataFilters()));
+  if (api) filteredEntries = filteredEntries.filter((entry) => api.matches(entry, metadataFilters()));
+  const visibleEntries = filteredEntries.slice(0, categoryVisibleLimit);
 
   const fragment = document.createDocumentFragment();
   visibleEntries.forEach((entry) => fragment.append(createCard(entry)));
   gallery.replaceChildren(fragment);
 
-  if (total) total.textContent = String(visibleEntries.length);
+  if (total) total.textContent = String(filteredEntries.length);
+  if (loadMoreButton) loadMoreButton.hidden = visibleEntries.length >= filteredEntries.length;
 
   const galleryTitle = document.querySelector("#category-gallery-title");
   if (galleryTitle) {
@@ -304,12 +310,12 @@ function renderCategoryEntries(entries) {
   if (status) {
     const label = activeTopic?.label || categoryLabel;
     const metadataActive = globalThis.AusmalCategoryMetadataFilters?.hasActive(metadataFilters());
-    status.textContent = visibleEntries.length
-      ? visibleEntries.length + " " + (visibleEntries.length === 1 ? "Malvorlage" : "Malvorlagen") + " in " + label + "."
+    status.textContent = filteredEntries.length
+      ? filteredEntries.length + " " + (filteredEntries.length === 1 ? "Malvorlage" : "Malvorlagen") + " in " + label + "."
       : metadataActive
         ? "Keine Malvorlagen passen zu diesen Filtern. Setze die Filter zurück oder wähle eine andere Kombination."
         : "Zurzeit sind in diesem Thema keine Malvorlagen verfügbar.";
-    status.hidden = visibleEntries.length > 0;
+    status.hidden = filteredEntries.length > 0;
   }
   updateMetadataFilterUi();
 }
@@ -399,7 +405,7 @@ async function loadCategory() {
     });
     categoryEntries = entries;
     ensureCategoryTopicFilter(entries);
-    renderCategoryEntries(entries);
+    renderCategoryEntries(entries, { resetLimit: true });
   } catch {
     if (status) {
       status.textContent = "Die Malvorlagen konnten nicht geladen werden. Bitte versuche es später erneut.";
@@ -422,9 +428,20 @@ menuButton?.addEventListener("click", () => {
 mobileNav?.addEventListener("click", (event) => {
   if (event.target.closest("a")) setMenuOpen(false);
 });
+loadMoreButton?.addEventListener("click", (event) => {
+  const previousVisibleCount = gallery?.querySelectorAll(".coloring-card").length || 0;
+  const shouldMoveFocus = event.detail === 0;
+  categoryVisibleLimit += CATEGORY_PAGE_SIZE;
+  renderCategoryEntries(categoryEntries);
+  if (shouldMoveFocus) {
+    const nextCards = [...(gallery?.querySelectorAll(".coloring-card") || [])];
+    nextCards[previousVisibleCount]?.querySelector("a")?.focus({ preventScroll: true });
+  }
+});
+
 window.addEventListener("popstate", () => {
   readMetadataFiltersFromUrl();
-  renderCategoryEntries(categoryEntries);
+  renderCategoryEntries(categoryEntries, { resetLimit: true });
 });
 
 document.addEventListener("keydown", (event) => {
