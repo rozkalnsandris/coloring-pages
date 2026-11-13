@@ -65,6 +65,12 @@ class PrintBasketUi206Tests(unittest.TestCase):
             self.assertNotIn("print-basket-ui", html)
             self.assertNotIn("print-basket.css", html)
 
+    def test_unavailable_header_summary_stays_compact_and_accessible(self):
+        source = (ROOT / "js" / "print-basket-ui.mjs").read_text(encoding="utf-8")
+        self.assertIn('summary.setAttribute("aria-label", "Drucksammlung nicht verfügbar")', source)
+        self.assertIn('if (count) count.textContent = "–";', source)
+        self.assertNotIn('if (count) count.textContent = "nicht verfügbar";', source)
+
     def test_mobile_controls_keep_touch_targets(self):
         css = (ROOT / "css" / "print-basket.css").read_text(encoding="utf-8")
         self.assertIn(".basket-summary", css)
