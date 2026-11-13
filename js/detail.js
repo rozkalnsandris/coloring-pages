@@ -543,11 +543,8 @@ async function loadDetail() {
   if (!id) return;
 
   try {
-    const response = await fetch("catalog.json", { cache: "no-store" });
-    if (!response.ok) throw new Error("catalog unavailable");
-
-    const catalog = await response.json();
-    if (!Array.isArray(catalog)) throw new Error("invalid catalog");
+    const { loadCatalog } = await import("/js/catalog-resource.mjs");
+    const catalog = await loadCatalog();
 
     const entry = catalog.find((item) => item && item.id === id);
     if (!entry) {

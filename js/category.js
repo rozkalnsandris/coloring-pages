@@ -371,11 +371,10 @@ async function loadCategory() {
   if (!category || !gallery) return;
   try {
     ensureCategoryMetadataFilters();
-    await loadTopicRegistry();
-    const response = await fetch("/catalog.json", { cache: "no-store" });
-    if (!response.ok) throw new Error("catalog unavailable");
-    const catalog = await response.json();
-    if (!Array.isArray(catalog)) throw new Error("invalid catalog");
+    const [, catalog] = await Promise.all([
+      loadTopicRegistry(),
+      import("/js/catalog-resource.mjs").then(({ loadCatalog }) => loadCatalog()),
+    ]);
 
     const entries = catalog.filter((entry) => {
       if (!(entry && entry.id && entry.title && entry.thumb)) return false;

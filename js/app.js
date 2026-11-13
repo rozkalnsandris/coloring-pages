@@ -820,9 +820,14 @@ async function hydrateCatalog() {
   if (!gallery) return;
 
   try {
-    const categoryResource = await loadCategoryRegistry();
+    const catalogPromise = import("/js/catalog-resource.mjs")
+      .then(({ loadCatalog }) => loadCatalog());
+    const [categoryResource, topicResource, catalog] = await Promise.all([
+      loadCategoryRegistry(),
+      loadTopicRegistry(),
+      catalogPromise,
+    ]);
     readCategoryFilterFromUrl();
-    const topicResource = await loadTopicRegistry();
     readTopicFilterFromUrl();
     let categoryTopics = new Map();
     if (topicResource) {
@@ -833,11 +838,6 @@ async function hydrateCatalog() {
       }
     }
     renderCategoryDiscovery(categoryTopics);
-    const response = await fetch("catalog.json", { cache: "no-store" });
-    if (!response.ok) throw new Error("catalog unavailable");
-
-    const catalog = await response.json();
-    if (!Array.isArray(catalog)) throw new Error("invalid catalog");
 
     const entries = catalog.filter((entry) => entry && entry.id && entry.title && entry.thumb);
     catalogIssueText = entries.length ? "" : "Zurzeit sind keine Malvorlagen verfügbar.";
