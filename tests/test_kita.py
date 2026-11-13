@@ -28,11 +28,15 @@ class KitaTests(unittest.TestCase):
         docker = (ROOT / 'Dockerfile').read_text()
         copy_lines = [line for line in docker.splitlines() if line.startswith('COPY ') and '/usr/share/nginx/html/' in line]
         self.assertTrue(any('kita.html' in line.split() for line in copy_lines))
+        self.assertTrue(any('kita-herbst.html' in line.split() for line in copy_lines))
         nginx = (ROOT / 'deploy/nginx.conf').read_text()
         route = nginx.split('location = /kita {')[1].split('}')[0]
         self.assertIn('try_files /kita.html =404;', route)
         self.assertIn('Cache-Control "no-cache"', route)
         self.assertIn('return 308 /kita$is_args$args;', nginx)
+        package_route = nginx.split('location = /kita/herbst {')[1].split('}')[0]
+        self.assertIn('try_files /kita-herbst.html =404;', package_route)
+        self.assertIn('Cache-Control "no-cache"', package_route)
         assets = Assets()
         assets.feed((ROOT / 'kita.html').read_text())
         for url in assets.urls:
@@ -50,8 +54,11 @@ class KitaTests(unittest.TestCase):
         redirect = nginx.split('location = /kita/ {', 1)[1].split('}', 1)[0]
         self.assertIn('absolute_redirect off;', redirect)
         self.assertIn('return 308 /kita$is_args$args;', redirect)
-        # Keep this setting local to the Kita slash route.
-        self.assertEqual(nginx.count('absolute_redirect off;'), 1)
+        package_redirect = nginx.split('location = /kita/herbst/ {', 1)[1].split('}', 1)[0]
+        self.assertIn('absolute_redirect off;', package_redirect)
+        self.assertIn('return 308 /kita/herbst$is_args$args;', package_redirect)
+        # Keep this setting local to the two Kita slash routes.
+        self.assertEqual(nginx.count('absolute_redirect off;'), 2)
 
     def run_controller(self, catalog, campaign='dortmund-01', ok=True):
         if not shutil.which('node'):
