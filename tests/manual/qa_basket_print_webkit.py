@@ -21,7 +21,7 @@ DRAW_WEBKIT = r"""
 async ({canvasSource, footerSource, sequence}) => {
   const load = (source, names) => {
     const body = source.replaceAll('export ', '');
-    return Function(body + '\\nreturn {' + names.join(',') + '};')();
+    return Function(body + '\nreturn {' + names.join(',') + '};')();
   };
   const {stageBasketPrintCanvases} = load(canvasSource, ['stageBasketPrintCanvases']);
   const {stageBasketPrintTextFooters} = load(footerSource, ['stageBasketPrintTextFooters']);
