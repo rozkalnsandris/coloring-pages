@@ -35,6 +35,7 @@ Editorial instructions:
 - The explicit **„5 Seiten auswählen“** action replaces the current tab-scoped `Meine Drucksammlung` with the reviewed package order and opens the existing basket dialog. The page clearly states that the current selection is replaced.
 - Existing coverless full-quality PNG ZIP remains the only enabled whole-package output.
 - `BOOK_OUTPUT_RELEASE.combinedPrint` remains **false** under #508. The package must not enable or advertise a working one-click combined print action before that gate passes.
+- Phase 5 expansion is a separate product decision gate: require a complete 7-day consent-based GoatCounter observation for exact `/kita` and `/kita/herbst` paths, interpreted only as visit/event counts and not as unique people, conversion, print success or classroom-use proof. See `docs/KITA_PILOT.md`.
 - No new backend, database, account, tracking identifier, PDF path or server-side ZIP is introduced.
 
 ## Safety and rights boundaries
