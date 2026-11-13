@@ -1,5 +1,27 @@
 # Kita landing-page pilot — source and activation status
 
+## Current Kita-Pakete evidence gate
+
+The original `dortmund-01` campaign material below is historical pilot context. It is **not** the current decision gate for expanding Kita-Pakete.
+
+For the current Herbst package, the pre-Phase-5 product gate is a privacy-preserving, consent-based GoatCounter observation of the exact public paths:
+
+- `/kita`
+- `/kita/herbst`
+
+The public pages use the existing optional analytics consent flow. The reporting surface is owned by the reviewed RPi5 admin analytics implementation and must be verified from fresh runtime evidence when a decision is made; GitHub source alone does not prove current LIVE counts.
+
+Interpretation is deliberately narrow:
+
+- the metric is GoatCounter visits/events from visitors who consented to optional analytics;
+- counts are **not** unique people, unique Kitas, classroom sessions, conversions or successful prints;
+- a zero count does not prove zero real-world use because visitors may decline analytics;
+- analytics evidence does not replace #508 print/browser/device QA;
+- no second package or broader Phase 5 expansion should start until a **complete 7-day observation window** is available and reviewed;
+- mutable counts, current LIVE digest/port and observation dates belong in fresh runtime evidence, not in this durable source document.
+
+This gate exists to avoid expanding from a technically working pilot without any measured usage signal. It does not define a hard numeric success threshold by itself; the owner reviews the 7-day evidence together with product context before deciding whether to proceed.
+
 The original landing-page prototype was reviewed on 2026-10-07. Its verification notes below are historical source evidence, not a current production check. The campaign funnel follow-up later merged into GitHub source (PR #140); its Cloudflare D1 migration and Worker activation still require fresh LIVE verification and separately scoped owner authorization. A source merge alone is not proof of Cloudflare activation.
 
 ## Page and content
