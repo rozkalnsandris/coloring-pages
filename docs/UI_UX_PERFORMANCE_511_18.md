@@ -45,6 +45,14 @@ Homepage hydration starts categories, topics and catalogue loading together with
 
 The basket ZIP freshness fetch remains direct and unchanged.
 
+## Category pagination alignment
+
+Category landing pages previously replaced their static seed with every matching catalogue entry in one DOM render. On a large category such as Tiere this meant dozens of cards were created at once even though the homepage already used a 20-item batch contract.
+
+The category controller now uses the same **20-item** batch size. The visible total remains the full filtered result count; “Mehr anzeigen” reveals the next batch. Topic, age/difficulty and Back/Forward filter changes reset the batch to 20. Keyboard activation moves focus to the first newly revealed card, including when the final batch hides the button.
+
+This changes only client-side rendering volume. Catalogue order, category/topic membership, canonical URLs, metadata filters and print assets are unchanged.
+
 ## Deliberately not changed
 
 The 97 mobile Lighthouse score and 2.3 s lab LCP do not justify a framework rewrite, aggressive image-quality changes, or broad renderer refactoring. Image-delivery and render-blocking opportunities may be evaluated separately with exact resource evidence. Field-data optimization should wait until CrUX data exists or another trustworthy production telemetry source is available.
