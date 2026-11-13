@@ -75,7 +75,8 @@
 }
 
 @media (max-width: 380px) {
-  .basket-summary { gap: 5px; padding-inline: 7px; }
+  .basket-summary { gap: 0; padding-inline: 7px; }
+  .basket-summary-short { display: none; }
   .basket-summary strong { padding-inline: 6px; font-size: 11px; }
 }
 

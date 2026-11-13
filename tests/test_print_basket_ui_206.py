@@ -71,6 +71,12 @@ class PrintBasketUi206Tests(unittest.TestCase):
         self.assertIn('if (count) count.textContent = "–";', source)
         self.assertNotIn('if (count) count.textContent = "nicht verfügbar";', source)
 
+    def test_very_narrow_header_hides_visual_basket_label(self):
+        css = (ROOT / "css" / "print-basket.css").read_text(encoding="utf-8")
+        narrow = css.split("@media (max-width: 380px) {", 1)[1].split("}", 1)[0]
+        self.assertIn(".basket-summary-short { display: none;", css)
+        self.assertIn(".basket-summary { gap: 0;", narrow)
+
     def test_mobile_controls_keep_touch_targets(self):
         css = (ROOT / "css" / "print-basket.css").read_text(encoding="utf-8")
         self.assertIn(".basket-summary", css)
