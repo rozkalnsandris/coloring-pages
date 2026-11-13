@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """WebKit synthetic print-CSS layout QA for #508; NOT Safari/print-to-file evidence.
 
-Requires Playwright 1.64.0 and the installed Playwright-managed Firefox browser.
+Requires Playwright 1.64.0 and the installed Playwright-managed WebKit browser.
     python3 -m playwright install --with-deps webkit
     python3 tests/manual/qa_basket_print_webkit.py
 
@@ -15,7 +15,71 @@ still be independently inspected before enabling visitor printing.
 import argparse
 from pathlib import Path
 
-from qa_basket_print_layout import DRAW, ROOT
+from qa_basket_print_layout import ROOT
+
+DRAW_WEBKIT = r"""
+async ({canvasSource, footerSource, sequence}) => {
+  const load = (source, names) => {
+    const body = source.replace(/\\bexport\\s+/g, '');
+    return Function(body + '\\nreturn {' + names.join(',') + '};')();
+  };
+  const {stageBasketPrintCanvases} = load(canvasSource, ['stageBasketPrintCanvases']);
+  const {stageBasketPrintTextFooters} = load(footerSource, ['stageBasketPrintTextFooters']);
+  const sizes = {P:[2480,3508], L:[3508,2480]};
+  const pages = [...sequence].map((orientation,i) => ({
+    activityId:'qa-only', pageIndex:i+1, pageCount:sequence.length,
+    printUrl:'/media/qa-only/print-'+(i+1)+'.png',
+  }));
+  const bitmaps = [];
+  const sheets = [];
+  try {
+    for (const [i,orientation] of [...sequence].entries()) {
+      const [width,height] = sizes[orientation];
+      const source = document.createElement('canvas');
+      source.width=width; source.height=height;
+      const ctx=source.getContext('2d',{alpha:false});
+      ctx.fillStyle='#fff'; ctx.fillRect(0,0,width,height);
+      ctx.lineWidth=8; ctx.strokeStyle='#000';
+      ctx.strokeRect(230,250,width-460,height-740);
+      ctx.fillStyle='#000'; ctx.font='45px sans-serif';
+      ctx.fillText('A4 QA '+(i+1)+' '+orientation,260,350);
+      const bitmap=await createImageBitmap(source);
+      bitmaps.push(bitmap); source.width=0; source.height=0;
+      sheets.push({
+        page:pages[i], width,height,
+        orientation:orientation==='P'?'portrait':'landscape',bitmap,
+      });
+    }
+    let released=false;
+    const decoded = {
+      plan:{pages,imageUrls:pages.map(p=>p.printUrl),sheetCount:pages.length},
+      sheets,
+      get released(){return released;},
+      release(){
+        if(released)return;
+        released=true;bitmaps.forEach(b=>b.close());
+      },
+    };
+    const canvases=stageBasketPrintCanvases(decoded,{documentRef:document});
+    const branded=stageBasketPrintTextFooters(canvases,{documentRef:document});
+    document.querySelector('[data-print-pages]')
+      .replaceChildren(...branded.sheets.map(x=>x.element));
+    window.__qaDispose=()=>branded.dispose();
+    return {
+      count:branded.sheets.length,
+      orientations:branded.sheets.map(s=>s.orientation),
+      sizes:branded.sheets.map(s=>{
+        const c=s.element.querySelector('canvas');
+        return [c.width,c.height];
+      }),
+      footers:document.querySelectorAll('.print-branding.text-only').length,
+      released,
+    };
+  } finally {
+    bitmaps.forEach(b=>{try{b.close();}catch{}});
+  }
+}
+"""
 
 PX_PER_MM = 96 / 25.4
 PRINT_LAYOUT = r"""
@@ -91,7 +155,7 @@ def run_case(browser, css, canvas_source, footer_source, sequence, viewport_widt
             wait_until="load",
         )
         page.emulate_media(media="print")
-        staged = page.evaluate(DRAW, {
+        staged = page.evaluate(DRAW_WEBKIT, {
             "canvasSource": canvas_source, "footerSource": footer_source,
             "sequence": sequence,
         })
