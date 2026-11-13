@@ -153,22 +153,29 @@ function readCategoryFilterFromUrl() {
   activeCategory = runtimeCategoryIds.has(requested) ? requested : "";
 }
 
-async function fetchJsonResource(url, unavailableMessage) {
-  const response = await fetch(url, { cache: "no-store" });
+async function readJsonResource(response, unavailableMessage) {
   if (!response.ok) throw new Error(unavailableMessage);
-  const bytes = await response.arrayBuffer();
-  const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-  return { doc: JSON.parse(text), bytes };
+  let bytes = null;
+  if (typeof response.clone === "function") {
+    const clone = response.clone();
+    if (typeof clone.arrayBuffer === "function") bytes = await clone.arrayBuffer();
+  }
+  if (typeof response.json !== "function") throw new Error(unavailableMessage);
+  const doc = await response.json();
+  return { doc, bytes };
 }
 
 async function sha256Hex(bytes) {
-  if (!globalThis.crypto?.subtle) throw new Error("SHA-256 unavailable");
+  if (!(bytes instanceof ArrayBuffer) || !globalThis.crypto?.subtle) {
+    throw new Error("exact registry bytes unavailable");
+  }
   const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
 }
 
 async function loadCategoryRegistry() {
-  const resource = await fetchJsonResource("/categories.json", "managed categories unavailable");
+  const response = await fetch("/categories.json", { cache: "no-store" });
+  const resource = await readJsonResource(response, "managed categories unavailable");
   const { doc } = resource;
   if (!doc || doc.schema !== "rozkalns.coloring-pages.categories.v2" ||
     !Number.isSafeInteger(doc.revision) || doc.revision < 1 ||
@@ -319,8 +326,13 @@ function renderCategoryDiscovery(byCategory = new Map()) {
     const list = categoryTopicList(group);
     if (!list) return;
     list.querySelectorAll("[data-managed-topic]").forEach((item) => item.remove());
+    const staticTopicIds = new Set(
+      [...list.querySelectorAll("[data-static-topic]")].map((item) => item.dataset.staticTopic)
+    );
     const categoryIds = (group.dataset.categoryIds || "").split(/\s+/).filter(Boolean);
-    list.append(...topicsForCategoryIds(categoryIds, byCategory).map(createManagedTopicItem));
+    const topics = topicsForCategoryIds(categoryIds, byCategory)
+      .filter((topic) => !staticTopicIds.has(topic.id));
+    list.append(...topics.map(createManagedTopicItem));
   });
 
   for (const item of categoryRegistry.slice(CORE_CATEGORY_IDS.length)) {
@@ -469,7 +481,8 @@ categoryBrowser?.addEventListener("click", (event) => {
 
 async function loadTopicRegistry() {
   try {
-    const resource = await fetchJsonResource("/topics.json", "topic registry unavailable");
+    const response = await fetch("/topics.json", { cache: "no-store" });
+    const resource = await readJsonResource(response, "topic registry unavailable");
     const payload = resource.doc;
     if (payload?.schema !== "rozkalns.coloring-pages.topics.v2" ||
         !Number.isInteger(payload.revision) || payload.revision < 1 ||
