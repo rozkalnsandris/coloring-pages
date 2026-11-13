@@ -1,4 +1,4 @@
-import { addBasketActivity, clearBasket, expandBasketForExport, moveBasketActivity, removeBasketActivity } from "./print-basket-selection.mjs";
+import { addBasketActivity, clearBasket, expandBasketForExport, moveBasketActivity, reconcileBasket, removeBasketActivity } from "./print-basket-selection.mjs";
 import { readStoredBasketIds, restoreStoredBasket, writeStoredBasketIds } from "./print-basket-storage.mjs";
 import { loadLegacyIdAliases } from "./legacy-id-aliases.mjs";
 import { prepareBasketPngZip } from "./print-basket-zip-fetch.mjs";
@@ -22,6 +22,7 @@ const BOOK_OUTPUT_RELEASE = BOOK_OUTPUT_ACTIVE_RELEASE;
 const MAX_SHEETS = 5;
 const CARD_SELECTOR = ".coloring-card";
 const TOGGLE_SELECTOR = "[data-basket-toggle]";
+const CURATED_BASKET_EVENT = "ausmalwiese:print-basket-replace";
 
 let catalog = [];
 let catalogById = new Map();
@@ -40,6 +41,8 @@ let printEpoch = 0;
 let previewPlan = null;
 let previewCursor = null;
 let bookCover = createBookCoverState();
+let basketReady = false;
+let pendingCuratedSelection = null;
 
 function detailIdFromCard(card) {
   const link = card.querySelector('a[href*="detail.html"]');
@@ -832,6 +835,62 @@ function commitBasket(next, message, action = null, id = null) {
   return true;
 }
 
+
+function normalizeCuratedSelection(detail) {
+  if (!detail || !Array.isArray(detail.ids) ||
+      !Number.isInteger(detail.expectedSheets) ||
+      detail.expectedSheets < 1 || detail.expectedSheets > MAX_SHEETS) {
+    return null;
+  }
+  const ids = detail.ids.slice();
+  if (!ids.length || ids.length > MAX_SHEETS ||
+      ids.some((id) => typeof id !== "string") ||
+      new Set(ids).size !== ids.length) {
+    return null;
+  }
+  return {
+    ids,
+    expectedSheets: detail.expectedSheets,
+    open: detail.open === true,
+    label: typeof detail.label === "string" && detail.label.trim()
+      ? detail.label.trim()
+      : "Das Kita-Paket",
+  };
+}
+
+function applyCuratedSelection(request) {
+  const next = reconcileBasket(request.ids, catalog);
+  if (next.droppedIds.length ||
+      next.ids.length !== request.ids.length ||
+      next.sheetCount !== request.expectedSheets) {
+    announce("Das Kita-Paket ist gerade nicht vollständig verfügbar. Die Drucksammlung wurde nicht geändert.");
+    return false;
+  }
+
+  bookCover = createBookCoverState();
+  if (!commitBasket(next, request.label + " wurde in die Drucksammlung übernommen.")) {
+    return false;
+  }
+
+  if (request.open && summary && !summary.disabled &&
+      typeof dialog?.showModal === "function" && !dialog.open) {
+    renderDialog();
+    dialog.showModal();
+  }
+  return true;
+}
+
+document.addEventListener(CURATED_BASKET_EVENT, (event) => {
+  const request = normalizeCuratedSelection(event.detail);
+  if (!request) return;
+  if (!basketReady) {
+    pendingCuratedSelection = request;
+    announce("Die Drucksammlung wird noch geladen.");
+    return;
+  }
+  applyCuratedSelection(request);
+});
+
 function handleToggle(button) {
   const id = button.dataset.basketToggle || "";
   const entry = catalogById.get(id);
@@ -913,6 +972,12 @@ async function start() {
     syncSummary();
     renderDialog();
     if (summary && typeof dialog.showModal === "function") summary.disabled = false;
+    basketReady = true;
+    if (pendingCuratedSelection) {
+      const request = pendingCuratedSelection;
+      pendingCuratedSelection = null;
+      applyCuratedSelection(request);
+    }
     enhanceCards();
     enhanceDetail();
 
@@ -927,6 +992,8 @@ async function start() {
     });
     observer.observe(document.body, { childList: true, subtree: true });
   } catch {
+    basketReady = false;
+    pendingCuratedSelection = null;
     setUnavailable("Die Drucksammlung ist gerade nicht verfügbar. Du kannst weiterhin Vorlagen ansehen und einzeln drucken.");
   }
 }

@@ -21,3 +21,78 @@
   .kita-trust { gap: 8px 16px; font-size: 14px; }
   .kita-actions a { font-size: 16px; }
 }
+
+
+.kita-packages .section-heading { margin-bottom: 10px; }
+.kita-package-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: center;
+  margin-top: 18px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: #fff;
+}
+.kita-package-kicker {
+  margin: 0 0 4px;
+  color: var(--blue-deep);
+  font-size: 14px;
+  font-weight: 800;
+}
+.kita-package-card h3 { margin: 0 0 6px; font-family: var(--font-display); font-size: 26px; }
+.kita-package-card p { margin: 0; }
+.kita-package-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+.kita-package-card .action-primary { min-width: 170px; text-decoration: none; }
+.kita-package-page .hero-copy { max-width: 960px; }
+.kita-package-page .kita-actions { margin-top: 18px; }
+.kita-package-select {
+  width: 100%;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.kita-package-select:disabled { cursor: default; opacity: .55; }
+.kita-package-note { max-width: 720px; margin: 10px 0 0; color: var(--muted); font-size: 14px; }
+.kita-package-activities {
+  display: grid;
+  gap: 18px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.kita-package-activity {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: #fff;
+}
+.kita-package-step {
+  margin: 0 0 8px;
+  color: var(--blue-deep);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.kita-package-activity-card { margin: 0; }
+.kita-package-instruction { margin: 12px 0 0; color: var(--muted); font-weight: 700; }
+
+@media (max-width: 720px) {
+  .kita-package-card { grid-template-columns: 1fr; padding: 18px; }
+  .kita-package-card .action-primary { min-width: 0; }
+  .kita-package-activity { padding: 12px; }
+  .kita-package-select { min-height: 56px; }
+}
