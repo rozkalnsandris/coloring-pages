@@ -13,9 +13,10 @@ class MobileCategoryRowsTests(unittest.TestCase):
         cls.home = (ROOT / "index.html").read_text(encoding="utf-8")
 
     def test_native_disclosures_preserved(self):
-        self.assertEqual(self.home.count('name="category-browser"'), 6)
+        self.assertEqual(self.home.count('name="category-browser"'), 7)
         self.assertIn('class="category-browser"', self.home)
-        self.assertIn('data-browse-topic="weihnachten"', self.home)
+        self.assertIn('data-category-ids="jahreszeiten"', self.home)
+        self.assertIn('data-static-topic="herbst"', self.home)
         app = (ROOT / "js/app.js").read_text(encoding="utf-8")
         self.assertIn('link.dataset.runtimeCategory = item.id;', app)
 

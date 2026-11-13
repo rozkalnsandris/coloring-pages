@@ -111,7 +111,7 @@
           <a class="category-all-link" href="#neu" data-reset-filters>Alle Malvorlagen <span aria-hidden="true">→</span></a>
         </div>
         <nav class="category-browser" aria-label="Malvorlagen nach Kategorien">
-          <details class="category-group category-group-animals" name="category-browser">
+          <details class="category-group category-group-animals" name="category-browser" data-category-ids="tiere">
             <summary>
               <span class="category-group-icon" aria-hidden="true">🐱</span>
               <span class="category-group-copy"><span class="category-group-name">Tiere</span><span class="category-group-hint">Dinosaurier, Meerestiere &amp; mehr</span></span>
@@ -119,17 +119,19 @@
             </summary>
             <ul class="category-subtopics" aria-label="Tiere">
               <li><a href="/tiere" data-filter="tiere"><span class="category-subtopic-icon" aria-hidden="true">🐱</span><span class="category-subtopic-label">Alle Tiere</span></a></li>
-              <li><a href="index.html?topic=dinosaurier#neu" data-browse-topic="dinosaurier"><span class="category-subtopic-icon" aria-hidden="true">🦖</span><span class="category-subtopic-label">Dinosaurier</span></a></li>
-              <li><a href="index.html?topic=meerestiere#neu" data-browse-topic="meerestiere"><span class="category-subtopic-icon" aria-hidden="true">🐠</span><span class="category-subtopic-label">Meerestiere</span></a></li>
-              <li><a href="index.html?topic=bauernhof#neu" data-browse-topic="bauernhof"><span class="category-subtopic-icon" aria-hidden="true">🚜</span><span class="category-subtopic-label">Bauernhof</span></a></li>
             </ul>
           </details>
-          <a class="category-group category-group-vehicles category-direct" href="/fahrzeuge" data-filter="fahrzeuge">
-            <span class="category-group-icon" aria-hidden="true">🚒</span>
-            <span class="category-group-copy"><span class="category-group-name">Fahrzeuge</span><span class="category-group-hint">Autos, Feuerwehr &amp; mehr</span></span>
-            <span class="category-direct-arrow" aria-hidden="true">→</span>
-          </a>
-          <details class="category-group category-group-figures" name="category-browser">
+          <details class="category-group category-group-vehicles" name="category-browser" data-category-ids="fahrzeuge">
+            <summary>
+              <span class="category-group-icon" aria-hidden="true">🚒</span>
+              <span class="category-group-copy"><span class="category-group-name">Fahrzeuge</span><span class="category-group-hint">Autos, Feuerwehr &amp; mehr</span></span>
+              <span class="category-group-chevron" aria-hidden="true"></span>
+            </summary>
+            <ul class="category-subtopics" aria-label="Fahrzeuge">
+              <li><a href="/fahrzeuge" data-filter="fahrzeuge"><span class="category-subtopic-icon" aria-hidden="true">🚒</span><span class="category-subtopic-label">Alle Fahrzeuge</span></a></li>
+            </ul>
+          </details>
+          <details class="category-group category-group-figures" name="category-browser" data-category-ids="figuren">
             <summary>
               <span class="category-group-icon" aria-hidden="true">🦄</span>
               <span class="category-group-copy"><span class="category-group-name">Figuren &amp; Fantasie</span><span class="category-group-hint">Helden, Einhörner &amp; Sport</span></span>
@@ -137,11 +139,9 @@
             </summary>
             <ul class="category-subtopics" aria-label="Figuren &amp; Fantasie">
               <li><a href="/figuren" data-filter="figuren"><span class="category-subtopic-icon" aria-hidden="true">🦸</span><span class="category-subtopic-label">Alle Figuren &amp; Helden</span></a></li>
-              <li><a href="index.html?topic=einhoerner#neu" data-browse-topic="einhoerner"><span class="category-subtopic-icon" aria-hidden="true">🦄</span><span class="category-subtopic-label">Einhörner</span></a></li>
-              <li><a href="index.html?topic=sport#neu" data-browse-topic="sport"><span class="category-subtopic-icon" aria-hidden="true">⚽</span><span class="category-subtopic-label">Sport</span></a></li>
             </ul>
           </details>
-          <details class="category-group category-group-food" name="category-browser">
+          <details class="category-group category-group-food" name="category-browser" data-curated-topic-group>
             <summary>
               <span class="category-group-icon" aria-hidden="true">🍎</span>
               <span class="category-group-copy"><span class="category-group-name">Obst &amp; Gemüse</span><span class="category-group-hint">Äpfel, Karotten &amp; mehr</span></span>
@@ -152,7 +152,7 @@
               <li><a href="index.html?topic=gemuese#neu" data-browse-topic="gemuese"><span class="category-subtopic-icon" aria-hidden="true">🥕</span><span class="category-subtopic-label">Gemüse</span></a></li>
             </ul>
           </details>
-          <details class="category-group category-group-nature" name="category-browser">
+          <details class="category-group category-group-nature" name="category-browser" data-curated-topic-group>
             <summary>
               <span class="category-group-icon" aria-hidden="true">🌻</span>
               <span class="category-group-copy"><span class="category-group-name">Natur &amp; Weltraum</span><span class="category-group-hint">Blumen, Bauernhof &amp; Weltall</span></span>
@@ -165,7 +165,7 @@
               <li><a href="/essen-natur" data-collection-filter="essen-natur"><span class="category-subtopic-icon" aria-hidden="true">🌻</span><span class="category-subtopic-label">Alle Motive aus Essen &amp; Natur</span></a></li>
             </ul>
           </details>
-          <details class="category-group category-group-seasons" name="category-browser">
+          <details class="category-group category-group-seasons" name="category-browser" data-category-ids="jahreszeiten">
             <summary>
               <span class="category-group-icon" aria-hidden="true">🍂</span>
               <span class="category-group-copy"><span class="category-group-name">Feste &amp; Jahreszeiten</span><span class="category-group-hint">Halloween, Weihnachten &amp; mehr</span></span>
@@ -173,21 +173,10 @@
             </summary>
             <ul class="category-subtopics" aria-label="Feste &amp; Jahreszeiten">
               <li><a href="/jahreszeiten" data-filter="jahreszeiten"><span class="category-subtopic-icon" aria-hidden="true">🍂</span><span class="category-subtopic-label">Alle Feste &amp; Jahreszeiten</span></a></li>
-              <li><a href="index.html?topic=halloween#neu" data-browse-topic="halloween"><span class="category-subtopic-icon" aria-hidden="true">🎃</span><span class="category-subtopic-label">Halloween</span></a></li>
-              <li><a href="index.html?topic=weihnachten#neu" data-browse-topic="weihnachten"><span class="category-subtopic-icon" aria-hidden="true">🎄</span><span class="category-subtopic-label">Weihnachten</span></a></li>
-              <li><a href="index.html?topic=ostern#neu" data-browse-topic="ostern"><span class="category-subtopic-icon" aria-hidden="true">🐰</span><span class="category-subtopic-label">Ostern</span></a></li>
-              <li><a href="index.html?topic=fasching#neu" data-browse-topic="fasching"><span class="category-subtopic-icon" aria-hidden="true">🎭</span><span class="category-subtopic-label">Fasching</span></a></li>
-              <li><a href="index.html?topic=muttertag#neu" data-browse-topic="muttertag"><span class="category-subtopic-icon" aria-hidden="true">💐</span><span class="category-subtopic-label">Muttertag</span></a></li>
-              <li><a href="index.html?topic=sankt-martin#neu" data-browse-topic="sankt-martin"><span class="category-subtopic-icon" aria-hidden="true">🏮</span><span class="category-subtopic-label">Sankt Martin</span></a></li>
-              <li><a href="index.html?topic=advent#neu" data-browse-topic="advent"><span class="category-subtopic-icon" aria-hidden="true">🕯️</span><span class="category-subtopic-label">Advent</span></a></li>
-              <li><a href="index.html?topic=nikolaus#neu" data-browse-topic="nikolaus"><span class="category-subtopic-icon" aria-hidden="true">👢</span><span class="category-subtopic-label">Nikolaus</span></a></li>
-              <li><a href="index.html?topic=fruehling#neu" data-browse-topic="fruehling"><span class="category-subtopic-icon" aria-hidden="true">🌷</span><span class="category-subtopic-label">Frühling</span></a></li>
-              <li><a href="index.html?topic=sommer#neu" data-browse-topic="sommer"><span class="category-subtopic-icon" aria-hidden="true">☀️</span><span class="category-subtopic-label">Sommer</span></a></li>
-              <li><a href="/herbst"><span class="category-subtopic-icon" aria-hidden="true">🍂</span><span class="category-subtopic-label">Herbst</span></a></li>
-              <li><a href="index.html?topic=winter#neu" data-browse-topic="winter"><span class="category-subtopic-icon" aria-hidden="true">❄️</span><span class="category-subtopic-label">Winter</span></a></li>
+              <li data-static-topic="herbst"><a href="/herbst"><span class="category-subtopic-icon" aria-hidden="true">🍂</span><span class="category-subtopic-label">Herbst</span></a></li>
             </ul>
           </details>
-          <details class="category-group category-group-learning" name="category-browser">
+          <details class="category-group category-group-learning" name="category-browser" data-category-ids="alphabet lernen">
             <summary>
               <span class="category-group-icon" aria-hidden="true">✏️</span>
               <span class="category-group-copy"><span class="category-group-name">Lernen &amp; Basteln</span><span class="category-group-hint">Alphabet, Lernblätter &amp; Übungen</span></span>
@@ -388,8 +377,9 @@
   <script src="js/goatcounter-simple.js?v=172b875f6a600999" data-goatcounter-simple="consent" defer></script>
   <script src="js/stats.js?v=a4c560562b9267fe" defer></script>
   <script src="js/weekly-feature.js?v=21d8504424c9ae23" defer></script>
+  <script src="js/category-topic-discovery.js?v=f54827a8a5453ca8" defer></script>
   <script src="js/category-mobile-rows.js?v=74704abd6cc521e4" defer></script>
-  <script src="js/app.js?v=4b4b72c504727f90" defer></script>
+  <script src="js/app.js?v=5c437809658a821b" defer></script>
   <script type="module" src="js/print-basket-ui.mjs?v=354571dce0f63b6b"></script>
   <script src="js/social-footer.js?v=fab4cb04a2d17f28" defer></script>
 </body>

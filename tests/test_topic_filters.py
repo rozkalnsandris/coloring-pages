@@ -35,23 +35,27 @@ class TopicFilterTests(unittest.TestCase):
         page = (ROOT / "index.html").read_text(encoding="utf-8")
         self.assertIn("Was möchtest du ausmalen?", page)
         self.assertNotIn("Beliebte Themen", page)
-        self.assertEqual(page.count('name="category-browser"'), 6)
-        self.assertIn('href="/fahrzeuge" data-filter="fahrzeuge"', page)
+        self.assertEqual(page.count('name="category-browser"'), 7)
         groups = dict(re.findall(
             r'<details class="category-group category-group-([^"]+)"[^>]*>(.*?)</details>',
             page, re.S))
+        self.assertIn('href="/fahrzeuge" data-filter="fahrzeuge"', groups["vehicles"])
         self.assertIn('href="/alphabet"', groups["learning"])
         self.assertIn('href="/lernen"', groups["learning"])
         self.assertIn('data-browse-topic="obst"', groups["food"])
         self.assertIn('data-browse-topic="gemuese"', groups["food"])
-        registry = json.loads((ROOT / "metadata/topics.json").read_text(encoding="utf-8"))
-        ids = {topic["id"] for topic in registry["topics"]}
-        links = re.findall(r'href="([^"]+)" data-browse-topic="([^"]+)"', page)
-        self.assertEqual({topic for _, topic in links}, ids - {"herbst"})
+        self.assertIn('data-category-ids="tiere"', page)
+        self.assertIn('data-category-ids="figuren"', page)
+        self.assertIn('data-category-ids="jahreszeiten"', page)
+        self.assertIn('data-category-ids="alphabet lernen"', page)
+        self.assertIn('data-static-topic="herbst"', page)
         self.assertIn('<a href="/herbst"><span class="category-subtopic-icon" aria-hidden="true">🍂</span><span class="category-subtopic-label">Herbst</span></a>', page)
+        links = re.findall(r'href="([^"]+)" data-browse-topic="([^"]+)"', page)
+        self.assertEqual({topic for _, topic in links}, {"obst", "gemuese", "blumen", "bauernhof", "weltraum"})
         for href, topic in links:
             self.assertEqual(parse_qs(urlsplit(href).query), {"topic": [topic]})
             self.assertEqual(urlsplit(href).fragment, "neu")
+        self.assertIn("js/category-topic-discovery.js?v=", page)
         version = hashlib.sha256((ROOT / "css/home-discovery.css").read_bytes()).hexdigest()[:16]
         self.assertIn(f"css/home-discovery.css?v={version}", page)
 

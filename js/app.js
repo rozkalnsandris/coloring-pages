@@ -8,6 +8,7 @@ const surpriseButton = document.querySelector("[data-surprise-button]");
 const surpriseStatus = document.querySelector("[data-surprise-status]");
 const headerSearch = document.querySelector("[data-header-search]");
 const gallery = document.querySelector("[data-gallery]");
+const categoryBrowser = document.querySelector(".category-browser");
 const categoryButtons = [...document.querySelectorAll("[data-filter], [data-collection-filter]")];
 const resultCount = document.querySelector("[data-result-count]");
 const totalCount = document.querySelector("[data-total-count]");
@@ -60,6 +61,7 @@ const DIFFICULTY_LABELS = {
 
 let activeCategory = "";
 let activeTopic = "";
+let categoryRegistry = [];
 let topicRegistry = [];
 let catalogEntries = null;
 let visibleLimit = CATALOG_PAGE_SIZE;
@@ -151,10 +153,30 @@ function readCategoryFilterFromUrl() {
   activeCategory = runtimeCategoryIds.has(requested) ? requested : "";
 }
 
+async function readJsonResource(response, unavailableMessage) {
+  if (!response.ok) throw new Error(unavailableMessage);
+  let bytes = null;
+  if (typeof response.clone === "function") {
+    const clone = response.clone();
+    if (typeof clone.arrayBuffer === "function") bytes = await clone.arrayBuffer();
+  }
+  if (typeof response.json !== "function") throw new Error(unavailableMessage);
+  const doc = await response.json();
+  return { doc, bytes };
+}
+
+async function sha256Hex(bytes) {
+  if (!(bytes instanceof ArrayBuffer) || !globalThis.crypto?.subtle) {
+    throw new Error("exact registry bytes unavailable");
+  }
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
+}
+
 async function loadCategoryRegistry() {
   const response = await fetch("/categories.json", { cache: "no-store" });
-  if (!response.ok) throw new Error("managed categories unavailable");
-  const doc = await response.json();
+  const resource = await readJsonResource(response, "managed categories unavailable");
+  const { doc } = resource;
   if (!doc || doc.schema !== "rozkalns.coloring-pages.categories.v2" ||
     !Number.isSafeInteger(doc.revision) || doc.revision < 1 ||
     !Array.isArray(doc.categories) || doc.categories.length < CORE_CATEGORY_IDS.length ||
@@ -181,11 +203,49 @@ async function loadCategoryRegistry() {
     throw new Error("missing structural categories");
   }
   runtimeCategoryIds = ids;
+  categoryRegistry = doc.categories;
   for (const [id, label] of labels) CATEGORY_LABELS[id] = label;
-  const browser = document.querySelector(".category-browser");
-  if (!browser) return;
-  browser.querySelectorAll("[data-runtime-category]").forEach((item) => item.remove());
-  for (const item of doc.categories.slice(CORE_CATEGORY_IDS.length)) {
+  return resource;
+}
+
+function createManagedTopicItem(topic) {
+  const item = document.createElement("li");
+  item.dataset.managedTopic = topic.id;
+  const link = document.createElement("a");
+  link.href = globalThis.AusmalCategoryDiscovery.topicHref(topic.id);
+  if (!globalThis.AusmalCategoryDiscovery.hasDedicatedTopicRoute(topic.id)) {
+    link.dataset.browseTopic = topic.id;
+  }
+  if (topic.icon) {
+    const icon = document.createElement("span");
+    icon.className = "category-subtopic-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = topic.icon;
+    link.append(icon);
+  }
+  const label = document.createElement("span");
+  label.className = "category-subtopic-label";
+  label.textContent = topic.label;
+  link.append(label);
+  item.append(link);
+  return item;
+}
+
+function topicsForCategoryIds(categoryIds, byCategory) {
+  const seen = new Set();
+  const topics = [];
+  for (const categoryId of categoryIds) {
+    for (const topic of byCategory.get(categoryId) || []) {
+      if (seen.has(topic.id)) continue;
+      seen.add(topic.id);
+      topics.push(topic);
+    }
+  }
+  return topics;
+}
+
+function createRuntimeCategory(item, topics) {
+  if (!topics.length) {
     const link = document.createElement("a");
     link.className = "category-group category-group-vehicles category-direct";
     link.href = `index.html?category=${encodeURIComponent(item.id)}#neu`;
@@ -202,9 +262,104 @@ async function loadCategoryRegistry() {
     arrow.setAttribute("aria-hidden", "true");
     arrow.textContent = "→";
     link.append(copy, arrow);
-    browser.append(link);
     categoryButtons.push(link);
+    return link;
   }
+
+  const details = document.createElement("details");
+  details.className = "category-group category-group-vehicles";
+  details.name = "category-browser";
+  details.dataset.runtimeCategory = item.id;
+  details.dataset.categoryIds = item.id;
+
+  const summary = document.createElement("summary");
+  const icon = document.createElement("span");
+  icon.className = "category-group-icon";
+  icon.setAttribute("aria-hidden", "true");
+  icon.textContent = "🎨";
+  const copy = document.createElement("span");
+  copy.className = "category-group-copy";
+  const title = document.createElement("span");
+  title.className = "category-group-name";
+  title.textContent = item.label;
+  copy.append(title);
+  const chevron = document.createElement("span");
+  chevron.className = "category-group-chevron";
+  chevron.setAttribute("aria-hidden", "true");
+  summary.append(icon, copy, chevron);
+
+  const list = document.createElement("ul");
+  list.className = "category-subtopics";
+  list.setAttribute("aria-label", item.label);
+  const broad = document.createElement("li");
+  const broadLink = document.createElement("a");
+  broadLink.href = `index.html?category=${encodeURIComponent(item.id)}#neu`;
+  broadLink.dataset.filter = item.id;
+  const broadLabel = document.createElement("span");
+  broadLabel.className = "category-subtopic-label";
+  broadLabel.textContent = `Alle ${item.label}`;
+  broadLink.append(broadLabel);
+  broad.append(broadLink);
+  list.append(broad, ...topics.map(createManagedTopicItem));
+  details.append(summary, list);
+  categoryButtons.push(broadLink);
+  return details;
+}
+
+function categoryTopicList(group) {
+  const direct = group.querySelector(":scope > .category-subtopics");
+  if (direct) return direct;
+  const panelId = group.querySelector(":scope > summary")?.getAttribute("aria-controls");
+  const panel = panelId ? document.getElementById(panelId) : null;
+  return panel?.querySelector(".category-subtopics") || null;
+}
+
+function renderCategoryDiscovery(byCategory = new Map()) {
+  if (!categoryBrowser) return;
+
+  categoryBrowser.querySelectorAll("[data-runtime-category]").forEach((item) => item.remove());
+  for (let i = categoryButtons.length - 1; i >= 0; i -= 1) {
+    if (!categoryButtons[i].isConnected) categoryButtons.splice(i, 1);
+  }
+
+  categoryBrowser.querySelectorAll("[data-category-ids]").forEach((group) => {
+    const list = categoryTopicList(group);
+    if (!list) return;
+    list.querySelectorAll("[data-managed-topic]").forEach((item) => item.remove());
+    const staticTopicIds = new Set(
+      [...list.querySelectorAll("[data-static-topic]")].map((item) => item.dataset.staticTopic)
+    );
+    const categoryIds = (group.dataset.categoryIds || "").split(/\s+/).filter(Boolean);
+    const topics = topicsForCategoryIds(categoryIds, byCategory)
+      .filter((topic) => !staticTopicIds.has(topic.id));
+    list.append(...topics.map(createManagedTopicItem));
+  });
+
+  for (const item of categoryRegistry.slice(CORE_CATEGORY_IDS.length)) {
+    const topics = topicsForCategoryIds([item.id], byCategory);
+    categoryBrowser.append(createRuntimeCategory(item, topics));
+  }
+}
+
+async function loadCategoryTopicProjection(categoryResource, topicResource) {
+  if (!globalThis.AusmalCategoryDiscovery || !topicResource) {
+    throw new Error("category-topic discovery unavailable");
+  }
+  const [categorySha256, topicSha256] = await Promise.all([
+    sha256Hex(categoryResource.bytes),
+    sha256Hex(topicResource.bytes),
+  ]);
+  const response = await fetch("/category-topics.json", { cache: "no-store" });
+  if (!response.ok) throw new Error("category-topic projection unavailable");
+  const doc = await response.json();
+  return globalThis.AusmalCategoryDiscovery.validateProjection(doc, {
+    categoryRevision: categoryResource.doc.revision,
+    topicRevision: topicResource.doc.revision,
+    categorySha256,
+    topicSha256,
+    categories: categoryResource.doc.categories,
+    topics: topicResource.doc.topics,
+  });
 }
 
 function normalizeTopicText(value) {
@@ -312,22 +467,23 @@ function renderTopicExplorer() {
 }
 
 // Native links still work before hydration and for new-tab/modified clicks.
-document.querySelectorAll("[data-browse-topic]").forEach((link) => {
-  link.addEventListener("click", (event) => {
-    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    const id = link.dataset.browseTopic;
-    if (!Array.isArray(catalogEntries) || !topicRegistry.some((topic) => topic.id === id)) return;
-    event.preventDefault();
-    activeCategory = "";
-    selectTopic(id, { toggle: false });
-  });
+// Delegation also covers managed Topic links added after taxonomy hydration.
+categoryBrowser?.addEventListener("click", (event) => {
+  const link = event.target.closest("[data-browse-topic]");
+  if (!link || !categoryBrowser.contains(link)) return;
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  const id = link.dataset.browseTopic;
+  if (!Array.isArray(catalogEntries) || !topicRegistry.some((topic) => topic.id === id)) return;
+  event.preventDefault();
+  activeCategory = "";
+  selectTopic(id, { toggle: false });
 });
 
 async function loadTopicRegistry() {
   try {
     const response = await fetch("/topics.json", { cache: "no-store" });
-    if (!response.ok) throw new Error("topic registry unavailable");
-    const payload = await response.json();
+    const resource = await readJsonResource(response, "topic registry unavailable");
+    const payload = resource.doc;
     if (payload?.schema !== "rozkalns.coloring-pages.topics.v2" ||
         !Number.isInteger(payload.revision) || payload.revision < 1 ||
         !Array.isArray(payload.topics) || payload.topics.length < 1 || payload.topics.length > 128) {
@@ -346,9 +502,11 @@ async function loadTopicRegistry() {
       ids.add(topic.id);
     }
     topicRegistry = payload.topics;
+    return resource;
   } catch {
     topicRegistry = [];
     if (topicExplorer) topicExplorer.hidden = true;
+    return null;
   }
 }
 
@@ -627,10 +785,19 @@ async function hydrateCatalog() {
   if (!gallery) return;
 
   try {
-    await loadCategoryRegistry();
+    const categoryResource = await loadCategoryRegistry();
     readCategoryFilterFromUrl();
-    await loadTopicRegistry();
+    const topicResource = await loadTopicRegistry();
     readTopicFilterFromUrl();
+    let categoryTopics = new Map();
+    if (topicResource) {
+      try {
+        categoryTopics = await loadCategoryTopicProjection(categoryResource, topicResource);
+      } catch {
+        // Invalid/missing relationships must not block gallery → detail → print.
+      }
+    }
+    renderCategoryDiscovery(categoryTopics);
     const response = await fetch("catalog.json", { cache: "no-store" });
     if (!response.ok) throw new Error("catalog unavailable");
 
