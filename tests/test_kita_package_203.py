@@ -113,6 +113,13 @@ console.log(JSON.stringify({
         self.assertFalse(extra["complete"])
         self.assertNotEqual(extra["sheetCount"], 5)
 
+    def test_mjs_modules_use_javascript_mime_and_no_cache(self):
+        nginx = (ROOT / "deploy/nginx.conf").read_text(encoding="utf-8")
+        module_route = nginx.split("location ~* \\.mjs$ {", 1)[1].split("}", 1)[0]
+        self.assertIn("default_type application/javascript;", module_route)
+        self.assertIn('Cache-Control "no-cache"', module_route)
+        self.assertIn("try_files $uri =404;", module_route)
+
     def test_package_reuses_shared_basket_and_keeps_combined_print_gate_closed(self):
         detail = (ROOT / "kita-herbst.html").read_text(encoding="utf-8")
         package_js = (ROOT / "js" / "kita-package.mjs").read_text(encoding="utf-8")
