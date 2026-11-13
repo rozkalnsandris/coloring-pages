@@ -44,16 +44,12 @@
   const links = platforms
     .map((platform) => ({ platform, url: validatedProfileUrl(profiles[platform.key], platform) }))
     .filter((entry) => entry.url);
-  if (!links.length) return;
+  const root = document.querySelector("[data-social-footer]");
+  if (!root || !links.length) return;
 
-  const footer = document.createElement("footer");
-  footer.className = "site-footer";
-  const inner = document.createElement("div");
-  inner.className = "container site-footer-inner";
-  const heading = document.createElement("h2");
+  const heading = document.createElement("span");
   heading.className = "site-footer-title";
   heading.textContent = "Folge uns";
-
   const nav = document.createElement("nav");
   nav.className = "site-footer-links";
   nav.setAttribute("aria-label", "Ausmalwiese in sozialen Netzwerken");
@@ -64,11 +60,8 @@
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     link.setAttribute("aria-label", "Ausmalwiese auf " + platform.label + " öffnen (neuer Tab)");
-    link.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-      platform.icon + '</svg><span>' + platform.label + '</span>';
+    link.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + platform.icon + '</svg><span>' + platform.label + '</span>';
     nav.append(link);
   }
-  inner.append(heading, nav);
-  footer.append(inner);
-  document.body.append(footer);
+  root.replaceChildren(heading, nav);
 })();

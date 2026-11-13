@@ -1,4 +1,4 @@
-"""Regression coverage for privacy-friendly, shared social follow footer."""
+"""Regression coverage for privacy-friendly social links in the shared information footer."""
 import hashlib
 import shutil
 import subprocess
@@ -35,7 +35,9 @@ class SocialFollowFooterTests(unittest.TestCase):
         self.assertIn('facebook: "https://www.facebook.com/share/1F6tVwJ7QK/"', js)
         self.assertIn('url.href === "https://www.facebook.com/share/1F6tVwJ7QK/"', js)
         self.assertIn('platform.key === "facebook"', js)
-        self.assertIn("if (!links.length) return;", js)
+        self.assertIn('document.querySelector("[data-social-footer]")', js)
+        self.assertIn("if (!root || !links.length) return;", js)
+        self.assertNotIn('document.createElement("footer")', js)
         self.assertIn('url.protocol !== "https:"', js)
         self.assertIn("platform.hosts.includes(url.hostname)", js)
         self.assertIn('link.rel = "noopener noreferrer"', js)
@@ -45,12 +47,11 @@ class SocialFollowFooterTests(unittest.TestCase):
         self.assertNotIn("facebook.com/sharer.php", js)
         self.assertNotIn("connect.facebook.net", js)
 
-
     def test_browser_logic_accepts_only_exact_owner_share_url(self):
         node = shutil.which("node")
         if not node:
             self.skipTest("Node.js unavailable")
-        harness = r'''
+        harness = r"""
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
@@ -61,17 +62,21 @@ function render(code) {
     return {
       tag, children: [], attrs: {},
       append(...items) { this.children.push(...items); },
+      replaceChildren(...items) { this.children = items; },
       setAttribute(key, val) { this.attrs[key] = val; }
     };
   }
-  const body = element('body');
-  vm.runInNewContext(code, { document: { body, createElement: element }, URL });
-  assert.equal(body.children.length, 1);
-  const footer = body.children[0];
-  assert.equal(footer.tag, 'footer');
-  const inner = footer.children[0];
-  assert.equal(inner.children[0].textContent, 'Folge uns');
-  return inner.children[1].children.map(a => ({
+  const root = element('div');
+  const document = {
+    querySelector(selector) {
+      return selector === '[data-social-footer]' ? root : null;
+    },
+    createElement: element
+  };
+  vm.runInNewContext(code, { document, URL });
+  assert.equal(root.children.length, 2);
+  assert.equal(root.children[0].textContent, 'Folge uns');
+  return root.children[1].children.map(a => ({
     href: a.href, target: a.target, rel: a.rel, label: a.attrs['aria-label']
   }));
 }
@@ -99,7 +104,7 @@ for (const candidate of [
     'https://www.instagram.com/ausmalwiese/'
   ]);
 }
-'''
+"""
         result = subprocess.run(
             [node, "-e", harness, str(ROOT / "js/social-footer.js")],
             cwd=ROOT, text=True, capture_output=True, timeout=10,
@@ -108,7 +113,7 @@ for (const candidate of [
 
     def test_accessible_responsive_and_print_safe(self):
         css = (ROOT / "css/social-footer.css").read_text(encoding="utf-8")
-        self.assertIn("min-height: 44px;", css)
+        self.assertRegex(css, r"min-height:\s*44px;")
         self.assertIn(".site-footer-link:focus-visible", css)
         self.assertIn("@media print", css)
         js = (ROOT / "js/social-footer.js").read_text(encoding="utf-8")

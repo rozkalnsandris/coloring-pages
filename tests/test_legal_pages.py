@@ -33,7 +33,9 @@ class LegalPages256Tests(unittest.TestCase):
             "andris@rozkalns.net",
         ):
             self.assertIn(expected, text)
-        self.assertNotIn("<script", text)
+        self.assertIn('src="js/social-footer.js?v=', text)
+        self.assertIn('src="js/public-nav.js?v=', text)
+        self.assertNotIn("goatcounter-simple.js", text)
 
     def test_existing_legal_footers_link_both_pages(self):
         for name in LEGAL_FOOTER_PAGES:

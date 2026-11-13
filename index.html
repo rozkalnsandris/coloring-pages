@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="css/metadata-filters.css?v=9ae6a022f03ed049">
   <link rel="stylesheet" href="css/mobile-first.css?v=mobile-hero-size-186">
   <link rel="stylesheet" href="css/home-discovery.css?v=0ad2106b69237957">
-  <link rel="stylesheet" href="css/social-footer.css?v=092268d2fc5c2826">
+  <link rel="stylesheet" href="css/social-footer.css?v=3670ffdbfe96bb37">
   <link rel="stylesheet" href="css/print-basket.css?v=ed45ea96c60c9e30">
 </head>
 <body>
@@ -25,40 +25,28 @@
 
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="index.html" aria-label="Ausmalwiese Startseite">
-        <span class="brand-paw" aria-hidden="true">
-          <i></i><i></i><i></i><i></i><i></i>
-        </span>
-        <span class="brand-word">
-          <span>Ausmal</span>
-          <span class="brand-wiese"><b>w</b><b>i</b><b>e</b><b>s</b><b>e</b></span>
-        </span>
+      <a class="brand" href="/" aria-label="Ausmalwiese Startseite">
+        <span class="brand-paw" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="brand-word"><span>Ausmal</span><span class="brand-wiese"><b>w</b><b>i</b><b>e</b><b>s</b><b>e</b></span></span>
       </a>
-
       <nav class="desktop-nav" aria-label="Hauptnavigation">
-        <a href="#hero">Startseite</a>
+        <a href="#hero" class="is-active">Malvorlagen</a>
         <a href="#kategorien">Kategorien</a>
-        <a href="#ueber-uns">Über uns</a>
-              <a href="kalender.html">Kalender</a>
+        <a href="/kalender.html">Kalender</a>
+        <a href="/kita">Kita &amp; Vorschule</a>
       </nav>
-
       <div class="header-actions">
-        <a class="header-support" href="index.html#unterstuetzen" aria-label="Projekt unterstützen – Informationen">
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>
-          <span class="header-support-label">Unterstützen</span>
-        </a>
-        <button class="header-search" type="button" aria-label="Suche öffnen" data-header-search><span aria-hidden="true"></span></button>
+        <a class="header-search" href="#hero" aria-label="Zur Suche"><span aria-hidden="true"></span></a>
         <button class="menu-button" type="button" aria-expanded="false" aria-controls="mobile-nav">
           <span class="sr-only">Menü öffnen</span><span class="menu-lines" aria-hidden="true"></span>
         </button>
       </div>
     </div>
-
     <nav id="mobile-nav" class="mobile-nav container" aria-label="Mobile Navigation" hidden>
-      <a href="#hero">Startseite</a>
-      <a href="#kategorien">Kategorien</a>
-      <a href="#ueber-uns">Über uns</a>
-          <a href="kalender.html">Kalender</a>
+      <a href="#hero" class="is-active">Malvorlagen</a>
+        <a href="#kategorien">Kategorien</a>
+        <a href="/kalender.html">Kalender</a>
+        <a href="/kita">Kita &amp; Vorschule</a>
     </nav>
   </header>
 
@@ -357,11 +345,15 @@
     </section>
   </main>
 
-  <footer class="legal-footer" aria-label="Rechtliche Informationen">
+  <footer class="legal-footer" aria-label="Ausmalwiese Informationen">
     <div class="container legal-footer-inner">
+      <a href="/#ueber-uns">Über uns</a>
+      <a href="/#unterstuetzen">Website weiterempfehlen</a>
       <a href="/impressum.html">Impressum</a>
       <a href="/datenschutz.html">Datenschutz</a>
+      <a href="mailto:andris@rozkalns.net">Kontakt</a>
       <button type="button" data-analytics-settings hidden>Analyse-Einstellungen</button>
+      <div class="site-footer-social" data-social-footer></div>
     </div>
   </footer>
 
@@ -388,6 +380,6 @@
   <script src="js/app.js?v=7f66a7672699703e" defer></script>
   <script src="js/filter-summary.js?v=e64439eea4a886d5" defer></script>
   <script type="module" src="js/print-basket-ui.mjs?v=354571dce0f63b6b"></script>
-  <script src="js/social-footer.js?v=fab4cb04a2d17f28" defer></script>
+  <script src="js/social-footer.js?v=8d06bab0d7298cda" defer></script>
 </body>
 </html>

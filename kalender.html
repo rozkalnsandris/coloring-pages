@@ -11,31 +11,34 @@
   <link rel="stylesheet" href="css/app.css?v=744d9f1eb74c6062">
   <link rel="stylesheet" href="css/calendar.css?v=calendar-196-v2">
   <script src="js/calendar.js?v=calendar-196-v2" defer></script>
-  <link rel="stylesheet" href="css/social-footer.css?v=092268d2fc5c2826">
+  <link rel="stylesheet" href="css/social-footer.css?v=3670ffdbfe96bb37">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="index.html" aria-label="Ausmalwiese Startseite">
-        <span class="brand-paw" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <a class="brand" href="/" aria-label="Ausmalwiese Startseite">
+        <span class="brand-paw" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
         <span class="brand-word"><span>Ausmal</span><span class="brand-wiese"><b>w</b><b>i</b><b>e</b><b>s</b><b>e</b></span></span>
       </a>
       <nav class="desktop-nav" aria-label="Hauptnavigation">
-        <a href="index.html">Startseite</a>
-        <a href="index.html#kategorien">Kategorien</a>
-        <a href="kalender.html" aria-current="page" class="is-active">Kalender</a>
-        <a href="index.html#ueber-uns">Über uns</a>
+        <a href="/">Malvorlagen</a>
+        <a href="/#kategorien">Kategorien</a>
+        <a href="/kalender.html" class="is-active" aria-current="page">Kalender</a>
+        <a href="/kita">Kita &amp; Vorschule</a>
       </nav>
       <div class="header-actions">
-        <a class="header-search" href="index.html#hero" aria-label="Zur Suche"><span aria-hidden="true"></span></a>
-        <button class="menu-button" type="button" aria-expanded="false" aria-controls="mobile-nav"><span class="sr-only">Menü öffnen</span><span class="menu-lines" aria-hidden="true"></span></button>
+        <a class="header-search" href="/#hero" aria-label="Zur Suche"><span aria-hidden="true"></span></a>
+        <button class="menu-button" type="button" aria-expanded="false" aria-controls="mobile-nav">
+          <span class="sr-only">Menü öffnen</span><span class="menu-lines" aria-hidden="true"></span>
+        </button>
       </div>
     </div>
     <nav id="mobile-nav" class="mobile-nav container" aria-label="Mobile Navigation" hidden>
-      <a href="index.html">Startseite</a><a href="index.html#kategorien">Kategorien</a>
-      <a href="kalender.html" aria-current="page" class="is-active">Kalender</a>
-      <a href="index.html#ueber-uns">Über uns</a>
+      <a href="/">Malvorlagen</a>
+        <a href="/#kategorien">Kategorien</a>
+        <a href="/kalender.html" class="is-active" aria-current="page">Kalender</a>
+        <a href="/kita">Kita &amp; Vorschule</a>
     </nav>
   </header>
 
@@ -255,6 +258,18 @@
       <noscript><p>Für die Vorschauen ist JavaScript nötig. <a href="index.html#neu">Alle veröffentlichten Malvorlagen öffnen</a>.</p></noscript>
     </div>
   </main>
-  <script src="js/social-footer.js?v=fab4cb04a2d17f28" defer></script>
+
+  <footer class="legal-footer" aria-label="Ausmalwiese Informationen">
+    <div class="container legal-footer-inner">
+      <a href="/#ueber-uns">Über uns</a>
+      <a href="/#unterstuetzen">Website weiterempfehlen</a>
+      <a href="/impressum.html">Impressum</a>
+      <a href="/datenschutz.html">Datenschutz</a>
+      <a href="mailto:andris@rozkalns.net">Kontakt</a>
+      <button type="button" data-analytics-settings hidden>Analyse-Einstellungen</button>
+      <div class="site-footer-social" data-social-footer></div>
+    </div>
+  </footer>
+  <script src="js/social-footer.js?v=8d06bab0d7298cda" defer></script>
 </body>
 </html>
