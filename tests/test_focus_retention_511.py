@@ -13,7 +13,7 @@ class FocusRetention511Tests(unittest.TestCase):
         match = re.search(
             r'button\.addEventListener\("click", \(\) => \{\n'
             r'\s+activeCategoryTopic = id;(?P<body>.*?)'
-            r'\s+renderCategoryEntries\(categoryEntries\);\n'
+            r'\s+renderCategoryEntries\(categoryEntries, \{ resetLimit: true \}\);\n'
             r'\s+\}\);',
             source,
             re.S,
