@@ -20,7 +20,7 @@ class CompactCategoryDiscovery186Tests(unittest.TestCase):
         self.assertIn('data-filter="tiere"', self.home)
         self.assertIn('data-filter="fahrzeuge"', self.home)
         self.assertIn('data-category-ids="jahreszeiten"', self.home)
-        self.assertIn('js/category-topic-discovery.js?v=507a5e1d4e214a07', self.home)
+        self.assertIn('js/category-topic-discovery.js?v=f54827a8a5453ca8', self.home)
         self.assertIn('href="#neu" data-reset-filters', self.home)
 
     def test_mobile_two_column_with_full_width_open_disclosure(self):
