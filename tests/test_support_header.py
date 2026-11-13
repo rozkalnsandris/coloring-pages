@@ -11,16 +11,16 @@ class SupportHeaderTests(unittest.TestCase):
         for name in ("index.html", "detail.html"):
             html = (ROOT / name).read_text(encoding="utf-8")
             group = html.split('class="header-actions"', 1)[1].split("</div>", 1)[0]
-            support = group.index('class="header-support"')
             search = group.index('class="header-search"')
             menu = group.index('class="menu-button"')
-            self.assertLess(support, search)
             self.assertLess(search, menu)
-            self.assertIn('href="index.html#unterstuetzen"', group[support:search])
-            self.assertIn('aria-label="Projekt unterstützen – Informationen"', group[support:search])
-            self.assertNotIn("disabled", group[support:search])
+            self.assertNotIn('class="header-support"', group)
+
+            footer = html.split('<footer class="legal-footer"', 1)[1].split("</footer>", 1)[0]
+            self.assertIn("Website weiterempfehlen", footer)
+            self.assertIn('href="/#unterstuetzen"', footer)
+
         css = (ROOT / "css/app.css").read_text(encoding="utf-8")
-        self.assertIn(".header-support-label { display: none; }", css)
         self.assertIn(".header-search { display: none; }", css)
 
     def test_no_payment_surface(self):
