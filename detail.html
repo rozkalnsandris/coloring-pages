@@ -11,7 +11,8 @@
   <link rel="preload" href="assets/fonts/nunito-latin-vf-ba344451eab25b21.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/fonts.css?v=e8c09f4e07f0c140">
   <link rel="stylesheet" href="css/app.css?v=744d9f1eb74c6062">
-  <link rel="stylesheet" href="css/detail-related.css?v=957767d76b72bf16">
+  <link rel="stylesheet" href="css/detail-related.css?v=6e2e5368943b3802">
+  <link rel="stylesheet" href="css/detail-hierarchy.css?v=60f9804c1a409f52">
   <link rel="stylesheet" href="css/report.css?v=c4bbcbf15f18a836">
   <link rel="stylesheet" href="css/social-footer.css?v=3670ffdbfe96bb37">
   <link rel="stylesheet" href="css/print-basket.css?v=ed45ea96c60c9e30">
@@ -59,6 +60,21 @@
       </nav>
 
       <section class="detail-grid" aria-labelledby="detail-title">
+        <div class="detail-copy detail-summary">
+<h1 id="detail-title" data-detail-title>Malvorlage</h1>
+          <div class="detail-badges" hidden>
+            <span class="age" data-detail-age>3–6 Jahre</span>
+            <span class="easy" data-detail-difficulty>Einfach</span>
+            <span class="pages-badge" data-detail-pages hidden>2 Seiten</span>
+            <span class="rescue" data-detail-category>🐾 Rettungshunde</span>
+            <div class="detail-topic-badges" data-detail-topic-badges hidden></div>
+            <span class="character" data-detail-character>🐶 Ben</span>
+          </div>
+          <p data-detail-description>
+            Wähle eine Malvorlage aus der Übersicht, um sie anzusehen, herunterzuladen und zu drucken.
+          </p>
+        </div>
+
         <div class="detail-media">
           <div class="detail-preview" aria-label="Malvorlagen-Vorschau">
             <div class="detail-art-placeholder" data-detail-placeholder>
@@ -72,21 +88,8 @@
           <div class="detail-page-switcher" data-detail-page-switcher aria-label="Seiten dieser Aktivität" hidden></div>
         </div>
 
-        <div class="detail-copy">
-          <h1 id="detail-title" data-detail-title>Malvorlage</h1>
-          <div class="detail-badges" hidden>
-            <span class="age" data-detail-age>3–6 Jahre</span>
-            <span class="easy" data-detail-difficulty>Einfach</span>
-            <span class="pages-badge" data-detail-pages hidden>2 Seiten</span>
-            <span class="rescue" data-detail-category>🐾 Rettungshunde</span>
-            <div class="detail-topic-badges" data-detail-topic-badges hidden></div>
-            <span class="character" data-detail-character>🐶 Ben</span>
-          </div>
-          <p data-detail-description>
-            Wähle eine Malvorlage aus der Übersicht, um sie anzusehen, herunterzuladen und zu drucken.
-          </p>
-
-          <div class="detail-actions">
+        <div class="detail-controls">
+<div class="detail-actions">
             <a class="action-primary is-disabled" data-action-print aria-disabled="true"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V3h10v5M7 17H4V9h16v8h-3M7 14h10v7H7zM17 11h1"/></svg><span data-action-print-label>A4 drucken</span><b aria-hidden="true">→</b></a>
             <a class="is-disabled" data-action-png download aria-disabled="true"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg><span data-action-png-label>PNG herunterladen</span><b aria-hidden="true">→</b></a>
             <button class="action-like is-disabled" type="button" data-action-like aria-pressed="false" disabled><svg class="like-heart" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg><span data-action-like-label>Gefällt mir</span><span class="like-count" data-action-like-count>0</span></button>
@@ -124,7 +127,7 @@
           <div class="detail-note">
             <span class="info-dot" aria-hidden="true">i</span>
             <div><strong>Einfach auf A4 drucken</strong>
-            <p>„A4 drucken“ öffnet den Druckdialog. Papierformat A4 auswählen und drucken. Alternativ die hochauflösende PNG-Druckdatei herunterladen.</p></div>
+            <p>„A4 drucken“ öffnet den Druckdialog. Alternativ kannst du die hochauflösende PNG-Druckdatei herunterladen.</p></div>
           </div>
         </div>
       </section>

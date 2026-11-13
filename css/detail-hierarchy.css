@@ -1,0 +1,60 @@
+/* Detail-page responsive hierarchy for audit finding 07 (#509). */
+.detail-grid {
+  grid-template-areas:
+    "media summary"
+    "media controls";
+  grid-template-columns: minmax(0, 58fr) minmax(360px, 42fr);
+  column-gap: 38px;
+  row-gap: 0;
+  align-items: start;
+}
+.detail-summary { grid-area: summary; min-width: 0; }
+.detail-media { grid-area: media; min-width: 0; }
+.detail-controls { grid-area: controls; min-width: 0; }
+.detail-controls .detail-actions { margin-top: 27px; }
+
+@media (max-width: 1200px) {
+  .detail-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 24px;
+  }
+}
+
+@media (max-width: 720px) {
+  .detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "summary"
+      "media"
+      "controls";
+    gap: 20px;
+  }
+  .detail-summary { padding-top: 0; }
+  .detail-summary h1 {
+    margin-bottom: 10px;
+    font-size: clamp(34px, 9.5vw, 42px);
+  }
+  .detail-summary .detail-badges { margin-bottom: 12px; }
+  .detail-summary > p {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .detail-preview {
+    min-height: min(72vh, 520px);
+    padding: 12px;
+  }
+  .detail-art-placeholder {
+    min-height: min(64vh, 420px);
+  }
+  .detail-controls .detail-actions { margin-top: 0; }
+  .detail-note {
+    gap: 10px;
+    margin-top: 14px;
+    padding: 14px 16px;
+  }
+  .detail-note strong { font-size: 15px; }
+  .detail-note p {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+}
