@@ -243,6 +243,12 @@
           <p class="metadata-filter-hint">Gefiltert wird nur nach hinterlegten Angaben. Nicht eingestufte Vorlagen erscheinen ohne Filter.</p>
         </div>
 
+        <div class="metadata-filters" aria-label="Filterergebnis und aktive Filter">
+          <p class="metadata-filter-hint result-count" aria-live="polite" data-result-count>6 Malvorlagen</p>
+          <p class="metadata-filter-hint" data-active-filters aria-label="Aktive Filter" hidden></p>
+          <button class="outline-link" type="button" data-reset-all-filters hidden>Alle Filter zurücksetzen</button>
+        </div>
+
         <div id="new-pages-gallery" class="gallery" data-gallery>
           <article class="coloring-card" data-title="Rettungshund in den Bergen" data-category="tiere">
             <a class="preview-placeholder" href="detail.html" aria-label="Rettungshund in den Bergen ansehen" data-fallback-detail>
@@ -289,7 +295,6 @@
           </button>
         </div>
 
-        <p class="result-count sr-only" aria-live="polite" data-result-count>6 Malvorlagen</p>
         <p class="empty-state" data-empty-state role="status" aria-live="polite" hidden>Keine passenden Malvorlagen gefunden.</p>
       </div>
     </section>
@@ -381,6 +386,7 @@
   <script src="js/category-mobile-rows.js?v=74704abd6cc521e4" defer></script>
   <script src="js/search.js?v=37e0375afaecd4e1" defer></script>
   <script src="js/app.js?v=7f66a7672699703e" defer></script>
+  <script src="js/filter-summary.js?v=e64439eea4a886d5" defer></script>
   <script type="module" src="js/print-basket-ui.mjs?v=354571dce0f63b6b"></script>
   <script src="js/social-footer.js?v=fab4cb04a2d17f28" defer></script>
 </body>

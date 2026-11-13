@@ -45,6 +45,30 @@ const DETAIL_DIFFICULTY_LABELS = {
   detailed: "Detailliert",
 };
 
+const DETAIL_CATEGORY_ROUTES = Object.freeze({
+  tiere: "/tiere",
+  fahrzeuge: "/fahrzeuge",
+  alphabet: "/alphabet",
+  lernen: "/lernen",
+  figuren: "/figuren",
+  jahreszeiten: "/jahreszeiten",
+  seasonal: "/jahreszeiten",
+  "essen-natur": "/essen-natur",
+});
+
+function detailCategoryHref(categoryId) {
+  const id = String(categoryId || "").trim().toLocaleLowerCase("de");
+  const campaign = new URLSearchParams(window.location.search).get("campaign");
+  const route = DETAIL_CATEGORY_ROUTES[id];
+  if (route) return campaign === "dortmund-01" ? route + "?campaign=dortmund-01" : route;
+  if (/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)) {
+    const params = new URLSearchParams({ category: id });
+    if (campaign === "dortmund-01") params.set("campaign", campaign);
+    return "index.html?" + params.toString() + "#neu";
+  }
+  return "index.html#kategorien";
+}
+
 function setAction(link, href) {
   if (!link) return;
   if (href) {
@@ -544,7 +568,10 @@ async function loadDetail() {
     if (breadcrumbCurrent) breadcrumbCurrent.textContent = entry.title;
 
     const breadcrumbCategory = document.querySelector("[data-breadcrumb-category]");
-    if (breadcrumbCategory) breadcrumbCategory.textContent = categoryLabel;
+    if (breadcrumbCategory) {
+      breadcrumbCategory.textContent = categoryLabel;
+      breadcrumbCategory.href = detailCategoryHref(entry.category);
+    }
 
     void loadDetailTopicRegistry().then((registry) => renderDetailTopics(entry, registry));
 
