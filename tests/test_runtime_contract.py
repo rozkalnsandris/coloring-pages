@@ -303,12 +303,10 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn('image.loading = "lazy";', app)
         self.assertIn(".gallery-actions", css)
 
-    def test_frontend_loads_runtime_catalog(self):
-        for path in ("js/app.js", "js/detail.js"):
+    def test_frontend_fetches_runtime_catalog(self):
+        for path in ("js/app.js", "js/detail.js", "js/print.js"):
             source = (ROOT / path).read_text(encoding="utf-8")
-            self.assertIn("/js/catalog-resource.mjs", source)
-        print_source = (ROOT / "js/print.js").read_text(encoding="utf-8")
-        self.assertIn('fetch("catalog.json"', print_source)
+            self.assertIn('fetch("catalog.json"', source)
 
 
 if __name__ == "__main__":

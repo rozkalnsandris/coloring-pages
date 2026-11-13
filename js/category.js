@@ -329,6 +329,22 @@ function detailHref(id) {
   return "/detail.html?id=" + encodeURIComponent(String(id));
 }
 
+function loadSharedCatalog() {
+  if (!globalThis.__ausmalCatalogPromise) {
+    globalThis.__ausmalCatalogPromise = (async () => {
+      const response = await fetch("/catalog.json", { cache: "no-store" });
+      if (!response.ok) throw new Error("catalog unavailable");
+      const payload = await response.json();
+      if (!Array.isArray(payload)) throw new Error("invalid catalog");
+      return payload;
+    })().catch((error) => {
+      globalThis.__ausmalCatalogPromise = null;
+      throw error;
+    });
+  }
+  return globalThis.__ausmalCatalogPromise;
+}
+
 function createCard(entry) {
   const card = document.createElement("article");
   card.className = "coloring-card";
@@ -373,7 +389,7 @@ async function loadCategory() {
     ensureCategoryMetadataFilters();
     const [, catalog] = await Promise.all([
       loadTopicRegistry(),
-      import("/js/catalog-resource.mjs").then(({ loadCatalog }) => loadCatalog()),
+      loadSharedCatalog(),
     ]);
 
     const entries = catalog.filter((entry) => {

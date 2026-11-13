@@ -10,47 +10,45 @@ CATEGORY_PAGES = (
     "figuren.html", "jahreszeiten.html", "essen-natur.html",
 )
 APP_PAGES = ("index.html", "detail.html", "kita.html", "kita-herbst.html")
-BASKET_PAGES = ("index.html", "detail.html") + CATEGORY_PAGES
+BASKET_PAGES = ("index.html", "detail.html", "kita-herbst.html") + CATEGORY_PAGES
 
 
 class CatalogResource511Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.shared = (ROOT / "js/catalog-resource.mjs").read_text(encoding="utf-8")
         cls.app = (ROOT / "js/app.js").read_text(encoding="utf-8")
         cls.detail = (ROOT / "js/detail.js").read_text(encoding="utf-8")
         cls.category = (ROOT / "js/category.js").read_text(encoding="utf-8")
         cls.basket = (ROOT / "js/print-basket-ui.mjs").read_text(encoding="utf-8")
 
-    def test_shared_catalogue_loader_memoizes_one_page_request(self):
-        self.assertIn("let catalogPromise = null;", self.shared)
-        self.assertIn("if (!catalogPromise)", self.shared)
-        self.assertEqual(self.shared.count('fetch("/catalog.json"'), 1)
-        self.assertIn('cache: "no-store"', self.shared)
-        self.assertIn('credentials: "same-origin"', self.shared)
-        self.assertIn("catalogPromise = null;", self.shared)
-        self.assertIn("return catalogPromise;", self.shared)
+    def test_startup_consumers_share_one_page_level_promise_key(self):
+        marker = "globalThis.__ausmalCatalogPromise"
+        for source in (self.app, self.detail, self.category, self.basket):
+            self.assertIn(marker, source)
+            self.assertIn('cache: "no-store"', source)
+            self.assertNotIn("catalog-resource.mjs", source)
 
     def test_home_starts_independent_registries_and_catalogue_together(self):
-        self.assertIn('const catalogPromise = import("/js/catalog-resource.mjs")', self.app)
+        self.assertIn("const catalogPromise = loadSharedCatalog();", self.app)
         self.assertIn("const [categoryResource, topicResource, catalog] = await Promise.all([", self.app)
         self.assertIn("loadCategoryRegistry(),", self.app)
         self.assertIn("loadTopicRegistry(),", self.app)
         self.assertIn("catalogPromise,", self.app)
-        self.assertNotIn('fetch("catalog.json"', self.app)
+        self.assertIn('fetch("catalog.json", { cache: "no-store" })', self.app)
 
-    def test_detail_category_and_basket_share_catalogue_loader(self):
-        self.assertIn('import("/js/catalog-resource.mjs")', self.detail)
-        self.assertIn('import("/js/catalog-resource.mjs")', self.category)
-        self.assertIn('from "./catalog-resource.mjs"', self.basket)
-        self.assertIn("catalog = await loadCatalog();", self.basket)
-        self.assertNotIn('fetch("catalog.json"', self.detail)
-        self.assertNotIn('fetch("/catalog.json"', self.category)
+    def test_detail_category_and_basket_keep_isolated_fetch_fallbacks(self):
+        self.assertIn('fetch("catalog.json", { cache: "no-store" })', self.detail)
+        self.assertIn('fetch("/catalog.json", { cache: "no-store" })', self.category)
+        self.assertIn("catalog = await loadSharedCatalog();", self.basket)
+        self.assertIn('credentials: "same-origin"', self.basket)
+
+    def test_failed_startup_request_clears_shared_promise(self):
+        for source in (self.app, self.detail, self.category, self.basket):
+            self.assertIn("globalThis.__ausmalCatalogPromise = null;", source)
 
     def test_export_freshness_gate_stays_direct_and_uncached(self):
-        self.assertEqual(self.basket.count('fetch("/catalog.json", {'), 1)
+        self.assertEqual(self.basket.count('fetch("/catalog.json", {'), 2)
         for marker in (
-            'cache: "no-store"',
             'credentials: "omit"',
             'redirect: "error"',
             'signal: controller.signal',

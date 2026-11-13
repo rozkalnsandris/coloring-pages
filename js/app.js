@@ -185,6 +185,22 @@ async function sha256Hex(bytes) {
   return [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
 }
 
+function loadSharedCatalog() {
+  if (!globalThis.__ausmalCatalogPromise) {
+    globalThis.__ausmalCatalogPromise = (async () => {
+      const response = await fetch("catalog.json", { cache: "no-store" });
+      if (!response.ok) throw new Error("catalog unavailable");
+      const payload = await response.json();
+      if (!Array.isArray(payload)) throw new Error("invalid catalog");
+      return payload;
+    })().catch((error) => {
+      globalThis.__ausmalCatalogPromise = null;
+      throw error;
+    });
+  }
+  return globalThis.__ausmalCatalogPromise;
+}
+
 async function loadCategoryRegistry() {
   const response = await fetch("/categories.json", { cache: "no-store" });
   const resource = await readJsonResource(response, "managed categories unavailable");
@@ -820,8 +836,7 @@ async function hydrateCatalog() {
   if (!gallery) return;
 
   try {
-    const catalogPromise = import("/js/catalog-resource.mjs")
-      .then(({ loadCatalog }) => loadCatalog());
+    const catalogPromise = loadSharedCatalog();
     const [categoryResource, topicResource, catalog] = await Promise.all([
       loadCategoryRegistry(),
       loadTopicRegistry(),

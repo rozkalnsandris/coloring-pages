@@ -39,12 +39,9 @@ The basket ZIP export has a different contract: immediately before staging an ex
 
 ## Bounded change
 
-This lane adds `js/catalog-resource.mjs`, a page-scope Promise that:
-- starts one same-origin `no-store` catalogue request;
-- returns the same Promise to homepage/detail/category/basket startup consumers;
-- clears the memoized Promise after a failure so a later explicit user action is not permanently poisoned.
+This lane uses one page-scope `globalThis.__ausmalCatalogPromise` shared by homepage/detail/category/basket startup consumers. Each consumer keeps its existing direct fetch as an isolated fallback, so dependency-free VM tests and partial page surfaces remain usable without a new bootstrap script. The first consumer starts the same-origin `no-store` request; the others reuse that Promise. A failed request clears the shared slot so a later explicit user action is not permanently poisoned.
 
-Homepage hydration now starts categories, topics and catalogue loading together with `Promise.all`; the category-topic projection still waits for the exact registry bytes/hashes it validates.
+Homepage hydration starts categories, topics and catalogue loading together with `Promise.all`; the category-topic projection still waits for the exact registry bytes/hashes it validates. No extra JavaScript resource is added solely for catalogue sharing.
 
 The basket ZIP freshness fetch remains direct and unchanged.
 

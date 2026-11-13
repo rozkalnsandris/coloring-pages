@@ -1,7 +1,6 @@
 import { addBasketActivity, clearBasket, expandBasketForExport, moveBasketActivity, reconcileBasket, removeBasketActivity } from "./print-basket-selection.mjs";
 import { readStoredBasketIds, restoreStoredBasket, writeStoredBasketIds } from "./print-basket-storage.mjs";
 import { loadLegacyIdAliases } from "./legacy-id-aliases.mjs";
-import { loadCatalog } from "./catalog-resource.mjs";
 import { prepareBasketPngZip } from "./print-basket-zip-fetch.mjs";
 import { stageBasketZipDownloadLink } from "./print-basket-zip-link.mjs";
 import { createBookCoverState, setBookCoverEnabled, updateBookCoverText } from "./book-cover-state.mjs";
@@ -24,6 +23,25 @@ const MAX_SHEETS = 5;
 const CARD_SELECTOR = ".coloring-card";
 const TOGGLE_SELECTOR = "[data-basket-toggle]";
 const CURATED_BASKET_EVENT = "ausmalwiese:print-basket-replace";
+
+function loadSharedCatalog() {
+  if (!globalThis.__ausmalCatalogPromise) {
+    globalThis.__ausmalCatalogPromise = (async () => {
+      const response = await fetch("/catalog.json", {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      if (!response.ok) throw new Error("catalog unavailable");
+      const payload = await response.json();
+      if (!Array.isArray(payload)) throw new Error("invalid catalog");
+      return payload;
+    })().catch((error) => {
+      globalThis.__ausmalCatalogPromise = null;
+      throw error;
+    });
+  }
+  return globalThis.__ausmalCatalogPromise;
+}
 
 let catalog = [];
 let catalogById = new Map();
@@ -952,7 +970,7 @@ async function start() {
   });
 
   try {
-    catalog = await loadCatalog();
+    catalog = await loadSharedCatalog();
     const legacyAliases = await loadLegacyIdAliases();
 
     const counts = new Map();
