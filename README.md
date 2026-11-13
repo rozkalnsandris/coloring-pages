@@ -50,7 +50,7 @@ See [Chat image commands v1](docs/CHAT_IMAGE_COMMANDS_V1.md). `PUBLISH` does not
 
 Multi-page activities use the production-activated [Chat-to-Drive ingestion v2](docs/CHAT_TO_DRIVE_INGESTION_V2.md) path. Historical operator SHA/blob/image identities remain activation evidence only; current `PUBLISH` eligibility is proved fresh before the first Drive mutation by matching the installed host operator to current `RPi5_main` source and matching the operator contract’s pinned importer source to current `coloring-pages/main` `tools/coloring-pages-import`. A mismatch fails closed and requires a separately reviewed `RPi5_main` repin/install. Each activity still requires fresh exact owner `PUBLISH` approval.
 
-Application release is a separate lane. An owner-authorized merge that changes an approved application-image input (Dockerfile, importer, nginx, HTML, CSS, JavaScript or assets) publishes an immutable GHCR image and may proceed through the existing bounded RPi5 SIMPLE-DEPLOY reconciler to LIVE automatically. Content-contract/docs/tests changes do not mint or redeploy an application image.
+Application release is a separate lane. An owner-authorized merge that changes an approved application-image input (Dockerfile, importer, nginx, root-level `*.html`, CSS, JavaScript or assets) publishes an immutable GHCR image and may proceed through the existing bounded RPi5 SIMPLE-DEPLOY reconciler to LIVE automatically. Content-contract/docs/tests changes do not mint or redeploy an application image.
 
 The application keeps the simple V1 journey:
 

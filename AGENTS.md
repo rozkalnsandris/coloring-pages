@@ -17,7 +17,7 @@ This repository owns the Coloring Pages application source, importer contract an
 - Do not mutate `main` directly for normal feature work.
 - A pull request must not be merged without explicit owner authorization for that PR.
 - `MERGE coloring-pages #N` authorizes only that exact merge plus the bounded application auto-LIVE flow below when the merged diff contains an approved application-image input.
-- Approved auto-LIVE inputs are `Dockerfile`, `tools/coloring-pages-import`, `deploy/nginx.conf`, `index.html`, `detail.html`, `print.html`, `css/**`, `js/**` and `assets/**`.
+- Approved auto-LIVE inputs are `Dockerfile`, `tools/coloring-pages-import`, `deploy/nginx.conf`, root-level `*.html`, `css/**`, `js/**` and `assets/**`.
 - The bounded application flow is `merge → immutable GHCR image → :production pointer → RPi5 SIMPLE-DEPLOY reconcile → deploy/redeploy/restart → /health + /ready verification` for target `coloring-pages-public-rpi5`.
 - A fresh `PUBLISH` command approves the exact latest generated draft or ordered draft set and authorizes only one bounded publication chain for that activity: deterministic print-master preparation → read-only validation → freeze activity ID + every prepared page SHA-256/byte size + category/metadata → prebuild/validate manifest → Drive staging → trusted RPi5 verify/import → required public verification. Any preparation/validation failure stops before the first content mutation. It does not authorize Drive archive/delete, overwrite or unrelated LIVE work.
 - Any LIVE/runtime mutation outside these two bounded exceptions requires separate explicit owner authorization.
