@@ -112,7 +112,7 @@
   line-height: 1;
 }
 .category-subtopic-label { min-width: 0; overflow-wrap: anywhere; }
-.category-subtopics a:hover { background: var(--category-tint); text-decoration: underline; text-underline-offset: 3px; }
+.category-subtopics a:hover { background: var(--category-tint); }
 .category-group summary:focus-visible, .category-direct:focus-visible,
 .category-subtopics a:focus-visible, .category-all-link:focus-visible {
   outline: 3px solid var(--blue-deep);

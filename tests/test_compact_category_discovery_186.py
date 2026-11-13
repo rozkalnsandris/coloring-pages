@@ -43,6 +43,15 @@ class CompactCategoryDiscovery186Tests(unittest.TestCase):
         )
         self.assertIn("min-height: 44px;", self.css)
         self.assertIn(
+            ".category-subtopics a:hover { background: var(--category-tint); }",
+            self.css,
+        )
+        self.assertNotIn(
+            ".category-subtopics a:hover { background: var(--category-tint); text-decoration: underline;",
+            self.css,
+        )
+        self.assertIn(".category-subtopics a:focus-visible", self.css)
+        self.assertIn(
             "grid-template-columns: repeat(4, minmax(0, 1fr));",
             self.css,
         )
@@ -79,7 +88,7 @@ class CompactCategoryDiscovery186Tests(unittest.TestCase):
 
     def test_existing_find_preview_print_contract_untouched(self):
         self.assertIn(
-            "css/home-discovery.css?v=3c0db56e326f0fb8", self.home
+            "css/home-discovery.css?v=0ad2106b69237957", self.home
         )
         self.assertIn('data-search-form', self.home)
         self.assertIn('data-gallery', self.home)
