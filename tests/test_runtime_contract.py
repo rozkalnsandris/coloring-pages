@@ -224,7 +224,10 @@ class RuntimeContractTests(unittest.TestCase):
             detail_js,
         )
         self.assertIn("printWindow.print()", detail_js)
-        self.assertIn("window.location.assign(href)", detail_js)
+        self.assertNotIn("window.location.assign(href)", detail_js)
+        self.assertIn("const PRINT_PREP_TIMEOUT_MS=8000;", detail_js)
+        self.assertIn("showFallback(", detail_js)
+        self.assertIn('data-print-fallback', detail_html)
         self.assertIn("function entryPrintPages(entry)", print_js)
         self.assertIn("entry.pages", print_js)
         self.assertNotIn("PRINT_CLEAR_LUMA", print_js)

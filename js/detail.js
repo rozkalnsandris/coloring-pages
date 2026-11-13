@@ -25,6 +25,7 @@ const likeRetryButton=document.querySelector("[data-like-retry]");
 const relatedSection=document.querySelector("[data-related-section]");
 const relatedGrid=document.querySelector("[data-related-grid]");
 const RELATED_LIMIT=6;
+const PRINT_PREP_TIMEOUT_MS=8000;
 let activePrintSession=null;
 let loadedEntryId="";
 
@@ -334,6 +335,33 @@ function renderPageSwitcher(entry, pages) {
   pageSwitcher.hidden = false;
 }
 
+function setPrintBusy(busy) {
+  if (!printLink) return;
+  if (busy) {
+    printLink.setAttribute("aria-disabled", "true");
+    printLink.setAttribute("aria-busy", "true");
+    printLink.classList.add("is-disabled");
+    return;
+  }
+  printLink.removeAttribute("aria-busy");
+  if (printLink.getAttribute("href")) {
+    printLink.removeAttribute("aria-disabled");
+    printLink.classList.remove("is-disabled");
+  }
+}
+
+function setPrintFeedback(message = "", fallbackHref = "") {
+  const printStatus = document.querySelector("[data-print-status]");
+  const fallbackWrap = document.querySelector("[data-print-fallback-wrap]");
+  const fallbackLink = document.querySelector("[data-print-fallback]");
+  if (printStatus) {
+    printStatus.textContent = message;
+    printStatus.hidden = !message;
+  }
+  if (fallbackLink && fallbackHref) fallbackLink.href = fallbackHref;
+  if (fallbackWrap) fallbackWrap.hidden = !fallbackHref;
+}
+
 function startHtmlPrint(href) {
   activePrintSession?.cleanup();
 
@@ -355,19 +383,26 @@ function startHtmlPrint(href) {
 
   let printWindow = null;
   let cleaned = false;
+  let timeoutId = null;
 
-  function cleanup() {
+  setPrintBusy(true);
+  setPrintFeedback("Druckansicht wird vorbereitet …");
+
+  function cleanup({ preserveFeedback = false } = {}) {
     if (cleaned) return;
     cleaned = true;
+    if (timeoutId !== null) window.clearTimeout(timeoutId);
     window.removeEventListener("message", handleMessage);
     printWindow?.removeEventListener("afterprint", cleanup);
     frame.remove();
     if (activePrintSession?.frame === frame) activePrintSession = null;
+    setPrintBusy(false);
+    if (!preserveFeedback) setPrintFeedback();
   }
 
-  function openFallback() {
-    cleanup();
-    window.location.assign(href);
+  function showFallback(message) {
+    cleanup({ preserveFeedback: true });
+    setPrintFeedback(message, href);
   }
 
   function handleMessage(event) {
@@ -375,7 +410,7 @@ function startHtmlPrint(href) {
     if (!event.data || typeof event.data !== "object") return;
 
     if (event.data.type === "coloring-pages-print-error") {
-      openFallback();
+      showFallback("Die Druckansicht konnte nicht vorbereitet werden. Öffne sie direkt oder lade die PNG-Datei herunter.");
       return;
     }
 
@@ -383,20 +418,27 @@ function startHtmlPrint(href) {
 
     printWindow = frame.contentWindow;
     if (!printWindow) {
-      openFallback();
+      showFallback("Die Druckansicht konnte nicht geöffnet werden. Öffne sie direkt oder lade die PNG-Datei herunter.");
       return;
     }
 
+    if (timeoutId !== null) window.clearTimeout(timeoutId);
+    timeoutId = null;
     window.removeEventListener("message", handleMessage);
     printWindow.addEventListener("afterprint", cleanup, { once: true });
+    setPrintFeedback("Druckdialog wird geöffnet …");
 
     try {
       printWindow.focus();
       printWindow.print();
     } catch {
-      openFallback();
+      showFallback("Der Druckdialog konnte nicht geöffnet werden. Öffne die Druckansicht direkt oder lade die PNG-Datei herunter.");
     }
   }
+
+  timeoutId = window.setTimeout(() => {
+    showFallback("Die Druckansicht braucht länger als erwartet. Öffne sie direkt oder lade die PNG-Datei herunter.");
+  }, PRINT_PREP_TIMEOUT_MS);
 
   window.addEventListener("message", handleMessage);
   frame.src = printUrl.toString();
@@ -405,7 +447,11 @@ function startHtmlPrint(href) {
 }
 
 printLink?.addEventListener("click",(event)=>{
-  if (!printLink.href || printLink.getAttribute("aria-disabled")==="true") return;
+  if (!printLink.href) return;
+  if (printLink.getAttribute("aria-disabled")==="true") {
+    event.preventDefault();
+    return;
+  }
   event.preventDefault();
   try {
     if (loadedEntryId) window.ColoringStats?.trackPrint?.(loadedEntryId);
