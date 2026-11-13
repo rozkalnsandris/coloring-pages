@@ -16,15 +16,15 @@ recipe revision. The selected base was verified against public registry metadata
 and its successful ordinary publication run in #1348; it is refreshed during proof
 and immediately before/after publication. Pointer drift refuses the operation.
 
-Baseline refresh for the PR #524 release gate binds the ordinary application to
+Baseline refresh for the PR #541 release gate binds the ordinary application to
 the current published Ausmalwiese application from source
-`408be9751e3c17932ed168b951b50686df722f24`:
-index `sha256:3f05e448a5dc01bfe68b99cae41ea47469d0d7f832be069ffdfb9d250b726a72`
+`047314f5b1c26e64a282914a4aecd5c2659c698e`:
+index `sha256:cd338138e37d9caf10b54c31d0c0a6006d77b8a106f22fe9ce05d15094ad96aa`
 and its exact `linux/arm64` manifest
-`sha256:17e1628eb6b8962f7f7a1ce0d5d418a2634ccce4cd1ecfa3efae16cc03b8852e`.
-GitHub SIMPLE-DEPLOY run `43435527826` on 2026-11-13 built that exact source,
+`sha256:a35cfb06b5b50328b038d131e62c47b0eef41688c2c54e03b09f83bee731e32b`.
+GitHub SIMPLE-DEPLOY run `43470669146` on 2026-11-13 built that exact source,
 published the immutable index, and advanced the ordinary `:production` pointer
-to the same digest. The build was explicitly `linux/arm64`, so the single image
+to the same digest. The build was explicitly `linux/arm64`; the exported image
 manifest above is the accepted ARM64 child. No runtime state was changed by this
 baseline refresh; credentials and mutable registry actions are not part of it.
 
