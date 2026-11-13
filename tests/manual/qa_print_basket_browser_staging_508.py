@@ -135,7 +135,7 @@ def validate_receipt(value, target):
     if value.get("schema") != "ausmalwiese.book-real-media-qa-receipt.v1":
         raise AssertionError(f"unexpected receipt schema: {value.get('schema')}")
     outcome = value.get("outcome") or {}
-    public = value.get("publicEvidence") or {}
+    public = value.get("evidence") or {}
     if outcome.get("result") != "STAGING PASS":
         raise AssertionError(f"unexpected outcome: {outcome}")
     if public.get("totalSheetCount") != target:
