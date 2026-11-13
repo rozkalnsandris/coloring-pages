@@ -8,6 +8,8 @@ const surpriseButton = document.querySelector("[data-surprise-button]");
 const surpriseStatus = document.querySelector("[data-surprise-status]");
 const headerSearch = document.querySelector("[data-header-search]");
 const gallery = document.querySelector("[data-gallery]");
+const discoveryPicksRoot = document.querySelector("[data-discovery-picks]");
+const discoveryPicksGallery = document.querySelector("[data-discovery-picks-gallery]");
 const categoryBrowser = document.querySelector(".category-browser");
 const categoryButtons = [...document.querySelectorAll("[data-filter], [data-collection-filter]")];
 const resultCount = document.querySelector("[data-result-count]");
@@ -601,10 +603,29 @@ function renderCatalog() {
   }
 }
 
+function hasActiveCatalogFilters() {
+  return Boolean(searchInput?.value.trim() || activeCategory || activeTopic ||
+    ageFilter?.value || difficultyFilter?.value);
+}
+
+function updateDiscoveryPicksVisibility() {
+  if (!discoveryPicksRoot) return;
+  discoveryPicksRoot.hidden = !Array.isArray(catalogEntries) ||
+    !discoveryPicksGallery?.childElementCount || hasActiveCatalogFilters();
+}
+
+function renderDiscoveryPicks(entries) {
+  if (!discoveryPicksRoot || !discoveryPicksGallery) return;
+  const picks = globalThis.AusmalDiscoveryPicks?.choose(entries, 4) || [];
+  discoveryPicksGallery.replaceChildren(...picks.map((entry) => createCatalogCard(entry)));
+  updateDiscoveryPicksVisibility();
+}
+
 function applyFilters({ resetLimit = true } = {}) {
   if (Array.isArray(catalogEntries)) {
     if (resetLimit) visibleLimit = CATALOG_PAGE_SIZE;
     renderCatalog();
+    updateDiscoveryPicksVisibility();
     return;
   }
 
@@ -616,6 +637,7 @@ function applyFilters({ resetLimit = true } = {}) {
   });
 
   updateCount(visible);
+  updateDiscoveryPicksVisibility();
   if (loadMoreButton) loadMoreButton.hidden = true;
 }
 
@@ -825,6 +847,7 @@ async function hydrateCatalog() {
     updateCatalogCounts(catalogEntries);
     renderTopicExplorer(catalogEntries);
     renderCatalog();
+    renderDiscoveryPicks(catalogEntries);
     try {
       // Editorial feature is optional; never interrupt browse/preview/print.
       window.AusmalWeekly?.render(catalogEntries);
@@ -842,6 +865,7 @@ async function hydrateCatalog() {
     updateCatalogCounts(catalogEntries);
     renderTopicExplorer(catalogEntries);
     renderCatalog();
+    renderDiscoveryPicks(catalogEntries);
     rankingsUnavailable();
   }
 }
