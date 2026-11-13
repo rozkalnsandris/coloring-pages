@@ -1,0 +1,51 @@
+name: Print Basket Browser Staging QA
+
+# #508 source-only browser-engine evidence. This is STAGING QA only:
+# it does not exercise a native print dialog, physical paper, constrained
+# devices, LIVE deployment identity or release-gate activation.
+on:
+  pull_request:
+    paths:
+      - .github/workflows/print-basket-browser-staging-qa.yml
+      - tests/manual/qa_print_basket_browser_staging_508.py
+      - tools/print-basket-real-media-qa*
+      - js/book-output-*.mjs
+      - js/print-basket-*.mjs
+      - css/print-basket.css
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: print-basket-browser-staging-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-media-staging:
+    name: real-media-staging (${{ matrix.browser }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Install pinned Playwright
+        run: python3 -m pip install --disable-pip-version-check 'playwright==1.64.0'
+
+      - name: Install selected browser and OS dependencies
+        run: python3 -m playwright install --with-deps "${{ matrix.browser }}"
+
+      - name: Run real-media STAGING matrix
+        run: >
+          python3 tests/manual/qa_print_basket_browser_staging_508.py
+          --browser "${{ matrix.browser }}"
+          --origin https://ausmalwiese.de
