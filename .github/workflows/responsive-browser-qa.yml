@@ -10,6 +10,7 @@ on:
       - index.html
       - css/**
       - js/category-mobile-rows.js
+      - js/print-basket-ui.mjs
   workflow_dispatch:
 
 permissions:
