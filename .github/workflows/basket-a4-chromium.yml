@@ -1,6 +1,6 @@
 name: Basket A4 Browser QA
 
-# Source-only, synthetic Chromium PDF and Firefox print-CSS layout for #206.
+# Source-only, synthetic Chromium PDF plus Firefox/WebKit print-CSS layout for #508/#206.
 # No LIVE, physical print guarantee, or visitor print activation.
 on:
   pull_request:
@@ -8,6 +8,7 @@ on:
       - .github/workflows/basket-a4-chromium.yml
       - tests/manual/qa_basket_print_layout.py
       - tests/manual/qa_basket_print_firefox.py
+      - tests/manual/qa_basket_print_webkit.py
       - tests/manual/qa_basket_print_png_pipeline.py
       - js/print-basket-print-canvas.mjs
       - js/print-basket-print-footer.mjs
@@ -64,3 +65,21 @@ jobs:
 
       - name: Check Firefox print media A4 layout without site network
         run: python3 tests/manual/qa_basket_print_firefox.py
+
+  synthetic-webkit-layout:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned Playwright library
+        run: python3 -m pip install --disable-pip-version-check 'playwright==1.64.0'
+
+      - name: Install Playwright-managed WebKit and OS dependencies
+        run: python3 -m playwright install --with-deps webkit
+
+      - name: Check WebKit print media A4 layout without site network
+        run: python3 tests/manual/qa_basket_print_webkit.py
