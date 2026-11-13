@@ -188,10 +188,12 @@ async function populateCalendar() {
     let topics = new Map();
     if (topicsResponse?.ok) {
       const registry = await topicsResponse.json().catch(() => null);
-      if (registry?.schema === "rozkalns.coloring-pages.topics.v1" && Array.isArray(registry.topics)) {
-        topics = new Map(registry.topics
-          .filter((topic) => typeof topic?.id === "string")
-          .map((topic) => [topic.id, topic]));
+      try {
+        await import("/js/topic-registry.js");
+        if (!globalThis.AusmalTopicRegistry) throw new Error("topic registry parser unavailable");
+        topics = globalThis.AusmalTopicRegistry.toMap(registry);
+      } catch {
+        topics = new Map();
       }
     }
 
