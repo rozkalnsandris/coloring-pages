@@ -126,13 +126,17 @@ class TopicFilterTests(unittest.TestCase):
         self.assertIn("if (categoryTopics.size)", source)
         self.assertIn("return [...categoryTopics]", source)
 
-    def test_canonical_category_filters_do_not_create_facet_urls(self):
+    def test_canonical_category_topics_do_not_create_topic_or_category_facet_urls(self):
         source = (ROOT / "js" / "category.js").read_text(encoding="utf-8")
-        self.assertNotIn("URLSearchParams", source)
-        self.assertNotIn("history.pushState", source)
-        self.assertNotIn("location.search", source)
+        self.assertNotIn('searchParams.set("topic"', source)
+        self.assertNotIn("searchParams.set('topic'", source)
+        self.assertNotIn('searchParams.set("category"', source)
+        self.assertNotIn("searchParams.set('category'", source)
         self.assertIn("MAX_CATEGORY_TOPICS = 8", source)
         self.assertIn('category === "jahreszeiten" ? "seasonal" : "evergreen"', source)
+        self.assertIn("syncMetadataFilterUrl", source)
+        self.assertIn("activeAge", source)
+        self.assertIn("activeDifficulty", source)
 
     def test_category_topic_strip_is_mobile_first(self):
         css = (ROOT / "css" / "category.css").read_text(encoding="utf-8")
