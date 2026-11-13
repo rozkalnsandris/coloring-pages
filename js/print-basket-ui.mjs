@@ -24,6 +24,25 @@ const CARD_SELECTOR = ".coloring-card";
 const TOGGLE_SELECTOR = "[data-basket-toggle]";
 const CURATED_BASKET_EVENT = "ausmalwiese:print-basket-replace";
 
+function loadSharedCatalog() {
+  if (!globalThis.__ausmalCatalogPromise) {
+    globalThis.__ausmalCatalogPromise = (async () => {
+      const response = await fetch("/catalog.json", {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      if (!response.ok) throw new Error("catalog unavailable");
+      const payload = await response.json();
+      if (!Array.isArray(payload)) throw new Error("invalid catalog");
+      return payload;
+    })().catch((error) => {
+      globalThis.__ausmalCatalogPromise = null;
+      throw error;
+    });
+  }
+  return globalThis.__ausmalCatalogPromise;
+}
+
 let catalog = [];
 let catalogById = new Map();
 let basket = { ids: [], pages: [], sheetCount: 0, droppedIds: [] };
@@ -951,11 +970,7 @@ async function start() {
   });
 
   try {
-    const response = await fetch("/catalog.json", { cache: "no-store", credentials: "same-origin" });
-    if (!response.ok) throw new Error("catalog unavailable");
-    const payload = await response.json();
-    if (!Array.isArray(payload)) throw new Error("invalid catalog");
-    catalog = payload;
+    catalog = await loadSharedCatalog();
     const legacyAliases = await loadLegacyIdAliases();
 
     const counts = new Map();

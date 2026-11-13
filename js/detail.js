@@ -543,11 +543,19 @@ async function loadDetail() {
   if (!id) return;
 
   try {
-    const response = await fetch("catalog.json", { cache: "no-store" });
-    if (!response.ok) throw new Error("catalog unavailable");
-
-    const catalog = await response.json();
-    if (!Array.isArray(catalog)) throw new Error("invalid catalog");
+    if (!globalThis.__ausmalCatalogPromise) {
+      globalThis.__ausmalCatalogPromise = (async () => {
+        const response = await fetch("catalog.json", { cache: "no-store" });
+        if (!response.ok) throw new Error("catalog unavailable");
+        const payload = await response.json();
+        if (!Array.isArray(payload)) throw new Error("invalid catalog");
+        return payload;
+      })().catch((error) => {
+        globalThis.__ausmalCatalogPromise = null;
+        throw error;
+      });
+    }
+    const catalog = await globalThis.__ausmalCatalogPromise;
 
     const entry = catalog.find((item) => item && item.id === id);
     if (!entry) {
