@@ -1,4 +1,5 @@
 """Consent-gated GoatCounter SIMPLE source tests; no public events."""
+import hashlib
 import pathlib
 import shutil
 import subprocess
@@ -9,14 +10,17 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 class GoatCounterSimple442(unittest.TestCase):
     def test_html_is_consent_gated_and_notice_is_shipped(self):
-        for name in ("index.html", "detail.html"):
+        script_hash = hashlib.sha256(
+            (ROOT / "js/goatcounter-simple.js").read_bytes()
+        ).hexdigest()[:16]
+        for name in ("index.html", "detail.html", "kita.html", "kita-herbst.html"):
             html = (ROOT / name).read_text(encoding="utf-8")
             self.assertIn('data-goatcounter-simple="consent"', html)
             self.assertIn('data-analytics-consent', html)
             self.assertIn('data-analytics-settings', html)
             self.assertIn('href="/datenschutz.html"', html)
             self.assertIn('<meta name="referrer" content="origin">', html)
-            self.assertIn('src="js/goatcounter-simple.js?v=172b875f6a600999"', html)
+            self.assertIn(f'goatcounter-simple.js?v={script_hash}', html)
         notice = (ROOT / "datenschutz.html").read_text(encoding="utf-8")
         self.assertIn("Analyse erlauben", notice)
         self.assertIn("Art. 6 Abs. 1 lit. a DSGVO", notice)
