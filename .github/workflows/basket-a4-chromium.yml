@@ -39,7 +39,7 @@ jobs:
         run: python3 -m playwright install --with-deps chromium
 
       - name: Check synthetic A4 PDF layout without site network
-        run: python3 tests/manual/qa_basket_print_layout.py
+        run: python3 tests/manual/qa_basket_print_layout.py --sequences P L PP LL PL PPPPP LLLLL PLPLP
 
       - name: Check full PNG stream, decode and native A4 PDF staging
         run: python3 tests/manual/qa_basket_print_png_pipeline.py
@@ -64,7 +64,7 @@ jobs:
         run: python3 -m playwright install firefox
 
       - name: Check Firefox print media A4 layout without site network
-        run: python3 tests/manual/qa_basket_print_firefox.py
+        run: python3 tests/manual/qa_basket_print_firefox.py --sequences P L PP LL PL PPPPP LLLLL PLPLP
 
   synthetic-webkit-layout:
     runs-on: ubuntu-24.04
@@ -82,4 +82,4 @@ jobs:
         run: python3 -m playwright install --with-deps webkit
 
       - name: Check WebKit print media A4 layout without site network
-        run: python3 tests/manual/qa_basket_print_webkit.py
+        run: python3 tests/manual/qa_basket_print_webkit.py --sequences P L PP LL PL PPPPP LLLLL PLPLP

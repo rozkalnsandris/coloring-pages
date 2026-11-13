@@ -55,6 +55,7 @@ PATHS = [
 ORIENTATIONS = "PLPLP"
 CASES = [
     ("P", ["flower-2"], [2]),
+    ("PL", ["cut-1"], [0, 1]),
     ("PLP", ["cut-1", "flower-2"], [0, 1, 2]),
     ("PLPLP", ["cut-1", "flower-2", "forest-3"], [0, 1, 2, 3, 4]),
 ]
@@ -320,15 +321,15 @@ def main():
                 for sequence, ids, indices in CASES:
                     case(browser, css, pngs, sequence, ids, indices,
                          viewport_width=viewport_width)
-            case(browser, css, pngs, "PLP", CASES[1][1], CASES[1][2],
+            case(browser, css, pngs, "PL", CASES[1][1], CASES[1][2],
                  missing=PATHS[1], viewport_width=375)
-            case(browser, css, pngs, "PLP", CASES[1][1], CASES[1][2],
+            case(browser, css, pngs, "PL", CASES[1][1], CASES[1][2],
                  corrupt=PATHS[1], viewport_width=375)
-            case(browser, css, pngs, "PLP", CASES[1][1], CASES[1][2],
+            case(browser, css, pngs, "PLP", CASES[2][1], CASES[2][2],
                  drift=True, viewport_width=375)
-            case(browser, css, pngs, "PLP", CASES[1][1], CASES[1][2],
+            case(browser, css, pngs, "PL", CASES[1][1], CASES[1][2],
                  abort_media=True, viewport_width=375)
-            case(browser, css, pngs, "PLP", CASES[1][1], CASES[1][2],
+            case(browser, css, pngs, "PL", CASES[1][1], CASES[1][2],
                  repeat_after_dispose=True, viewport_width=375)
         finally:
             browser.close()

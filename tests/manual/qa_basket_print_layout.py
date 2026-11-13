@@ -7,7 +7,7 @@ Chromium. Example:
     python3 tests/manual/qa_basket_print_layout.py --pdf-dir /tmp/a4-qa
 
 Exercises the actual checked-out print CSS, canvas and text-footer modules
-on synthetic in-memory 1/3/5-sheet native A4 images; verifies PDF paper sizes,
+on synthetic in-memory 1/2/5-sheet portrait, landscape and mixed native A4 images; verifies PDF paper sizes,
 page order, footer text and disposal. No network, production images or print
 button. Cannot substitute for real PNG, Firefox, mobile/physical printer QA.
 """
@@ -141,7 +141,7 @@ def main():
                         help="override the Playwright-managed Chromium executable")
     parser.add_argument("--no-sandbox", action="store_true",
                         help="only for disposable isolated root containers")
-    parser.add_argument("--sequences", nargs="+", default=["P", "PLP", "PLPLP"])
+    parser.add_argument("--sequences", nargs="+", default=["P", "L", "PP", "LL", "PL", "PPPPP", "LLLLL", "PLPLP"])
     parser.add_argument("--pdf-dir", type=Path, help="optional local PDFs for visual inspection")
     args = parser.parse_args()
     for sequence in args.sequences:
