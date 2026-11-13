@@ -64,6 +64,11 @@
   font-size: 17px;
 }
 
+@media (max-width: 900px) {
+  .basket-summary-long { display: none; }
+  .basket-summary-short { display: inline; }
+}
+
 @media (max-width: 720px) {
   .basket-summary {
     min-height: 48px;
