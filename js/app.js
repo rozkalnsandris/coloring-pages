@@ -941,10 +941,16 @@ topicClear?.addEventListener("click", () => {
   document.querySelector("#gallery-title")?.focus({ preventScroll: true });
 });
 
-loadMoreButton?.addEventListener("click", () => {
+loadMoreButton?.addEventListener("click", (event) => {
   if (!Array.isArray(catalogEntries)) return;
+  const previousVisibleCount = gallery?.querySelectorAll(".coloring-card").length || 0;
+  const shouldMoveFocus = event.detail === 0;
   visibleLimit += CATALOG_PAGE_SIZE;
   renderCatalog();
+  if (shouldMoveFocus) {
+    const nextCards = [...(gallery?.querySelectorAll(".coloring-card") || [])];
+    nextCards[previousVisibleCount]?.querySelector("a")?.focus({ preventScroll: true });
+  }
 });
 
 categoryButtons.forEach((button) => {

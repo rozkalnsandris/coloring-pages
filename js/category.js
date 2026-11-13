@@ -259,7 +259,12 @@ function ensureCategoryTopicFilter(entries) {
     button.append(text, badge);
     button.addEventListener("click", () => {
       activeCategoryTopic = id;
-      ensureCategoryTopicFilter(categoryEntries);
+      strip.querySelectorAll("[data-category-topic]").forEach((candidate) => {
+        candidate.setAttribute(
+          "aria-pressed",
+          String(candidate.dataset.categoryTopic === activeCategoryTopic)
+        );
+      });
       renderCategoryEntries(categoryEntries);
     });
     return button;
