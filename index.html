@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="css/metadata-filters.css?v=9ae6a022f03ed049">
   <link rel="stylesheet" href="css/mobile-first.css?v=mobile-hero-size-186">
   <link rel="stylesheet" href="css/home-discovery.css?v=0ad2106b69237957">
+  <link rel="stylesheet" href="css/home-compact.css?v=ea5753a5ce0987ea">
   <link rel="stylesheet" href="css/social-footer.css?v=3670ffdbfe96bb37">
   <link rel="stylesheet" href="css/print-basket.css?v=ed45ea96c60c9e30">
 </head>
@@ -188,18 +189,16 @@
       </div>
     </section>
 
-    <section class="weekly-feature" data-weekly-feature aria-labelledby="weekly-title" hidden>
+    <section class="new-pages discovery-picks" data-discovery-picks aria-labelledby="discovery-picks-title" hidden>
       <div class="container">
-        <h2 class="weekly-heading" id="weekly-title">Ausmalbild der Woche</h2>
-        <article class="weekly-card">
-          <a class="weekly-preview" data-weekly-preview href="detail.html">
-            <img data-weekly-image alt="" loading="lazy" width="210" height="280">
-          </a>
-          <div class="weekly-copy">
-            <h3><a data-weekly-title href="detail.html"></a></h3>
-            <a class="outline-link" data-weekly-action href="detail.html">Malvorlage ansehen <span aria-hidden="true">→</span></a>
+        <div class="section-heading">
+          <div>
+            <h2 id="discovery-picks-title">Bunt gemischt entdecken</h2>
+            <p>Eine kleine Auswahl aus verschiedenen Bereichen.</p>
           </div>
-        </article>
+          <a class="outline-link" href="#neu">Zu den neuesten Malvorlagen <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="gallery" data-discovery-picks-gallery></div>
       </div>
     </section>
 
@@ -284,6 +283,21 @@
         </div>
 
         <p class="empty-state" data-empty-state role="status" aria-live="polite" hidden>Keine passenden Malvorlagen gefunden.</p>
+      </div>
+    </section>
+
+    <section class="weekly-feature" data-weekly-feature aria-labelledby="weekly-title" hidden>
+      <div class="container">
+        <h2 class="weekly-heading" id="weekly-title">Ausmalbild der Woche</h2>
+        <article class="weekly-card">
+          <a class="weekly-preview" data-weekly-preview href="detail.html">
+            <img data-weekly-image alt="" loading="lazy" width="210" height="280">
+          </a>
+          <div class="weekly-copy">
+            <h3><a data-weekly-title href="detail.html"></a></h3>
+            <a class="outline-link" data-weekly-action href="detail.html">Malvorlage ansehen <span aria-hidden="true">→</span></a>
+          </div>
+        </article>
       </div>
     </section>
 
@@ -377,7 +391,8 @@
   <script src="js/category-topic-discovery.js?v=f54827a8a5453ca8" defer></script>
   <script src="js/category-mobile-rows.js?v=74704abd6cc521e4" defer></script>
   <script src="js/search.js?v=37e0375afaecd4e1" defer></script>
-  <script src="js/app.js?v=7f66a7672699703e" defer></script>
+  <script src="js/discovery-picks.js?v=264a1d16b52f9feb" defer></script>
+  <script src="js/app.js?v=86ce9b62863edb61" defer></script>
   <script src="js/filter-summary.js?v=e64439eea4a886d5" defer></script>
   <script type="module" src="js/print-basket-ui.mjs?v=354571dce0f63b6b"></script>
   <script src="js/social-footer.js?v=8d06bab0d7298cda" defer></script>
