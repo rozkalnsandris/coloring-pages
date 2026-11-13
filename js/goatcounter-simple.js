@@ -131,6 +131,11 @@
   if (choice) hideDecision();
   else showDecision();
 
+  const KITA_PATH_TITLES = {
+    "/kita": "Kita & Vorschule",
+    "/kita/herbst": "Herbst – 5 Aktivitäten",
+  };
+
   window.GoatCounterSimple = {
     home() {
       track("/", "Ausmalwiese");
@@ -139,9 +144,15 @@
       if (typeof id !== "string" || !/^[0-9]{7}$/.test(id)) return;
       track("/ausmalbild/" + id, typeof title === "string" ? title.slice(0, 100) : "Ausmalbild");
     },
+    kita(path) {
+      if (!Object.prototype.hasOwnProperty.call(KITA_PATH_TITLES, path)) return;
+      track(path, KITA_PATH_TITLES[path]);
+    },
   };
 
   if (location.pathname === "/" || location.pathname === "/index.html") {
     window.GoatCounterSimple.home();
+  } else if (Object.prototype.hasOwnProperty.call(KITA_PATH_TITLES, location.pathname)) {
+    window.GoatCounterSimple.kita(location.pathname);
   }
 })();

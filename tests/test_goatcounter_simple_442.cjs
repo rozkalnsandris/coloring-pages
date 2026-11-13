@@ -114,6 +114,37 @@ function mount({choice="", pathname="/", search="", hostname="ausmalwiese.de", r
   assert.ok(!JSON.stringify(x.dispatched[0]).includes("secret"));
 }
 {
+  const x=mount({choice:"granted",pathname:"/kita",search:"?private=redacted"});
+  assert.equal(x.loaded.length,1, "Kita hub must queue only after prior consent");
+  x.activate();
+  assert.equal(x.dispatched.length,1);
+  assert.equal(x.dispatched[0].path,"/kita");
+  assert.equal(x.dispatched[0].title,"Kita & Vorschule");
+  assert.equal(x.dispatched[0].q,"");
+  assert.ok(!JSON.stringify(x.dispatched[0]).includes("redacted"));
+}
+{
+  const x=mount({choice:"granted",pathname:"/kita/herbst"});
+  assert.equal(x.loaded.length,1);
+  x.activate();
+  assert.equal(x.dispatched[0].path,"/kita/herbst");
+  assert.equal(x.dispatched[0].title,"Herbst – 5 Aktivitäten");
+}
+{
+  const x=mount({choice:"granted",pathname:"/kita/private"});
+  assert.equal(x.loaded.length,0, "Kita-like paths outside the exact allowlist must not track");
+  x.window.GoatCounterSimple.kita("/kita?private=x");
+  assert.equal(x.loaded.length,0);
+}
+{
+  const x=mount({pathname:"/kita"});
+  assert.equal(x.loaded.length,0, "Kita must not load external analytics before consent");
+  x.allow.click();
+  assert.equal(x.loaded.length,1);
+  x.activate();
+  assert.equal(x.dispatched[0].path,"/kita");
+}
+{
   const x=mount({choice:"granted",hostname:"preview.ausmalwiese.de"});
   assert.equal(x.loaded.length,0, "Only production hosts may initialize analytics");
   assert.equal(x.window.GoatCounterSimple,undefined);
