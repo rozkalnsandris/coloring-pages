@@ -156,10 +156,10 @@ def run_browser(browser_name: str, context_info):
         try:
             page = browser.new_page(viewport={"width": 1280, "height": 900})
             page.add_init_script(
-                """() => {
-                  globalThis.__qaPrintCalls = 0;
-                  globalThis.print = () => { globalThis.__qaPrintCalls += 1; };
-                }"""
+                """
+                globalThis.__qaPrintCalls = 0;
+                globalThis.print = () => { globalThis.__qaPrintCalls += 1; };
+                """
             )
             page.goto(LOOPBACK + "/qa/", wait_until="domcontentloaded")
             user_agent = page.evaluate("navigator.userAgent")
