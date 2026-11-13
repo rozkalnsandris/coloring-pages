@@ -115,7 +115,7 @@ def wait_status(page, prefixes, timeout=120_000):
           const value = document.querySelector('#qa-status')?.textContent || '';
           return prefixes.some(prefix => value.startsWith(prefix));
         }""",
-        prefixes,
+        arg=prefixes,
         timeout=timeout,
     )
     value = page.locator("#qa-status").inner_text()
