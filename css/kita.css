@@ -68,27 +68,21 @@
 .kita-package-note { max-width: 720px; margin: 10px 0 0; color: var(--muted); font-size: 14px; }
 .kita-package-activities {
   display: grid;
-  gap: 18px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
   margin: 20px 0 0;
   padding: 0;
   list-style: none;
 }
 .kita-package-activity {
-  display: grid;
-  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
-  grid-template-areas:
-    "step step"
-    "card instruction";
-  gap: 10px 24px;
-  align-items: start;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-  background: #fff;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 .kita-package-step {
-  grid-area: step;
-  margin: 0;
+  margin: 0 2px;
   color: var(--blue-deep);
   font-size: 13px;
   font-weight: 800;
@@ -96,33 +90,31 @@
   letter-spacing: .04em;
 }
 .kita-package-activity-card {
-  grid-area: card;
   width: 100%;
   margin: 0;
 }
 .kita-package-instruction {
-  grid-area: instruction;
-  align-self: center;
-  max-width: 680px;
-  margin: 0;
+  margin: 0 2px;
   color: var(--muted);
-  font-size: 17px;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 1.45;
   font-weight: 700;
+}
+
+@media (max-width: 1200px) {
+  .kita-package-activities { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .kita-package-activities { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (max-width: 720px) {
   .kita-package-card { grid-template-columns: 1fr; padding: 18px; }
   .kita-package-card .action-primary { min-width: 0; }
-  .kita-package-activity {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "step" "card" "instruction";
+  .kita-package-activities {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
-    padding: 12px;
   }
-  .kita-package-activity-card {
-    width: min(100%, 360px);
-    justify-self: center;
-  }
+  .kita-package-instruction { font-size: 13px; }
   .kita-package-select { min-height: 56px; }
 }

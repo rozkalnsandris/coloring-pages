@@ -120,12 +120,13 @@ console.log(JSON.stringify({
         self.assertIn('Cache-Control "no-cache"', module_route)
         self.assertIn("try_files $uri =404;", module_route)
 
-    def test_package_activity_previews_use_bounded_card_column(self):
+    def test_package_activities_follow_responsive_gallery_columns(self):
         css = (ROOT / "css" / "kita.css").read_text(encoding="utf-8")
-        self.assertIn("grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);", css)
-        self.assertIn('"card instruction"', css)
-        self.assertIn('grid-template-areas: "step" "card" "instruction";', css)
-        self.assertIn("width: min(100%, 360px);", css)
+        self.assertIn("grid-template-columns: repeat(5, minmax(0, 1fr));", css)
+        self.assertIn("grid-template-columns: repeat(4, minmax(0, 1fr));", css)
+        self.assertIn("grid-template-columns: repeat(3, minmax(0, 1fr));", css)
+        self.assertIn("grid-template-columns: repeat(2, minmax(0, 1fr));", css)
+        self.assertNotIn("minmax(220px, 320px) minmax(0, 1fr)", css)
 
     def test_package_reuses_shared_basket_and_keeps_combined_print_gate_closed(self):
         detail = (ROOT / "kita-herbst.html").read_text(encoding="utf-8")
