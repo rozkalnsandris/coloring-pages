@@ -20,7 +20,7 @@ from qa_basket_print_layout import ROOT
 DRAW_WEBKIT = r"""
 async ({canvasSource, footerSource, sequence}) => {
   const load = (source, names) => {
-    const body = source.replace(/\\bexport\\s+/g, '');
+    const body = source.replaceAll('export ', '');
     return Function(body + '\\nreturn {' + names.join(',') + '};')();
   };
   const {stageBasketPrintCanvases} = load(canvasSource, ['stageBasketPrintCanvases']);
