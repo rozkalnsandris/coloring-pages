@@ -291,6 +291,10 @@ def assert_herbst_illustration(page, origin: str, width: int):
     image = page.locator("[data-topic-landing-art] img")
     if not hero.is_visible() or not image.is_visible():
         raise AssertionError(f"{width}px approved Herbst illustration hidden")
+    if page.locator(".page-hero-breadcrumbs ol li").count() != 3:
+        raise AssertionError(f"{width}px Herbst breadcrumb ancestry is not semantic")
+    if page.locator(".page-hero-breadcrumbs [aria-current='page']").inner_text() != "Herbst":
+        raise AssertionError(f"{width}px Herbst breadcrumb current page incorrect")
     if image.get_attribute("alt") != "Ausmalwiese-Hund mit Kürbissen und buntem Herbstlaub":
         raise AssertionError(f"{width}px Herbst illustration alt missing")
     if image.get_attribute("src") != "/assets/herbst-topic-hero.webp":
@@ -334,6 +338,26 @@ def run_case(browser, origin: str, width: int):
         )
         if page.locator(".category-browser").is_visible():
             raise AssertionError(f"{width}px selected Topic must initially collapse Category browser")
+        if page.locator("#hero").is_visible():
+            raise AssertionError(f"{width}px generic home hero visible for selected Topic")
+        hero = page.locator("[data-focused-topic-hero]")
+        if not hero.is_visible():
+            raise AssertionError(f"{width}px selected Topic hero is missing")
+        if not page.locator("main > [data-focused-topic-hero]").count():
+            raise AssertionError(f"{width}px Topic hero must be a top-level main child")
+        if page.locator("[data-focused-topic-hero] .page-hero-breadcrumbs ol li").count() != 2:
+            raise AssertionError(f"{width}px focused Topic breadcrumb incorrect")
+        if page.locator("[data-focused-topic-title]").inner_text() != "Deutschland Ausmalbilder":
+            raise AssertionError(f"{width}px Topic hero H1 incorrect")
+        if page.locator(".page-hero--home .hero-search-tools").is_visible():
+            raise AssertionError(f"{width}px homepage search duplicated in Topic state")
+        # The URL deliberately ends in #neu, so the browser scrolls the hero
+        # above the sticky header. Test DOM placement, not viewport Y.
+        if not hero.evaluate(
+            "(node) => node.parentElement?.id === 'main' "
+            "&& node.previousElementSibling?.id === 'hero'"
+        ):
+            raise AssertionError(f"{width}px Topic hero not adjacent to home hero in main")
         if not page.locator("[data-filter-topic]").is_visible():
             raise AssertionError(f"{width}px selected Topic has no navigation selector")
         page.locator("[data-show-categories]").click()

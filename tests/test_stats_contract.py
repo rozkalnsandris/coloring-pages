@@ -12,7 +12,7 @@ class HomeRankingLayoutTests(unittest.TestCase):
         css = read("css/app.css")
         js = read("js/app.js")
 
-        hero = html.index('id="hero" class="hero"')
+        hero = html.index('id="hero" class="hero page-hero page-hero--home page-hero--with-art"')
         discover = html.index('id="entdecken"')
         categories = html.index('id="kategorien"')
         newest = html.index('id="neu"')
@@ -21,7 +21,7 @@ class HomeRankingLayoutTests(unittest.TestCase):
         self.assertLess(categories, newest)
         self.assertLess(newest, discover)
         self.assertLess(discover, about)
-        self.assertIn('class="hero-art"', html)
+        self.assertIn('class="hero-art page-hero-art"', html)
         self.assertIn('data-search-form', html)
 
         self.assertIn('data-ranking-root', html)

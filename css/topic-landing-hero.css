@@ -1,73 +1,151 @@
-/* #567: shared Topic Landing v1. Real text stays HTML; artwork is optional. */
-.topic-landing-hero {
+/* #569: Page Hero v2 — consistent location / heading / copy / optional art.
+   The existing global sticky .site-header is intentionally NOT part of this component. */
+.page-hero,
+.topic-landing-hero.page-hero,
+.category-hero.page-hero,
+.hero.page-hero {
   min-width: 0;
-  padding: clamp(18px, 2.5vw, 32px) 0;
-  background: linear-gradient(110deg, #f8fbff 0%, #f2f8ff 68%, #fff 100%);
+  padding: clamp(18px, 2.5vw, 30px) 0 clamp(20px, 2.8vw, 34px);
+  background: linear-gradient(110deg, #f8fbff 0%, #f5f9ff 55%, #e9f5ff 100%);
 }
-.topic-landing-hero--home {
-  margin: 0 0 20px;
-  border-radius: 20px;
+.page-hero-grid {
+  min-width: 0;
+  display: grid;
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  min-height: 0;
 }
-.topic-landing-grid { position: relative; min-width: 0; display: grid; align-items: center; gap: 10px; }
-.topic-landing-copy { position: relative; z-index: 1; min-width: 0; max-width: 850px; }
-.topic-landing-hero h1 {
+.page-hero-copy {
+  min-width: 0;
+  max-width: 860px;
+  align-self: center;
+  padding: 0;
+  position: relative;
+  z-index: 1;
+}
+.page-hero h1,
+.page-hero .hero-copy h1,
+.page-hero .category-hero-copy h1,
+.page-hero .topic-landing-copy h1 {
   margin: 0;
-  max-width: 790px;
+  max-width: 820px;
   font-family: var(--font-display);
-  font-size: clamp(32px, 4.8vw, 60px);
-  line-height: 1.08;
+  font-size: clamp(34px, 4.25vw, 58px);
+  line-height: 1.1;
+  font-weight: 800;
   letter-spacing: -.02em;
   overflow-wrap: anywhere;
 }
-.topic-landing-hero p {
+.page-hero .page-hero-copy > p:not(.page-hero-location),
+.page-hero .hero-text {
   margin: 12px 0 0;
-  max-width: 740px;
-  color: var(--muted);
-  font-size: clamp(15px, 1.5vw, 18px);
+  max-width: 760px;
+  font-size: clamp(15px, 1.45vw, 18px);
   line-height: 1.55;
+  color: var(--muted);
 }
-.topic-landing-breadcrumbs {
-  display: flex; align-items: center; gap: 8px;
-  margin: 0 0 12px; flex-wrap: wrap;
-  font-size: 14px; font-weight: 750; color: var(--muted);
+.page-hero-location,
+.page-hero .page-hero-breadcrumbs {
+  margin: 0 0 13px;
+  min-height: 24px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.4;
 }
-.topic-landing-breadcrumbs a { color: var(--blue-deep); text-underline-offset: 3px; }
-.topic-landing-breadcrumbs a:focus-visible { outline: 3px solid var(--blue-deep); outline-offset: 3px; }
-.topic-landing-art { min-width: 0; }
-.topic-landing-art img { width: 100%; height: auto; aspect-ratio: 1755 / 896; object-fit: contain; }
-.topic-landing-hero--with-art .topic-landing-grid {
-  grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr);
-  gap: clamp(8px, 2vw, 28px);
+.page-hero .page-hero-breadcrumbs ol {
+  display: flex; flex-wrap: wrap; align-items: center;
+  column-gap: 10px; row-gap: 3px;
+  margin: 0; padding: 0; list-style: none;
 }
-.topic-landing-hero--with-art .topic-landing-art { min-height: 0; }
-.topic-landing-hero--with-art .topic-landing-copy {
-  background: linear-gradient(90deg, rgb(248 251 255 / 98%), rgb(248 251 255 / 73%), transparent);
+.page-hero .page-hero-breadcrumbs li { min-width: 0; overflow-wrap: anywhere; }
+.page-hero .page-hero-breadcrumbs li + li::before {
+  content: "›";
+  margin-right: 10px; color: var(--muted);
 }
-.topic-landing-hero--static .category-hero-copy { max-width: 850px; }
-#hero[hidden], .topic-landing-hero[hidden], .topic-landing-art[hidden] { display: none !important; }
+.page-hero .page-hero-breadcrumbs a {
+  display: inline; min-width: 0; min-height: 0;
+  padding: 0; background: transparent; border-radius: 0;
+  color: var(--blue-deep); text-decoration: none;
+}
+.page-hero .page-hero-breadcrumbs a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.page-hero .page-hero-breadcrumbs a:focus-visible { outline: 3px solid var(--blue-deep); outline-offset: 4px; }
+.page-hero .page-hero-breadcrumbs [aria-current="page"] { color: var(--muted); }
+.page-hero--home .page-hero-grid {
+  grid-template-columns: minmax(0, .96fr) minmax(0, 1.04fr);
+  grid-template-areas: "copy art" "search art";
+  gap: 8px clamp(12px, 2vw, 26px);
+  min-height: 0;
+}
+.page-hero--home .page-hero-copy { grid-area: copy; align-self: end; }
+.page-hero--home .hero-search-tools { grid-area: search; align-self: start; }
+.page-hero--home .page-hero-art { grid-area: art; }
+.page-hero--home .search { margin-top: 14px; }
+.page-hero--home .hero-art { width: 100%; margin: 0; }
+.page-hero--home .page-hero-art img { max-height: 340px; }
+.page-hero--with-art:not(.page-hero--home) .page-hero-grid,
+.page-hero.topic-landing-hero--with-art .page-hero-grid {
+  grid-template-columns: minmax(0, .94fr) minmax(0, 1.06fr);
+  gap: clamp(12px, 2vw, 26px);
+}
+.page-hero .page-hero-art { min-width: 0; justify-self: stretch; }
+.page-hero .page-hero-art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 350px;
+  object-fit: contain;
+  object-position: right center;
+  mix-blend-mode: normal;
+  /* Blend the sky at the top and left into the shared hero gradient.
+     The right/bottom region (including the approved .de logo) stays opaque. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 100%),
+                      linear-gradient(180deg, transparent 0%, #000 8%, #000 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 100%),
+              linear-gradient(180deg, transparent 0%, #000 8%, #000 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+.page-hero--category .page-hero-copy { max-width: 860px; }
+#hero[hidden], .page-hero[hidden], .page-hero-art[hidden], .topic-landing-art[hidden] { display: none !important; }
 @media (max-width: 720px) {
-  .topic-landing-hero { padding: 18px 0 20px; }
-  .topic-landing-hero--home { margin-bottom: 14px; border-radius: 16px; }
-  .topic-landing-hero h1 { font-size: clamp(30px, 8.4vw, 44px); line-height: 1.12; }
-  .topic-landing-breadcrumbs { font-size: 13px; margin-bottom: 8px; }
-  .topic-landing-hero--with-art .topic-landing-grid { grid-template-columns: minmax(0, 1fr); gap: 4px; }
-  .topic-landing-hero--with-art .topic-landing-copy { background: transparent; }
-  .topic-landing-hero--with-art .topic-landing-art {
-    justify-self: stretch;
-    max-height: 200px;
-    overflow: hidden;
+  .page-hero, .topic-landing-hero.page-hero, .category-hero.page-hero, .hero.page-hero {
+    padding: 16px 0 20px;
   }
-  .topic-landing-hero--with-art .topic-landing-art img {
-    width: 100%; max-height: 200px; object-fit: contain; object-position: center;
+  .page-hero .page-hero-grid,
+  .page-hero--with-art:not(.page-hero--home) .page-hero-grid,
+  .page-hero.topic-landing-hero--with-art .page-hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
   }
+  .page-hero--home .page-hero-grid {
+    grid-template-areas: "copy" "search" "art";
+    gap: 7px;
+  }
+  .page-hero h1, .page-hero .hero-copy h1,
+  .page-hero .category-hero-copy h1, .page-hero .topic-landing-copy h1 {
+    font-size: clamp(30px, 8.8vw, 43px);
+    line-height: 1.1;
+  }
+  .page-hero .page-hero-copy > p:not(.page-hero-location),
+  .page-hero .hero-text { margin-top: 8px; font-size: 15px; }
+  .page-hero-location, .page-hero .page-hero-breadcrumbs { font-size: 13px; margin-bottom: 9px; }
+  .page-hero--home .page-hero-art,
+  .page-hero .topic-landing-art { justify-self: stretch; margin: 0; max-height: 200px; overflow: visible; }
+  .page-hero .page-hero-art img,
+  .page-hero .topic-landing-art img { width: 100%; max-height: 200px; object-fit: contain; object-position: center; }
+  .page-hero--home .hero-search-tools { width: 100%; }
+  .page-hero--home .hero-search-tools .search { margin-top: 8px; }
 }
 @media (max-width: 360px) {
-  .topic-landing-hero h1 { font-size: 30px; }
-  .topic-landing-hero--with-art .topic-landing-art { max-height: 160px; }
-  .topic-landing-hero--with-art .topic-landing-art img { max-height: 160px; }
+  .page-hero h1, .page-hero .hero-copy h1,
+  .page-hero .category-hero-copy h1, .page-hero .topic-landing-copy h1 { font-size: 30px; }
+  .page-hero .page-hero-art img, .page-hero .topic-landing-art img { max-height: 155px; }
 }
 @media (forced-colors: active) {
-  .topic-landing-hero, .topic-landing-hero--with-art .topic-landing-copy {
+  .page-hero, .topic-landing-hero.page-hero, .category-hero.page-hero, .hero.page-hero {
     background: Canvas; color: CanvasText;
   }
+  .page-hero .page-hero-art img { -webkit-mask-image: none; mask-image: none; }
 }
