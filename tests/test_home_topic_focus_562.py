@@ -12,7 +12,7 @@ class HomeTopicFocus562(unittest.TestCase):
     def setUpClass(cls):
         cls.html = (ROOT / "index.html").read_text(encoding="utf-8")
         cls.app = (ROOT / "js/app.js").read_text(encoding="utf-8")
-        cls.css = (ROOT / "css/metadata-filters.css").read_text(encoding="utf-8")
+        cls.css = (ROOT / "css/home-discovery.css").read_text(encoding="utf-8")
 
     def test_progressive_enhancement_and_navigation(self):
         self.assertIn('id="kategorien"', self.html)

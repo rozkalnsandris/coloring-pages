@@ -264,3 +264,20 @@
     box-shadow: none;
   }
 }
+
+/* #562: a recognized Topic brings results forward without losing discovery. */
+#kategorien[hidden],
+.gallery-filter-panel .metadata-filter-field[hidden],
+.gallery-topic-actions[hidden] { display: none !important; }
+#neu .gallery-topic-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+#neu .gallery-topic-actions button { min-height: 44px; }
+@media (max-width: 650px) {
+  #neu .section-heading { display: grid; grid-template-columns: minmax(0, 1fr); }
+  #neu .section-heading h2 { white-space: normal; overflow-wrap: anywhere; }
+  #neu .gallery-topic-actions { grid-column: 1 / -1; }
+}

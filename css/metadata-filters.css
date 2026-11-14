@@ -58,19 +58,3 @@
   }
   .gallery-filter-panel .gallery-filter-footer { align-items: flex-start; }
 }
-
-/* #562: when a known Topic is selected, show its result context instead of
-   stacking the entire Category navigator above the catalogue. */
-#kategorien[hidden],
-.gallery-filter-panel .metadata-filter-field[hidden],
-.gallery-topic-actions[hidden] { display: none !important; }
-#neu .gallery-topic-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-#neu .gallery-topic-actions button { min-height: 44px; }
-@media (max-width: 650px) {
-  #neu .gallery-topic-actions { grid-column: 1 / -1; }
-}
