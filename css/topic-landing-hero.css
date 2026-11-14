@@ -73,14 +73,15 @@
 .page-hero .page-hero-breadcrumbs a:focus-visible { outline: 3px solid var(--blue-deep); outline-offset: 4px; }
 .page-hero .page-hero-breadcrumbs [aria-current="page"] { color: var(--muted); }
 .page-hero--home .page-hero-grid {
+  align-items: start;
   grid-template-columns: minmax(0, .96fr) minmax(0, 1.04fr);
   grid-template-areas: "copy art" "search art";
   gap: 8px clamp(12px, 2vw, 26px);
   min-height: 0;
 }
-.page-hero--home .page-hero-copy { grid-area: copy; align-self: end; }
+.page-hero--home .page-hero-copy { grid-area: copy; align-self: start; }
 .page-hero--home .hero-search-tools { grid-area: search; align-self: start; }
-.page-hero--home .page-hero-art { grid-area: art; }
+.page-hero--home .page-hero-art { grid-area: art; align-self: start; }
 .page-hero--home .search { margin-top: 14px; }
 .page-hero--home .hero-art { width: 100%; margin: 0; }
 .page-hero--home .page-hero-art img { max-height: 340px; }
@@ -97,7 +98,7 @@
   max-height: 350px;
   object-fit: contain;
   object-position: right center;
-  mix-blend-mode: normal;
+  mix-blend-mode: multiply;
   /* Blend the sky at the top and left into the shared hero gradient.
      The right/bottom region (including the approved .de logo) stays opaque. */
   -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 100%),
@@ -108,6 +109,8 @@
   mask-composite: intersect;
 }
 .page-hero--category .page-hero-copy { max-width: 860px; }
+/* Keep the actual topic H1 visible on card navigation under the sticky header. */
+.page-hero--topic { scroll-margin-top: 88px; }
 #hero[hidden], .page-hero[hidden], .page-hero-art[hidden], .topic-landing-art[hidden] { display: none !important; }
 @media (max-width: 720px) {
   .page-hero, .topic-landing-hero.page-hero, .category-hero.page-hero, .hero.page-hero {

@@ -80,7 +80,7 @@
 
   function topicHref(topicId) {
     return TOPIC_ROUTE_OVERRIDES[topicId] ||
-      `index.html?topic=${encodeURIComponent(topicId)}#neu`;
+      `index.html?topic=${encodeURIComponent(topicId)}`;
   }
 
   function hasDedicatedTopicRoute(topicId) {

@@ -51,6 +51,23 @@ class PageHeroV2Tests(unittest.TestCase):
         image = (ROOT / "assets/herbst-topic-hero.webp").read_bytes()
         self.assertEqual(hashlib.sha256(image).hexdigest(), "d077de2efb5b291cf41140722958aa771fea6bd716da387a37458af700b0ad74")
 
+    def test_alignment_and_topic_entry_regressions(self):
+        css = read("css/topic-landing-hero.css")
+        app = read("js/app.js")
+        discovery = read("js/category-topic-discovery.js")
+        home = read("index.html")
+        self.assertIn(".page-hero--home .page-hero-copy { grid-area: copy; align-self: start; }", css)
+        self.assertIn(".page-hero--home .page-hero-art { grid-area: art; align-self: start; }", css)
+        self.assertIn("mix-blend-mode: multiply;", css)
+        self.assertIn(".page-hero--topic { scroll-margin-top: 88px; }", css)
+        self.assertIn('focused-topic-title" data-focused-topic-title tabindex="-1"', home)
+        self.assertIn('clearTopicAnchor: moveFocus && Boolean(activeTopic)', app)
+        self.assertIn('topicTarget.scrollIntoView({ block: "start" })', app)
+        self.assertIn('"Passende Malvorlagen entdecken"', app)
+        self.assertIn('index.html?topic=${encodeURIComponent(topicId)}', discovery)
+        self.assertNotIn('index.html?topic=${encodeURIComponent(topicId)}#neu', discovery)
+        self.assertNotRegex(home, r'index\\.html\\?topic=[a-z0-9-]+#neu')
+
     def test_single_css_version_and_source_seo(self):
         css_path = ROOT / "css/topic-landing-hero.css"
         sha = hashlib.sha256(css_path.read_bytes()).hexdigest()[:16]

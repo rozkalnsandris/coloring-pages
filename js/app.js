@@ -97,7 +97,7 @@ function readTopicFilterFromUrl() {
   activeTopic = known.has(requested) ? requested : "";
 }
 
-function syncCatalogFilterUrl() {
+function syncCatalogFilterUrl({ clearTopicAnchor = false } = {}) {
   const url = new URL(location.href);
   const q = searchInput?.value.trim() || "";
   if (q) url.searchParams.set("q", q);
@@ -110,6 +110,7 @@ function syncCatalogFilterUrl() {
   else url.searchParams.delete("topic");
   if (activeCategory && runtimeCategoryIds.has(activeCategory)) url.searchParams.set("category", activeCategory);
   else url.searchParams.delete("category");
+  if (clearTopicAnchor && activeTopic) url.hash = "";
   const next = url.pathname + url.search + url.hash;
   const now = location.pathname + location.search + location.hash;
   if (next !== now) history.pushState(null, "", next);
@@ -514,7 +515,7 @@ function syncFocusedTopicView() {
   if (galleryTopicActions) galleryTopicActions.hidden = !focused;
   // #564: one visible native selector, not a competing selected-Topic chip.
   if (topicField) topicField.hidden = false;
-  if (galleryHeading) galleryHeading.textContent = focused ? selected.label + " Ausmalbilder" : "Malvorlagen";
+  if (galleryHeading) galleryHeading.textContent = focused ? "Passende Malvorlagen entdecken" : "Malvorlagen";
   if (showCategoriesButton) showCategoriesButton.setAttribute("aria-expanded", String(focused && categoriesExpanded));
   if (hideCategories && hadCategoryFocus) galleryHeading?.focus({ preventScroll: true });
 }
@@ -522,13 +523,19 @@ function syncFocusedTopicView() {
 function selectTopic(topicId, { toggle = true, moveFocus = true } = {}) {
   activeTopic = toggle && activeTopic === topicId ? "" : topicId;
   categoriesExpanded = false;
-  syncCatalogFilterUrl();
+  syncCatalogFilterUrl({ clearTopicAnchor: moveFocus && Boolean(activeTopic) });
   updateTopicButtons();
   applyFilters();
-  updateNavigation("#neu");
+  updateNavigation(activeTopic ? "" : "#neu");
   if (moveFocus) {
-    document.querySelector("#neu")?.scrollIntoView({ block: "start" });
-    document.querySelector("#gallery-title")?.focus({ preventScroll: true });
+    const topicTarget = activeTopic && !focusedTopicHero?.hidden ? focusedTopicHero : null;
+    if (topicTarget) {
+      topicTarget.scrollIntoView({ block: "start" });
+      focusedTopicTitle?.focus({ preventScroll: true });
+    } else {
+      document.querySelector("#neu")?.scrollIntoView({ block: "start" });
+      document.querySelector("#gallery-title")?.focus({ preventScroll: true });
+    }
   }
 }
 
