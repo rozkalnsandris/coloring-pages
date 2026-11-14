@@ -153,3 +153,32 @@
     scroll-snap-align: start;
   }
 }
+
+/* One accessible topic navigation beside the metadata, not two copies
+   above and below the heading. */
+.detail-summary .detail-badges .detail-topic-nav {
+  margin: 0;
+  min-width: 0;
+  gap: 0;
+  align-items: center;
+}
+.detail-summary .detail-badges .detail-topic-nav[hidden] { display: none; }
+.detail-summary .detail-badges .detail-topic-links { flex-wrap: wrap; }
+
+@media (max-width: 720px) {
+  .detail-related { margin-top: 20px; padding-top: 20px; }
+  .detail-related h2 { margin-bottom: 12px; font-size: 24px; }
+  .detail-related-grid { gap: 10px; }
+  .detail-related-card a { padding: 8px; gap: 7px; }
+  .detail-related-card img { aspect-ratio: 1 / 1; max-height: 170px; }
+  .detail-related-card h3 { font-size: 14px; min-height: 0; }
+
+  .detail-summary .detail-badges .detail-topic-links {
+    width: auto; flex-wrap: wrap; overflow: visible; padding: 0;
+    scroll-snap-type: none;
+  }
+  .detail-summary .detail-badges .detail-topic-link {
+    min-height: 36px; padding: 6px 9px; font-size: 12px;
+    white-space: normal;
+  }
+}
