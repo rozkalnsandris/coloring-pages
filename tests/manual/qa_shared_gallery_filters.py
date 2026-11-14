@@ -75,7 +75,7 @@ def check(browser, origin, path, width):
     try:
         for name, payload in (("catalog.json", CATALOG),
                               ("topics.json", TOPICS), ("categories.json", CATEGORIES)):
-            page.route("**/" + name, lambda route, value=payload: route.fulfill(
+            page.route("**/" + name, lambda route, _request, value=payload: route.fulfill(
                 status=200, content_type="application/json", body=json.dumps(value)))
         page.goto(origin + "/" + path + "?campaign=dortmund-01",
                   wait_until="domcontentloaded")
@@ -112,9 +112,14 @@ def check(browser, origin, path, width):
             assert box and box["height"] >= 44 and box["x"] >= -1 and (
                 box["x"] + box["width"] <= width + 1), (path, width, box)
         if path == "alphabet.html":
-            page.locator("[data-filter-topic]").select_option("obst")
+            topic_select = page.locator("[data-filter-topic]")
+            topic_select.focus()
+            topic_select.select_option("obst")
             page.wait_for_function(
                 "() => document.querySelector('[data-result-count]').textContent === '1 Malvorlage'")
+            assert topic_select.evaluate("(el) => document.activeElement === el"), (
+                "category topic switch lost native select focus"
+            )
             page.locator("[data-filter-age]").select_option("4-8")
             page.wait_for_function(
                 "() => document.querySelector('[data-result-count]').textContent === '0 Malvorlagen'")

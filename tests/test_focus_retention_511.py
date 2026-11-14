@@ -8,21 +8,21 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class FocusRetention511Tests(unittest.TestCase):
-    def test_category_topic_click_keeps_the_focused_chip_in_the_dom(self):
+    def test_category_topic_change_keeps_the_native_select_mounted(self):
         source = (ROOT / "js" / "category.js").read_text(encoding="utf-8")
-        match = re.search(
-            r'button\.addEventListener\("click", \(\) => \{\n'
-            r'\s+activeCategoryTopic = id;(?P<body>.*?)'
-            r'\s+renderCategoryEntries\(categoryEntries, \{ resetLimit: true \}\);\n'
-            r'\s+\}\);',
-            source,
-            re.S,
+        start = source.index('filterPanel.topic.addEventListener("change", () => {')
+        end = source.index("\\n  });", start)
+        handler = source[start:end]
+        self.assertIn("activeCategoryTopic = filterPanel.topic.value;", handler)
+        self.assertIn(
+            "renderCategoryEntries(categoryEntries, { resetLimit: true });",
+            handler,
         )
-        self.assertIsNotNone(match)
-        body = match.group("body")
-        self.assertIn('strip.querySelectorAll("[data-category-topic]")', body)
-        self.assertIn('"aria-pressed"', body)
-        self.assertNotIn("ensureCategoryTopicFilter(categoryEntries)", body)
+        # The selected control must survive re-render; only cards are replaced.
+        self.assertNotIn("ensureCategoryTopicFilter(", handler)
+        self.assertNotIn("replaceChildren(", handler)
+        self.assertIn("gallery.replaceChildren(fragment);", source)
+        self.assertNotIn("filterPanel.root.replaceChildren", source)
 
     def test_keyboard_load_more_focuses_the_first_new_card_after_render(self):
         source = (ROOT / "js" / "app.js").read_text(encoding="utf-8")
