@@ -113,15 +113,17 @@ class TopicFilterTests(unittest.TestCase):
         self.assertIn("min-height: 44px", home_css)
         self.assertIn("focus-visible", home_css)
 
-    def test_category_landings_use_accessible_in_page_topic_filters(self):
-        source = (ROOT / "js" / "category.js").read_text(encoding="utf-8")
+    def test_category_landings_share_one_native_filter_panel(self):
+        source = (ROOT / "js/category.js").read_text(encoding="utf-8")
+        shared = (ROOT / "js/gallery-filter-panel.js").read_text(encoding="utf-8")
         self.assertIn("categoryTopicCandidates", source)
         self.assertIn("ensureCategoryTopicFilter", source)
         self.assertIn("renderCategoryEntries", source)
-        self.assertIn('button.type = "button"', source)
-        self.assertIn('button.setAttribute("aria-pressed"', source)
-        self.assertIn('"Malvorlagen nach Thema filtern"', source)
-        self.assertIn('activeTopic.label + " entdecken"', source)
+        self.assertIn("AusmalGalleryFilterPanel.mount", source)
+        self.assertNotIn("category-topic-strip", source)
+        self.assertNotIn("createMetadataSelect(", source)
+        self.assertIn('field(idPrefix + "-topic", "Thema"', shared)
+        self.assertIn("setResetVisible", shared)
 
     def test_essen_natur_keeps_exact_curated_topic_scope(self):
         page = (ROOT / "essen-natur.html").read_text(encoding="utf-8")
@@ -145,14 +147,12 @@ class TopicFilterTests(unittest.TestCase):
         self.assertIn("activeAge", source)
         self.assertIn("activeDifficulty", source)
 
-    def test_category_topic_strip_is_mobile_first(self):
-        css = (ROOT / "css" / "category.css").read_text(encoding="utf-8")
-        self.assertIn(".category-topic-strip", css)
-        self.assertIn("overflow-x: auto", css)
-        self.assertIn("scroll-snap-type: x proximity", css)
-        self.assertIn(".category-topic-chip", css)
-        self.assertIn("min-height: 44px", css)
+    def test_shared_gallery_filters_are_mobile_first(self):
+        css = (ROOT / "css/metadata-filters.css").read_text(encoding="utf-8")
+        self.assertIn(".gallery-filter-panel", css)
+        self.assertIn("grid-template-columns: minmax(0, 1fr)", css)
         self.assertIn("min-height: 48px", css)
+        self.assertIn("focus-visible", css)
 
     def test_container_serves_topic_registry(self):
         dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")

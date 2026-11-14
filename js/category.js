@@ -20,6 +20,7 @@ let categoryVisibleLimit = CATEGORY_PAGE_SIZE;
 let ageFilter = null;
 let difficultyFilter = null;
 let metadataReset = null;
+let filterPanel = null;
 const menuButton = document.querySelector(".menu-button");
 const mobileNav = document.querySelector("#mobile-nav");
 
@@ -88,72 +89,28 @@ function syncMetadataFilterUrl() {
   if (next !== current) history.pushState(null, "", next);
 }
 
-function createMetadataSelect(id, label, options) {
-  const field = document.createElement("div");
-  field.className = "metadata-filter-field";
-  const labelNode = document.createElement("label");
-  labelNode.htmlFor = id;
-  labelNode.textContent = label;
-  const select = document.createElement("select");
-  select.id = id;
-  options.forEach(([value, text]) => {
-    const option = document.createElement("option");
-    option.value = value;
-    option.textContent = text;
-    select.append(option);
-  });
-  field.append(labelNode, select);
-  return { field, select };
-}
-
 function updateMetadataFilterUi() {
-  if (!metadataReset) return;
-  metadataReset.hidden = !globalThis.AusmalCategoryMetadataFilters?.hasActive(metadataFilters());
+  filterPanel?.setResetVisible(Boolean(activeCategoryTopic ||
+    globalThis.AusmalCategoryMetadataFilters?.hasActive(metadataFilters())));
 }
-
 function ensureCategoryMetadataFilters() {
   const section = document.querySelector(".category-results .container");
   const heading = section?.querySelector(".section-heading");
-  if (!section || !heading) return null;
-  let root = section.querySelector("[data-category-metadata-filters]");
-  if (root) return root;
-
-  root = document.createElement("div");
-  root.className = "metadata-filters category-metadata-filters";
-  root.dataset.categoryMetadataFilters = "";
-  root.setAttribute("role", "group");
-  root.setAttribute("aria-label", "Malvorlagen nach Alter und Schwierigkeit filtern");
-
-  const age = createMetadataSelect("category-filter-age", "Alter", [
-    ["", "Alle Altersgruppen"],
-    ["3-6", "3–6 Jahre"],
-    ["4-8", "4–8 Jahre"],
-  ]);
-  const difficulty = createMetadataSelect("category-filter-difficulty", "Schwierigkeit", [
-    ["", "Alle Schwierigkeitsgrade"],
-    ["easy", "Einfach"],
-    ["normal", "Mittel"],
-    ["detailed", "Detailliert"],
-  ]);
-  ageFilter = age.select;
-  difficultyFilter = difficulty.select;
-
-  const hint = document.createElement("p");
-  hint.className = "metadata-filter-hint";
-  hint.textContent = "Vorlagen ohne Altersangabe findest du unter „Alle Altersgruppen“; ohne Einstufung unter „Alle Schwierigkeitsgrade“.";
-
-  metadataReset = document.createElement("button");
-  metadataReset.type = "button";
-  metadataReset.className = "outline-link";
-  metadataReset.dataset.categoryMetadataReset = "";
-  metadataReset.textContent = "Filter zurücksetzen";
-  metadataReset.hidden = true;
-
-  root.append(age.field, difficulty.field, hint, metadataReset);
+  if (!section || !heading || !globalThis.AusmalGalleryFilterPanel) {
+    throw new Error("shared gallery filters unavailable");
+  }
+  if (filterPanel) return filterPanel.root;
+  const root = document.createElement("div");
   heading.after(root);
-
+  filterPanel = globalThis.AusmalGalleryFilterPanel.mount(root, {
+    idPrefix: "category-filter",
+  });
+  ageFilter = filterPanel.age;
+  difficultyFilter = filterPanel.difficulty;
+  metadataReset = filterPanel.reset;
+  // Display the result count only once, in the shared filter panel.
+  heading.querySelector(".catalog-total")?.remove();
   readMetadataFiltersFromUrl();
-
   ageFilter.addEventListener("change", () => {
     activeAge = ageFilter.value;
     syncMetadataFilterUrl();
@@ -164,11 +121,15 @@ function ensureCategoryMetadataFilters() {
     syncMetadataFilterUrl();
     renderCategoryEntries(categoryEntries, { resetLimit: true });
   });
+  filterPanel.topic.addEventListener("change", () => {
+    activeCategoryTopic = filterPanel.topic.value;
+    renderCategoryEntries(categoryEntries, { resetLimit: true });
+  });
   metadataReset.addEventListener("click", () => {
+    activeCategoryTopic = "";
     activeAge = "";
     activeDifficulty = "";
-    ageFilter.value = "";
-    difficultyFilter.value = "";
+    filterPanel.setValues({ topic: "", age: "", difficulty: "" });
     syncMetadataFilterUrl();
     renderCategoryEntries(categoryEntries, { resetLimit: true });
   });
@@ -198,87 +159,15 @@ function categoryTopicCandidates(entries) {
 }
 
 function ensureCategoryTopicFilter(entries) {
-  const section = document.querySelector(".category-results .container");
-  const heading = section?.querySelector(".section-heading");
-  if (!section || !heading) return;
-
   const topics = categoryTopicCandidates(entries);
-  const shouldShow = categoryTopics.size ? topics.length > 0 : topics.length > 1;
-  let root = section.querySelector("[data-category-topic-filter]");
-
-  if (!shouldShow) {
+  const show = categoryTopics.size ? topics.length > 0 : topics.length > 1;
+  const choices = show ? topics : [];
+  if (!choices.some((item) => item.id === activeCategoryTopic)) {
     activeCategoryTopic = "";
-    root?.remove();
-    return;
   }
-
-  if (!topics.some((topic) => topic.id === activeCategoryTopic)) activeCategoryTopic = "";
-
-  if (!root) {
-    root = document.createElement("div");
-    root.className = "category-topic-filter";
-    root.dataset.categoryTopicFilter = "";
-
-    const label = document.createElement("p");
-    label.className = "category-topic-filter-label";
-    label.textContent = "Themen";
-
-    const strip = document.createElement("div");
-    strip.className = "category-topic-strip";
-    strip.setAttribute("role", "group");
-    strip.setAttribute("aria-label", "Malvorlagen nach Thema filtern");
-
-    root.append(label, strip);
-    const metadataRoot = section.querySelector("[data-category-metadata-filters]");
-    (metadataRoot || heading).after(root);
-  }
-
-  const strip = root.querySelector(".category-topic-strip");
-  if (!strip) return;
-
-  const makeButton = (id, label, count, icon = "") => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "category-topic-chip";
-    button.dataset.categoryTopic = id;
-    button.setAttribute("aria-pressed", String(activeCategoryTopic === id));
-
-    if (icon) {
-      const iconNode = document.createElement("span");
-      iconNode.className = "category-topic-icon";
-      iconNode.textContent = icon;
-      iconNode.setAttribute("aria-hidden", "true");
-      button.append(iconNode);
-    }
-
-    const text = document.createElement("span");
-    text.textContent = label;
-
-    const badge = document.createElement("span");
-    badge.className = "category-topic-count";
-    badge.textContent = String(count);
-    badge.setAttribute("aria-hidden", "true");
-
-    button.append(text, badge);
-    button.addEventListener("click", () => {
-      activeCategoryTopic = id;
-      strip.querySelectorAll("[data-category-topic]").forEach((candidate) => {
-        candidate.setAttribute(
-          "aria-pressed",
-          String(candidate.dataset.categoryTopic === activeCategoryTopic)
-        );
-      });
-      renderCategoryEntries(categoryEntries, { resetLimit: true });
-    });
-    return button;
-  };
-
-  const allButton = makeButton("", "Alle", entries.length);
-  allButton.setAttribute("aria-pressed", String(activeCategoryTopic === ""));
-  strip.replaceChildren(
-    allButton,
-    ...topics.map((topic) => makeButton(topic.id, topic.label, topic.count, topic.icon))
-  );
+  // Topic choices and metadata controls are always in one renderer.
+  filterPanel?.setTopics(choices, activeCategoryTopic, !show);
+  updateMetadataFilterUi();
 }
 
 function renderCategoryEntries(entries, { resetLimit = false } = {}) {
@@ -298,14 +187,9 @@ function renderCategoryEntries(entries, { resetLimit = false } = {}) {
   gallery.replaceChildren(fragment);
 
   if (total) total.textContent = String(filteredEntries.length);
+  filterPanel?.setCount(filteredEntries.length);
+  filterPanel?.setValues({ topic: activeCategoryTopic, age: activeAge, difficulty: activeDifficulty });
   if (loadMoreButton) loadMoreButton.hidden = visibleEntries.length >= filteredEntries.length;
-
-  const galleryTitle = document.querySelector("#category-gallery-title");
-  if (galleryTitle) {
-    galleryTitle.textContent = activeTopic
-      ? activeTopic.label + " entdecken"
-      : categoryLabel + " entdecken";
-  }
 
   if (status) {
     const label = activeTopic?.label || categoryLabel;

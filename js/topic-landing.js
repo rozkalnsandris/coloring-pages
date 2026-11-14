@@ -6,6 +6,10 @@ const status = document.querySelector("[data-topic-status]");
 const total = document.querySelector("[data-topic-total]");
 const menuButton = document.querySelector(".menu-button");
 const mobileNav = document.querySelector("#mobile-nav");
+let topicEntries = [];
+let filterPanel = null;
+let activeAge = "";
+let activeDifficulty = "";
 
 const DIFFICULTY_LABELS = { easy: "Einfach", normal: "Mittel", detailed: "Detailliert" };
 
@@ -74,6 +78,45 @@ function createCard(entry) {
   return card;
 }
 
+function metadataFilters() {
+  return { age: activeAge, difficulty: activeDifficulty };
+}
+function readMetadataFiltersFromUrl() {
+  const parsed = globalThis.AusmalCategoryMetadataFilters?.read(location.search) ||
+    { age: "", difficulty: "" };
+  activeAge = parsed.age;
+  activeDifficulty = parsed.difficulty;
+  filterPanel?.setValues({ age: activeAge, difficulty: activeDifficulty });
+}
+function syncMetadataFilterUrl() {
+  const api = globalThis.AusmalCategoryMetadataFilters;
+  if (!api) return;
+  const url = api.applyToUrl(new URL(location.href), metadataFilters());
+  const next = url.pathname + url.search + url.hash;
+  if (next !== location.pathname + location.search + location.hash) {
+    history.pushState(null, "", next);
+  }
+}
+function renderTopicEntries() {
+  const helper = globalThis.AusmalCategoryMetadataFilters;
+  const filtered = helper
+    ? topicEntries.filter((entry) => helper.matches(entry, metadataFilters()))
+    : topicEntries;
+  const fragment = document.createDocumentFragment();
+  filtered.forEach((entry) => fragment.append(createCard(entry)));
+  gallery.replaceChildren(fragment);
+  if (total) total.textContent = String(filtered.length);
+  filterPanel?.setCount(filtered.length);
+  filterPanel?.setResetVisible(Boolean(helper?.hasActive(metadataFilters())));
+  if (status) {
+    status.textContent = filtered.length
+      ? `Alle aktuell veröffentlichten ${topicLabel || "Themen"}-Malvorlagen werden angezeigt.`
+      : topicEntries.length
+        ? "Keine Malvorlagen passen zu diesen Filtern. Setze die Filter zurück."
+        : "Zurzeit sind keine veröffentlichten Herbst-Malvorlagen verfügbar.";
+    status.hidden = filtered.length > 0;
+  }
+}
 async function hydrateTopicLanding() {
   if (!topicId || !gallery) return;
   try {
@@ -82,21 +125,41 @@ async function hydrateTopicLanding() {
     if (!response.ok) throw new Error("catalog unavailable");
     const catalog = await response.json();
     if (!Array.isArray(catalog)) throw new Error("invalid catalog");
-
-    const entries = catalog.filter((entry) =>
+    topicEntries = catalog.filter((entry) =>
       entry && entry.id && entry.title && entry.thumb && entryTopicIds(entry).includes(topicId)
     );
-    const fragment = document.createDocumentFragment();
-    entries.forEach((entry) => fragment.append(createCard(entry)));
-    gallery.replaceChildren(fragment);
-    if (total) total.textContent = String(entries.length);
-
-    if (status) {
-      status.textContent = entries.length
-        ? `Alle aktuell veröffentlichten ${topicLabel || "Themen"}-Malvorlagen werden angezeigt.`
-        : "Zurzeit sind keine veröffentlichten Herbst-Malvorlagen verfügbar.";
-      status.hidden = entries.length > 0;
+    const heading = document.querySelector(".category-results .section-heading");
+    if (!heading || !globalThis.AusmalGalleryFilterPanel ||
+        !globalThis.AusmalCategoryMetadataFilters) {
+      throw new Error("shared gallery filters unavailable");
     }
+    const root = document.createElement("div");
+    heading.after(root);
+    filterPanel = globalThis.AusmalGalleryFilterPanel.mount(root, {
+      idPrefix: "topic-filter",
+    });
+    // Fixed topic route: display the selected theme without linking to other categories.
+    filterPanel.setTopics([{ id: topicId, label: topicLabel }], topicId, true);
+    heading.querySelector(".catalog-total")?.remove();
+    readMetadataFiltersFromUrl();
+    filterPanel.age.addEventListener("change", () => {
+      activeAge = filterPanel.age.value;
+      syncMetadataFilterUrl();
+      renderTopicEntries();
+    });
+    filterPanel.difficulty.addEventListener("change", () => {
+      activeDifficulty = filterPanel.difficulty.value;
+      syncMetadataFilterUrl();
+      renderTopicEntries();
+    });
+    filterPanel.reset.addEventListener("click", () => {
+      activeAge = "";
+      activeDifficulty = "";
+      filterPanel.setValues({ age: "", difficulty: "" });
+      syncMetadataFilterUrl();
+      renderTopicEntries();
+    });
+    renderTopicEntries();
   } catch {
     if (status) {
       status.textContent = "Die vollständige Herbst-Auswahl konnte gerade nicht geladen werden. Die direkt angezeigten Motive bleiben verfügbar.";
@@ -119,6 +182,12 @@ document.addEventListener("keydown", (event) => {
     setMenuOpen(false);
     menuButton?.focus();
   }
+});
+
+window.addEventListener("popstate", () => {
+  if (!filterPanel) return;
+  readMetadataFiltersFromUrl();
+  renderTopicEntries();
 });
 
 hydrateTopicLanding();
