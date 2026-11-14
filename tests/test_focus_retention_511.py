@@ -11,7 +11,7 @@ class FocusRetention511Tests(unittest.TestCase):
     def test_category_topic_change_keeps_the_native_select_mounted(self):
         source = (ROOT / "js" / "category.js").read_text(encoding="utf-8")
         start = source.index('filterPanel.topic.addEventListener("change", () => {')
-        end = source.index("\\n  });", start)
+        end = source.index("\n  });", start)
         handler = source[start:end]
         self.assertIn("activeCategoryTopic = filterPanel.topic.value;", handler)
         self.assertIn(
