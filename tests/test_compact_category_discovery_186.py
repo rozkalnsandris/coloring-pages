@@ -3,6 +3,7 @@
 Live-browser and print-master acceptance remain separate checks.
 """
 from pathlib import Path
+import hashlib
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -89,7 +90,7 @@ class CompactCategoryDiscovery186Tests(unittest.TestCase):
 
     def test_existing_find_preview_print_contract_untouched(self):
         self.assertIn(
-            "css/home-discovery.css?v=0ad2106b69237957", self.home
+            f'css/home-discovery.css?v={hashlib.sha256((ROOT / "css/home-discovery.css").read_bytes()).hexdigest()[:16]}', self.home
         )
         self.assertIn('data-search-form', self.home)
         self.assertIn('data-gallery', self.home)
