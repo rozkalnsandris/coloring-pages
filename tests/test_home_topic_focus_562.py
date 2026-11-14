@@ -20,7 +20,7 @@ class HomeTopicFocus562(unittest.TestCase):
         self.assertIn('href="/herbst"', self.html)
         self.assertIn('data-gallery-topic-actions hidden', self.html)
         self.assertIn('data-show-categories aria-controls="kategorien" aria-expanded="false"', self.html)
-        self.assertIn('data-clear-active-topic', self.html)
+        self.assertNotIn('data-clear-active-topic', self.html)
         self.assertIn('id="category-heading" tabindex="-1"', self.html)
         self.assertIn('#kategorien[hidden]', self.css)
         self.assertIn('.metadata-filter-field[hidden]', self.css)
@@ -35,7 +35,7 @@ class HomeTopicFocus562(unittest.TestCase):
             'syncFocusedTopicView();',
             'document.querySelector("#category-heading")?.focus({ preventScroll: true })',
             'galleryHeading?.focus({ preventScroll: true })',
-            'selectTopic("", { toggle: false, moveFocus: false })',
+            'topicFilter?.addEventListener("change"',
         ):
             self.assertIn(term, self.app)
         subprocess.run(["node", "--check", str(ROOT / "js/app.js")], check=True, timeout=15)
@@ -83,10 +83,9 @@ console.log(JSON.stringify([
         ostern, tanzen, expanded, unknown, empty, topic_focus, category_focus = json.loads(result.stdout)
         self.assertEqual(ostern["heading"], "Ostern Ausmalbilder")
         self.assertTrue(ostern["hidden"])
-        self.assertTrue(ostern["topicFieldHidden"])
+        self.assertFalse(ostern["topicFieldHidden"])
         self.assertFalse(ostern["actionsHidden"])
         self.assertEqual(ostern["expanded"], "false")
-        self.assertEqual(ostern["clearLabel"], "Thema Ostern entfernen")
         self.assertEqual(tanzen["heading"], "Tanzen Ausmalbilder")
         self.assertTrue(tanzen["hidden"])
         self.assertFalse(expanded["hidden"])
@@ -96,7 +95,7 @@ console.log(JSON.stringify([
             self.assertFalse(no_filter["topicFieldHidden"])
             self.assertTrue(no_filter["actionsHidden"])
             self.assertEqual(no_filter["heading"], "Malvorlagen")
-        self.assertEqual(topic_focus["focusCalls"], ["clear"])
+        self.assertEqual(topic_focus["focusCalls"], [])
         self.assertEqual(category_focus["focusCalls"], ["heading"])
 
 
