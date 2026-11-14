@@ -12,22 +12,22 @@ from qa_responsive_layout_511 import assert_inside_viewport, server
 
 WIDTHS = (320, 360, 390, 412, 540, 720, 768, 1440)
 CURRENT = {
-    "id": "mobile-detail-1", "title": "Junge und Mädchen malen zusammen",
-    "category": "figuren", "topics": ["blumen"],
-    "character": "Junge und Mädchen", "age": "3-6",
+    "id": "mobile-detail-1", "title": "Junge im Bagger",
+    "category": "fahrzeuge", "topics": ["baufahrzeuge"],
+    "character": "Junge", "age": "3-6",
     "difficulty": "easy", "thumb": "/assets/favicon.svg",
     "preview": "/assets/favicon.svg", "print": "/assets/favicon.svg",
 }
 RELATED = {
-    "id": "mobile-detail-2", "title": "Blumenwiese",
-    "category": "figuren", "topics": ["blumen"],
+    "id": "mobile-detail-2", "title": "Bagger auf der Baustelle",
+    "category": "fahrzeuge", "topics": ["baufahrzeuge"],
     "age": "3-6", "difficulty": "easy",
     "thumb": "/assets/favicon.svg", "preview": "/assets/favicon.svg",
     "print": "/assets/favicon.svg",
 }
 TOPICS = {
     "schema": "rozkalns.coloring-pages.topics.v2", "revision": 1,
-    "topics": [{"id": "blumen", "label": "Blumen", "icon": "🌸"}],
+    "topics": [{"id": "baufahrzeuge", "label": "Baufahrzeuge", "icon": "🚜"}],
 }
 
 
@@ -60,7 +60,7 @@ def check_case(browser, origin: str, width: int):
         page.locator(".detail-related-card").first.wait_for()
 
         topic = page.locator(".detail-topic-link")
-        if topic.count() != 1 or topic.inner_text() != "🌸 Blumen":
+        if topic.count() != 1 or topic.inner_text() != "🚜 Baufahrzeuge":
             raise AssertionError(f"{width}px duplicate or incorrect topic navigation")
         if not page.locator("[data-detail-topic-nav]").is_visible():
             raise AssertionError(f"{width}px topic navigation is hidden")
@@ -86,8 +86,8 @@ def check_case(browser, origin: str, width: int):
         order = [
             page.locator("[data-action-print]"),
             page.locator("[data-action-png]"),
-            page.locator("[data-basket-toggle]"),
             page.locator("[data-action-like]"),
+            page.locator("[data-basket-toggle]"),
         ]
         if [node.evaluate("(e) => e.outerHTML.slice(0, 25)")
             for node in order].count(None):
@@ -95,7 +95,7 @@ def check_case(browser, origin: str, width: int):
         dom_order = page.evaluate(
             """() => {
               const selectors = ['[data-action-print]', '[data-action-png]',
-                '[data-basket-toggle]', '[data-action-like]'];
+                '[data-action-like]', '[data-basket-toggle]'];
               const nodes = selectors.map(s => document.querySelector(s));
               return nodes.every(Boolean) && nodes.every((node, i) =>
                 i === 0 || Boolean(nodes[i-1].compareDocumentPosition(node) & 4));
@@ -112,16 +112,37 @@ def check_case(browser, origin: str, width: int):
             if not (summary["y"] + summary["height"] <= media["y"] + 2
                     and media["y"] + media["height"] <= controls["y"] + 2):
                 raise AssertionError(f"{width}px detail reading order overlap")
-            p, png, basket, like = [bbox(node) for node in order]
+            age, difficulty, topic_rect = [
+                bbox(page.locator(selector)) for selector in (
+                    "[data-detail-age]", "[data-detail-difficulty]",
+                    "[data-detail-topic-nav]"
+                )
+            ]
+            if max(age["y"], difficulty["y"], topic_rect["y"]) - min(
+                age["y"], difficulty["y"], topic_rect["y"]
+            ) > 3:
+                raise AssertionError(
+                    f"{width}px age/difficulty/topic are not on one row: "
+                    f"{age}, {difficulty}, {topic_rect}"
+                )
+            badge_widths = page.eval_on_selector(
+                ".detail-summary .detail-badges",
+                "(node) => ({scroll: node.scrollWidth, client: node.clientWidth})"
+            )
+            if badge_widths["scroll"] > badge_widths["client"] + 1:
+                raise AssertionError(
+                    f"{width}px Baufahrzeuge badges require scrolling: {badge_widths}"
+                )
+            p, png, like, basket = [bbox(node) for node in order]
             if not (p["y"] + p["height"] <= png["y"] + 2
-                    and abs(png["y"] - basket["y"]) <= 3
+                    and abs(png["y"] - like["y"]) <= 3
                     and max(png["y"] + png["height"],
-                            basket["y"] + basket["height"]) <= like["y"] + 2):
+                            like["y"] + like["height"]) <= basket["y"] + 2):
                 raise AssertionError(
                     f"{width}px detail action layout incorrect: {p}, {png}, "
-                    f"{basket}, {like}"
+                    f"{like}, {basket}"
                 )
-            if min(node["height"] for node in (p, png, basket, like)) < 44:
+            if min(node["height"] for node in (p, png, like, basket)) < 44:
                 raise AssertionError(f"{width}px action below 44px touch target")
         if page.locator(".detail-related-card").count() != 1:
             raise AssertionError(f"{width}px related cards missing or duplicated")
