@@ -23,11 +23,18 @@ class TopicFilterTests(unittest.TestCase):
             self.assertRegex(item["active_from"], r"^\d{2}-\d{2}$")
             self.assertRegex(item["active_to"], r"^\d{2}-\d{2}$")
 
-    def test_homepage_has_compact_topic_mount_points(self):
+    def test_homepage_has_one_unified_gallery_filter_panel(self):
         page = (ROOT / "index.html").read_text(encoding="utf-8")
-        self.assertIn("data-topic-explorer", page)
-        self.assertIn("data-topic-list", page)
-        self.assertIn("data-topic-clear", page)
+        self.assertEqual(page.count("data-gallery-filter-panel"), 1)
+        self.assertEqual(page.count("data-filter-topic"), 1)
+        self.assertEqual(page.count("data-reset-all-filters"), 1)
+        self.assertIn('<label for="filter-topic">Thema</label>', page)
+        self.assertNotIn("data-topic-explorer", page)
+        self.assertNotIn("data-topic-list", page)
+        self.assertNotIn("data-topic-clear", page)
+        self.assertIn('<span data-total-count hidden>0</span>', page)
+        self.assertIn('id="gallery-title" tabindex="-1">Malvorlagen</h2>', page)
+
 
     def test_homepage_groups_topics_under_native_disclosures(self):
         import re

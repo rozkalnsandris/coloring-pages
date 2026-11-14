@@ -4,6 +4,7 @@ const searchForm = document.querySelector("[data-search-form]");
 const searchInput = document.querySelector("#site-search");
 const ageFilter = document.querySelector("[data-filter-age]");
 const difficultyFilter = document.querySelector("[data-filter-difficulty]");
+const topicFilter = document.querySelector("[data-filter-topic]");
 const surpriseButton = document.querySelector("[data-surprise-button]");
 const surpriseStatus = document.querySelector("[data-surprise-status]");
 const headerSearch = document.querySelector("[data-header-search]");
@@ -20,9 +21,6 @@ const rankingRoot = document.querySelector("[data-ranking-root]");
 const rankingStatus = document.querySelector("[data-ranking-status]");
 const rankingTabs = [...document.querySelectorAll("[data-ranking-tab]")];
 const rankingDescription = document.querySelector("[data-ranking-description]");
-const topicExplorer = document.querySelector("[data-topic-explorer]");
-const topicList = document.querySelector("[data-topic-list]");
-const topicClear = document.querySelector("[data-topic-clear]");
 const rankingSections = new Map(
   [...document.querySelectorAll("[data-ranking-section]")].map((section)=>[section.dataset.rankingSection,section])
 );
@@ -444,54 +442,36 @@ function topicCounts(entries) {
 }
 
 function updateTopicButtons() {
-  document.querySelectorAll("[data-topic-chip]").forEach((button) => {
-    button.setAttribute("aria-pressed", String(button.dataset.topicChip === activeTopic));
-  });
-  if (topicClear) topicClear.hidden = !activeTopic;
-  renderTopicExplorer();
+  if (topicFilter) topicFilter.value = activeTopic;
 }
 
-function selectTopic(topicId, { toggle = true } = {}) {
+function selectTopic(topicId, { toggle = true, moveFocus = true } = {}) {
   activeTopic = toggle && activeTopic === topicId ? "" : topicId;
   syncCatalogFilterUrl();
   updateTopicButtons();
   applyFilters();
   updateNavigation("#neu");
-  document.querySelector("#neu")?.scrollIntoView({ block: "start" });
-  document.querySelector("#gallery-title")?.focus({ preventScroll: true });
+  if (moveFocus) {
+    document.querySelector("#neu")?.scrollIntoView({ block: "start" });
+    document.querySelector("#gallery-title")?.focus({ preventScroll: true });
+  }
 }
 
-function createTopicButton(topic) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "topic-chip";
-  button.dataset.topicChip = topic.id;
-  button.setAttribute("aria-pressed", "false");
-
-  if (topic.icon) {
-    const icon = document.createElement("span");
-    icon.className = "topic-chip-icon";
-    icon.setAttribute("aria-hidden", "true");
-    icon.textContent = topic.icon;
-    button.append(icon);
-  }
-  button.append(document.createTextNode(topic.label));
-  button.addEventListener("click", () => selectTopic(topic.id));
-  return button;
-}
-
-// The homepage starts with broad categories. Only a chosen topic is shown
-// beside the results; secondary choices stay inside their parent disclosure.
-function renderTopicExplorer() {
-  const topic = topicRegistry.find((candidate) => candidate.id === activeTopic);
-  if (topicExplorer) topicExplorer.hidden = !topic;
-  if (topicList) {
-    const button = topic ? createTopicButton(topic) : null;
-    if (button) button.setAttribute("aria-pressed", "true");
-    topicList.replaceChildren(...(button ? [button] : []));
-  }
-  const heading = document.querySelector("#gallery-title");
-  if (heading) heading.textContent = topic ? `${topic.label} – Malvorlagen` : "Neue Malvorlagen";
+// One native topic selector next to age and difficulty; no duplicate badge.
+function renderTopicOptions() {
+  if (!topicFilter) return;
+  const all = document.createElement("option");
+  all.value = "";
+  all.textContent = "Alle Themen";
+  const options = topicRegistry.map((topic) => {
+    const option = document.createElement("option");
+    option.value = topic.id;
+    option.textContent = topic.label;
+    return option;
+  });
+  topicFilter.replaceChildren(all, ...options);
+  topicFilter.disabled = options.length === 0;
+  updateTopicButtons();
 }
 
 // Native links still work before hydration and for new-tab/modified clicks.
@@ -533,7 +513,7 @@ async function loadTopicRegistry() {
     return resource;
   } catch {
     topicRegistry = [];
-    if (topicExplorer) topicExplorer.hidden = true;
+    renderTopicOptions();
     return null;
   }
 }
@@ -568,7 +548,8 @@ function updateCatalogCounts(entries = null) {
     }
     value.textContent = String(counts.get(category) || 0);
   });
-
+  // Existing consumers need the nonvisual catalog total; the unified filter
+  // panel displays the current number of matching results separately.
   if (totalCount) totalCount.textContent = String(Array.isArray(entries) ? entries.length : cards.length);
 }
 
@@ -844,6 +825,7 @@ async function hydrateCatalog() {
     ]);
     readCategoryFilterFromUrl();
     readTopicFilterFromUrl();
+    renderTopicOptions();
     let categoryTopics = new Map();
     if (topicResource) {
       try {
@@ -860,7 +842,6 @@ async function hydrateCatalog() {
     updateSurpriseButton(entries.length ? "" : "Zurzeit sind keine Malvorlagen für die Zufallsauswahl verfügbar.");
     visibleLimit = CATALOG_PAGE_SIZE;
     updateCatalogCounts(catalogEntries);
-    renderTopicExplorer(catalogEntries);
     renderCatalog();
     renderDiscoveryPicks(catalogEntries);
     try {
@@ -878,7 +859,6 @@ async function hydrateCatalog() {
     updateSurpriseButton("Die Zufallsauswahl ist gerade nicht verfügbar.");
     visibleLimit = CATALOG_PAGE_SIZE;
     updateCatalogCounts(catalogEntries);
-    renderTopicExplorer(catalogEntries);
     renderCatalog();
     renderDiscoveryPicks(catalogEntries);
     rankingsUnavailable();
@@ -948,12 +928,8 @@ window.addEventListener("popstate", () => {
   applyFilters();
 });
 
-topicClear?.addEventListener("click", () => {
-  activeTopic = "";
-  syncCatalogFilterUrl();
-  updateTopicButtons();
-  applyFilters();
-  document.querySelector("#gallery-title")?.focus({ preventScroll: true });
+topicFilter?.addEventListener("change", () => {
+  selectTopic(topicFilter.value, { toggle: false, moveFocus: false });
 });
 
 loadMoreButton?.addEventListener("click", (event) => {

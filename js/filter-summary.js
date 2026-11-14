@@ -4,16 +4,10 @@
   const resultCount = document.querySelector("[data-result-count]");
   const activeFilters = document.querySelector("[data-active-filters]");
   const resetButton = document.querySelector("[data-reset-all-filters]");
-  const existingReset = document.querySelector("[data-reset-filters]");
   const searchInput = document.querySelector("#site-search");
   const ageFilter = document.querySelector("[data-filter-age]");
   const difficultyFilter = document.querySelector("[data-filter-difficulty]");
-
-  function selectedText(control) {
-    if (!control || !control.value) return "";
-    const option = control.options && control.selectedIndex >= 0 ? control.options[control.selectedIndex] : null;
-    return option ? option.textContent.trim() : control.value;
-  }
+  const topicFilter = document.querySelector("[data-filter-topic]");
 
   function selectedCategoryLabel(categoryId) {
     const candidates = Array.from(document.querySelectorAll("[data-filter], [data-collection-filter]"));
@@ -30,31 +24,12 @@
     return active ? (active.dataset.filter || active.dataset.collectionFilter || "") : "";
   }
 
-  function activeTopicLabel() {
-    const selected = document.querySelector("[data-topic-chip][aria-pressed=\"true\"]");
-    if (!selected) return "";
-    // The visible topic chip includes a decorative, aria-hidden emoji.
-    // Summarize only its text label, e.g. "Thema: Obst", not "Thema: 🍎Obst".
-    const label = Array.from(selected.childNodes)
-      .filter((node) => node.nodeType === Node.TEXT_NODE)
-      .map((node) => node.textContent.trim())
-      .filter(Boolean)
-      .join(" ");
-    return label || selected.textContent.trim();
-  }
-
   function labels() {
     const values = [];
     const query = searchInput ? searchInput.value.trim() : "";
     if (query) values.push("Suche: „" + query + "“");
     const category = activeCategoryId();
     if (category) values.push("Kategorie: " + selectedCategoryLabel(category));
-    const topic = activeTopicLabel();
-    if (topic) values.push("Thema: " + topic);
-    const age = selectedText(ageFilter);
-    if (age) values.push("Alter: " + age);
-    const difficulty = selectedText(difficultyFilter);
-    if (difficulty) values.push("Schwierigkeit: " + difficulty);
     return values;
   }
 
@@ -64,13 +39,15 @@
       activeFilters.textContent = values.join(" · ");
       activeFilters.hidden = values.length === 0;
     }
-    if (resetButton) resetButton.hidden = values.length === 0;
+    const hasApplied = Boolean(values.length || topicFilter?.value ||
+      ageFilter?.value || difficultyFilter?.value);
+    if (resetButton) resetButton.hidden = !hasApplied;
   }
 
-  resetButton?.addEventListener("click", () => existingReset?.click());
   searchInput?.addEventListener("input", render);
   ageFilter?.addEventListener("change", render);
   difficultyFilter?.addEventListener("change", render);
+  topicFilter?.addEventListener("change", render);
   window.addEventListener("popstate", () => queueMicrotask(render));
   document.addEventListener("click", () => queueMicrotask(render));
   if (resultCount) new MutationObserver(render).observe(resultCount, {childList:true, characterData:true, subtree:true});

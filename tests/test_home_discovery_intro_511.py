@@ -20,7 +20,7 @@ class HomepageDiscoveryIntro511Tests(unittest.TestCase):
         self.assertLess(self.home.index("data-weekly-feature"), self.home.index('id="entdecken"'))
         self.assertIn("Bunt gemischt entdecken", self.home)
         self.assertIn("Zu den neuesten Malvorlagen", self.home)
-        self.assertIn('<h2 id="gallery-title" tabindex="-1">Neue Malvorlagen</h2>', self.home)
+        self.assertIn('<h2 id="gallery-title" tabindex="-1">Malvorlagen</h2>', self.home)
 
     def test_discovery_uses_existing_catalogue_without_an_extra_fetch(self):
         helper = (ROOT / "js/discovery-picks.js").read_text(encoding="utf-8")

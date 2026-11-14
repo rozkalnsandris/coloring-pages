@@ -18,10 +18,31 @@ WIDTHS = (320, 360, 361, 390, 412, 540, 541, 768, 1440)
 CATALOG_FIXTURE = [
     {"id": f"mobile-qa-{number}", "title": f"Mobile QA {number}",
      "category": "tiere", "age": "3-6", "difficulty": "easy",
+     "topics": ["deutschland"] if number <= 2 else (["obst"] if number <= 4 else []),
      "thumb": "/assets/favicon.svg",
      "print": f"/media/mobile-qa-{number}/print.png"}
     for number in range(1, 6)
 ]
+CATEGORIES_FIXTURE = {
+    "schema": "rozkalns.coloring-pages.categories.v2", "revision": 1,
+    "categories": [
+        {"id": name, "label": label}
+        for name, label in (
+            ("tiere", "Tiere"), ("fahrzeuge", "Fahrzeuge"),
+            ("alphabet", "Alphabet"), ("lernen", "Lernen"),
+            ("figuren", "Figuren"), ("jahreszeiten", "Jahreszeiten & Feste"),
+        )
+    ],
+}
+TOPICS_FIXTURE = {
+    "schema": "rozkalns.coloring-pages.topics.v2", "revision": 1,
+    "topics": [
+        {"id": "deutschland", "label": "Deutschland", "icon": "🇩🇪",
+         "kind": "evergreen", "legacy_terms": []},
+        {"id": "obst", "label": "Obst", "icon": "🍎",
+         "kind": "evergreen", "legacy_terms": []},
+    ],
+}
 
 
 
@@ -106,15 +127,9 @@ def exercise_real_basket_reflow(page, width: int):
         raise AssertionError(f"{width}px basket did not initialize at 0/5")
     assert_reflow_after_basket(page, width, "0/5")
 
-    # Add via the real delegated click handler; the observer inserts this control.
-    page.evaluate("""() => {
-      const card = document.createElement('article');
-      card.className = 'coloring-card';
-      card.innerHTML = '<a href="detail.html?id=mobile-qa-1">Mobile QA 1</a>'
-        + '<h3>Mobile QA 1</h3><div class="badges"></div>';
-      document.querySelector('[data-gallery]').append(card);
-    }""")
-    page.locator('[data-basket-toggle="mobile-qa-1"]').click()
+    # Use the real hydrated catalogue card. Injecting a duplicate ID would
+    # make the selector ambiguous and would not test normal visitor behavior.
+    page.locator('[data-gallery] [data-basket-toggle="mobile-qa-1"]').click()
     if "1/5" not in summary.inner_text():
         raise AssertionError(f"{width}px real add did not update basket to 1/5")
     assert_reflow_after_basket(page, width, "1/5")
@@ -166,39 +181,76 @@ def assert_search_and_surprise_group(page, width: int):
 
 
 def assert_topic_filter_summary(page, width: int):
-    # Reproduce the exact chip markup from app.js without requiring LIVE
-    # taxonomy and catalogue feeds. The real filter-summary.js handles it.
-    page.evaluate("""() => {
-      const chip = document.createElement('button');
-      chip.dataset.topicChip = 'obst';
-      chip.className = 'topic-chip';
-      chip.setAttribute('aria-pressed', 'true');
-      const icon = document.createElement('span');
-      icon.className = 'topic-chip-icon';
-      icon.setAttribute('aria-hidden', 'true');
-      icon.textContent = '🍎';
-      chip.append(icon, document.createTextNode('Obst'));
-      document.querySelector('[data-topic-list]').replaceChildren(chip);
-      document.querySelector('[data-result-count]').textContent = '17 Malvorlagen';
-    }""")
     page.wait_for_function(
         """() => {
-          const output = document.querySelector('[data-active-filters]');
-          return output && !output.hidden && output.textContent.includes('Thema: Obst');
+          const filter = document.querySelector('[data-filter-topic]');
+          const count = document.querySelector('[data-result-count]');
+          return filter && !filter.disabled && filter.options.length === 3 &&
+            filter.value === 'deutschland' &&
+            count?.textContent.trim() === '2 Malvorlagen';
         }"""
     )
-    summary = page.locator("[data-active-filters]").inner_text()
-    if "🍎" in summary or "Thema: Obst" not in summary:
-        raise AssertionError(f"{width}px topic summary contains decorative icon: {summary!r}")
+    if page.locator("[data-topic-explorer], [data-topic-chip]").count():
+        raise AssertionError(f"{width}px duplicate topic UI remains")
+    if page.locator("[data-filter-topic]").count() != 1:
+        raise AssertionError(f"{width}px duplicate topic selectors")
+    if page.locator("[data-reset-all-filters]").count() != 1:
+        raise AssertionError(f"{width}px duplicate reset")
+    if page.locator("#gallery-title").inner_text() != "Malvorlagen":
+        raise AssertionError(f"{width}px topic repeated in gallery heading")
+    if not page.locator("[data-gallery-filter-panel]").is_visible():
+        raise AssertionError(f"{width}px filter panel not visible")
+    if page.locator("[data-active-filters]").is_visible():
+        raise AssertionError(f"{width}px topic repeated in summary")
     if not page.locator("[data-reset-all-filters]").is_visible():
-        raise AssertionError(f"{width}px active filter reset is not available")
-    page.evaluate("""() => {
-      document.querySelector('[data-topic-list]').replaceChildren();
-      document.querySelector('[data-result-count]').textContent = '480 Malvorlagen';
-    }""")
-    page.wait_for_function(
-        "() => document.querySelector('[data-active-filters]').hidden"
+        raise AssertionError(f"{width}px reset missing for active topic")
+    assert_inside_viewport(
+        page, "[data-gallery-filter-panel], .gallery-filter-fields, "
+        ".gallery-filter-fields select, .gallery-filter-footer, "
+        "[data-reset-all-filters]", width,
     )
+    controls = [page.locator(selector) for selector in (
+        "[data-filter-topic]", "[data-filter-age]", "[data-filter-difficulty]"
+    )]
+    bounds = [control.bounding_box() for control in controls]
+    if any(not box or box["height"] < 44 for box in bounds):
+        raise AssertionError(f"{width}px inaccessible filter targets: {bounds}")
+    if width <= 720:
+        for prior, following in zip(bounds, bounds[1:]):
+            if following["y"] < prior["y"] + prior["height"] - 1:
+                raise AssertionError(f"{width}px overlapping filter controls: {bounds}")
+
+    page.locator("[data-filter-topic]").select_option("obst")
+    page.wait_for_function(
+        "() => new URL(location.href).searchParams.get('topic') === 'obst'"
+        " && document.querySelector('[data-result-count]')"
+        "?.textContent.trim() === '2 Malvorlagen'"
+    )
+    if page.locator("[data-active-filters]").is_visible():
+        raise AssertionError(f"{width}px duplicated topic after change")
+    page.locator("[data-filter-age]").select_option("4-8")
+    page.wait_for_function(
+        "() => document.querySelector('[data-result-count]')"
+        "?.textContent.trim() === '0 Malvorlagen'"
+    )
+    page.locator("[data-reset-all-filters]").click()
+    page.wait_for_function(
+        """() => {
+          const url = new URL(location.href);
+          return !url.searchParams.has('topic') &&
+            !url.searchParams.has('age') &&
+            document.querySelector('[data-filter-topic]').value === '' &&
+            document.querySelector('[data-filter-age]').value === '' &&
+            document.querySelector('[data-result-count]').textContent.trim() === '5 Malvorlagen';
+        }"""
+    )
+    if "campaign=dortmund-01" not in page.url:
+        raise AssertionError(f"{width}px unrelated URL parameter lost")
+    if page.locator("[data-reset-all-filters]").is_visible():
+        raise AssertionError(f"{width}px redundant reset when unfiltered")
+    if page.locator("[data-active-filters]").is_visible():
+        raise AssertionError(f"{width}px stale filter summary after reset")
+
 
 
 def run_case(browser, origin: str, width: int):
@@ -208,7 +260,18 @@ def run_case(browser, origin: str, width: int):
             status=200, content_type="application/json",
             body=json.dumps(CATALOG_FIXTURE),
         ))
-        page.goto(origin + "/index.html", wait_until="domcontentloaded")
+        page.route("**/categories.json", lambda route: route.fulfill(
+            status=200, content_type="application/json",
+            body=json.dumps(CATEGORIES_FIXTURE),
+        ))
+        page.route("**/topics.json", lambda route: route.fulfill(
+            status=200, content_type="application/json",
+            body=json.dumps(TOPICS_FIXTURE),
+        ))
+        page.goto(
+            origin + "/index.html?topic=deutschland&campaign=dortmund-01#neu",
+            wait_until="domcontentloaded",
+        )
         page.wait_for_selector(".category-browser")
         page.wait_for_timeout(100)
 
