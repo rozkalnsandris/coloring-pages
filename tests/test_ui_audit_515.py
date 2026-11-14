@@ -58,10 +58,18 @@ class Audit515Tests(unittest.TestCase):
         self.assertIn("data-reset-all-filters", html)
         self.assertIn("Alle Filter zurücksetzen", html)
 
-    def test_filter_summary_reuses_existing_reset_and_tracks_constraints(self):
+    def test_filter_summary_has_one_reset_without_repeated_visible_facets(self):
         source = (ROOT / "js/filter-summary.js").read_text(encoding="utf-8")
-        for expected in ("Suche:", "Kategorie:", "Thema:", "Alter:", "Schwierigkeit:", "existingReset?.click()"):
+        html = (ROOT / "index.html").read_text(encoding="utf-8")
+        for expected in ("Suche:", "Kategorie:", "topicFilter?.value",
+                         "ageFilter?.value", "difficultyFilter?.value"):
             self.assertIn(expected, source)
+        self.assertNotIn("existingReset?.click()", source)
+        self.assertNotIn('values.push("Thema:', source)
+        self.assertNotIn('values.push("Alter:', source)
+        self.assertNotIn('values.push("Schwierigkeit:', source)
+        self.assertEqual(html.count("data-reset-all-filters"), 1)
+        self.assertIn('data-reset-filters data-reset-all-filters', html)
 
     def test_filter_helper_asset_hash_is_exact(self):
         html = (ROOT / "index.html").read_text(encoding="utf-8")

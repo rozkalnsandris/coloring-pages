@@ -14,6 +14,7 @@ const discoveryPicksGallery = document.querySelector("[data-discovery-picks-gall
 const categoryBrowser = document.querySelector(".category-browser");
 const categoryButtons = [...document.querySelectorAll("[data-filter], [data-collection-filter]")];
 const resultCount = document.querySelector("[data-result-count]");
+const totalCount = document.querySelector("[data-total-count]");
 const emptyState = document.querySelector("[data-empty-state]");
 const loadMoreButton = document.querySelector("[data-load-more]");
 const rankingRoot = document.querySelector("[data-ranking-root]");
@@ -547,7 +548,9 @@ function updateCatalogCounts(entries = null) {
     }
     value.textContent = String(counts.get(category) || 0);
   });
-
+  // Existing consumers need the nonvisual catalog total; the unified filter
+  // panel displays the current number of matching results separately.
+  if (totalCount) totalCount.textContent = String(Array.isArray(entries) ? entries.length : cards.length);
 }
 
 function updateCount(totalMatches) {

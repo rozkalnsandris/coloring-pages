@@ -32,7 +32,7 @@ class TopicFilterTests(unittest.TestCase):
         self.assertNotIn("data-topic-explorer", page)
         self.assertNotIn("data-topic-list", page)
         self.assertNotIn("data-topic-clear", page)
-        self.assertNotIn("data-total-count", page)
+        self.assertIn('<span data-total-count hidden>0</span>', page)
         self.assertIn('id="gallery-title" tabindex="-1">Malvorlagen</h2>', page)
 
 

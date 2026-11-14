@@ -127,15 +127,9 @@ def exercise_real_basket_reflow(page, width: int):
         raise AssertionError(f"{width}px basket did not initialize at 0/5")
     assert_reflow_after_basket(page, width, "0/5")
 
-    # Add via the real delegated click handler; the observer inserts this control.
-    page.evaluate("""() => {
-      const card = document.createElement('article');
-      card.className = 'coloring-card';
-      card.innerHTML = '<a href="detail.html?id=mobile-qa-1">Mobile QA 1</a>'
-        + '<h3>Mobile QA 1</h3><div class="badges"></div>';
-      document.querySelector('[data-gallery]').append(card);
-    }""")
-    page.locator('[data-basket-toggle="mobile-qa-1"]').click()
+    # Use the real hydrated catalogue card. Injecting a duplicate ID would
+    # make the selector ambiguous and would not test normal visitor behavior.
+    page.locator('[data-gallery] [data-basket-toggle="mobile-qa-1"]').click()
     if "1/5" not in summary.inner_text():
         raise AssertionError(f"{width}px real add did not update basket to 1/5")
     assert_reflow_after_basket(page, width, "1/5")
