@@ -11,6 +11,7 @@ on:
       - css/**
       - js/category-mobile-rows.js
       - js/print-basket-ui.mjs
+      - js/filter-summary.js
   workflow_dispatch:
 
 permissions:
