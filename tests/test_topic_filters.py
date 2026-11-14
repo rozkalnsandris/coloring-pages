@@ -61,7 +61,7 @@ class TopicFilterTests(unittest.TestCase):
         self.assertEqual({topic for _, topic in links}, {"obst", "gemuese", "blumen", "bauernhof", "weltraum"})
         for href, topic in links:
             self.assertEqual(parse_qs(urlsplit(href).query), {"topic": [topic]})
-            self.assertEqual(urlsplit(href).fragment, "neu")
+            self.assertEqual(urlsplit(href).fragment, "")
         self.assertIn("js/category-topic-discovery.js?v=", page)
         version = hashlib.sha256((ROOT / "css/home-discovery.css").read_bytes()).hexdigest()[:16]
         self.assertIn(f"css/home-discovery.css?v={version}", page)

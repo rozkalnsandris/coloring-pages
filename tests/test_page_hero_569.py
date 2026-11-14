@@ -66,7 +66,7 @@ class PageHeroV2Tests(unittest.TestCase):
         self.assertIn('"Passende Malvorlagen entdecken"', app)
         self.assertIn('index.html?topic=${encodeURIComponent(topicId)}', discovery)
         self.assertNotIn('index.html?topic=${encodeURIComponent(topicId)}#neu', discovery)
-        self.assertNotRegex(home, r'index\\.html\\?topic=[a-z0-9-]+#neu')
+        self.assertNotRegex(home, r'index\.html\?topic=[a-z0-9-]+#neu')
 
     def test_single_css_version_and_source_seo(self):
         css_path = ROOT / "css/topic-landing-hero.css"

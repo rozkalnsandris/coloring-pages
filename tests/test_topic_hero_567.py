@@ -34,7 +34,7 @@ class TopicHero567Tests(unittest.TestCase):
         self.assertIn('data-focused-topic-hero', html)
         self.assertLess(html.index('data-focused-topic-hero'), html.index('id="kategorien"'))
         self.assertIn('class="hero page-hero page-hero--home page-hero--with-art"', html)
-        self.assertIn('<h1 id="focused-topic-title" data-focused-topic-title>', html)
+        self.assertIn('<h1 id="focused-topic-title" data-focused-topic-title tabindex="-1">', html)
         self.assertIn('data-focused-topic-art hidden', html)
         self.assertEqual(html.count('data-filter-topic'), 1)
         self.assertIn('if (typeof syncTopicLandingHero === "function") syncTopicLandingHero(selected);', app)
