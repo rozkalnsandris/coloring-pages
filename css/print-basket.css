@@ -268,3 +268,10 @@
     margin: 0;
   }
 }
+
+/* Below 541px, keep the accessible basket name but show only its sheet count.
+   Its existing aria-label continues to announce the complete label. */
+@media (max-width: 540px) {
+  .basket-summary { gap: 0; padding-inline: 7px; }
+  .basket-summary-long, .basket-summary-short { display: none; }
+}

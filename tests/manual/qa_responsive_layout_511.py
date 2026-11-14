@@ -9,11 +9,20 @@ from __future__ import annotations
 
 import contextlib
 import http.server
+import json
 from pathlib import Path
 import threading
 
 ROOT = Path(__file__).resolve().parents[2]
 WIDTHS = (320, 360, 361, 390, 412, 540, 541, 768, 1440)
+CATALOG_FIXTURE = [
+    {"id": f"mobile-qa-{number}", "title": f"Mobile QA {number}",
+     "category": "tiere", "age": "3-6", "difficulty": "easy",
+     "thumb": "/assets/favicon.svg",
+     "print": f"/media/mobile-qa-{number}/print.png"}
+    for number in range(1, 6)
+]
+
 
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
@@ -55,9 +64,87 @@ def assert_inside_viewport(page, selector: str, width: int):
             )
 
 
+
+def assert_reflow_after_basket(page, width: int, state: str):
+    metrics = page.evaluate(
+        """() => ({
+          doc: document.documentElement.scrollWidth,
+          body: document.body.scrollWidth,
+          viewport: window.innerWidth,
+        })"""
+    )
+    if metrics["doc"] > width + 1 or metrics["body"] > width + 1:
+        raise AssertionError(f"{width}px basket={state} horizontal overflow: {metrics}")
+    assert_inside_viewport(
+        page, ".site-header, .header-inner, .brand, .header-actions, "
+        ".menu-button, .basket-summary, .legal-footer-inner, "
+        ".legal-footer-inner > a, .site-footer-social", width,
+    )
+    for selector in ("#neu .section-heading", ".discovery-picks .section-heading"):
+        heading = page.locator(f"{selector} h2").first
+        action = page.locator(f"{selector} .outline-link").first
+        if not heading.count() or not action.count():
+            continue
+        a, b = heading.bounding_box(), action.bounding_box()
+        if a and b and (
+            min(a["x"] + a["width"], b["x"] + b["width"]) - max(a["x"], b["x"]) > 1
+            and min(a["y"] + a["height"], b["y"] + b["height"]) - max(a["y"], b["y"]) > 1
+        ):
+            raise AssertionError(f"{width}px basket={state} heading/action overlap: {selector}")
+    for link in page.locator(".legal-footer-inner > a").all():
+        if (box := link.bounding_box()) and width <= 540 and box["height"] < 44:
+            raise AssertionError(f"{width}px basket={state} footer link below 44px: {box}")
+
+
+def exercise_real_basket_reflow(page, width: int):
+    summary = page.locator("[data-basket-summary]")
+    page.wait_for_function(
+        "() => { const s = document.querySelector('[data-basket-summary]'); "
+        "return Boolean(s && !s.disabled); }", timeout=15000,
+    )
+    if "0/5" not in summary.inner_text():
+        raise AssertionError(f"{width}px basket did not initialize at 0/5")
+    assert_reflow_after_basket(page, width, "0/5")
+
+    # Add via the real delegated click handler; the observer inserts this control.
+    page.evaluate("""() => {
+      const card = document.createElement('article');
+      card.className = 'coloring-card';
+      card.innerHTML = '<a href="detail.html?id=mobile-qa-1">Mobile QA 1</a>'
+        + '<h3>Mobile QA 1</h3><div class="badges"></div>';
+      document.querySelector('[data-gallery]').append(card);
+    }""")
+    page.locator('[data-basket-toggle="mobile-qa-1"]').click()
+    if "1/5" not in summary.inner_text():
+        raise AssertionError(f"{width}px real add did not update basket to 1/5")
+    assert_reflow_after_basket(page, width, "1/5")
+
+    # The public Kita package event uses the same basket reconciler for 5 sheets.
+    page.evaluate(
+        """ids => document.dispatchEvent(new CustomEvent(
+          'ausmalwiese:print-basket-replace',
+          {detail: {ids, expectedSheets: ids.length, open: false}}
+        ))""",
+        [item["id"] for item in CATALOG_FIXTURE],
+    )
+    if "5/5" not in summary.inner_text():
+        raise AssertionError(f"{width}px curated add did not update basket to 5/5")
+    assert_reflow_after_basket(page, width, "5/5")
+    if width <= 540:
+        label = summary.locator(".basket-summary-short")
+        if label.is_visible():
+            raise AssertionError(f"{width}px basket short label must be visually hidden")
+        if "Meine Drucksammlung" not in (summary.get_attribute("aria-label") or ""):
+            raise AssertionError(f"{width}px basket lost its accessible label")
+
+
 def run_case(browser, origin: str, width: int):
     page = browser.new_page(viewport={"width": width, "height": 1000})
     try:
+        page.route("**/catalog.json", lambda route: route.fulfill(
+            status=200, content_type="application/json",
+            body=json.dumps(CATALOG_FIXTURE),
+        ))
         page.goto(origin + "/index.html", wait_until="domcontentloaded")
         page.wait_for_selector(".category-browser")
         page.wait_for_timeout(100)
@@ -135,6 +222,7 @@ def run_case(browser, origin: str, width: int):
                 width,
             )
 
+        exercise_real_basket_reflow(page, width)
         print(
             f"PASS responsive {width}px: mobileRows={expected_mobile_rows}, "
             "no horizontal overflow"
