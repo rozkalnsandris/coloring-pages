@@ -455,6 +455,53 @@ function updateTopicButtons() {
   if (topicFilter) topicFilter.value = activeTopic;
 }
 
+// #567: a browse Topic receives the same semantic hero vocabulary as /herbst.
+// Its label comes only from the validated runtime registry; editorial text and
+// imagery must be explicitly reviewed in the separate local manifest.
+const focusedTopicHero = document.querySelector("[data-focused-topic-hero]");
+const focusedTopicTitle = document.querySelector("[data-focused-topic-title]");
+const focusedTopicBreadcrumb = document.querySelector("[data-focused-topic-breadcrumb]");
+const focusedTopicIntro = document.querySelector("[data-focused-topic-intro]");
+const focusedTopicArt = document.querySelector("[data-focused-topic-art]");
+const homeHero = document.querySelector("#hero");
+const homeSearchLink = document.querySelector(".header-search");
+
+function syncTopicLandingHero(selected) {
+  const focused = Boolean(selected);
+  if (homeHero) homeHero.hidden = focused;
+  if (focusedTopicHero) focusedTopicHero.hidden = !focused;
+  if (homeSearchLink) homeSearchLink.href = focused ? "/#hero" : "#hero";
+  document.querySelectorAll('.desktop-nav a[href="#hero"], .mobile-nav a[href="#hero"]').forEach((link) => {
+    link.href = focused ? "/#hero" : "#hero";
+  });
+  if (!focused) {
+    focusedTopicArt?.replaceChildren();
+    if (focusedTopicArt) focusedTopicArt.hidden = true;
+    focusedTopicHero?.classList.remove("topic-landing-hero--with-art");
+    return;
+  }
+  if (focusedTopicTitle) focusedTopicTitle.textContent = selected.label + " Ausmalbilder";
+  if (focusedTopicBreadcrumb) focusedTopicBreadcrumb.textContent = selected.label;
+  const entry = globalThis.AusmalTopicHero?.get(selected.id);
+  if (focusedTopicIntro) {
+    focusedTopicIntro.textContent = entry?.intro || "";
+    focusedTopicIntro.hidden = !entry?.intro;
+  }
+  focusedTopicArt?.replaceChildren();
+  if (focusedTopicArt) focusedTopicArt.hidden = !entry?.image;
+  focusedTopicHero?.classList.toggle("topic-landing-hero--with-art", Boolean(entry?.image));
+  if (entry?.image && focusedTopicArt) {
+    const image = document.createElement("img");
+    image.src = entry.image.src;
+    image.alt = entry.image.alt;
+    image.width = entry.image.width;
+    image.height = entry.image.height;
+    image.decoding = "async";
+    image.loading = "eager";
+    focusedTopicArt.append(image);
+  }
+}
+
 // Progressive enhancement: retain crawlable Category links until a known
 // managed Topic has loaded, then emphasize its results rather than a second grid.
 function syncFocusedTopicView() {
@@ -463,6 +510,7 @@ function syncFocusedTopicView() {
   const hideCategories = focused && !categoriesExpanded;
   const hadCategoryFocus = categoriesSection?.contains(document.activeElement);
   if (categoriesSection) categoriesSection.hidden = hideCategories;
+  if (typeof syncTopicLandingHero === "function") syncTopicLandingHero(selected);
   if (galleryTopicActions) galleryTopicActions.hidden = !focused;
   // #564: one visible native selector, not a competing selected-Topic chip.
   if (topicField) topicField.hidden = false;

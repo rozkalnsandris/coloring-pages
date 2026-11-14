@@ -155,6 +155,16 @@ def exercise_real_basket_reflow(page, width: int):
 
 
 def assert_search_and_surprise_group(page, width: int):
+    # #567: selected-topic views replace the generic dog/search hero with
+    # a compact semantic Topic hero; search stays reachable via header.
+    if page.locator("[data-focused-topic-hero]").is_visible():
+        if page.locator("#hero").is_visible():
+            raise AssertionError(f"{width}px generic hero duplicated with Topic hero")
+        if not page.locator("[data-focused-topic-title]").is_visible():
+            raise AssertionError(f"{width}px Topic H1 is missing")
+        if page.locator(".header-search").get_attribute("href") != "/#hero":
+            raise AssertionError(f"{width}px search link does not return to homepage")
+        return
     if width > 720:
         return
     search = page.locator(".hero-search-tools .search")

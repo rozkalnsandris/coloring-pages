@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="css/metadata-filters.css?v=15e63297a17a7bfb">
   <link rel="stylesheet" href="css/mobile-first.css?v=mobile-hero-size-186">
   <link rel="stylesheet" href="css/home-discovery.css?v=b189a80283a82a67">
+  <link rel="stylesheet" href="css/topic-landing-hero.css?v=252e47aff77af24b">
   <link rel="stylesheet" href="css/home-compact.css?v=43f7876ab86edd62">
   <link rel="stylesheet" href="css/social-footer.css?v=3670ffdbfe96bb37">
   <link rel="stylesheet" href="css/print-basket.css?v=33b694c62080e615">
@@ -195,6 +196,20 @@
 
     <section id="neu" class="new-pages" aria-labelledby="gallery-title">
       <div class="container">
+        <section class="topic-landing-hero topic-landing-hero--home" data-focused-topic-hero
+                 aria-labelledby="focused-topic-title" hidden>
+          <div class="topic-landing-grid">
+            <div class="topic-landing-copy">
+              <nav class="topic-landing-breadcrumbs" aria-label="Breadcrumb">
+                <a href="/">Startseite</a><span aria-hidden="true">›</span>
+                <span data-focused-topic-breadcrumb></span>
+              </nav>
+              <h1 id="focused-topic-title" data-focused-topic-title></h1>
+              <p data-focused-topic-intro hidden></p>
+            </div>
+            <div class="topic-landing-art" data-focused-topic-art hidden></div>
+          </div>
+        </section>
         <div class="section-heading">
           <h2 id="gallery-title" tabindex="-1">Malvorlagen</h2>
           <div class="gallery-topic-actions" data-gallery-topic-actions hidden>
@@ -393,7 +408,8 @@
   <script src="js/search.js?v=37e0375afaecd4e1" defer></script>
   <script src="js/discovery-picks.js?v=16ec340fb3ce709a" defer></script>
   <script src="js/gallery-filter-panel.js?v=7dc920c831e8d931" defer></script>
-  <script src="js/app.js?v=aae288922af1c8e2" defer></script>
+  <script src="js/topic-hero-content.js?v=76819443530dea3b" defer></script>
+  <script src="js/app.js?v=46d715b036f3d6ab" defer></script>
   <script src="js/filter-summary.js?v=33931d82dec876bb" defer></script>
   <script type="module" src="js/print-basket-ui.mjs?v=7d936d88288808f8"></script>
   <script src="js/social-footer.js?v=8d06bab0d7298cda" defer></script>
