@@ -63,3 +63,45 @@ Potential separate follow-up: review the other dance-themed figure previews plus
 4. Read-only postverify: ID `3706300` exists exactly once under `/figuren`, not `fahrzeuge` or `autos`; its `Autos` badge is gone; same ID, title, detailed preview/print paths and publication order. Source CI alone is not LIVE evidence.
 
 **Boundary:** this review is docs-only. No LIVE/catalogue/registry/ADMIN mutation, image change, GitHub merge or deploy.
+
+## Post-edit dance Topic review — 2026-11-14 (proposal only)
+
+### Evidence and corrected baseline
+
+- Previous #511 owner-authorized **one-record** LIVE Catalog/Edit for `3706300` was postverified on RPi5. `Fröhlicher Tänzer` remains in `figuren`, with `categories=["figuren"]` and `topics=[]`. All 494 unique IDs remained; an in-memory reverse reconstruction reproduced the exact pre-edit catalogue SHA-256, confirming only `categories` and `topics` changed. Post-edit **historical** catalogue SHA-256: `4906d9382a738a9666bea87f068a2904ea8ad5d41e22dff57aab356cd6fcae2f` (not a guarantee of present LIVE bytes). The existing earlier correction proposal above is **completed**, not a standing LIVE apply authorization.
+- Read-only public Opera catalogue on 2026-11-14 had 494 activities, 109 in `figuren`. The public managed Topics v2 registry was revision 2 with 33 Topics; no Topic with ID `tanzen` existed then. This public browser snapshot is **not SHA-bound** to the RPi5 content store, so any future apply requires a fresh immutable catalogue/registry/link check.
+- Public `/media/<id>/preview.webp` imagery was inspected individually for all nine entries below. All show recognisable dance poses or a ballerina. Several are near-duplicate poses or a similar male/child character, so nine IDs do **not** imply nine visually distinct designs. No original/print-master inspection was performed.
+
+### Editorial inventory: possible `Tanzen` entries
+
+| Public ID | German title | Artwork checked in Opera | Existing broad category from public catalogue |
+|---|---|---|---|
+| `3706300` | Fröhlicher Tänzer | Dancing adult, previously misclassified as `autos`; corrected | `figuren` |
+| `0678119` | Tanzender Junge | Dancing adult/young male figure, raised arm | `figuren` |
+| `0933115` | Coole Tanzbewegung | Dancing male character in cap/goggles | `figuren` |
+| `9658233` | Lustiger Tanzsprung | Dancing male character with raised knee | `figuren` |
+| `8944600` | Kleiner Tänzer | Dancing male character, dynamic pose | `figuren` |
+| `6668623` | Kleiner Tänzer | Dancing boy with music note/microphone | `figuren` |
+| `1592942` | Tanzen macht Spaß | Dancing boy in cap | `figuren` |
+| `1069719` | Junge mit Tanzschritten | Dancing boy with musical note | `figuren` |
+| `6084209` | Kleine Ballerina tanzt | Young ballerina in ballet pose | `figuren` |
+
+The two *Kleiner Tänzer* records have different public IDs and were visually inspected as different compositions. Treat each as one activity, not as a duplicate ID. Reference previews are publicly accessible at `https://ausmalwiese.de/media/<id>/preview.webp`; do not commit media or download/archive binaries as part of this source-only proposal.
+
+**Explicitly excluded:** `9363184` (*Tanzendes Halloween-Skelett*) is in primary `jahreszeiten` and already has explicit Topic `halloween`. Do not forcibly reclassify that seasonal artwork into an evergreen `figuren` Topic solely because its title contains `tanz`.
+
+### Proposed taxonomy decision — requires owner approval
+
+- Proposed **Topic**, not a Category: stable ID `tanzen`, German label **Tanzen**, `kind=evergreen`, linked to existing `figuren` via the protected Category↔Topic registry. A neutral music/dance icon (e.g. `🎶`) and precise `legacy_terms` need explicit owner/registry-schema review. Do not activate broad title-substring fallback until checking false positives on the entire catalogue and seasonal precedence.
+- The nine entries above are **candidates for individual owner review and explicit assignment**, not a production apply manifest. Preserve each ID, original title, page structure, primary/secondary Categories where correct, other valid ordered Topics, print/media URLs and publication dates. The corrected `3706300` may receive `topics=["tanzen"]` only **after** the new Topic/link exists and its current before-state is revalidated.
+- Distinct illustration styles are limited; review whether user-facing discovery quality benefits from nine similar dance illustrations before release. Do not invent a second Topic for generic music or change unrelated category boundaries.
+- The earlier #1395/#1396 bulk classification approval and apply concern different exact snapshots. They **do not** authorize the new `tanzen` registry creation or any of these new metadata writes.
+
+### Independent authorization gates
+
+1. Owner decides whether the proposed evergreen `tanzen` Topic/`figuren` link should exist. Any selected icon/legacy terms and Category↔Topic schema must be reviewed as an exact source proposal, not inferred from a chat or this document.
+2. Obtain separately authorized fresh read-only RPi5 category/topic/link snapshots (SHA-256 and revisions), complete catalogue snapshot digest, and validate the nine IDs' actual current memberships/artwork. One public-browser capture is insufficient for a production manifest. Treat drift as a new review, not an automatic rewrite.
+3. Create an exact per-ID reviewed before/after manifest (include untouched fields, no duplicates) and obtain separate explicit LIVE owner authorization for registry/link creation and later bounded catalogue edits. Existing protected ADMIN manager and editor are the preferred trusted operators only after installed identities/lock/capability checks. Each authorisation is single-use; no retry/rollback/fallback writes.
+4. After authorized LIVE actions, read-only verify the registered Topic and link, nine reviewed memberships, public `figuren` filters and `/detail.html?id=3706300` unchanged print/media links. This document and any docs-only CI are **not** LIVE proofs.
+
+**No mutation is authorized by this source-only evidence.** No Topics, links, catalogue, media, ADMIN, image, runtime or deployment changes are part of this PR.
