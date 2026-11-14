@@ -1155,3 +1155,39 @@ a { color: inherit; }
   .analytics-consent-actions { display: grid; grid-template-columns: 1fr; }
   .analytics-consent-actions button { width: 100%; }
 }
+
+/* Mobile reflow: preserve the logo, actions and real content without clipping. */
+@media (max-width: 540px) {
+  .header-inner { gap: 8px; }
+  .brand { flex-shrink: 0; font-size: clamp(18px, 5.2vw, 23px); gap: 4px; }
+  .brand-paw { flex: 0 0 30px; width: 30px; }
+  .header-actions { flex-shrink: 0; gap: 6px; }
+
+  .section-heading { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+  .section-heading h2 { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+  .section-heading .outline-link { align-self: flex-start; max-width: 100%; white-space: normal; text-align: left; }
+
+  .legal-footer-inner {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 4px 12px;
+  }
+  .legal-footer-inner > :is(a, button) {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    min-height: 44px;
+    overflow-wrap: anywhere;
+  }
+  .legal-footer-inner > .site-footer-social {
+    grid-column: 1 / -1;
+    min-width: 0;
+    width: 100%;
+  }
+}
+@media (max-width: 360px) {
+  .header-inner { gap: 6px; }
+  .brand { font-size: 18px; }
+  .brand-paw { flex-basis: 26px; width: 26px; }
+}
