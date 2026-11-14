@@ -7,13 +7,25 @@ on:
     paths:
       - .github/workflows/responsive-browser-qa.yml
       - tests/manual/qa_responsive_layout_511.py
+      - tests/manual/qa_shared_gallery_filters.py
       - index.html
       - detail.html
+      - alphabet.html
+      - lernen.html
+      - tiere.html
+      - fahrzeuge.html
+      - figuren.html
+      - jahreszeiten.html
+      - essen-natur.html
+      - herbst.html
       - css/**
       - js/category-mobile-rows.js
       - js/print-basket-ui.mjs
       - js/filter-summary.js
       - js/app.js
+      - js/gallery-filter-panel.js
+      - js/category.js
+      - js/topic-landing.js
       - js/detail.js
       - tests/manual/qa_detail_mobile_layout.py
   workflow_dispatch:
@@ -46,3 +58,6 @@ jobs:
 
       - name: Check mobile detail action and topic hierarchy
         run: python3 tests/manual/qa_detail_mobile_layout.py
+
+      - name: Check one shared filter panel on all browse routes
+        run: python3 tests/manual/qa_shared_gallery_filters.py
