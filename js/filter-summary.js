@@ -32,7 +32,15 @@
 
   function activeTopicLabel() {
     const selected = document.querySelector("[data-topic-chip][aria-pressed=\"true\"]");
-    return selected ? selected.textContent.trim() : "";
+    if (!selected) return "";
+    // The visible topic chip includes a decorative, aria-hidden emoji.
+    // Summarize only its text label, e.g. "Thema: Obst", not "Thema: 🍎Obst".
+    const label = Array.from(selected.childNodes)
+      .filter((node) => node.nodeType === Node.TEXT_NODE)
+      .map((node) => node.textContent.trim())
+      .filter(Boolean)
+      .join(" ");
+    return label || selected.textContent.trim();
   }
 
   function labels() {

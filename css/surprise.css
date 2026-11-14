@@ -20,12 +20,21 @@
   .hero-search-tools { margin-top: 0; }
 }
 @media (max-width: 720px) {
-  .hero-search-tools { display: block; margin-top: 0; }
-  .hero-search-tools .search { width: 100%; margin-top: 8px; }
-  .surprise-action { margin-top: 8px; align-items: flex-end; }
-  .surprise-button {
-    min-height: 44px; width: auto; padding: 8px 12px; border: 0;
-    background: transparent; box-shadow: none;
+  /* Treat the random choice as the second action in the search group. */
+  .hero-search-tools {
+    display: flex; flex-direction: column; align-items: stretch;
+    gap: 8px; margin-top: 0;
   }
-  .surprise-status { max-width: 100%; text-align: right; }
+  /* Specificity keeps these zero gaps ahead of the older mobile-first rules. */
+  .hero-grid .hero-search-tools .search {
+    flex: 0 0 auto; width: 100%; margin-top: 0;
+  }
+  .hero-grid .hero-search-tools .surprise-action {
+    margin-top: 0; align-items: flex-start;
+  }
+  .surprise-button {
+    min-height: 44px; width: auto; padding: 8px 14px;
+    border: 1px solid #dfe9f5; background: #f1f7ff; box-shadow: none;
+  }
+  .surprise-status { max-width: 100%; text-align: left; }
 }

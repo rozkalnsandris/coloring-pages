@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Chromium responsive boundary QA for UI/UX audit finding 15 (#511).
 
-This is layout evidence only. It checks the public homepage category browser at
-exact CSS viewport widths requested by the audit and verifies the 360/361 and
-540/541 mobile-row boundaries without production network or LIVE mutation.
+This is browser-layout evidence only. It checks the homepage category browser,
+basket, topic-filter summary and hero search actions at exact CSS viewports
+without production network or LIVE mutation.
 """
 from __future__ import annotations
 
@@ -138,6 +138,69 @@ def exercise_real_basket_reflow(page, width: int):
             raise AssertionError(f"{width}px basket lost its accessible label")
 
 
+
+def assert_search_and_surprise_group(page, width: int):
+    if width > 720:
+        return
+    search = page.locator(".hero-search-tools .search")
+    action = page.locator("[data-surprise-button]")
+    search_box, action_box = search.bounding_box(), action.bounding_box()
+    if not search_box or not action_box:
+        raise AssertionError(f"{width}px hero search or surprise button not visible")
+    gap = action_box["y"] - (search_box["y"] + search_box["height"])
+    if abs(search_box["x"] - action_box["x"]) > 2 or not 0 <= gap <= 16:
+        raise AssertionError(
+            f"{width}px surprise action separated from search: "
+            f"search={search_box}, surprise={action_box}, gap={gap}"
+        )
+    if action_box["height"] < 44 or action_box["x"] + action_box["width"] > width + 1:
+        raise AssertionError(f"{width}px surprise action touch target/overflow: {action_box}")
+    style = page.eval_on_selector(
+        "[data-surprise-button]",
+        "(button) => ({border: getComputedStyle(button).borderTopWidth, "
+        "background: getComputedStyle(button).backgroundColor})",
+    )
+    if style["border"] == "0px" or style["background"] == "rgba(0, 0, 0, 0)":
+        raise AssertionError(f"{width}px surprise action lost button styling: {style}")
+    assert_inside_viewport(page, ".hero-search-tools, .search, .surprise-action", width)
+
+
+def assert_topic_filter_summary(page, width: int):
+    # Reproduce the exact chip markup from app.js without requiring LIVE
+    # taxonomy and catalogue feeds. The real filter-summary.js handles it.
+    page.evaluate("""() => {
+      const chip = document.createElement('button');
+      chip.dataset.topicChip = 'obst';
+      chip.className = 'topic-chip';
+      chip.setAttribute('aria-pressed', 'true');
+      const icon = document.createElement('span');
+      icon.className = 'topic-chip-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = '🍎';
+      chip.append(icon, document.createTextNode('Obst'));
+      document.querySelector('[data-topic-list]').replaceChildren(chip);
+      document.querySelector('[data-result-count]').textContent = '17 Malvorlagen';
+    }""")
+    page.wait_for_function(
+        """() => {
+          const output = document.querySelector('[data-active-filters]');
+          return output && !output.hidden && output.textContent.includes('Thema: Obst');
+        }"""
+    )
+    summary = page.locator("[data-active-filters]").inner_text()
+    if "🍎" in summary or "Thema: Obst" not in summary:
+        raise AssertionError(f"{width}px topic summary contains decorative icon: {summary!r}")
+    if not page.locator("[data-reset-all-filters]").is_visible():
+        raise AssertionError(f"{width}px active filter reset is not available")
+    page.evaluate("""() => {
+      document.querySelector('[data-topic-list]').replaceChildren();
+      document.querySelector('[data-result-count]').textContent = '480 Malvorlagen';
+    }""")
+    page.wait_for_function(
+        "() => document.querySelector('[data-active-filters]').hidden"
+    )
+
+
 def run_case(browser, origin: str, width: int):
     page = browser.new_page(viewport={"width": width, "height": 1000})
     try:
@@ -223,6 +286,8 @@ def run_case(browser, origin: str, width: int):
             )
 
         exercise_real_basket_reflow(page, width)
+        assert_search_and_surprise_group(page, width)
+        assert_topic_filter_summary(page, width)
         print(
             f"PASS responsive {width}px: mobileRows={expected_mobile_rows}, "
             "no horizontal overflow"
