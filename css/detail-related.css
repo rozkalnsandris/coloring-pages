@@ -182,3 +182,30 @@
     white-space: normal;
   }
 }
+
+/* Fit age, difficulty and one topic together in the first mobile badge row.
+   Unusually long/multiple topics remain horizontally reachable, not clipped. */
+@media (max-width: 720px) {
+  .detail-summary .detail-badges {
+    flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .detail-summary .detail-badges::-webkit-scrollbar { display: none; }
+  .detail-summary .detail-badges > span {
+    flex: 0 0 auto; padding: 4px 7px; font-size: 11px;
+    white-space: nowrap;
+  }
+  .detail-summary .detail-badges .detail-topic-nav {
+    display: flex; flex: 0 0 auto; flex-wrap: nowrap;
+    width: auto; max-width: none; padding: 0; overflow: visible;
+  }
+  .detail-summary .detail-badges .detail-topic-nav[hidden] { display: none; }
+  .detail-summary .detail-badges .detail-topic-links {
+    display: flex; flex: 0 0 auto; flex-wrap: nowrap;
+    width: auto; max-width: none; overflow: visible; padding: 0;
+  }
+  .detail-summary .detail-badges .detail-topic-link {
+    min-height: 29px; padding: 4px 7px;
+    font-size: 11px; line-height: 1.2; white-space: nowrap;
+  }
+}
