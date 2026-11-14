@@ -215,6 +215,15 @@ document.addEventListener("keydown", (event) => {
 
 window.addEventListener("popstate", () => {
   if (!filterPanel) return;
+  filterPanel.topic.value = topicId;
+  readMetadataFiltersFromUrl();
+  renderTopicEntries();
+});
+
+// Browser Back may restore the page from bfcache with the old selection.
+window.addEventListener("pageshow", () => {
+  if (!filterPanel) return;
+  filterPanel.topic.value = topicId;
   readMetadataFiltersFromUrl();
   renderTopicEntries();
 });

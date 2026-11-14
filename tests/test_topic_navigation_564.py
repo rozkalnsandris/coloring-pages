@@ -22,6 +22,8 @@ class TopicNavigation564Tests(unittest.TestCase):
         self.assertIn('filterPanel.setTopics(managedTopics, topicId)', topic)
         self.assertIn('new URL(selected === "herbst" ? "/herbst" : "/", window.location.origin)', topic)
         self.assertIn('filterPanel.topic.addEventListener("change"', topic)
+        self.assertIn('window.addEventListener("pageshow"', topic)
+        self.assertIn('filterPanel.topic.value = topicId;', topic)
         self.assertIn('filterPanel.topic.setAttribute("aria-describedby", note.id)', topic)
         self.assertIn('if (destination.pathname === "/") destination.hash = "#neu";', topic)
         self.assertIn('entryTopicIds(entry).includes(topicId)', topic)
