@@ -46,7 +46,7 @@ class LocalFontsTest(unittest.TestCase):
         self.assertIn('--font-display: "Baloo 2"', app)
         self.assertIn('--font-body: "Nunito"', app)
         home = (ROOT / "index.html").read_text(encoding="utf-8")
-        self.assertIn('class="hero-art"', home)
+        self.assertIn('class="hero-art page-hero-art"', home)
         self.assertIn('id="entdecken"', home)
 
 

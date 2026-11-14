@@ -351,10 +351,13 @@ def run_case(browser, origin: str, width: int):
             raise AssertionError(f"{width}px Topic hero H1 incorrect")
         if page.locator(".page-hero--home .hero-search-tools").is_visible():
             raise AssertionError(f"{width}px homepage search duplicated in Topic state")
-        hero_box = hero.bounding_box()
-        nav_box = page.locator(".site-header").bounding_box()
-        if not hero_box or not nav_box or hero_box["y"] < nav_box["y"] + nav_box["height"] - 1:
-            raise AssertionError(f"{width}px Topic hero not placed directly below site header")
+        # The URL deliberately ends in #neu, so the browser scrolls the hero
+        # above the sticky header. Test DOM placement, not viewport Y.
+        if not hero.evaluate(
+            "(node) => node.parentElement?.id === 'main' "
+            "&& node.previousElementSibling?.id === 'hero'"
+        ):
+            raise AssertionError(f"{width}px Topic hero not adjacent to home hero in main")
         if not page.locator("[data-filter-topic]").is_visible():
             raise AssertionError(f"{width}px selected Topic has no navigation selector")
         page.locator("[data-show-categories]").click()

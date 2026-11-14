@@ -5,9 +5,9 @@ ROOT=Path(__file__).resolve().parents[1]
 class MobileFirstTests(unittest.TestCase):
     def test_semantic_visual_and_keyboard_order(self):
         html=(ROOT/"index.html").read_text(encoding="utf-8")
-        self.assertLess(html.index('class="hero-search-tools"'),html.index('class="hero-art"'))
+        self.assertLess(html.index('class="hero-search-tools"'),html.index('class="hero-art page-hero-art"'))
         self.assertLess(html.index('data-search-form'),html.index('data-surprise-button'))
-        self.assertLess(html.index('data-surprise-button'),html.index('class="hero-art"'))
+        self.assertLess(html.index('data-surprise-button'),html.index('class="hero-art page-hero-art"'))
         self.assertIn('data-filter="tiere"',html)
         self.assertIn('data-ranking-tab="popular"',html)
         self.assertIn('data-ranking-tab="trending"',html)
