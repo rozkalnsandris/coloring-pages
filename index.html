@@ -17,8 +17,8 @@
   <link rel="stylesheet" href="css/metadata-filters.css?v=15e63297a17a7bfb">
   <link rel="stylesheet" href="css/mobile-first.css?v=mobile-hero-size-186">
   <link rel="stylesheet" href="css/home-discovery.css?v=b189a80283a82a67">
-  <link rel="stylesheet" href="css/topic-landing-hero.css?v=252e47aff77af24b">
   <link rel="stylesheet" href="css/home-compact.css?v=43f7876ab86edd62">
+  <link rel="stylesheet" href="css/topic-landing-hero.css?v=1f3444acf7b538db">
   <link rel="stylesheet" href="css/social-footer.css?v=3670ffdbfe96bb37">
   <link rel="stylesheet" href="css/print-basket.css?v=33b694c62080e615">
 </head>
@@ -53,9 +53,10 @@
   </header>
 
   <main id="main" tabindex="-1">
-    <section id="hero" class="hero" aria-labelledby="hero-title">
-      <div class="container hero-grid">
-        <div class="hero-copy">
+    <section id="hero" class="hero page-hero page-hero--home page-hero--with-art" aria-labelledby="hero-title">
+      <div class="container hero-grid page-hero-grid">
+        <div class="hero-copy page-hero-copy">
+          <p class="page-hero-location" aria-label="Aktuelle Seite">Startseite</p>
           <h1 id="hero-title"><span class="desktop-hero-title">
             Schöne Malvorlagen<br>
             <span class="title-blue">für kleine</span>
@@ -87,9 +88,23 @@
             <p class="surprise-status" data-surprise-status role="status" hidden></p>
           </div>
         </div>
-        <div class="hero-art">
+        <div class="hero-art page-hero-art">
           <img src="assets/hero-illustration.png" width="1408" height="736" fetchpriority="high" alt="Fröhlicher Rettungshund mit Rucksack in einer Berglandschaft neben einem Wegweiser">
         </div>
+      </div>
+    </section>
+
+    <section class="topic-landing-hero page-hero page-hero--topic" data-focused-topic-hero
+             aria-labelledby="focused-topic-title" hidden>
+      <div class="container topic-landing-grid page-hero-grid">
+        <div class="topic-landing-copy page-hero-copy">
+          <nav class="topic-landing-breadcrumbs page-hero-breadcrumbs" aria-label="Breadcrumb">
+            <ol><li><a href="/">Startseite</a></li><li><span data-focused-topic-breadcrumb aria-current="page"></span></li></ol>
+          </nav>
+          <h1 id="focused-topic-title" data-focused-topic-title></h1>
+          <p data-focused-topic-intro hidden></p>
+        </div>
+        <div class="topic-landing-art page-hero-art" data-focused-topic-art hidden></div>
       </div>
     </section>
 
@@ -196,20 +211,6 @@
 
     <section id="neu" class="new-pages" aria-labelledby="gallery-title">
       <div class="container">
-        <section class="topic-landing-hero topic-landing-hero--home" data-focused-topic-hero
-                 aria-labelledby="focused-topic-title" hidden>
-          <div class="topic-landing-grid">
-            <div class="topic-landing-copy">
-              <nav class="topic-landing-breadcrumbs" aria-label="Breadcrumb">
-                <a href="/">Startseite</a><span aria-hidden="true">›</span>
-                <span data-focused-topic-breadcrumb></span>
-              </nav>
-              <h1 id="focused-topic-title" data-focused-topic-title></h1>
-              <p data-focused-topic-intro hidden></p>
-            </div>
-            <div class="topic-landing-art" data-focused-topic-art hidden></div>
-          </div>
-        </section>
         <div class="section-heading">
           <h2 id="gallery-title" tabindex="-1">Malvorlagen</h2>
           <div class="gallery-topic-actions" data-gallery-topic-actions hidden>
