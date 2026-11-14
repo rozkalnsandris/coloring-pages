@@ -53,7 +53,7 @@ assert.deepEqual(linked.get("lernen").map((topic) => topic.id), ["wald"]);
 assert.deepEqual(linked.get("orte").map((topic) => topic.id), ["wald"]);
 assert.deepEqual(linked.get("tiere").map((topic) => topic.id), ["bauernhof"]);
 assert.equal(linked.has("fahrzeuge"), false, "zero-topic category stays empty");
-assert.equal(api.topicHref("wald"), "index.html?topic=wald#neu");
+assert.equal(api.topicHref("wald"), "index.html?topic=wald");
 assert.equal(api.topicHref("herbst"), "/herbst");
 assert.equal(api.hasDedicatedTopicRoute("herbst"), true);
 assert.equal(api.hasDedicatedTopicRoute("wald"), false);

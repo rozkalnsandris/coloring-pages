@@ -206,7 +206,7 @@ def assert_topic_filter_summary(page, width: int):
         raise AssertionError(f"{width}px duplicate topic selectors")
     if page.locator("[data-reset-all-filters]").count() != 1:
         raise AssertionError(f"{width}px duplicate reset")
-    if page.locator("#gallery-title").inner_text() != "Deutschland Ausmalbilder":
+    if page.locator("#gallery-title").inner_text() != "Passende Malvorlagen entdecken":
         raise AssertionError(f"{width}px selected Topic heading incorrect")
     if not page.locator("[data-filter-topic]").is_visible():
         raise AssertionError(f"{width}px Topic selector must remain visible")
@@ -251,7 +251,7 @@ def assert_topic_filter_summary(page, width: int):
     )
     if page.locator("[data-active-filters]").is_visible():
         raise AssertionError(f"{width}px duplicated topic after change")
-    if page.locator("#gallery-title").inner_text() != "Obst Ausmalbilder":
+    if page.locator("#gallery-title").inner_text() != "Passende Malvorlagen entdecken":
         raise AssertionError(f"{width}px changed Topic heading incorrect")
     if not page.locator("[data-filter-topic]").is_visible():
         raise AssertionError(f"{width}px Topic selector hidden after Topic change")
@@ -314,6 +314,73 @@ def assert_herbst_illustration(page, origin: str, width: int):
         raise AssertionError(f"{width}px artwork overlaps topic heading")
 
 
+
+def assert_shared_hero_alignment(page, origin: str, width: int):
+    """Direct-entry location parity; fragment deep links are tested separately."""
+    offsets = {}
+    for route, selector in (
+        ("/index.html", "#hero .page-hero-location"),
+        ("/herbst.html", ".page-hero--static .page-hero-breadcrumbs ol"),
+        ("/tiere.html", ".page-hero--category .page-hero-breadcrumbs ol"),
+        ("/fahrzeuge.html", ".page-hero--category .page-hero-breadcrumbs ol"),
+        ("/index.html?topic=deutschland", "[data-focused-topic-hero] .page-hero-breadcrumbs ol"),
+    ):
+        page.goto(origin + route, wait_until="domcontentloaded")
+        if "topic=" in route:
+            page.wait_for_function(
+                "() => document.querySelector('[data-focused-topic-title]')"
+                "?.textContent.trim() === 'Deutschland Ausmalbilder'"
+            )
+        page.wait_for_function("() => document.fonts.status === 'loaded'")
+        page.evaluate("window.scrollTo(0, 0)")
+        header = page.locator(".site-header").bounding_box()
+        location = page.locator(selector).bounding_box()
+        if not header or not location:
+            raise AssertionError(f"{width}px missing location/header: {route}")
+        offsets[route] = round(location["y"] - (header["y"] + header["height"]), 2)
+        if document_width := page.evaluate("document.documentElement.scrollWidth"):
+            if document_width > width + 1:
+                raise AssertionError(f"{width}px overflow on {route}: {document_width}")
+    if max(offsets.values()) - min(offsets.values()) > 4:
+        raise AssertionError(f"{width}px Page Hero location alignment drift: {offsets}")
+
+    # Explicit old deep links must continue reaching the gallery, not break
+    # navigation or synthesize a second H1/route.
+    page.goto(origin + "/index.html?topic=deutschland#neu", wait_until="domcontentloaded")
+    page.wait_for_function(
+        "() => document.querySelector('[data-focused-topic-title]')"
+        "?.textContent.trim() === 'Deutschland Ausmalbilder'"
+    )
+    if "#neu" not in page.url or not page.locator("[data-focused-topic-hero]").is_visible():
+        raise AssertionError(f"{width}px legacy deep-linked Topic state missing")
+    if page.locator("#gallery-title").inner_text() != "Passende Malvorlagen entdecken":
+        raise AssertionError(f"{width}px gallery H2 duplicates Topic H1")
+
+    # A normal managed Topic card click should land at the visible hero and
+    # clear a stale gallery fragment; incoming intentional #neu remains valid.
+    page.goto(origin + "/index.html#neu", wait_until="domcontentloaded")
+    page.wait_for_function(
+        "() => document.querySelector('[data-filter-topic]')?.options.length === 3"
+    )
+    link = page.locator('[data-browse-topic="obst"]').first
+    if not link.count():
+        raise AssertionError(f"{width}px missing managed Topic entry link")
+    details = link.locator("xpath=ancestor::details[1]")
+    if details.count() and details.get_attribute("open") is None:
+        details.locator("summary").click()
+    link.click()
+    page.wait_for_function(
+        "() => document.querySelector('[data-focused-topic-title]')"
+        "?.textContent.trim() === 'Obst Ausmalbilder'"
+    )
+    if page.url.endswith("#neu") or page.locator("#hero").is_visible():
+        raise AssertionError(f"{width}px normal Topic click did not clear gallery entry")
+    header = page.locator(".site-header").bounding_box()
+    hero = page.locator("[data-focused-topic-hero]").bounding_box()
+    if not header or not hero or hero["y"] < header["y"] + header["height"] - 6:
+        raise AssertionError(f"{width}px clicked Topic hero is obscured by header")
+
+
 def run_case(browser, origin: str, width: int):
     page = browser.new_page(viewport={"width": width, "height": 1000})
     try:
@@ -334,7 +401,7 @@ def run_case(browser, origin: str, width: int):
             wait_until="domcontentloaded",
         )
         page.wait_for_function(
-            "() => document.querySelector('#gallery-title')?.textContent.trim() === 'Deutschland Ausmalbilder'"
+            "() => document.querySelector('#gallery-title')?.textContent.trim() === 'Passende Malvorlagen entdecken'"
         )
         if page.locator(".category-browser").is_visible():
             raise AssertionError(f"{width}px selected Topic must initially collapse Category browser")
@@ -441,6 +508,7 @@ def run_case(browser, origin: str, width: int):
         assert_search_and_surprise_group(page, width)
         assert_topic_filter_summary(page, width)
         assert_herbst_illustration(page, origin, width)
+        assert_shared_hero_alignment(page, origin, width)
         print(
             f"PASS responsive {width}px: mobileRows={expected_mobile_rows}, "
             "no horizontal overflow"
