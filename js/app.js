@@ -12,6 +12,12 @@ const gallery = document.querySelector("[data-gallery]");
 const discoveryPicksRoot = document.querySelector("[data-discovery-picks]");
 const discoveryPicksGallery = document.querySelector("[data-discovery-picks-gallery]");
 const categoryBrowser = document.querySelector(".category-browser");
+const categoriesSection = document.querySelector("#kategorien");
+const galleryHeading = document.querySelector("#gallery-title");
+const galleryTopicActions = document.querySelector("[data-gallery-topic-actions]");
+const showCategoriesButton = document.querySelector("[data-show-categories]");
+const clearTopicButton = document.querySelector("[data-clear-active-topic]");
+const topicField = topicFilter?.closest(".metadata-filter-field");
 const categoryButtons = [...document.querySelectorAll("[data-filter], [data-collection-filter]")];
 const resultCount = document.querySelector("[data-result-count]");
 const totalCount = document.querySelector("[data-total-count]");
@@ -61,6 +67,7 @@ const DIFFICULTY_LABELS = {
 
 let activeCategory = "";
 let activeTopic = "";
+let categoriesExpanded = window.location.hash === "#kategorien";
 let categoryRegistry = [];
 let topicRegistry = [];
 let catalogEntries = null;
@@ -137,6 +144,10 @@ surpriseButton?.addEventListener("click", () => {
 // Keep both menus in sync on direct links, anchor navigation and browser Back/Forward.
 function updateNavigation(hash = window.location.hash) {
   if (!gallery) return;
+  if (activeTopic && (hash === "#kategorien" || hash === "#neu")) {
+    categoriesExpanded = hash === "#kategorien";
+    syncFocusedTopicView();
+  }
   const section = hash === "#ueber-uns" ? "#ueber-uns"
     : ["#kategorien", "#neu"].includes(hash) ? "#kategorien" : "#hero";
   document.querySelectorAll(".desktop-nav a, .mobile-nav a").forEach((link) => {
@@ -445,8 +456,30 @@ function updateTopicButtons() {
   if (topicFilter) topicFilter.value = activeTopic;
 }
 
+// Progressive enhancement: retain crawlable Category links until a known
+// managed Topic has loaded, then emphasize its results rather than a second grid.
+function syncFocusedTopicView() {
+  const selected = topicRegistry.find((topic) => topic.id === activeTopic);
+  const focused = Boolean(selected);
+  const hideCategories = focused && !categoriesExpanded;
+  const hadCategoryFocus = categoriesSection?.contains(document.activeElement);
+  const hadTopicFieldFocus = topicField?.contains(document.activeElement);
+  if (categoriesSection) categoriesSection.hidden = hideCategories;
+  if (galleryTopicActions) galleryTopicActions.hidden = !focused;
+  if (topicField) topicField.hidden = focused;
+  if (galleryHeading) galleryHeading.textContent = focused ? selected.label + " Ausmalbilder" : "Malvorlagen";
+  if (showCategoriesButton) showCategoriesButton.setAttribute("aria-expanded", String(focused && categoriesExpanded));
+  if (clearTopicButton && focused) {
+    clearTopicButton.textContent = "Thema: " + selected.label + " ×";
+    clearTopicButton.setAttribute("aria-label", "Thema " + selected.label + " entfernen");
+  }
+  if (focused && hadTopicFieldFocus) clearTopicButton?.focus({ preventScroll: true });
+  if (hideCategories && hadCategoryFocus) galleryHeading?.focus({ preventScroll: true });
+}
+
 function selectTopic(topicId, { toggle = true, moveFocus = true } = {}) {
   activeTopic = toggle && activeTopic === topicId ? "" : topicId;
+  categoriesExpanded = false;
   syncCatalogFilterUrl();
   updateTopicButtons();
   applyFilters();
@@ -619,6 +652,7 @@ function renderDiscoveryPicks(entries) {
 }
 
 function applyFilters({ resetLimit = true } = {}) {
+  syncFocusedTopicView();
   if (Array.isArray(catalogEntries)) {
     if (resetLimit) visibleLimit = CATALOG_PAGE_SIZE;
     renderCatalog();
@@ -826,6 +860,7 @@ async function hydrateCatalog() {
     readCategoryFilterFromUrl();
     readTopicFilterFromUrl();
     renderTopicOptions();
+    syncFocusedTopicView();
     let categoryTopics = new Map();
     if (topicResource) {
       try {
@@ -920,6 +955,7 @@ searchInput?.addEventListener("input", applyFilters);
   });
 });
 window.addEventListener("popstate", () => {
+  categoriesExpanded = window.location.hash === "#kategorien";
   readSearchFromUrl();
   readMetadataFiltersFromUrl();
   readCategoryFilterFromUrl();
@@ -930,6 +966,18 @@ window.addEventListener("popstate", () => {
 
 topicFilter?.addEventListener("change", () => {
   selectTopic(topicFilter.value, { toggle: false, moveFocus: false });
+});
+
+showCategoriesButton?.addEventListener("click", () => {
+  categoriesExpanded = true;
+  syncFocusedTopicView();
+  categoriesSection?.scrollIntoView({ block: "start" });
+  document.querySelector("#category-heading")?.focus({ preventScroll: true });
+});
+
+clearTopicButton?.addEventListener("click", () => {
+  selectTopic("", { toggle: false, moveFocus: false });
+  galleryHeading?.focus({ preventScroll: true });
 });
 
 loadMoreButton?.addEventListener("click", (event) => {
