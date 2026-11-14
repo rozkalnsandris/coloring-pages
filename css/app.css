@@ -1191,3 +1191,12 @@ a { color: inherit; }
   .brand { font-size: 18px; }
   .brand-paw { flex-basis: 26px; width: 26px; }
 }
+
+/* Tablet widths cannot fit full desktop navigation alongside the print basket.
+   Keep all controls visible by switching to the existing accessible mobile menu. */
+@media (min-width: 721px) and (max-width: 900px) {
+  .header-inner { grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
+  .desktop-nav { display: none; }
+  .menu-button { display: block; }
+  .mobile-nav { display: grid; }
+}
