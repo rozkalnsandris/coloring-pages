@@ -54,8 +54,10 @@ console.log(JSON.stringify({
         self.assertIn('window.addEventListener("popstate"', source)
         self.assertIn("readMetadataFiltersFromUrl();", source)
         self.assertIn("Keine Malvorlagen passen zu diesen Filtern.", source)
-        self.assertIn("Filter zurücksetzen", source)
-        self.assertIn("Vorlagen ohne Altersangabe findest du unter", source)
+        shared = (ROOT / "js/gallery-filter-panel.js").read_text(encoding="utf-8")
+        self.assertIn("Alle Filter zurücksetzen", shared)
+        self.assertIn("Die Filter berücksichtigen nur vorhandene Alters-", shared)
+        self.assertIn("AusmalGalleryFilterPanel.mount", source)
         self.assertIn("AGE_FILTER_VALUES.has(entry.age)", source)
         self.assertIn("const difficultyLabel = DIFFICULTY_LABELS[entry.difficulty];", source)
 
@@ -63,12 +65,16 @@ console.log(JSON.stringify({
         helper_hash = hashlib.sha256((ROOT / "js/category-metadata-filters.js").read_bytes()).hexdigest()[:16]
         category_hash = hashlib.sha256((ROOT / "js/category.js").read_bytes()).hexdigest()[:16]
         metadata_css_hash = hashlib.sha256((ROOT / "css/metadata-filters.css").read_bytes()).hexdigest()[:16]
+        shared_hash = hashlib.sha256((ROOT / "js/gallery-filter-panel.js").read_bytes()).hexdigest()[:16]
         for filename in CATEGORY_PAGES:
             html = (ROOT / filename).read_text(encoding="utf-8")
             helper = f'/js/category-metadata-filters.js?v={helper_hash}'
             controller = f'/js/category.js?v={category_hash}'
             css = f'/css/metadata-filters.css?v={metadata_css_hash}'
+            shared = f'/js/gallery-filter-panel.js?v={shared_hash}'
             self.assertIn(css, html, filename)
+            self.assertIn(shared, html, filename)
+            self.assertLess(html.index(shared), html.index(controller), filename)
             self.assertIn(helper, html, filename)
             self.assertIn(controller, html, filename)
             self.assertLess(html.index(helper), html.index(controller), filename)
