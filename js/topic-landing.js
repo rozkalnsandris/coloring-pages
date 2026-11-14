@@ -27,9 +27,18 @@ async function requireManagedTopic() {
   if (!["rozkalns.coloring-pages.topics.v1", "rozkalns.coloring-pages.topics.v2"].includes(payload?.schema) || !Array.isArray(payload?.topics)) {
     throw new Error("invalid topic registry");
   }
-  const topic = payload.topics.find((candidate) => candidate && candidate.id === topicId && typeof candidate.label === "string");
-  if (!topic) throw new Error("topic unavailable");
-  return topic;
+  // Build choices only from a valid managed registry; never invent routes.
+  const seen = new Set();
+  for (const candidate of payload.topics) {
+    if (!candidate || typeof candidate.id !== "string" ||
+        !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(candidate.id) || seen.has(candidate.id) ||
+        typeof candidate.label !== "string" || !candidate.label.trim()) {
+      throw new Error("invalid topic entry");
+    }
+    seen.add(candidate.id);
+  }
+  if (!seen.has(topicId)) throw new Error("topic unavailable");
+  return payload.topics;
 }
 
 function createBadge(label, className) {
@@ -120,7 +129,7 @@ function renderTopicEntries() {
 async function hydrateTopicLanding() {
   if (!topicId || !gallery) return;
   try {
-    await requireManagedTopic();
+    const managedTopics = await requireManagedTopic();
     const response = await fetch("/catalog.json", { cache: "no-store" });
     if (!response.ok) throw new Error("catalog unavailable");
     const catalog = await response.json();
@@ -138,8 +147,28 @@ async function hydrateTopicLanding() {
     filterPanel = globalThis.AusmalGalleryFilterPanel.mount(root, {
       idPrefix: "topic-filter",
     });
-    // Fixed topic route: display the selected theme without linking to other categories.
-    filterPanel.setTopics([{ id: topicId, label: topicLabel }], topicId, true);
+    // One accessible Topic selector across every browse view. An explicit
+    // note warns that a change opens the chosen Topic overview.
+    filterPanel.setTopics(managedTopics, topicId);
+    const note = document.createElement("p");
+    note.id = "topic-nav-hint";
+    note.className = "metadata-filter-hint";
+    note.textContent = "Die Themenauswahl öffnet die gewählte Übersicht.";
+    filterPanel.topic.closest(".metadata-filter-field")?.append(note);
+    filterPanel.topic.setAttribute("aria-describedby", note.id);
+    filterPanel.topic.addEventListener("change", () => {
+      const selected = filterPanel.topic.value;
+      if ((selected && !managedTopics.some((topic) => topic.id === selected)) ||
+          selected === topicId) return;
+      const destination = new URL(selected === "herbst" ? "/herbst" : "/", window.location.origin);
+      if (selected && selected !== "herbst") destination.searchParams.set("topic", selected);
+      if (activeAge) destination.searchParams.set("age", activeAge);
+      if (activeDifficulty) destination.searchParams.set("difficulty", activeDifficulty);
+      const campaign = new URLSearchParams(location.search).get("campaign");
+      if (campaign) destination.searchParams.set("campaign", campaign);
+      if (destination.pathname === "/") destination.hash = "#neu";
+      window.location.assign(destination.pathname + destination.search + destination.hash);
+    });
     heading.querySelector(".catalog-total")?.remove();
     readMetadataFiltersFromUrl();
     filterPanel.age.addEventListener("change", () => {

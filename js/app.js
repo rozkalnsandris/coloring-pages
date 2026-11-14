@@ -16,7 +16,6 @@ const categoriesSection = document.querySelector("#kategorien");
 const galleryHeading = document.querySelector("#gallery-title");
 const galleryTopicActions = document.querySelector("[data-gallery-topic-actions]");
 const showCategoriesButton = document.querySelector("[data-show-categories]");
-const clearTopicButton = document.querySelector("[data-clear-active-topic]");
 const topicField = topicFilter?.closest(".metadata-filter-field");
 const categoryButtons = [...document.querySelectorAll("[data-filter], [data-collection-filter]")];
 const resultCount = document.querySelector("[data-result-count]");
@@ -463,17 +462,12 @@ function syncFocusedTopicView() {
   const focused = Boolean(selected);
   const hideCategories = focused && !categoriesExpanded;
   const hadCategoryFocus = categoriesSection?.contains(document.activeElement);
-  const hadTopicFieldFocus = topicField?.contains(document.activeElement);
   if (categoriesSection) categoriesSection.hidden = hideCategories;
   if (galleryTopicActions) galleryTopicActions.hidden = !focused;
-  if (topicField) topicField.hidden = focused;
+  // #564: one visible native selector, not a competing selected-Topic chip.
+  if (topicField) topicField.hidden = false;
   if (galleryHeading) galleryHeading.textContent = focused ? selected.label + " Ausmalbilder" : "Malvorlagen";
   if (showCategoriesButton) showCategoriesButton.setAttribute("aria-expanded", String(focused && categoriesExpanded));
-  if (clearTopicButton && focused) {
-    clearTopicButton.textContent = "Thema: " + selected.label + " ×";
-    clearTopicButton.setAttribute("aria-label", "Thema " + selected.label + " entfernen");
-  }
-  if (focused && hadTopicFieldFocus) clearTopicButton?.focus({ preventScroll: true });
   if (hideCategories && hadCategoryFocus) galleryHeading?.focus({ preventScroll: true });
 }
 
@@ -505,6 +499,21 @@ function renderTopicOptions() {
   topicFilter.replaceChildren(all, ...options);
   topicFilter.disabled = options.length === 0;
   updateTopicButtons();
+  // Forewarn before the only Topic that opens its own canonical page.
+  const hasHerbst = topicRegistry.some((topic) => topic.id === "herbst");
+  let hint = topicField?.querySelector("[data-topic-nav-hint]");
+  if (hasHerbst && topicField && !hint) {
+    hint = document.createElement("p");
+    hint.id = "topic-nav-hint";
+    hint.dataset.topicNavHint = "";
+    hint.className = "metadata-filter-hint";
+    hint.textContent = "Herbst öffnet eine eigene Themenseite.";
+    topicField.append(hint);
+  } else if (!hasHerbst) {
+    hint?.remove();
+  }
+  if (hasHerbst) topicFilter.setAttribute("aria-describedby", "topic-nav-hint");
+  else topicFilter.removeAttribute("aria-describedby");
 }
 
 // Native links still work before hydration and for new-tab/modified clicks.
@@ -965,6 +974,17 @@ window.addEventListener("popstate", () => {
 });
 
 topicFilter?.addEventListener("change", () => {
+  // /herbst is the single approved canonical Topic route. All other
+  // managed Topics stay on the existing homepage filter URL.
+  if (topicFilter.value === "herbst" && topicRegistry.some((topic) => topic.id === "herbst")) {
+    const url = new URL("/herbst", window.location.origin);
+    if (AGE_FILTER_VALUES.has(ageFilter?.value)) url.searchParams.set("age", ageFilter.value);
+    if (DIFFICULTY_LABELS[difficultyFilter?.value]) url.searchParams.set("difficulty", difficultyFilter.value);
+    const campaign = new URLSearchParams(location.search).get("campaign");
+    if (campaign) url.searchParams.set("campaign", campaign);
+    window.location.assign(url.pathname + url.search);
+    return;
+  }
   selectTopic(topicFilter.value, { toggle: false, moveFocus: false });
 });
 
@@ -973,11 +993,6 @@ showCategoriesButton?.addEventListener("click", () => {
   syncFocusedTopicView();
   categoriesSection?.scrollIntoView({ block: "start" });
   document.querySelector("#category-heading")?.focus({ preventScroll: true });
-});
-
-clearTopicButton?.addEventListener("click", () => {
-  selectTopic("", { toggle: false, moveFocus: false });
-  galleryHeading?.focus({ preventScroll: true });
 });
 
 loadMoreButton?.addEventListener("click", (event) => {

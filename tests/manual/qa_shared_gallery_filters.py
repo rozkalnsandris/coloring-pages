@@ -35,6 +35,8 @@ TOPICS = {"schema": "rozkalns.coloring-pages.topics.v2", "revision": 1,
               {"id": "herbst", "label": "Herbst", "icon": "🍂",
                "kind": "seasonal", "active_from": "09-01", "active_to": "11-30",
                "legacy_terms": []},
+              {"id": "tanzen", "label": "Tanzen", "icon": "🎶",
+               "kind": "evergreen", "legacy_terms": []},
           ]}
 CATEGORIES = {"schema": "rozkalns.coloring-pages.categories.v2", "revision": 1,
               "categories": [
@@ -128,13 +130,26 @@ def check(browser, origin, path, width):
                 "() => document.querySelector('[data-result-count]').textContent === '2 Malvorlagen'")
             assert "campaign=dortmund-01" in page.url, page.url
         if path == "herbst.html":
-            assert page.locator("[data-filter-topic]").is_disabled()
+            selector = page.locator("[data-filter-topic]")
+            assert selector.is_enabled() and selector.is_visible()
+            assert selector.input_value() == "herbst"
+            assert selector.locator('option[value="tanzen"]').count() == 1
+            assert "topic-nav-hint" in (selector.get_attribute("aria-describedby") or "")
             page.locator("[data-filter-age]").select_option("4-8")
             page.wait_for_function(
                 "() => document.querySelector('[data-result-count]').textContent === '0 Malvorlagen'")
             page.locator("[data-reset-all-filters]").click()
             page.wait_for_function(
                 "() => document.querySelector('[data-result-count]').textContent === '1 Malvorlage'")
+            selector.select_option("obst")
+            page.wait_for_function(
+                "() => location.pathname === '/' && "
+                "new URLSearchParams(location.search).get('topic') === 'obst'")
+            assert "campaign=dortmund-01" in page.url
+            page.go_back()
+            page.wait_for_function(
+                "() => location.pathname === '/herbst.html' && "
+                "document.querySelector('[data-filter-topic]')?.value === 'herbst'")
         print("PASS shared filters", path, str(width) + "px")
     finally:
         page.close()

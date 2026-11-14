@@ -198,12 +198,12 @@ def assert_topic_filter_summary(page, width: int):
         raise AssertionError(f"{width}px duplicate reset")
     if page.locator("#gallery-title").inner_text() != "Deutschland Ausmalbilder":
         raise AssertionError(f"{width}px selected Topic heading incorrect")
-    if page.locator("[data-filter-topic]").is_visible():
-        raise AssertionError(f"{width}px duplicate visible Topic selector")
+    if not page.locator("[data-filter-topic]").is_visible():
+        raise AssertionError(f"{width}px Topic selector must remain visible")
     if page.locator("[data-show-categories]").get_attribute("aria-expanded") != "true":
         raise AssertionError(f"{width}px Category reveal state incorrect")
-    if page.locator("[data-clear-active-topic]").get_attribute("aria-label") != "Thema Deutschland entfernen":
-        raise AssertionError(f"{width}px Topic clear accessible label incorrect")
+    if page.locator("[data-clear-active-topic]").count():
+        raise AssertionError(f"{width}px duplicate Topic chip must not exist")
     if not page.locator("[data-gallery-filter-panel]").is_visible():
         raise AssertionError(f"{width}px filter panel not visible")
     if page.locator("[data-active-filters]").is_visible():
@@ -216,7 +216,7 @@ def assert_topic_filter_summary(page, width: int):
         "[data-reset-all-filters]", width,
     )
     controls = [page.locator(selector) for selector in (
-        "[data-filter-age]", "[data-filter-difficulty]"
+        "[data-filter-topic]", "[data-filter-age]", "[data-filter-difficulty]"
     )]
     bounds = [control.bounding_box() for control in controls]
     if any(not box or box["height"] < 44 for box in bounds):
@@ -226,13 +226,13 @@ def assert_topic_filter_summary(page, width: int):
             if following["y"] < prior["y"] + prior["height"] - 1:
                 raise AssertionError(f"{width}px overlapping filter controls: {bounds}")
 
-    page.locator("[data-clear-active-topic]").click()
+    page.locator("[data-filter-topic]").select_option("")
     page.wait_for_function(
         "() => !new URL(location.href).searchParams.has('topic') && "
         "document.querySelector('[data-filter-topic]').value === ''"
     )
     if not page.locator("[data-filter-topic]").is_visible():
-        raise AssertionError(f"{width}px Topic selector not restored when cleared")
+        raise AssertionError(f"{width}px Topic selector not available when cleared")
     page.locator("[data-filter-topic]").select_option("obst")
     page.wait_for_function(
         "() => new URL(location.href).searchParams.get('topic') === 'obst'"
@@ -243,8 +243,8 @@ def assert_topic_filter_summary(page, width: int):
         raise AssertionError(f"{width}px duplicated topic after change")
     if page.locator("#gallery-title").inner_text() != "Obst Ausmalbilder":
         raise AssertionError(f"{width}px changed Topic heading incorrect")
-    if page.locator("[data-filter-topic]").is_visible():
-        raise AssertionError(f"{width}px Topic selector shown alongside active chip")
+    if not page.locator("[data-filter-topic]").is_visible():
+        raise AssertionError(f"{width}px Topic selector hidden after Topic change")
     page.locator("[data-filter-age]").select_option("4-8")
     page.wait_for_function(
         "() => document.querySelector('[data-result-count]')"
@@ -294,8 +294,8 @@ def run_case(browser, origin: str, width: int):
         )
         if page.locator(".category-browser").is_visible():
             raise AssertionError(f"{width}px selected Topic must initially collapse Category browser")
-        if not page.locator("[data-clear-active-topic]").is_visible():
-            raise AssertionError(f"{width}px selected Topic has no removable chip")
+        if not page.locator("[data-filter-topic]").is_visible():
+            raise AssertionError(f"{width}px selected Topic has no navigation selector")
         page.locator("[data-show-categories]").click()
         page.wait_for_selector(".category-browser")
         page.wait_for_timeout(100)
