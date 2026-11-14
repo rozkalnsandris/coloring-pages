@@ -3,7 +3,6 @@ const detailTitle = document.querySelector("[data-detail-title]");
 const detailCategory = document.querySelector("[data-detail-category]");
 const detailTopicNav = document.querySelector("[data-detail-topic-nav]");
 const detailTopicLinks = document.querySelector("[data-detail-topic-links]");
-const detailTopicBadges = document.querySelector("[data-detail-topic-badges]");
 const detailCharacter = document.querySelector("[data-detail-character]");
 const detailAge = document.querySelector("[data-detail-age]");
 const detailDifficulty = document.querySelector("[data-detail-difficulty]");
@@ -172,11 +171,7 @@ function createDetailTopicLink(topic) {
 
 function renderDetailTopics(entry, registry) {
   const topics = resolvedDetailTopics(entry, registry);
-  [detailTopicLinks, detailTopicBadges].forEach((target) => {
-    if (!target) return;
-    target.replaceChildren(...topics.map(createDetailTopicLink));
-    target.hidden = topics.length === 0;
-  });
+  if (detailTopicLinks) detailTopicLinks.replaceChildren(...topics.map(createDetailTopicLink));
   if (detailTopicNav) detailTopicNav.hidden = topics.length === 0;
 }
 
@@ -595,10 +590,14 @@ async function loadDetail() {
     if (detailTitle) detailTitle.textContent = entry.title;
     const detailBadges = document.querySelector(".detail-badges");
     if (detailBadges) detailBadges.hidden = false;
-    if (detailCategory) detailCategory.textContent = `🐾 ${categoryLabel}`;
+    if (detailCategory) detailCategory.textContent = categoryLabel;
     if (detailCharacter) {
-      detailCharacter.textContent = entry.character ? `🐶 ${entry.character}` : "";
-      detailCharacter.hidden = !entry.character;
+      const character = typeof entry.character === "string" ? entry.character.trim() : "";
+      // Do not repeat a character label that already appears in the title.
+      const repeatsTitle = Boolean(character) &&
+        entry.title.toLocaleLowerCase("de").includes(character.toLocaleLowerCase("de"));
+      detailCharacter.textContent = character;
+      detailCharacter.hidden = !character || repeatsTitle;
     }
     if (detailAge) {
       detailAge.textContent = `${entry.age} Jahre`;

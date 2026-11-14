@@ -8,10 +8,13 @@ on:
       - .github/workflows/responsive-browser-qa.yml
       - tests/manual/qa_responsive_layout_511.py
       - index.html
+      - detail.html
       - css/**
       - js/category-mobile-rows.js
       - js/print-basket-ui.mjs
       - js/filter-summary.js
+      - js/detail.js
+      - tests/manual/qa_detail_mobile_layout.py
   workflow_dispatch:
 
 permissions:
@@ -39,3 +42,6 @@ jobs:
 
       - name: Check exact responsive viewport boundaries
         run: python3 tests/manual/qa_responsive_layout_511.py
+
+      - name: Check mobile detail action and topic hierarchy
+        run: python3 tests/manual/qa_detail_mobile_layout.py
