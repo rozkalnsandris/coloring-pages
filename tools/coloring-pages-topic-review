@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""Review exact local catalogue/topic snapshots; never change production data."""
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import re
+import sys
+import unicodedata
+
+from coloring_pages_topics import RegistryError, read_registry
+
+MAX_CATALOG_BYTES = 16 * 1024 * 1024
+SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
+SHA = re.compile(r"[0-9a-f]{64}\Z")
+
+
+def normalize(text):
+    value = str(text or "").strip().lower().replace("ß", "ss")
+    return "".join(char for char in unicodedata.normalize("NFD", value)
+                   if unicodedata.category(char) != "Mn")
+
+
+def load_catalog(path):
+    with path.open("rb") as stream:
+        raw = stream.read(MAX_CATALOG_BYTES + 1)
+    if len(raw) > MAX_CATALOG_BYTES:
+        raise ValueError("catalogue exceeds 16 MiB limit")
+    records = json.loads(raw.decode("utf-8"))
+    if not isinstance(records, list):
+        raise ValueError("catalogue must be an array")
+    return records, hashlib.sha256(raw).hexdigest()
+
+
+def build_report(records, registry, catalogue_sha, topics_sha, topic_id, category):
+    by_topic = {row["id"]: row for row in registry["topics"]}
+    if topic_id not in by_topic:
+        raise ValueError("topic id is absent from managed registry")
+    terms = [normalize(term) for term in by_topic[topic_id]["legacy_terms"]]
+    term_sets = {key: [normalize(t) for t in value["legacy_terms"]]
+                 for key, value in by_topic.items()}
+    ids, entries = set(), []
+    for position, item in enumerate(records):
+        if not isinstance(item, dict):
+            raise ValueError(f"record {position} must be an object")
+        activity_id, title, primary = item.get("id"), item.get("title"), item.get("category")
+        if not isinstance(activity_id, str) or not activity_id or activity_id in ids:
+            raise ValueError(f"record {position} has invalid or duplicate id")
+        ids.add(activity_id)
+        if not isinstance(title, str) or not title.strip() or not isinstance(primary, str) or not SLUG.fullmatch(primary):
+            raise ValueError(f"record {position} has invalid title/category")
+        assigned_categories = item.get("categories", [primary])
+        if (not isinstance(assigned_categories, list) or not assigned_categories or
+                assigned_categories[0] != primary or
+                any(not isinstance(v, str) or not SLUG.fullmatch(v) for v in assigned_categories) or
+                len(set(assigned_categories)) != len(assigned_categories)):
+            raise ValueError(f"record {position} has invalid categories")
+        explicit = "topics" in item
+        if explicit:
+            topic_ids = item["topics"]
+            if (not isinstance(topic_ids, list) or
+                    any(not isinstance(v, str) or v not in by_topic for v in topic_ids) or
+                    len(set(topic_ids)) != len(topic_ids)):
+                raise ValueError(f"record {position} has invalid explicit topics")
+        else:
+            text = normalize(f"{title} {item.get('character') or ''}")
+            topic_ids = [key for key, words in term_sets.items()
+                         if any(word in text for word in words)]
+        if (category and category not in assigned_categories) or topic_id not in topic_ids:
+            continue
+        title_text = normalize(f"{title} {item.get('character') or ''}")
+        has_cue = any(word in title_text for word in terms)
+        entries.append({"id": activity_id, "title": title,
+                        "assignment": "explicit" if explicit else "legacy_title_terms",
+                        "title_cue_present": has_cue})
+    review = sum(row["assignment"] == "explicit" and not row["title_cue_present"] for row in entries)
+    return {"catalog_sha256": catalogue_sha, "topics_sha256": topics_sha,
+            "catalogue_activity_count": len(records), "category": category, "topic": topic_id,
+            "topic_label": by_topic[topic_id]["label"], "matched_count": len(entries),
+            "title_cue_absent_review_count": review,
+            "notice": "Missing title keywords are not proof of incorrect tags. Check artwork and obtain separate approval before any catalogue mutation.",
+            "entries": entries}
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--catalog", type=Path, required=True)
+    parser.add_argument("--topics", type=Path, required=True)
+    parser.add_argument("--topic", required=True)
+    parser.add_argument("--category")
+    parser.add_argument("--expected-catalog-sha256")
+    parser.add_argument("--expected-topics-sha256")
+    args = parser.parse_args(argv)
+    if not SLUG.fullmatch(args.topic) or (args.category and not SLUG.fullmatch(args.category)):
+        parser.error("topic/category must use canonical slug IDs")
+    for digest in (args.expected_catalog_sha256, args.expected_topics_sha256):
+        if digest is not None and not SHA.fullmatch(digest):
+            parser.error("snapshot SHA-256 must be 64 lowercase hexadecimal characters")
+    try:
+        records, catalogue_sha = load_catalog(args.catalog)
+        registry, topics_sha = read_registry(args.topics)
+        if args.expected_catalog_sha256 and catalogue_sha != args.expected_catalog_sha256:
+            raise ValueError("catalogue SHA-256 mismatch")
+        if args.expected_topics_sha256 and topics_sha != args.expected_topics_sha256:
+            raise ValueError("topics SHA-256 mismatch")
+        report = build_report(records, registry, catalogue_sha, topics_sha, args.topic, args.category)
+    except (OSError, ValueError, UnicodeError, RegistryError) as exc:
+        print(f"TOPIC_REVIEW_ERROR: {exc}", file=sys.stderr)
+        return 2
+    print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
