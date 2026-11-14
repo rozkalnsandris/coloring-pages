@@ -280,6 +280,36 @@ def assert_topic_filter_summary(page, width: int):
 
 
 
+def assert_herbst_illustration(page, origin: str, width: int):
+    # Real local HTML + approved WebP; no LIVE/protected media required.
+    page.goto(origin + "/herbst.html", wait_until="domcontentloaded")
+    page.wait_for_function(
+        "() => {const img = document.querySelector('[data-topic-landing-art] img');"
+        "return img && img.complete && img.naturalWidth === 1755 && img.naturalHeight === 896;}"
+    )
+    hero = page.locator(".topic-landing-hero--with-art")
+    image = page.locator("[data-topic-landing-art] img")
+    if not hero.is_visible() or not image.is_visible():
+        raise AssertionError(f"{width}px approved Herbst illustration hidden")
+    if image.get_attribute("alt") != "Ausmalwiese-Hund mit Kürbissen und buntem Herbstlaub":
+        raise AssertionError(f"{width}px Herbst illustration alt missing")
+    if image.get_attribute("src") != "/assets/herbst-topic-hero.webp":
+        raise AssertionError(f"{width}px unexpected Herbst illustration source")
+    metrics = page.evaluate(
+        "() => ({width: innerWidth, html: document.documentElement.scrollWidth,"
+        "body: document.body.scrollWidth})"
+    )
+    if metrics["width"] != width or metrics["html"] > width + 1 or metrics["body"] > width + 1:
+        raise AssertionError(f"{width}px illustrated Herbst overflow: {metrics}")
+    assert_inside_viewport(page, ".topic-landing-hero, .topic-landing-art, .topic-landing-art img", width)
+    heading = page.locator(".topic-landing-hero h1").bounding_box()
+    art = image.bounding_box()
+    if not heading or not art:
+        raise AssertionError(f"{width}px hero artwork/heading bounds missing")
+    if width <= 720 and art["y"] < heading["y"] + heading["height"] - 1:
+        raise AssertionError(f"{width}px artwork overlaps topic heading")
+
+
 def run_case(browser, origin: str, width: int):
     page = browser.new_page(viewport={"width": width, "height": 1000})
     try:
@@ -386,6 +416,7 @@ def run_case(browser, origin: str, width: int):
         exercise_real_basket_reflow(page, width)
         assert_search_and_surprise_group(page, width)
         assert_topic_filter_summary(page, width)
+        assert_herbst_illustration(page, origin, width)
         print(
             f"PASS responsive {width}px: mobileRows={expected_mobile_rows}, "
             "no horizontal overflow"

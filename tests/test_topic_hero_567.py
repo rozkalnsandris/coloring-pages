@@ -1,5 +1,6 @@
-"""Issue #567 shared topic hero: source, SEO and fallback contract (no art yet)."""
+"""Issue #567: shared topic hero and approved Herbst WebP source contract."""
 import hashlib
+import struct
 import subprocess
 import unittest
 from pathlib import Path
@@ -17,10 +18,13 @@ class TopicHero567Tests(unittest.TestCase):
         self.assertIn('href="https://ausmalwiese.de/herbst"', page)
         self.assertIn('<title>Kostenlose Herbst-Ausmalbilder zum Ausdrucken | Ausmalwiese</title>', page)
         self.assertIn('<h1 id="category-title">Kostenlose Herbst-Ausmalbilder zum Ausdrucken</h1>', page)
-        self.assertIn('class="category-hero topic-landing-hero topic-landing-hero--static"', page)
-        self.assertIn('data-topic-landing-art hidden', page)
+        self.assertIn('class="category-hero topic-landing-hero topic-landing-hero--static topic-landing-hero--with-art"', page)
+        self.assertIn('data-topic-landing-art>', page)
+        self.assertIn('src="/assets/herbst-topic-hero.webp"', page)
+        self.assertIn('alt="Ausmalwiese-Hund mit Kürbissen und buntem Herbstlaub"', page)
+        self.assertIn('width="1755" height="896"', page)
+        self.assertIn('fetchpriority="high"', page)
         self.assertEqual(page.count('<article class="coloring-card">'), 6)
-        self.assertNotIn('src="/assets/topic-hero/herbst.webp"', page)
         self.assertNotIn('href="/bauernhof"', page)
 
     def test_homepage_semantic_focused_hero_and_single_selector(self):
@@ -47,12 +51,23 @@ class TopicHero567Tests(unittest.TestCase):
         self.assertIn("rozkalns.ausmalwiese.topic-hero.v1", code)
         self.assertIn("Object.prototype.hasOwnProperty.call", code)
         self.assertIn("return null;", code)
-        self.assertIn('"/assets/topic-hero/" + topicId + ".webp"', code)
+        self.assertIn('"/assets/" + topicId + "-topic-hero.webp"', code)
         self.assertNotIn("bauernhof: Object.freeze(", code)
         self.assertNotIn("tanzen: Object.freeze(", code)
-        self.assertNotIn('image: Object.freeze(', code)
+        self.assertEqual(code.count('image: Object.freeze('), 1)
+        self.assertIn('d077de2efb5b291cf41140722958aa771fea6bd716da387a37458af700b0ad74', code)
         for file in ("js/topic-hero-content.js", "js/app.js"):
             subprocess.run(["node", "--check", str(ROOT / file)], check=True, timeout=15)
+
+    def test_approved_webp_bytes_and_dimensions(self):
+        raw = (ROOT / "assets/herbst-topic-hero.webp").read_bytes()
+        self.assertEqual(len(raw), 119446)
+        self.assertEqual(hashlib.sha256(raw).hexdigest(), "d077de2efb5b291cf41140722958aa771fea6bd716da387a37458af700b0ad74")
+        self.assertEqual(raw[:4], b"RIFF")
+        self.assertEqual(raw[8:16], b"WEBPVP8 ")
+        width = struct.unpack_from("<H", raw, 26)[0] & 0x3FFF
+        height = struct.unpack_from("<H", raw, 28)[0] & 0x3FFF
+        self.assertEqual((width, height), (1755, 896))
 
     def test_versioned_consumers(self):
         app_hash = hashlib.sha256((ROOT / "js/app.js").read_bytes()).hexdigest()[:16]
