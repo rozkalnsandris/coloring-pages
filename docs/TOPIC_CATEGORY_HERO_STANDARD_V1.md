@@ -1,7 +1,7 @@
 # Ausmalwiese — Topic & Category Page Hero Standard v1
 
 **Status:** proposed, source-reviewed authoring and implementation contract (2026-11-15). **This document does not itself implement automation, publish artwork, create routes, or authorize merge/LIVE.**
-**Canonical scope:** `rozkalnsandris/coloring-pages`; related umbrella [#565](https://github.com/rozkalnsandris/coloring-pages/issues/565). The current site baseline inspected for this contract is `main@ef021dc5eff5d9f6024a797a953d8745fd35ec09`. Always reread current GitHub `main` before applying it.
+**Canonical scope:** `rozkalnsandris/coloring-pages`; related umbrella [#565](https://github.com/rozkalnsandris/coloring-pages/issues/565). The initial site baseline for this contract was `main@ef021dc5eff5d9f6024a797a953d8745fd35ec09`; PR #576 subsequently updated shared image-edge blending at `main@0cf044fa67b81fb7cfbe020f5047e0715464f9e4`. Always reread current GitHub `main` before applying it.
 
 ## 1. Outcome and non-negotiable rule
 
@@ -62,6 +62,39 @@ Current tested design is **mobile-first**. Follow shared Page Hero v2 tokens, co
 **Top-location invariant:** the visible `Startseite` or semantic breadcrumb **top edge** is aligned relative to the bottom of `.site-header` within **4 CSS px** at the *same viewport* on home, Herbst, categories and managed Topic browse. Text/hero heights may differ. The #573 Vehicles fix currently lives in `css/page-hero-illustrated-category.css` with `.page-hero--category.page-hero--with-art .page-hero-copy { align-self: start; }`. **Target:** move/reconcile that rule into the one shared component during a separately reviewed implementation; do not duplicate it in every new category.
 
 There must be **zero meaningful horizontal overflow** (automated allowance ≤1 CSS px for rounding), no image/header/footer overlap, no masked-off logo, no false empty image column, and no layout shift due to late image insertion. Native `width`/`height` must represent actual image dimensions and reserve aspect ratio. Preserve `object-fit:contain` for the master.
+
+
+### Shipped image-edge blending: PR #576 (2026-11-15)
+
+**Implemented in the shared CSS**, not merely planned. The source [PR #576](https://github.com/rozkalnsandris/coloring-pages/pull/576) merged exact HEAD `c4f3b269a853e9efa9b4109683bf6f4e1db9037a` as `main@0cf044fa67b81fb7cfbe020f5047e0715464f9e4`. This is a presentation-layer fix; the future registry-driven single Hero template in §5 is **still unimplemented**.
+
+**Problem and solution:** Approved `/herbst` and `/fahrzeuge` illustrations showed a hard rectangular edge against the shared gradient. Fading only the bottom 14% in the initial #576 candidate did **not** visibly fix the right-hand boundary. The merged rule in `css/topic-landing-hero.css` feathers **left, top, right and bottom** and adds a small opaque elliptical *logo safety pocket* near the lower right. Existing approved Herbst/Fahrzeuge WebP bytes, alt, subject, H1/SEO, routes, aspect ratio and display dimensions are **unchanged**.
+
+Exact current masking contract (other existing size/layout declarations omitted):
+
+```css
+.page-hero .page-hero-art img {
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  -webkit-mask-image:
+    radial-gradient(ellipse 17% 12% at 91% 81%, #000 65%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 12%, #000 86%, transparent 100%),
+    linear-gradient(180deg, transparent 0%, #000 8%, #000 86%, transparent 100%);
+  mask-image:
+    radial-gradient(ellipse 17% 12% at 91% 81%, #000 65%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 12%, #000 86%, transparent 100%),
+    linear-gradient(180deg, transparent 0%, #000 8%, #000 86%, transparent 100%);
+  -webkit-mask-composite: source-over, source-in;
+  mask-composite: add, intersect;
+}
+```
+
+The order and values are significant: horizontal opacity from **12% to 86%**, vertical opacity from **8% to 86%**, with soft transitions outside these bands; the elliptical pocket at **91% 81% / 17% × 12%** restores opacity around the approved `Ausmalwiese.de` mark. Keep the corresponding `@media (forced-colors: active)` mask-off fallback. **Do not copy these coordinates to arbitrary future artwork without checking the new logo placement.** This preset was tuned for the two approved masters, not guaranteed for differently composed images. Keep `object-fit: contain`; never mask away or crop the mascot, vehicles, autumn motifs or branding to hide seams.
+
+**Verification and limits:** Exact-HEAD #576 CI **7/7 SUCCESS** and workflows **4/4 SUCCESS**, including the Chromium layout/no-overflow checks at **320, 360, 361, 390, 412, 540, 541, 768, 1024, 1365, 1440 CSS px**. Isolated candidate illustration/mask comparison at **390 and 1365 px** supported the right-edge change, but was **not** a full-page Opera candidate screenshot; automated layout success does **not** establish pixel-level visual acceptance. A subsequent separately authorized **read-only** RPi5 observation found revision `0cf044fa67b81fb7cfbe020f5047e0715464f9e4`, container running and `/health` + `/ready` both HTTP 200 **at the observation time**; do not infer perpetual LIVE status. Future art must be inspected on **actual desktop/mobile pages** next to the two approved examples, checking both faded sides, lower edge, logo legibility, 200% text zoom and forced-colors behavior.
+
+**Change propagation:** #576 updated the shared stylesheet, its **SHA-256 version query in all nine consuming HTML pages**, and `tests/test_page_hero_569.py`. New shared-CSS edits must update all *actual* versioned consumers and relevant tests, never just one Topic or category. Do not generate new images or add one-off CSS for the same effect. See [CSS mask-composite (MDN)](https://developer.mozilla.org/en-US/docs/Web/CSS/mask-composite).
+
 
 ## 5. One registry-backed component — target architecture, NOT yet implemented
 
@@ -213,7 +246,8 @@ Acceptance:
 Repository evidence (inspected `main@ef021dc5eff5d9f6024a797a953d8745fd35ec09`):
 - `AGENTS.md`, `README.md`, `docs/TOPIC_HERO_ARTWORK_567.md`, `docs/RUNTIME_TOPICS_V2_438.md`
 - `herbst.html`, `fahrzeuge.html`, `css/topic-landing-hero.css`, `css/page-hero-illustrated-category.css`, `js/topic-hero-content.js`, `js/app.js`
-- `tests/test_fahrzeuge_hero_573.py`, `tests/manual/qa_responsive_layout_511.py`
+- `tests/test_fahrzeuge_hero_573.py`, `tests/test_page_hero_569.py`, `tests/manual/qa_responsive_layout_511.py`
+- Shipped edge blend: [PR #576](https://github.com/rozkalnsandris/coloring-pages/pull/576), merge `0cf044fa67b81fb7cfbe020f5047e0715464f9e4`, `css/topic-landing-hero.css` and versioned HTML users.
 - Scope and prior review: [#565](https://github.com/rozkalnsandris/coloring-pages/issues/565), [#567](https://github.com/rozkalnsandris/coloring-pages/issues/567), [#569](https://github.com/rozkalnsandris/coloring-pages/issues/569), [#571](https://github.com/rozkalnsandris/coloring-pages/issues/571), [#573](https://github.com/rozkalnsandris/coloring-pages/issues/573).
 
 External guidance consulted on 2026-11-15:
