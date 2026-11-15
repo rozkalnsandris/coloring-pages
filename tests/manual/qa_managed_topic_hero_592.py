@@ -211,12 +211,12 @@ def case(browser, origin: str, width: int) -> None:
         chooser = page.locator("[data-filter-topic]")
         chooser.select_option("bauernhof")
         assert_reviewed_bauernhof(page, width)
-        chooser.select_option("herbst")
-        assert_reviewed_herbst(page, width)
+        # Selecting Herbst navigates to the separate canonical /herbst route.
+        # Test the managed browse Hero using same-document history instead.
         page.go_back()
-        assert_reviewed_bauernhof(page, width)
-        page.go_forward()
         assert_reviewed_herbst(page, width)
+        page.go_forward()
+        assert_reviewed_bauernhof(page, width)
         chooser.select_option("tanzen")
         assert_label_only(page, width, "tanzen", "Tanzen")
         if "topic=tanzen" not in page.url or "campaign=hero-qa" not in page.url:
@@ -228,7 +228,11 @@ def case(browser, origin: str, width: int) -> None:
         page.go_back()
         assert_label_only(page, width, "tanzen", "Tanzen")
         page.go_back()
+        assert_reviewed_bauernhof(page, width)
+        page.go_back()
         assert_reviewed_herbst(page, width)
+        page.go_forward()
+        assert_reviewed_bauernhof(page, width)
         page.go_forward()
         assert_label_only(page, width, "tanzen", "Tanzen")
 
