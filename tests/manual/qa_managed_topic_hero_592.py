@@ -149,7 +149,7 @@ def case(browser, origin: str, width: int) -> None:
             ("categories.json", CATEGORIES_FIXTURE),
             ("topics.json", TOPICS),
         ):
-            page.route("**/" + suffix, lambda route, data=payload: route.fulfill(
+            page.route("**/" + suffix, lambda route, _request, data=payload: route.fulfill(
                 status=200, content_type="application/json",
                 body=json.dumps(data, ensure_ascii=False),
             ))
