@@ -79,7 +79,7 @@ class PageHeroV2Tests(unittest.TestCase):
         css_path = ROOT / "css/topic-landing-hero.css"
         sha = hashlib.sha256(css_path.read_bytes()).hexdigest()[:16]
         self.assertIn("mask-composite: intersect;", read("css/topic-landing-hero.css"))
-        self.assertIn("linear-gradient(180deg, transparent 0%, #000 8%, #000 86%, transparent 100%)", css)
+        self.assertIn("linear-gradient(180deg, transparent 0%, #000 8%, #000 86%, transparent 100%)", read("css/topic-landing-hero.css"))
         self.assertIn('max-height: 200px', read("css/topic-landing-hero.css"))
         self.assertIn('page-hero-breadcrumbs', read("css/topic-landing-hero.css"))
         for p in ("index.html", "herbst.html", *(x + ".html" for x in CATEGORIES)):
