@@ -1,0 +1,28 @@
+{
+  "schema": "rozkalns.ausmalwiese.landing-hero.v1",
+  "categories": {
+    "fahrzeuge": {
+      "image": "/assets/fahrzeuge-topic-hero.webp",
+      "width": 1755,
+      "height": 896,
+      "bytes": 163810,
+      "sha256": "5cf25e6cdd6a5b719f8f8c34577d3e9cba28b6b3a3c71199b24559855d9575b5",
+      "alt": "Ausmalwiese-Hund neben einem Feuerwehrauto und einem blauen Auto",
+      "provenance": "issue-573-approved-art",
+      "approval_ref": "coloring-pages#573"
+    }
+  },
+  "topics": {
+    "herbst": {
+      "image": "/assets/herbst-topic-hero.webp",
+      "width": 1755,
+      "height": 896,
+      "bytes": 119446,
+      "sha256": "d077de2efb5b291cf41140722958aa771fea6bd716da387a37458af700b0ad74",
+      "alt": "Ausmalwiese-Hund mit Kürbissen und buntem Herbstlaub",
+      "intro": "Herbst-Ausmalbilder für Kinder: Entdecke Kürbisse, buntes Laub, Ernte-Motive, Laternen und weitere Ideen für gemütliche Herbsttage.",
+      "provenance": "docs/TOPIC_HERO_ARTWORK_567.md",
+      "approval_ref": "coloring-pages#567"
+    }
+  }
+}
