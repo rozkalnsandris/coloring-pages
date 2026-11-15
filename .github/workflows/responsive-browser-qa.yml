@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/responsive-browser-qa.yml
       - tests/manual/qa_responsive_layout_511.py
+      - tests/manual/qa_managed_topic_hero_592.py
       - tests/manual/qa_shared_gallery_filters.py
       - index.html
       - detail.html
@@ -55,6 +56,9 @@ jobs:
 
       - name: Check exact responsive viewport boundaries
         run: python3 tests/manual/qa_responsive_layout_511.py
+
+      - name: Check managed Topic Hero artwork/fallback/history in Chromium
+        run: python3 tests/manual/qa_managed_topic_hero_592.py
 
       - name: Check mobile detail action and topic hierarchy
         run: python3 tests/manual/qa_detail_mobile_layout.py
