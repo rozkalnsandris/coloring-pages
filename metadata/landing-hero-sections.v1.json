@@ -1,0 +1,37 @@
+{
+  "schema": "rozkalns.ausmalwiese.landing-hero-sections.v1",
+  "pages": {
+    "fahrzeuge": {
+      "namespace": "categories",
+      "heading": "Kostenlose Fahrzeug-Ausmalbilder",
+      "intro": "Entdecke Fahrzeug-Malvorlagen für Kinder und drucke dein Lieblingsmotiv direkt auf A4 aus.",
+      "breadcrumbs": [
+        {
+          "href": "/",
+          "label": "Startseite"
+        },
+        {
+          "label": "Fahrzeuge"
+        }
+      ]
+    },
+    "herbst": {
+      "namespace": "topics",
+      "heading": "Kostenlose Herbst-Ausmalbilder zum Ausdrucken",
+      "intro": "Herbst-Ausmalbilder für Kinder: Entdecke Kürbisse, buntes Laub, Ernte-Motive, Laternen und weitere Ideen für gemütliche Herbsttage. Wähle ein Motiv aus, öffne die Vorschau und drucke die Malvorlage kostenlos auf A4 aus.",
+      "breadcrumbs": [
+        {
+          "href": "/",
+          "label": "Startseite"
+        },
+        {
+          "href": "/jahreszeiten",
+          "label": "Jahreszeiten & Feste"
+        },
+        {
+          "label": "Herbst"
+        }
+      ]
+    }
+  }
+}
