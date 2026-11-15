@@ -78,7 +78,10 @@ class PageHeroV2Tests(unittest.TestCase):
     def test_single_css_version_and_source_seo(self):
         css_path = ROOT / "css/topic-landing-hero.css"
         sha = hashlib.sha256(css_path.read_bytes()).hexdigest()[:16]
-        self.assertIn("mask-composite: intersect;", read("css/topic-landing-hero.css"))
+        self.assertIn("mask-composite: add, intersect;", read("css/topic-landing-hero.css"))
+        self.assertIn("-webkit-mask-composite: source-over, source-in;", read("css/topic-landing-hero.css"))
+        self.assertIn("radial-gradient(ellipse 17% 12% at 91% 81%, #000 65%, transparent 100%)", read("css/topic-landing-hero.css"))
+        self.assertIn("linear-gradient(90deg, transparent 0%, #000 12%, #000 86%, transparent 100%)", read("css/topic-landing-hero.css"))
         self.assertIn("linear-gradient(180deg, transparent 0%, #000 8%, #000 86%, transparent 100%)", read("css/topic-landing-hero.css"))
         self.assertIn('max-height: 200px', read("css/topic-landing-hero.css"))
         self.assertIn('page-hero-breadcrumbs', read("css/topic-landing-hero.css"))
