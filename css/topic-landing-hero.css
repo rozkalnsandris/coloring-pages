@@ -113,6 +113,10 @@
   mask-composite: add, intersect;
 }
 .page-hero--category .page-hero-copy { max-width: 860px; }
+/* #580: retain the illustrated-category top alignment in the shared Hero CSS. */
+.page-hero--category.page-hero--with-art .page-hero-copy {
+  align-self: start;
+}
 /* Keep the actual topic H1 visible on card navigation under the sticky header. */
 .page-hero--topic { scroll-margin-top: 88px; }
 #hero[hidden], .page-hero[hidden], .page-hero-art[hidden], .topic-landing-art[hidden] { display: none !important; }

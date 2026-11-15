@@ -22,10 +22,15 @@ class FahrzeugeHero573Tests(unittest.TestCase):
         self.assertEqual(html.count('class="page-hero-art"'), 1)
         self.assertIn('src="/assets/fahrzeuge-topic-hero.webp"', html)
         self.assertIn('width="1755" height="896" decoding="async" fetchpriority="high"', html)
-        css = (ROOT / "css/page-hero-illustrated-category.css").read_bytes()
+        css = (ROOT / "css/topic-landing-hero.css").read_bytes()
         digest = hashlib.sha256(css).hexdigest()[:16]
-        self.assertIn(f"/css/page-hero-illustrated-category.css?v={digest}", html)
-        self.assertIn("align-self: start;", css.decode("utf-8"))
+        self.assertIn(f"/css/topic-landing-hero.css?v={digest}", html)
+        self.assertNotIn("page-hero-illustrated-category.css", html)
+        self.assertFalse((ROOT / "css/page-hero-illustrated-category.css").exists())
+        self.assertIn(
+            ".page-hero--category.page-hero--with-art .page-hero-copy {\n"
+            "  align-self: start;\n}", css.decode("utf-8")
+        )
         self.assertIn('alt="Ausmalwiese-Hund neben einem Feuerwehrauto und einem blauen Auto"', html)
         self.assertIn('aria-label="Breadcrumb"', html)
         self.assertIn('data-category-gallery', html)

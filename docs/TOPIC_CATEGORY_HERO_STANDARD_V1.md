@@ -16,7 +16,7 @@ A **browse state is not an indexed SEO landing page**. Creating a separate index
 | Reference | Current source | Contract |
 | --- | --- | --- |
 | **Herbst** | `herbst.html`, `assets/herbst-topic-hero.webp`, `js/topic-hero-content.js` | Real self-canonical `/herbst`, German initial HTML H1/intro, three-level breadcrumb, **six crawlable seed cards**, approved dog + pumpkin/leaves art. |
-| **Fahrzeuge** | `fahrzeuge.html`, `assets/fahrzeuge-topic-hero.webp`, `css/page-hero-illustrated-category.css` | Existing `/fahrzeuge` canonical, two-level breadcrumb, category gallery; dog + fire engine + blue car; **no excavator/bulldozer**. |
+| **Fahrzeuge** | `fahrzeuge.html`, `assets/fahrzeuge-topic-hero.webp`, `css/topic-landing-hero.css` | Existing `/fahrzeuge` canonical, two-level breadcrumb, category gallery; dog + fire engine + blue car; **no excavator/bulldozer**. |
 | **Current shared system** | `css/topic-landing-hero.css`, `index.html`, `js/app.js` | `.page-hero`, `.page-hero-grid`, `.page-hero-copy`, `.page-hero-art`, `.page-hero--with-art`. Topic browse hero is driven by the validated runtime Topic label, with reviewed optional art/copy from `js/topic-hero-content.js`. |
 
 ### Approved asset identities — keep immutable
@@ -59,7 +59,7 @@ Current tested design is **mobile-first**. Follow shared Page Hero v2 tokens, co
 
 **Current CSS exact baseline:** Page Hero vertical padding `clamp(18px, 2.5vw, 30px)` top and `clamp(20px, 2.8vw, 34px)` bottom; ≤720 uses **16px top/20px bottom**; desktop H1 `clamp(34px, 4.25vw, 58px)`; illustration `max-height:350px`; mobile switches at **720px**, special `max-height:155px` at **360px**. Homepage is a separate `.page-hero--home` layout, with its existing search/surprise tools and max-height **340px** art. Do **not** unify homepage controls into Topic/category views.
 
-**Top-location invariant:** the visible `Startseite` or semantic breadcrumb **top edge** is aligned relative to the bottom of `.site-header` within **4 CSS px** at the *same viewport* on home, Herbst, categories and managed Topic browse. Text/hero heights may differ. The #573 Vehicles fix currently lives in `css/page-hero-illustrated-category.css` with `.page-hero--category.page-hero--with-art .page-hero-copy { align-self: start; }`. **Target:** move/reconcile that rule into the one shared component during a separately reviewed implementation; do not duplicate it in every new category.
+**Top-location invariant:** the visible `Startseite` or semantic breadcrumb **top edge** is aligned relative to the bottom of `.site-header` within **4 CSS px** at the *same viewport* on home, Herbst, categories and managed Topic browse. Text/hero heights may differ. The #573 Fahrzeuge alignment selector `.page-hero--category.page-hero--with-art .page-hero-copy { align-self: start; }` is now consolidated in shared `css/topic-landing-hero.css` (source scope #580); do not duplicate it in new categories. This does **not** yet implement manifest-driven rendering.
 
 There must be **zero meaningful horizontal overflow** (automated allowance ≤1 CSS px for rounding), no image/header/footer overlap, no masked-off logo, no false empty image column, and no layout shift due to late image insertion. Native `width`/`height` must represent actual image dimensions and reserve aspect ratio. Preserve `object-fit:contain` for the master.
 
@@ -234,7 +234,7 @@ Acceptance:
 ## 10. One-time migration plan (separate bounded implementation issue)
 
 1. Design and validate the proposed **unified, versioned source Hero manifest** from the two approved current exemplars without changing their actual image bytes or SEO/head content. Make exact approval refs/hashes testable.
-2. Consolidate `css/page-hero-illustrated-category.css` into shared `css/topic-landing-hero.css` (or a single reviewed dedicated shared stylesheet), preserving location-row parity. Update **all actual hashed CSS consumers**, then remove only obsolete rule references. No global navbar changes.
+2. **Source consolidation (#580):** move the sole Fahrzeuge alignment rule from `css/page-hero-illustrated-category.css` into shared `css/topic-landing-hero.css`, preserving location-row parity; update all nine current hashed landing CSS consumers and remove the obsolete CSS file. Until separately merged, this step is present only in the #580 source branch. No global navbar changes.
 3. Refactor reusable static indexed/category template/generator and dynamic Topic renderer so **approved data drives image insertion**; preserve source-sent page metadata/seed cards and the existing `js/topic-hero-content.js` behavior until parity tests pass. Do not re-create indexed pages in client JS.
 4. Expand contract/unit tests, image integrity checks and Chromium width/keyboard/CLS checks; verify both existing examples **unchanged**. Add regression that a newly supplied managed Topic ID works **without Hero renderer/CSS/route code edits** (label-only fallback); verify new approved art can be added by **manifest + image only**.
 5. Deliver a bounded Draft PR → CI/review → READY. **No merge** without an exact separate owner command; no LIVE or protected catalogue mutation from this document.
@@ -245,7 +245,7 @@ Acceptance:
 
 Repository evidence (inspected `main@ef021dc5eff5d9f6024a797a953d8745fd35ec09`):
 - `AGENTS.md`, `README.md`, `docs/TOPIC_HERO_ARTWORK_567.md`, `docs/RUNTIME_TOPICS_V2_438.md`
-- `herbst.html`, `fahrzeuge.html`, `css/topic-landing-hero.css`, `css/page-hero-illustrated-category.css`, `js/topic-hero-content.js`, `js/app.js`
+- `herbst.html`, `fahrzeuge.html`, `css/topic-landing-hero.css`, historical `css/page-hero-illustrated-category.css` (removed by #580), `js/topic-hero-content.js`, `js/app.js`
 - `tests/test_fahrzeuge_hero_573.py`, `tests/test_page_hero_569.py`, `tests/manual/qa_responsive_layout_511.py`
 - Shipped edge blend: [PR #576](https://github.com/rozkalnsandris/coloring-pages/pull/576), merge `0cf044fa67b81fb7cfbe020f5047e0715464f9e4`, `css/topic-landing-hero.css` and versioned HTML users.
 - Scope and prior review: [#565](https://github.com/rozkalnsandris/coloring-pages/issues/565), [#567](https://github.com/rozkalnsandris/coloring-pages/issues/567), [#569](https://github.com/rozkalnsandris/coloring-pages/issues/569), [#571](https://github.com/rozkalnsandris/coloring-pages/issues/571), [#573](https://github.com/rozkalnsandris/coloring-pages/issues/573).
