@@ -14,7 +14,7 @@ from pathlib import Path
 import threading
 
 ROOT = Path(__file__).resolve().parents[2]
-WIDTHS = (320, 360, 361, 390, 412, 540, 541, 768, 1440)
+WIDTHS = (320, 360, 361, 390, 412, 540, 541, 768, 1024, 1365, 1440)
 CATALOG_FIXTURE = [
     {"id": f"mobile-qa-{number}", "title": f"Mobile QA {number}",
      "category": "tiere", "age": "3-6", "difficulty": "easy",
@@ -315,6 +315,34 @@ def assert_herbst_illustration(page, origin: str, width: int):
 
 
 
+def assert_fahrzeuge_illustration(page, origin: str, width: int):
+    """#573: approved local artwork loads, stays within viewport, never overlaps mobile title."""
+    page.goto(origin + "/fahrzeuge.html", wait_until="domcontentloaded")
+    page.wait_for_function(
+        "() => {const img = document.querySelector('.page-hero--category .page-hero-art img');"
+        "return img && img.complete && img.naturalWidth === 1755 && img.naturalHeight === 896;}"
+    )
+    image = page.locator(".page-hero--category .page-hero-art img")
+    hero = page.locator(".page-hero--category.page-hero--with-art")
+    if not hero.is_visible() or not image.is_visible():
+        raise AssertionError(f"{width}px approved Fahrzeuge illustration hidden")
+    if image.get_attribute("src") != "/assets/fahrzeuge-topic-hero.webp":
+        raise AssertionError(f"{width}px unapproved Fahrzeuge artwork source")
+    if image.get_attribute("alt") != "Ausmalwiese-Hund neben einem Feuerwehrauto und einem blauen Auto":
+        raise AssertionError(f"{width}px Fahrzeuge art alt mismatched")
+    if page.locator(".page-hero--category .page-hero-breadcrumbs [aria-current='page']").inner_text() != "Fahrzeuge":
+        raise AssertionError(f"{width}px Fahrzeuge breadcrumb missing")
+    if page.locator(".page-hero--category h1").count() != 1:
+        raise AssertionError(f"{width}px Fahrzeuge hero H1 count invalid")
+    assert_inside_viewport(page, ".page-hero--category, .page-hero--category .page-hero-art, .page-hero--category .page-hero-art img", width)
+    bounds = image.bounding_box()
+    heading = page.locator(".page-hero--category h1").bounding_box()
+    if not bounds or not heading:
+        raise AssertionError(f"{width}px Fahrzeuge hero bounds missing")
+    if width <= 720 and bounds["y"] < heading["y"] + heading["height"] - 1:
+        raise AssertionError(f"{width}px Fahrzeuge art overlaps heading")
+
+
 def assert_shared_hero_alignment(page, origin: str, width: int):
     """Direct-entry location parity; fragment deep links are tested separately."""
     offsets = {}
@@ -508,6 +536,7 @@ def run_case(browser, origin: str, width: int):
         assert_search_and_surprise_group(page, width)
         assert_topic_filter_summary(page, width)
         assert_herbst_illustration(page, origin, width)
+        assert_fahrzeuge_illustration(page, origin, width)
         assert_shared_hero_alignment(page, origin, width)
         print(
             f"PASS responsive {width}px: mobileRows={expected_mobile_rows}, "

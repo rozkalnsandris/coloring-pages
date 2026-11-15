@@ -1,0 +1,4 @@
+/* #573: illustrated category headings retain Page Hero location-row parity. */
+.page-hero--category.page-hero--with-art .page-hero-copy {
+  align-self: start;
+}
