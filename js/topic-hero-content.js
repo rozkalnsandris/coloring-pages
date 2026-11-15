@@ -1,20 +1,20 @@
-/* #567: review-only Topic editorial and artwork manifest, not the runtime Topic registry. */
+/* Generated from reviewed Hero metadata by render_landing_hero_topic_js.py.
+   Do not edit this browser adapter directly. The managed Topic registry is /topics.json. */
 (() => {
   "use strict";
   const manifest = Object.freeze({
     schema: "rozkalns.ausmalwiese.topic-hero.v1",
     topics: Object.freeze({
-      // Source-reviewed text and the exact owner-approved artwork; verified
-      // Git blob 3b935fac2d9c817ff2d0fb8f004a539c8683bbf3 matches the prepared WebP.
-      herbst: Object.freeze({
-        intro: "Herbst-Ausmalbilder für Kinder: Entdecke Kürbisse, buntes Laub, Ernte-Motive, Laternen und weitere Ideen für gemütliche Herbsttage.",
+      "herbst": Object.freeze({
+        intro: "Herbst-Ausmalbilder f\u00fcr Kinder: Entdecke K\u00fcrbisse, buntes Laub, Ernte-Motive, Laternen und weitere Ideen f\u00fcr gem\u00fctliche Herbsttage.",
         image: Object.freeze({
           src: "/assets/herbst-topic-hero.webp",
           width: 1755,
           height: 896,
-          alt: "Ausmalwiese-Hund mit Kürbissen und buntem Herbstlaub",
+          alt: "Ausmalwiese-Hund mit K\u00fcrbissen und buntem Herbstlaub",
           sha256: "d077de2efb5b291cf41140722958aa771fea6bd716da387a37458af700b0ad74",
-          provenance: "ImageGen:dae01964-7ae9-4899-9663-9823c2602e24"
+          provenance: "docs/TOPIC_HERO_ARTWORK_567.md",
+          approval_ref: "coloring-pages#567"
         })
       })
     })
