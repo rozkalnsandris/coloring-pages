@@ -184,7 +184,13 @@ def validate_record(record, slug, namespace, root: Path):
         fail(slug + ": asset SHA-256 differs")
     if webp_size(data) != (record["width"], record["height"]):
         fail(slug + ": native WebP dimensions differ")
-    validate_html(record, slug, root / (slug + ".html"))
+    # A reviewed browse-only Topic may have art without a static SEO route.
+    # An existing indexed page must still exactly match approved image metadata.
+    page = root / (slug + ".html")
+    if page.is_symlink():
+        fail(slug + ": unsafe static Hero page")
+    if namespace == "categories" or slug == "herbst" or page.exists():
+        validate_html(record, slug, page)
 
 
 def validate_data(data, root: Path = ROOT):

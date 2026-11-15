@@ -70,9 +70,18 @@ def build_pages(root: Path = ROOT) -> dict[str, str]:
         (root / "metadata/landing-hero.v1.json").read_text(encoding="utf-8"),
         root,
     )
-    if (set(data["categories"]) != {"fahrzeuge"}
-            or set(data["topics"]) != {"herbst"}):
-        raise ManifestValidationError("unexpected static Hero records; review new scope")
+    if set(data["categories"]) != {"fahrzeuge"} or "herbst" not in data["topics"]:
+        raise ManifestValidationError("missing approved indexed Hero records")
+    # Other source-approved Topics may be browse-only. This generator must
+    # never infer or create their indexable HTML routes.
+    for slug in data["topics"]:
+        if slug == "herbst":
+            continue
+        page = root / (slug + ".html")
+        if page.exists() or page.is_symlink():
+            raise ManifestValidationError(
+                slug + ": unexpected indexed Topic requires separate review"
+            )
     output = {}
     for namespace, slug, name, wrapper in TARGETS:
         source = (root / name).read_text(encoding="utf-8")
