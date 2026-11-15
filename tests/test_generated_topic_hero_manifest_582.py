@@ -17,7 +17,7 @@ class GeneratedTopicHero582Tests(unittest.TestCase):
     def test_generated_file_is_exact_reviewed_manifest_projection(self):
         js = (ROOT / "js/topic-hero-content.js").read_text(encoding="utf-8")
         self.assertEqual(js, render(ROOT))
-        self.assertEqual(js.count("image: Object.freeze("), 1)
+        self.assertEqual(js.count("image: Object.freeze("), 2)
         self.assertIn("Object.prototype.hasOwnProperty.call", js)
         self.assertNotIn("fetch(", js)
         self.assertNotIn("landing-hero.v1.json", js)
@@ -63,7 +63,12 @@ console.log(JSON.stringify({
         self.assertEqual(payload["herbst"]["image"]["src"], expected["image"])
         for key in ("width", "height", "alt", "sha256", "provenance", "approval_ref"):
             self.assertEqual(payload["herbst"]["image"][key], expected[key])
-        for key in ("bauernhof", "ostern", "tanzen", "invalid", "prototype"):
+        bauernhof = manifest["topics"]["bauernhof"]
+        self.assertEqual(payload["bauernhof"]["intro"], bauernhof["intro"])
+        for key in ("image", "width", "height", "alt", "sha256", "provenance", "approval_ref"):
+            field = "src" if key == "image" else key
+            self.assertEqual(payload["bauernhof"]["image"][field], bauernhof[key])
+        for key in ("ostern", "tanzen", "invalid", "prototype"):
             self.assertIsNone(payload[key])
 
     def test_versioned_single_script_and_initial_html_preserved(self):

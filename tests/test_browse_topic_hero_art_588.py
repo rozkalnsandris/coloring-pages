@@ -25,6 +25,7 @@ class BrowseTopicHeroArt588Tests(unittest.TestCase):
             "metadata/categories.json", "metadata/landing-hero.v1.json",
             "assets/fahrzeuge-topic-hero.webp",
             "assets/herbst-topic-hero.webp",
+            "assets/bauernhof-topic-hero.webp",
             "fahrzeuge.html", "herbst.html",
         ):
             target = root / path
@@ -65,7 +66,7 @@ class BrowseTopicHeroArt588Tests(unittest.TestCase):
                 set(validate_manifest_text(
                     (root / "metadata/landing-hero.v1.json").read_text(encoding="utf-8"),
                     root,
-                )["topics"]), {"herbst", "tanzen"},
+                )["topics"]), {"herbst", "bauernhof", "tanzen"},
             )
             js = render_browser_js(root)
             self.assertIn('src: "/assets/tanzen-topic-hero.webp"', js)
@@ -138,12 +139,14 @@ class BrowseTopicHeroArt588Tests(unittest.TestCase):
             with self.assertRaises(ManifestValidationError):
                 validate_data(original, root)
 
-    def test_no_real_art_or_source_route_added_by_this_change(self):
+    def test_approved_bauernhof_art_has_no_indexed_route(self):
         self.assertFalse((ROOT / "tanzen.html").exists())
         actual = json.loads(
             (ROOT / "metadata/landing-hero.v1.json").read_text(encoding="utf-8")
         )
-        self.assertEqual(set(actual["topics"]), {"herbst"})
+        self.assertEqual(set(actual["topics"]), {"herbst", "bauernhof"})
+        self.assertEqual(actual["topics"]["bauernhof"]["approval_ref"], "coloring-pages#594")
+        self.assertFalse((ROOT / "bauernhof.html").exists())
         self.assertNotIn("tanzen", actual["categories"])
 
 
