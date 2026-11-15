@@ -30,7 +30,10 @@ class PageHeroV2Tests(unittest.TestCase):
         self.assertIn('id="neu"', home)
         for name in CATEGORIES:
             html = read(name + ".html")
-            self.assertIn('class="category-hero page-hero page-hero--category"', html)
+            if name == "fahrzeuge":
+                self.assertIn('class="category-hero page-hero page-hero--category page-hero--with-art"', html)
+            else:
+                self.assertIn('class="category-hero page-hero page-hero--category"', html)
             self.assertIn('class="container page-hero-grid"', html)
             self.assertIn('class="category-hero-copy page-hero-copy"', html)
             self.assertEqual(html.count('<h1 id="category-title">'), 1)
@@ -38,7 +41,11 @@ class PageHeroV2Tests(unittest.TestCase):
             self.assertRegex(html, r'<ol><li><a href="/">Startseite</a></li><li><span aria-current="page">[^<]+</span></li></ol>')
             self.assertNotIn('data-search-form', html)
             self.assertNotIn('data-surprise-button', html)
-            self.assertNotIn('page-hero-art', html)
+            if name == "fahrzeuge":
+                self.assertIn('src="/assets/fahrzeuge-topic-hero.webp"', html)
+                self.assertEqual(html.count('class="page-hero-art"'), 1)
+            else:
+                self.assertNotIn('page-hero-art', html)
 
     def test_herbst_provenance_and_three_level_crumb(self):
         h = read("herbst.html")
