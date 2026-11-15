@@ -30,10 +30,10 @@ class LandingHeroManifestV1Tests(unittest.TestCase):
         with self.assertRaises(ManifestValidationError):
             validate_data(data, ROOT)
 
-    def test_only_two_existing_owner_approved_records(self):
+    def test_owner_approved_indexed_and_browse_records(self):
         self.assertEqual(set(self.records), {"schema", "categories", "topics"})
         self.assertEqual(set(self.records["categories"]), {"fahrzeuge"})
-        self.assertEqual(set(self.records["topics"]), {"herbst"})
+        self.assertEqual(set(self.records["topics"]), {"herbst", "bauernhof"})
         fahrzeuge = self.records["categories"]["fahrzeuge"]
         herbst = self.records["topics"]["herbst"]
         self.assertEqual((fahrzeuge["width"], fahrzeuge["height"], fahrzeuge["bytes"]),
@@ -42,6 +42,10 @@ class LandingHeroManifestV1Tests(unittest.TestCase):
                          (1755, 896, 119446))
         self.assertEqual(fahrzeuge["approval_ref"], "coloring-pages#573")
         self.assertEqual(herbst["approval_ref"], "coloring-pages#567")
+        bauernhof = self.records["topics"]["bauernhof"]
+        self.assertEqual((bauernhof["width"], bauernhof["height"], bauernhof["bytes"]), (1755, 896, 164350))
+        self.assertEqual(bauernhof["approval_ref"], "coloring-pages#594")
+        self.assertEqual(bauernhof["sha256"], "633c9565de757b6f0afaced8371ba5209fbb9dd3c41593441679450a98c51665")
         self.assertEqual(fahrzeuge["sha256"], "5cf25e6cdd6a5b719f8f8c34577d3e9cba28b6b3a3c71199b24559855d9575b5")
         self.assertEqual(herbst["sha256"], "d077de2efb5b291cf41140722958aa771fea6bd716da387a37458af700b0ad74")
 
@@ -133,6 +137,8 @@ class LandingHeroManifestV1Tests(unittest.TestCase):
             shutil.copyfile(ROOT / (name + ".html"), destination / (name + ".html"))
             shutil.copyfile(ROOT / "assets" / (name + "-topic-hero.webp"),
                             destination / "assets" / (name + "-topic-hero.webp"))
+        shutil.copyfile(ROOT / "assets/bauernhof-topic-hero.webp",
+                        destination / "assets/bauernhof-topic-hero.webp")
 
     def test_missing_and_corrupted_asset_fail_closed(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -164,9 +170,10 @@ class LandingHeroManifestV1Tests(unittest.TestCase):
 
     def test_manifest_cannot_create_runtime_topic_or_seo_route(self):
         self.assertNotIn("tanzen", self.records["topics"])
-        self.assertNotIn("bauernhof", self.records["topics"])
+        self.assertIn("bauernhof", self.records["topics"])
+        self.assertFalse((ROOT / "bauernhof.html").exists())
         self.assertNotIn("ostern", self.records["topics"])
-        self.assertEqual(set(self.records["topics"]), {"herbst"})
+        self.assertEqual(set(self.records["topics"]), {"herbst", "bauernhof"})
         for page in ("herbst.html", "fahrzeuge.html"):
             html = (ROOT / page).read_text(encoding="utf-8")
             self.assertNotIn("landing-hero.v1.json", html)

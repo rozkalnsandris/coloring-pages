@@ -23,6 +23,17 @@
       "intro": "Herbst-Ausmalbilder für Kinder: Entdecke Kürbisse, buntes Laub, Ernte-Motive, Laternen und weitere Ideen für gemütliche Herbsttage.",
       "provenance": "docs/TOPIC_HERO_ARTWORK_567.md",
       "approval_ref": "coloring-pages#567"
+    },
+    "bauernhof": {
+      "image": "/assets/bauernhof-topic-hero.webp",
+      "width": 1755,
+      "height": 896,
+      "bytes": 164350,
+      "sha256": "633c9565de757b6f0afaced8371ba5209fbb9dd3c41593441679450a98c51665",
+      "alt": "Ausmalwiese-Hund neben einem grünen Traktor und einem gelben Bagger",
+      "intro": "Bauernhof-Ausmalbilder für Kinder: Wähle ein Motiv aus und drucke deine Malvorlage auf A4 aus.",
+      "provenance": "docs/TOPIC_HERO_ARTWORK_594.md",
+      "approval_ref": "coloring-pages#594"
     }
   }
 }

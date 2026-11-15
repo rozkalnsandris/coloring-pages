@@ -8,6 +8,9 @@ on:
       - .github/workflows/responsive-browser-qa.yml
       - tests/manual/qa_responsive_layout_511.py
       - tests/manual/qa_managed_topic_hero_592.py
+      - metadata/landing-hero.v1.json
+      - js/topic-hero-content.js
+      - assets/bauernhof-topic-hero.webp
       - tests/manual/qa_shared_gallery_filters.py
       - index.html
       - detail.html

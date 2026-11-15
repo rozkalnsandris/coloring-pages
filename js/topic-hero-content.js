@@ -5,6 +5,18 @@
   const manifest = Object.freeze({
     schema: "rozkalns.ausmalwiese.topic-hero.v1",
     topics: Object.freeze({
+      "bauernhof": Object.freeze({
+        intro: "Bauernhof-Ausmalbilder f\u00fcr Kinder: W\u00e4hle ein Motiv aus und drucke deine Malvorlage auf A4 aus.",
+        image: Object.freeze({
+          src: "/assets/bauernhof-topic-hero.webp",
+          width: 1755,
+          height: 896,
+          alt: "Ausmalwiese-Hund neben einem gr\u00fcnen Traktor und einem gelben Bagger",
+          sha256: "633c9565de757b6f0afaced8371ba5209fbb9dd3c41593441679450a98c51665",
+          provenance: "docs/TOPIC_HERO_ARTWORK_594.md",
+          approval_ref: "coloring-pages#594"
+        })
+      }),
       "herbst": Object.freeze({
         intro: "Herbst-Ausmalbilder f\u00fcr Kinder: Entdecke K\u00fcrbisse, buntes Laub, Ernte-Motive, Laternen und weitere Ideen f\u00fcr gem\u00fctliche Herbsttage.",
         image: Object.freeze({
