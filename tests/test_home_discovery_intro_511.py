@@ -42,7 +42,7 @@ class HomepageDiscoveryIntro511Tests(unittest.TestCase):
             "figuren.html", "essen-natur.html", "jahreszeiten.html",
         ):
             html = (ROOT / filename).read_text(encoding="utf-8")
-            hero = html.split('<section class="category-hero page-hero page-hero--category"', 1)[1].split("</section>", 1)[0]
+            hero = html.split('<section class="category-hero page-hero page-hero--category', 1)[1].split("</section>", 1)[0]
             paragraph = hero.split("<p>", 1)[1].split("</p>", 1)[0]
             self.assertLessEqual(len(paragraph), 110, filename)
             self.assertIn("A4", paragraph)
