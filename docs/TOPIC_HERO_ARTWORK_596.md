@@ -1,0 +1,11 @@
+# Weihnachten website Topic Hero artwork — issue #596
+
+Owner approved the final festive illustration in the Ausmalwiese project conversation on 2026-11-16, after requesting that the existing Fahrzeuge hero be transformed while preserving the same recognizable dog and established header composition. The final image retains the brown-and-white Ausmalwiese dog, smiling expression, red paw-print harness/backpack and small lower-right `Ausmalwiese.de` logo. The former fire engine/car subject is replaced by a decorated Christmas tree, wrapped gifts and a candy cane against a softly snow-covered landscape. The left remains airy/text-safe. This is a colored **website header**, not an A4 coloring page or print master.
+
+- Original ImageGen output: `e891649a-2cec-4ef2-8b75-a80e38c30ea6`, `ziemassvētku_brīnumzeme_ar_priecīgu_suni.png`, **1755×896 RGB, 1,872,821 bytes**, SHA-256 `a1315a6c658be0013f69e66292d9ef8224c5ad45c8d772d3c6e49d2800229421` (per approved issue handoff).
+- Exact no-resize WebP derivative: `assets/weihnachten-topic-hero.webp`, **1755×896 RGB, 163,468 bytes**, SHA-256 `b5aaa55e6f9180a1dcd4bfceb03ba6285332390a0ad6c75bae819d8d6b34d1da`; verified Git blob SHA-1 `86b4b4257721133416d33f01ed054486aab27e6f`. This source asset is owned/approved; no other art is authorized by this decision.
+- German alt: `Ausmalwiese-Hund neben einem geschmückten Weihnachtsbaum und Geschenken im Schnee`.
+- Only the existing managed `weihnachten` browse Topic is decorated when the actual runtime `/topics.json` contains a valid Topic ID. `metadata/topics.json` remains the seed, not LIVE proof. The source season window remains unchanged.
+- No `weihnachten.html`, indexed route, canonical/sitemap entry, static cards, ADMIN or content-store change. Shared Page Hero CSS is reused unchanged; Chromium CI must verify mobile/desktop reflow, image dimensions, selector and Back/Forward state at 320/390/412/768/1440px. Physical-device visual and LIVE checks are not provided by this PR.
+
+Related [#596](https://github.com/rozkalnsandris/coloring-pages/issues/596), [#565](https://github.com/rozkalnsandris/coloring-pages/issues/565). Source PR and CI/READY do not authorize merge or LIVE.

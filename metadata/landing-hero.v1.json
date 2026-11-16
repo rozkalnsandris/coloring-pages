@@ -34,6 +34,17 @@
       "intro": "Bauernhof-Ausmalbilder für Kinder: Wähle ein Motiv aus und drucke deine Malvorlage auf A4 aus.",
       "provenance": "docs/TOPIC_HERO_ARTWORK_594.md",
       "approval_ref": "coloring-pages#594"
+    },
+    "weihnachten": {
+      "image": "/assets/weihnachten-topic-hero.webp",
+      "width": 1755,
+      "height": 896,
+      "bytes": 163468,
+      "sha256": "b5aaa55e6f9180a1dcd4bfceb03ba6285332390a0ad6c75bae819d8d6b34d1da",
+      "alt": "Ausmalwiese-Hund neben einem geschmückten Weihnachtsbaum und Geschenken im Schnee",
+      "intro": "Weihnachten-Ausmalbilder für Kinder: Wähle eine Malvorlage aus und drucke sie kostenlos auf A4 aus.",
+      "provenance": "docs/TOPIC_HERO_ARTWORK_596.md",
+      "approval_ref": "coloring-pages#596"
     }
   }
 }
