@@ -11,6 +11,7 @@ on:
       - metadata/landing-hero.v1.json
       - js/topic-hero-content.js
       - assets/bauernhof-topic-hero.webp
+      - assets/weihnachten-topic-hero.webp
       - tests/manual/qa_shared_gallery_filters.py
       - index.html
       - detail.html

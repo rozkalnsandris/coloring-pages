@@ -28,6 +28,18 @@
           provenance: "docs/TOPIC_HERO_ARTWORK_567.md",
           approval_ref: "coloring-pages#567"
         })
+      }),
+      "weihnachten": Object.freeze({
+        intro: "Weihnachten-Ausmalbilder f\u00fcr Kinder: W\u00e4hle eine Malvorlage aus und drucke sie kostenlos auf A4 aus.",
+        image: Object.freeze({
+          src: "/assets/weihnachten-topic-hero.webp",
+          width: 1755,
+          height: 896,
+          alt: "Ausmalwiese-Hund neben einem geschm\u00fcckten Weihnachtsbaum und Geschenken im Schnee",
+          sha256: "b5aaa55e6f9180a1dcd4bfceb03ba6285332390a0ad6c75bae819d8d6b34d1da",
+          provenance: "docs/TOPIC_HERO_ARTWORK_596.md",
+          approval_ref: "coloring-pages#596"
+        })
       })
     })
   });

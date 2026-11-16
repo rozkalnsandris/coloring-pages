@@ -168,10 +168,11 @@ console.log(JSON.stringify({herbst,tanzen,newTopic,missing,restored,empty}));
         self.assertEqual(self.states["restored"]["image"], self.states["herbst"]["image"])
 
     def test_no_new_indexed_route_or_approved_art_source(self):
-        self.assertEqual(set(self.manifest["topics"]), {"herbst", "bauernhof"})
+        self.assertEqual(set(self.manifest["topics"]), {"herbst", "bauernhof", "weihnachten"})
         html = (ROOT / "index.html").read_text(encoding="utf-8")
         self.assertIn("data-focused-topic-hero", html)
         self.assertFalse((ROOT / "bauernhof.html").exists())
+        self.assertFalse((ROOT / "weihnachten.html").exists())
         self.assertNotIn('href="/maerchen-abenteuer"', html)
         self.assertNotIn('rel="canonical" href="https://ausmalwiese.de/maerchen-abenteuer"', html)
 

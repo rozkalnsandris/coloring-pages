@@ -55,8 +55,9 @@ class TopicHero567Tests(unittest.TestCase):
         self.assertIn("return null;", code)
         self.assertIn('"/assets/" + topicId + "-topic-hero.webp"', code)
         self.assertIn('"bauernhof": Object.freeze(', code)
+        self.assertIn('"weihnachten": Object.freeze(', code)
         self.assertNotIn("tanzen: Object.freeze(", code)
-        self.assertEqual(code.count('image: Object.freeze('), 2)
+        self.assertEqual(code.count('image: Object.freeze('), 3)
         self.assertIn('d077de2efb5b291cf41140722958aa771fea6bd716da387a37458af700b0ad74', code)
         for file in ("js/topic-hero-content.js", "js/app.js"):
             subprocess.run(["node", "--check", str(ROOT / file)], check=True, timeout=15)
