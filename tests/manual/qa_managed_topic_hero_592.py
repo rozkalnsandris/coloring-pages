@@ -23,6 +23,9 @@ BAUERNHOF_ART = json.loads(
 WEIHNACHTEN_ART = json.loads(
     (ROOT / "metadata/landing-hero.v1.json").read_text(encoding="utf-8")
 )["topics"]["weihnachten"]
+DINOSAURIER_ART = json.loads(
+    (ROOT / "metadata/landing-hero.v1.json").read_text(encoding="utf-8")
+)["topics"]["dinosaurier"]
 TOPICS = {
     "schema": "rozkalns.coloring-pages.topics.v2",
     "revision": 1,
@@ -30,6 +33,8 @@ TOPICS = {
         {"id": "herbst", "label": "Herbst", "icon": "🍂",
          "kind": "evergreen", "legacy_terms": []},
         {"id": "bauernhof", "label": "Bauernhof", "icon": "🚜",
+         "kind": "evergreen", "legacy_terms": []},
+        {"id": "dinosaurier", "label": "Dinosaurier", "icon": "🦖",
          "kind": "evergreen", "legacy_terms": []},
         {"id": "weihnachten", "label": "Weihnachten", "icon": "🎄",
          "kind": "seasonal", "active_from": "11-20", "active_to": "12-26",
@@ -47,6 +52,9 @@ CATALOG = [
     {"id": "hero-qa-bauernhof", "title": "Bauernhof-Motiv", "category": "tiere",
      "age": "3-6", "difficulty": "easy", "topics": ["bauernhof"],
      "thumb": "/assets/favicon.svg", "print": "/media/hero-qa-bauernhof/print.png"},
+    {"id": "hero-qa-dinosaurier", "title": "Dinosaurier-Motiv", "category": "tiere",
+     "age": "3-6", "difficulty": "easy", "topics": ["dinosaurier"],
+     "thumb": "/assets/favicon.svg", "print": "/media/hero-qa-dinosaurier/print.png"},
     {"id": "hero-qa-weihnachten", "title": "Weihnachten-Motiv", "category": "jahreszeiten",
      "age": "3-6", "difficulty": "easy", "topics": ["weihnachten"],
      "thumb": "/assets/favicon.svg", "print": "/media/hero-qa-weihnachten/print.png"},
@@ -213,6 +221,47 @@ def assert_reviewed_weihnachten(page, width: int) -> None:
     assert_layout(page, width, "weihnachten")
 
 
+def assert_reviewed_dinosaurier(page, width: int) -> None:
+    wait_title(page, "Dinosaurier Ausmalbilder")
+    art = DINOSAURIER_ART
+    image = page.locator("[data-focused-topic-art] img")
+    page.wait_for_function(
+        """() => {
+          const img = document.querySelector('[data-focused-topic-art] img');
+          return img && img.complete && img.naturalWidth === 1755
+            && img.naturalHeight === 896;
+        }"""
+    )
+    hero = page.locator("[data-focused-topic-hero]")
+    if (not hero.is_visible() or page.locator("#hero").is_visible()
+            or image.count() != 1 or not image.is_visible()):
+        raise AssertionError(f"{width}px Dinosaurier art/hero missing")
+    if not hero.evaluate(
+        "(node) => node.classList.contains('topic-landing-hero--with-art')"
+    ):
+        raise AssertionError(f"{width}px Dinosaurier missing approved art class")
+    for key, expected in (("src", art["image"]), ("alt", art["alt"]),
+                          ("width", str(art["width"])),
+                          ("height", str(art["height"]))):
+        if image.get_attribute(key) != expected:
+            raise AssertionError(f"{width}px Dinosaurier {key} differs from manifest")
+    if (not page.locator("[data-focused-topic-intro]").is_visible()
+            or page.locator("[data-focused-topic-intro]").inner_text() != art["intro"]
+            or page.locator("[data-focused-topic-breadcrumb]").inner_text() != "Dinosaurier"
+            or page.locator("[data-filter-topic]").input_value() != "dinosaurier"):
+        raise AssertionError(f"{width}px Dinosaurier intro/breadcrumb/selector mismatch")
+    assert_inside_viewport(
+        page, "[data-focused-topic-hero], [data-focused-topic-art], "
+        "[data-focused-topic-art] img", width,
+    )
+    if width <= 720:
+        title = page.locator("[data-focused-topic-title]").bounding_box()
+        art_box = image.bounding_box()
+        if not title or not art_box or art_box["y"] < title["y"] + title["height"] - 1:
+            raise AssertionError(f"{width}px Dinosaurier art overlaps mobile heading")
+    assert_layout(page, width, "dinosaurier")
+
+
 def assert_label_only(page, width: int, slug: str, label: str) -> None:
     wait_title(page, label + " Ausmalbilder")
     if not page.locator("[data-focused-topic-hero]").is_visible():
@@ -261,16 +310,22 @@ def case(browser, origin: str, width: int) -> None:
         chooser = page.locator("[data-filter-topic]")
         chooser.select_option("bauernhof")
         assert_reviewed_bauernhof(page, width)
+        chooser.select_option("dinosaurier")
+        assert_reviewed_dinosaurier(page, width)
         chooser.select_option("weihnachten")
         assert_reviewed_weihnachten(page, width)
         # Selecting Herbst navigates to the separate canonical /herbst route.
         # Test the managed browse Hero using same-document history instead.
+        page.go_back()
+        assert_reviewed_dinosaurier(page, width)
         page.go_back()
         assert_reviewed_bauernhof(page, width)
         page.go_back()
         assert_reviewed_herbst(page, width)
         page.go_forward()
         assert_reviewed_bauernhof(page, width)
+        page.go_forward()
+        assert_reviewed_dinosaurier(page, width)
         page.go_forward()
         assert_reviewed_weihnachten(page, width)
         chooser.select_option("tanzen")
@@ -286,11 +341,15 @@ def case(browser, origin: str, width: int) -> None:
         page.go_back()
         assert_reviewed_weihnachten(page, width)
         page.go_back()
+        assert_reviewed_dinosaurier(page, width)
+        page.go_back()
         assert_reviewed_bauernhof(page, width)
         page.go_back()
         assert_reviewed_herbst(page, width)
         page.go_forward()
         assert_reviewed_bauernhof(page, width)
+        page.go_forward()
+        assert_reviewed_dinosaurier(page, width)
         page.go_forward()
         assert_reviewed_weihnachten(page, width)
         page.go_forward()
