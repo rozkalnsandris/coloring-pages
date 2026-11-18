@@ -12,6 +12,7 @@ on:
       - js/topic-hero-content.js
       - assets/bauernhof-topic-hero.webp
       - assets/weihnachten-topic-hero.webp
+      - assets/dinosaurier-topic-hero.webp
       - tests/manual/qa_shared_gallery_filters.py
       - index.html
       - detail.html

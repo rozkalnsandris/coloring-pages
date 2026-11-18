@@ -17,6 +17,18 @@
           approval_ref: "coloring-pages#594"
         })
       }),
+      "dinosaurier": Object.freeze({
+        intro: "Dinosaurier-Ausmalbilder f\u00fcr Kinder: W\u00e4hle eine Malvorlage aus und drucke sie auf A4 aus.",
+        image: Object.freeze({
+          src: "/assets/dinosaurier-topic-hero.webp",
+          width: 1755,
+          height: 896,
+          alt: "Ausmalwiese-Hund neben einem gr\u00fcnen Tyrannosaurus und einem orangefarbenen Triceratops",
+          sha256: "93499504ac0f6fd5bc8abb12b5f733e2b9e87267a1b9a797ac8f8f8db4ec37c6",
+          provenance: "docs/TOPIC_HERO_ARTWORK_598.md",
+          approval_ref: "coloring-pages#598"
+        })
+      }),
       "herbst": Object.freeze({
         intro: "Herbst-Ausmalbilder f\u00fcr Kinder: Entdecke K\u00fcrbisse, buntes Laub, Ernte-Motive, Laternen und weitere Ideen f\u00fcr gem\u00fctliche Herbsttage.",
         image: Object.freeze({

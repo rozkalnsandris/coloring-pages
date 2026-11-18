@@ -35,6 +35,17 @@
       "provenance": "docs/TOPIC_HERO_ARTWORK_594.md",
       "approval_ref": "coloring-pages#594"
     },
+    "dinosaurier": {
+      "image": "/assets/dinosaurier-topic-hero.webp",
+      "width": 1755,
+      "height": 896,
+      "bytes": 163254,
+      "sha256": "93499504ac0f6fd5bc8abb12b5f733e2b9e87267a1b9a797ac8f8f8db4ec37c6",
+      "alt": "Ausmalwiese-Hund neben einem grünen Tyrannosaurus und einem orangefarbenen Triceratops",
+      "intro": "Dinosaurier-Ausmalbilder für Kinder: Wähle eine Malvorlage aus und drucke sie auf A4 aus.",
+      "provenance": "docs/TOPIC_HERO_ARTWORK_598.md",
+      "approval_ref": "coloring-pages#598"
+    },
     "weihnachten": {
       "image": "/assets/weihnachten-topic-hero.webp",
       "width": 1755,

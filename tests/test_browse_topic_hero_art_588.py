@@ -27,6 +27,7 @@ class BrowseTopicHeroArt588Tests(unittest.TestCase):
             "assets/herbst-topic-hero.webp",
             "assets/bauernhof-topic-hero.webp",
             "assets/weihnachten-topic-hero.webp",
+            "assets/dinosaurier-topic-hero.webp",
             "fahrzeuge.html", "herbst.html",
         ):
             target = root / path
@@ -67,7 +68,7 @@ class BrowseTopicHeroArt588Tests(unittest.TestCase):
                 set(validate_manifest_text(
                     (root / "metadata/landing-hero.v1.json").read_text(encoding="utf-8"),
                     root,
-                )["topics"]), {"herbst", "bauernhof", "weihnachten", "tanzen"},
+                )["topics"]), {"herbst", "bauernhof", "weihnachten", "dinosaurier", "tanzen"},
             )
             js = render_browser_js(root)
             self.assertIn('src: "/assets/tanzen-topic-hero.webp"', js)
@@ -145,11 +146,13 @@ class BrowseTopicHeroArt588Tests(unittest.TestCase):
         actual = json.loads(
             (ROOT / "metadata/landing-hero.v1.json").read_text(encoding="utf-8")
         )
-        self.assertEqual(set(actual["topics"]), {"herbst", "bauernhof", "weihnachten"})
+        self.assertEqual(set(actual["topics"]), {"herbst", "bauernhof", "weihnachten", "dinosaurier"})
         self.assertEqual(actual["topics"]["bauernhof"]["approval_ref"], "coloring-pages#594")
         self.assertFalse((ROOT / "bauernhof.html").exists())
         self.assertEqual(actual["topics"]["weihnachten"]["approval_ref"], "coloring-pages#596")
         self.assertFalse((ROOT / "weihnachten.html").exists())
+        self.assertEqual(actual["topics"]["dinosaurier"]["approval_ref"], "coloring-pages#598")
+        self.assertFalse((ROOT / "dinosaurier.html").exists())
         self.assertNotIn("tanzen", actual["categories"])
 
 
