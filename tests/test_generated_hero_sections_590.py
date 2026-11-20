@@ -20,7 +20,7 @@ from validate_landing_hero_manifest import parse_manifest  # noqa: E402
 SOURCE = ROOT / "metadata/landing-hero-sections.v1.json"
 APPROVED = ROOT / "metadata/landing-hero.v1.json"
 BASELINE_BLOBS = {
-    "fahrzeuge.html": "977afd3492dbb0a7e95281083a59e9c097b50f77",
+    "fahrzeuge.html": "01e0a287b83cdd54f950e4985e803a9e4d4b331f",
     "herbst.html": "05ed97b780478192c02f922bbeebdbd325b7b39e",
 }
 

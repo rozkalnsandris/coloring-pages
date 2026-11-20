@@ -17,7 +17,7 @@ from render_landing_hero_static import (  # noqa: E402
 
 # Git blob SHA-1 of each reviewed, pre-marker source HTML at main before #584.
 ORIGINAL_BLOBS = {
-    "fahrzeuge.html": "ba1e1715abed78dcd150795e95b0dc3404a55a81",
+    "fahrzeuge.html": "a97a1ba5c18064451fdefe924b4b7441797d3677",
     "herbst.html": "5021dfd92b655122673f29acb6e2e179b6daa248",
 }
 

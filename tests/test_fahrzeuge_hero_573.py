@@ -36,8 +36,10 @@ class FahrzeugeHero573Tests(unittest.TestCase):
         self.assertIn('data-category-gallery', html)
         self.assertIn('data-category-load-more', html)
         self.assertIn('data-category-page="fahrzeuge"', html)
-        self.assertNotIn('Bulldozer', html)
-        self.assertNotIn('Bagger', html)
+        # Approved Hero artwork excludes construction vehicles, not gallery motifs.
+        hero = html.split('    <section class="category-hero', 1)[1].split('    </section>', 1)[0]
+        self.assertNotIn('Bulldozer', hero)
+        self.assertNotIn('Bagger', hero)
 
 
 if __name__ == "__main__":
