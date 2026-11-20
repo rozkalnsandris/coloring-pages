@@ -53,6 +53,18 @@
           approval_ref: "coloring-pages#567"
         })
       }),
+      "meerestiere": Object.freeze({
+        intro: "Meerestiere-Ausmalbilder f\u00fcr Kinder: Entdecke Motive rund ums Meer und drucke deine Malvorlage kostenlos auf A4 aus.",
+        image: Object.freeze({
+          src: "/assets/meerestiere-topic-hero.webp",
+          width: 1755,
+          height: 896,
+          alt: "Ausmalwiese-Hund unter Wasser mit Delfin, Meeresschildkr\u00f6te und Clownfisch",
+          sha256: "88f88897806fa4de0a8ee6de4605707c8b08c159d5bba8c6d7ae967cfb86070b",
+          provenance: "docs/TOPIC_HERO_ARTWORK_606.md",
+          approval_ref: "coloring-pages#606"
+        })
+      }),
       "weihnachten": Object.freeze({
         intro: "Weihnachten-Ausmalbilder f\u00fcr Kinder: W\u00e4hle eine Malvorlage aus und drucke sie kostenlos auf A4 aus.",
         image: Object.freeze({

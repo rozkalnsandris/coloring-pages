@@ -78,6 +78,17 @@
       "intro": "Blumen-Ausmalbilder für Kinder: Wähle eine Malvorlage aus und drucke sie kostenlos auf A4 aus.",
       "provenance": "docs/TOPIC_HERO_ARTWORK_602.md",
       "approval_ref": "coloring-pages#602"
+    },
+    "meerestiere": {
+      "image": "/assets/meerestiere-topic-hero.webp",
+      "width": 1755,
+      "height": 896,
+      "bytes": 183682,
+      "sha256": "88f88897806fa4de0a8ee6de4605707c8b08c159d5bba8c6d7ae967cfb86070b",
+      "alt": "Ausmalwiese-Hund unter Wasser mit Delfin, Meeresschildkröte und Clownfisch",
+      "intro": "Meerestiere-Ausmalbilder für Kinder: Entdecke Motive rund ums Meer und drucke deine Malvorlage kostenlos auf A4 aus.",
+      "provenance": "docs/TOPIC_HERO_ARTWORK_606.md",
+      "approval_ref": "coloring-pages#606"
     }
   }
 }
