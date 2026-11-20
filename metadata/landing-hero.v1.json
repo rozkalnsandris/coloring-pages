@@ -67,6 +67,17 @@
       "intro": "Weltraum-Ausmalbilder für Kinder: Wähle eine Malvorlage aus und drucke sie kostenlos auf A4 aus.",
       "provenance": "docs/TOPIC_HERO_ARTWORK_600.md",
       "approval_ref": "coloring-pages#600"
+    },
+    "blumen": {
+      "image": "/assets/blumen-topic-hero.webp",
+      "width": 1755,
+      "height": 896,
+      "bytes": 131766,
+      "sha256": "7dfe66b03e8329c49fa8290e80006a7ca882cb86a11c77da732d11cd1b0f8179",
+      "alt": "Ausmalwiese-Hund auf einer Blumenwiese mit Sonnenblumen, Tulpen und Gänseblümchen",
+      "intro": "Blumen-Ausmalbilder für Kinder: Wähle eine Malvorlage aus und drucke sie kostenlos auf A4 aus.",
+      "provenance": "docs/TOPIC_HERO_ARTWORK_602.md",
+      "approval_ref": "coloring-pages#602"
     }
   }
 }

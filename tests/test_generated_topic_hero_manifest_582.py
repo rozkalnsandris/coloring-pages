@@ -17,7 +17,7 @@ class GeneratedTopicHero582Tests(unittest.TestCase):
     def test_generated_file_is_exact_reviewed_manifest_projection(self):
         js = (ROOT / "js/topic-hero-content.js").read_text(encoding="utf-8")
         self.assertEqual(js, render(ROOT))
-        self.assertEqual(js.count("image: Object.freeze("), 5)
+        self.assertEqual(js.count("image: Object.freeze("), 6)
         self.assertIn("Object.prototype.hasOwnProperty.call", js)
         self.assertNotIn("fetch(", js)
         self.assertNotIn("landing-hero.v1.json", js)
@@ -48,6 +48,7 @@ console.log(JSON.stringify({
   weihnachten: api.get("weihnachten"),
   dinosaurier: api.get("dinosaurier"),
   weltraum: api.get("weltraum"),
+  blumen: api.get("blumen"),
   ostern: api.get("ostern"),
   tanzen: api.get("tanzen"),
   invalid: api.get("../herbst"),
@@ -86,6 +87,11 @@ console.log(JSON.stringify({
         for key in ("image", "width", "height", "alt", "sha256", "provenance", "approval_ref"):
             field = "src" if key == "image" else key
             self.assertEqual(payload["weltraum"]["image"][field], weltraum[key])
+        blumen = manifest["topics"]["blumen"]
+        self.assertEqual(payload["blumen"]["intro"], blumen["intro"])
+        for key in ("image", "width", "height", "alt", "sha256", "provenance", "approval_ref"):
+            field = "src" if key == "image" else key
+            self.assertEqual(payload["blumen"]["image"][field], blumen[key])
         for key in ("ostern", "tanzen", "invalid", "prototype"):
             self.assertIsNone(payload[key])
 

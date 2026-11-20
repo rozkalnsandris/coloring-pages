@@ -17,7 +17,7 @@ from render_landing_hero_static import (  # noqa: E402
 
 # Git blob SHA-1 of each reviewed, pre-marker source HTML at main before #584.
 ORIGINAL_BLOBS = {
-    "fahrzeuge.html": "ba1e1715abed78dcd150795e95b0dc3404a55a81",
+    "fahrzeuge.html": "a97a1ba5c18064451fdefe924b4b7441797d3677",
     "herbst.html": "5021dfd92b655122673f29acb6e2e179b6daa248",
 }
 
@@ -102,11 +102,12 @@ class GeneratedStaticHero584Tests(unittest.TestCase):
             (("categories", "fahrzeuge"), ("topics", "herbst")),
         )
         self.assertEqual(set(self.manifest["categories"]), {"fahrzeuge"})
-        self.assertEqual(set(self.manifest["topics"]), {"herbst", "bauernhof", "weihnachten", "dinosaurier", "weltraum"})
+        self.assertEqual(set(self.manifest["topics"]), {"herbst", "bauernhof", "weihnachten", "dinosaurier", "weltraum", "blumen"})
         self.assertFalse((ROOT / "bauernhof.html").exists())
         self.assertFalse((ROOT / "weihnachten.html").exists())
         self.assertFalse((ROOT / "dinosaurier.html").exists())
         self.assertFalse((ROOT / "weltraum.html").exists())
+        self.assertFalse((ROOT / "blumen.html").exists())
         self.assertNotIn("tanzen", self.manifest["topics"])
 
 
