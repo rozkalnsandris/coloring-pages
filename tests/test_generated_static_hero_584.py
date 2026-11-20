@@ -102,12 +102,13 @@ class GeneratedStaticHero584Tests(unittest.TestCase):
             (("categories", "fahrzeuge"), ("topics", "herbst")),
         )
         self.assertEqual(set(self.manifest["categories"]), {"fahrzeuge"})
-        self.assertEqual(set(self.manifest["topics"]), {"herbst", "bauernhof", "weihnachten", "dinosaurier", "weltraum", "blumen"})
+        self.assertEqual(set(self.manifest["topics"]), {"herbst", "bauernhof", "weihnachten", "dinosaurier", "weltraum", "blumen", "meerestiere"})
         self.assertFalse((ROOT / "bauernhof.html").exists())
         self.assertFalse((ROOT / "weihnachten.html").exists())
         self.assertFalse((ROOT / "dinosaurier.html").exists())
         self.assertFalse((ROOT / "weltraum.html").exists())
         self.assertFalse((ROOT / "blumen.html").exists())
+        self.assertFalse((ROOT / "meerestiere.html").exists())
         self.assertNotIn("tanzen", self.manifest["topics"])
 
 
