@@ -13,6 +13,7 @@ on:
       - assets/bauernhof-topic-hero.webp
       - assets/weihnachten-topic-hero.webp
       - assets/dinosaurier-topic-hero.webp
+      - assets/weltraum-topic-hero.webp
       - tests/manual/qa_shared_gallery_filters.py
       - index.html
       - detail.html

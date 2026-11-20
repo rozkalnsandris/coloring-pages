@@ -52,6 +52,18 @@
           provenance: "docs/TOPIC_HERO_ARTWORK_596.md",
           approval_ref: "coloring-pages#596"
         })
+      }),
+      "weltraum": Object.freeze({
+        intro: "Weltraum-Ausmalbilder f\u00fcr Kinder: W\u00e4hle eine Malvorlage aus und drucke sie kostenlos auf A4 aus.",
+        image: Object.freeze({
+          src: "/assets/weltraum-topic-hero.webp",
+          width: 1755,
+          height: 896,
+          alt: "Ausmalwiese-Hund auf dem Mond neben einer Rakete, Planeten und Sternen",
+          sha256: "e57be01a232ab2bb92ef6394e5bc4ec47728f49c41653e1c5b183733367f4e56",
+          provenance: "docs/TOPIC_HERO_ARTWORK_600.md",
+          approval_ref: "coloring-pages#600"
+        })
       })
     })
   });
