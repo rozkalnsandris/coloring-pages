@@ -17,6 +17,18 @@
           approval_ref: "coloring-pages#594"
         })
       }),
+      "blumen": Object.freeze({
+        intro: "Blumen-Ausmalbilder f\u00fcr Kinder: W\u00e4hle eine Malvorlage aus und drucke sie kostenlos auf A4 aus.",
+        image: Object.freeze({
+          src: "/assets/blumen-topic-hero.webp",
+          width: 1755,
+          height: 896,
+          alt: "Ausmalwiese-Hund auf einer Blumenwiese mit Sonnenblumen, Tulpen und G\u00e4nsebl\u00fcmchen",
+          sha256: "7dfe66b03e8329c49fa8290e80006a7ca882cb86a11c77da732d11cd1b0f8179",
+          provenance: "docs/TOPIC_HERO_ARTWORK_602.md",
+          approval_ref: "coloring-pages#602"
+        })
+      }),
       "dinosaurier": Object.freeze({
         intro: "Dinosaurier-Ausmalbilder f\u00fcr Kinder: W\u00e4hle eine Malvorlage aus und drucke sie auf A4 aus.",
         image: Object.freeze({
