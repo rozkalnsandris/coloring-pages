@@ -41,6 +41,18 @@
           approval_ref: "coloring-pages#598"
         })
       }),
+      "einhoerner": Object.freeze({
+        intro: "Einh\u00f6rner-Ausmalbilder f\u00fcr Kinder: W\u00e4hle eine Malvorlage aus und drucke sie kostenlos auf A4 aus.",
+        image: Object.freeze({
+          src: "/assets/einhoerner-topic-hero.webp",
+          width: 1755,
+          height: 896,
+          alt: "Ausmalwiese-Hund neben einem wei\u00dfen Einhorn mit Regenbogenm\u00e4hne auf einer bunten Wiese",
+          sha256: "c2a995c219d126c14cfa6b35454f5cf0192820a89b3cb36446566cb7d68ee294",
+          provenance: "docs/TOPIC_HERO_ARTWORK_615.md",
+          approval_ref: "coloring-pages#615"
+        })
+      }),
       "herbst": Object.freeze({
         intro: "Herbst-Ausmalbilder f\u00fcr Kinder: Entdecke K\u00fcrbisse, buntes Laub, Ernte-Motive, Laternen und weitere Ideen f\u00fcr gem\u00fctliche Herbsttage.",
         image: Object.freeze({
