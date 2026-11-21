@@ -89,6 +89,17 @@
       "intro": "Meerestiere-Ausmalbilder für Kinder: Entdecke Motive rund ums Meer und drucke deine Malvorlage kostenlos auf A4 aus.",
       "provenance": "docs/TOPIC_HERO_ARTWORK_606.md",
       "approval_ref": "coloring-pages#606"
+    },
+    "sport": {
+      "image": "/assets/sport-topic-hero.webp",
+      "width": 1755,
+      "height": 896,
+      "bytes": 217948,
+      "sha256": "5d9d601525d8b63f3505841d289ec62282270fbf8f67bafd2e3a7860032696f9",
+      "alt": "Ausmalwiese-Hund mit Fußball, Basketball und Tennisschläger auf einer Sportwiese",
+      "intro": "Sport-Ausmalbilder für Kinder: Wähle eine Malvorlage aus und drucke sie kostenlos auf A4 aus.",
+      "provenance": "docs/TOPIC_HERO_ARTWORK_613.md",
+      "approval_ref": "coloring-pages#613"
     }
   }
 }
