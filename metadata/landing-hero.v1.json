@@ -111,6 +111,17 @@
       "intro": "Einhörner-Ausmalbilder für Kinder: Wähle eine Malvorlage aus und drucke sie kostenlos auf A4 aus.",
       "provenance": "docs/TOPIC_HERO_ARTWORK_615.md",
       "approval_ref": "coloring-pages#615"
+    },
+    "winter": {
+      "image": "/assets/winter-topic-hero.webp",
+      "width": 1755,
+      "height": 896,
+      "bytes": 180328,
+      "sha256": "402ac180590351e93c8729769344e745f8185752c97aba21985a543130d9e9e3",
+      "alt": "Ausmalwiese-Hund mit einem fröhlichen Schneemann in einem verschneiten Winterpark",
+      "intro": "Winter-Ausmalbilder für Kinder: Entdecke winterliche Malvorlagen und drucke sie kostenlos auf A4 aus.",
+      "provenance": "docs/TOPIC_HERO_ARTWORK_617.md",
+      "approval_ref": "coloring-pages#617"
     }
   }
 }
