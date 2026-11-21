@@ -122,6 +122,17 @@
       "intro": "Winter-Ausmalbilder für Kinder: Entdecke winterliche Malvorlagen und drucke sie kostenlos auf A4 aus.",
       "provenance": "docs/TOPIC_HERO_ARTWORK_617.md",
       "approval_ref": "coloring-pages#617"
+    },
+    "advent": {
+      "image": "/assets/advent-topic-hero.webp",
+      "width": 1755,
+      "height": 896,
+      "bytes": 191818,
+      "sha256": "ae442cd34ea9feead220a1bd17eb5bf84c1a38f4be126dd8371251f5b54c5960",
+      "alt": "Ausmalwiese-Hund neben einem Adventskranz mit vier brennenden Kerzen im verschneiten Park",
+      "intro": "Advent-Ausmalbilder für Kinder: Entdecke festliche Malvorlagen und drucke sie kostenlos auf A4 aus.",
+      "provenance": "docs/TOPIC_HERO_ARTWORK_619.md",
+      "approval_ref": "coloring-pages#619"
     }
   }
 }
