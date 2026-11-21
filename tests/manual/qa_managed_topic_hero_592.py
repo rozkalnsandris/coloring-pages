@@ -559,6 +559,105 @@ def case(browser, origin: str, width: int) -> None:
         page.close()
 
 
+
+def assert_accessibility_context(browser, origin: str, width: int,
+                                 dpr: int, forced: bool) -> None:
+    """#610: independent DPR/forced-color coverage, not native browser zoom."""
+    context = browser.new_context(
+        viewport={"width": width, "height": 1000},
+        device_scale_factor=dpr,
+        forced_colors="active" if forced else "none",
+    )
+    page = context.new_page()
+    mode = f"{width}px DPR={dpr} forced-colors={forced}"
+    try:
+        for suffix, payload in (
+            ("catalog.json", CATALOG),
+            ("categories.json", CATEGORIES_FIXTURE),
+            ("topics.json", TOPICS),
+        ):
+            page.route("**/" + suffix, lambda route, _request, data=payload: route.fulfill(
+                status=200, content_type="application/json",
+                body=json.dumps(data, ensure_ascii=False),
+            ))
+
+        def check_page(expected_image: str) -> None:
+            metrics = page.evaluate("""() => ({
+                width: innerWidth,
+                dpr: devicePixelRatio,
+                forced: matchMedia('(forced-colors: active)').matches,
+                doc: document.documentElement.scrollWidth,
+                body: document.body.scrollWidth,
+            })""")
+            if (metrics["width"] != width or metrics["dpr"] != dpr
+                    or metrics["forced"] != forced
+                    or metrics["doc"] > width + 1 or metrics["body"] > width + 1):
+                raise AssertionError(f"{mode}: viewport/mode/overflow drift {metrics}")
+            hero = page.locator(".page-hero:visible").first
+            image = page.locator(expected_image)
+            if not hero.is_visible() or image.count() != 1 or not image.is_visible():
+                raise AssertionError(f"{mode}: approved Hero/image missing")
+            page.wait_for_function(
+                """selector => {
+                  const img = document.querySelector(selector);
+                  return img && img.complete && img.naturalWidth > 0;
+                }""", arg=expected_image,
+            )
+            if not (image.get_attribute("alt") or "").strip():
+                raise AssertionError(f"{mode}: approved Hero image lost alt text")
+            assert_inside_viewport(page, ".page-hero:visible", width)
+            assert_inside_viewport(page, expected_image, width)
+            if forced:
+                appearance = hero.evaluate(
+                    """el => {
+                      const style = getComputedStyle(el);
+                      return {color: style.color, background: style.backgroundColor};
+                    }"""
+                )
+                mask = image.evaluate("el => getComputedStyle(el).maskImage")
+                if (appearance["color"] == appearance["background"]
+                        or appearance["background"] == "rgba(0, 0, 0, 0)"
+                        or mask != "none"):
+                    raise AssertionError(
+                        f"{mode}: unreadable forced colors/masked artwork "
+                        f"{appearance}, mask={mask}"
+                    )
+
+        for route, selector in (
+            ("/index.html", "#hero .page-hero-art img"),
+            ("/herbst.html", ".page-hero--static .page-hero-art img"),
+            ("/fahrzeuge.html", ".page-hero--category .page-hero-art img"),
+        ):
+            page.goto(origin + route, wait_until="domcontentloaded")
+            check_page(selector)
+            if page.locator("main h1:visible").count() != 1:
+                raise AssertionError(f"{mode}: static/home H1 count on {route}")
+
+        page.goto(origin + "/index.html?topic=bauernhof&campaign=hero-qa",
+                  wait_until="domcontentloaded")
+        assert_reviewed_bauernhof(page, width)
+        check_page("[data-focused-topic-art] img")
+        selector = page.locator("[data-filter-topic]")
+        label = page.locator('label[for="filter-topic"]')
+        if (not selector.is_visible() or not label.is_visible()
+                or label.inner_text().strip() != "Thema"
+                or selector.evaluate("el => el.tagName") != "SELECT"):
+            raise AssertionError(f"{mode}: native Thema control/label missing")
+        bounds = selector.bounding_box()
+        if not bounds or bounds["height"] < 44:
+            raise AssertionError(f"{mode}: Thema touch target below 44px")
+        selector.focus()
+        if not selector.evaluate("el => document.activeElement === el"):
+            raise AssertionError(f"{mode}: Thema keyboard focus missing")
+        selector.select_option("tanzen")
+        assert_label_only(page, width, "tanzen", "Tanzen")
+        if page.locator("[data-focused-topic-art] img").count():
+            raise AssertionError(f"{mode}: stale image in label-only fallback")
+        print(f"PASS Hero context {mode}: home/static/managed/fallback")
+    finally:
+        context.close()
+
+
 def main() -> None:
     from playwright.sync_api import sync_playwright
 
@@ -568,6 +667,11 @@ def main() -> None:
             origin = f"http://127.0.0.1:{port}"
             for width in WIDTHS:
                 case(browser, origin, width)
+            # Representative mode checks are deliberately separate from the full matrix.
+            for width in (390, 721, 1440):
+                assert_accessibility_context(browser, origin, width, dpr=2, forced=False)
+            for width in (390, 721):
+                assert_accessibility_context(browser, origin, width, dpr=1, forced=True)
         finally:
             browser.close()
 
