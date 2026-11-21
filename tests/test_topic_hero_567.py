@@ -61,8 +61,9 @@ class TopicHero567Tests(unittest.TestCase):
         self.assertIn('"blumen": Object.freeze(', code)
         self.assertIn('"meerestiere": Object.freeze(', code)
         self.assertIn('"sport": Object.freeze(', code)
+        self.assertIn('"einhoerner": Object.freeze(', code)
         self.assertNotIn("tanzen: Object.freeze(", code)
-        self.assertEqual(code.count('image: Object.freeze('), 8)
+        self.assertEqual(code.count('image: Object.freeze('), 9)
         self.assertIn('d077de2efb5b291cf41140722958aa771fea6bd716da387a37458af700b0ad74', code)
         for file in ("js/topic-hero-content.js", "js/app.js"):
             subprocess.run(["node", "--check", str(ROOT / file)], check=True, timeout=15)

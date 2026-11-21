@@ -17,6 +17,7 @@ on:
       - assets/blumen-topic-hero.webp
       - assets/meerestiere-topic-hero.webp
       - assets/sport-topic-hero.webp
+      - assets/einhoerner-topic-hero.webp
       - tests/manual/qa_shared_gallery_filters.py
       - index.html
       - detail.html

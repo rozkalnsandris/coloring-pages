@@ -33,7 +33,7 @@ class LandingHeroManifestV1Tests(unittest.TestCase):
     def test_owner_approved_indexed_and_browse_records(self):
         self.assertEqual(set(self.records), {"schema", "categories", "topics"})
         self.assertEqual(set(self.records["categories"]), {"fahrzeuge"})
-        self.assertEqual(set(self.records["topics"]), {"herbst", "bauernhof", "weihnachten", "dinosaurier", "weltraum", "blumen", "meerestiere", "sport"})
+        self.assertEqual(set(self.records["topics"]), {"herbst", "bauernhof", "weihnachten", "dinosaurier", "weltraum", "blumen", "meerestiere", "sport", "einhoerner"})
         fahrzeuge = self.records["categories"]["fahrzeuge"]
         herbst = self.records["topics"]["herbst"]
         self.assertEqual((fahrzeuge["width"], fahrzeuge["height"], fahrzeuge["bytes"]),
@@ -70,6 +70,10 @@ class LandingHeroManifestV1Tests(unittest.TestCase):
         self.assertEqual((sport["width"], sport["height"], sport["bytes"]), (1755, 896, 217948))
         self.assertEqual(sport["approval_ref"], "coloring-pages#613")
         self.assertEqual(sport["sha256"], "5d9d601525d8b63f3505841d289ec62282270fbf8f67bafd2e3a7860032696f9")
+        einhoerner = self.records["topics"]["einhoerner"]
+        self.assertEqual((einhoerner["width"], einhoerner["height"], einhoerner["bytes"]), (1755, 896, 224144))
+        self.assertEqual(einhoerner["approval_ref"], "coloring-pages#615")
+        self.assertEqual(einhoerner["sha256"], "c2a995c219d126c14cfa6b35454f5cf0192820a89b3cb36446566cb7d68ee294")
         self.assertEqual(fahrzeuge["sha256"], "5cf25e6cdd6a5b719f8f8c34577d3e9cba28b6b3a3c71199b24559855d9575b5")
         self.assertEqual(herbst["sha256"], "d077de2efb5b291cf41140722958aa771fea6bd716da387a37458af700b0ad74")
 
@@ -175,6 +179,8 @@ class LandingHeroManifestV1Tests(unittest.TestCase):
                         destination / "assets/meerestiere-topic-hero.webp")
         shutil.copyfile(ROOT / "assets/sport-topic-hero.webp",
                         destination / "assets/sport-topic-hero.webp")
+        shutil.copyfile(ROOT / "assets/einhoerner-topic-hero.webp",
+                        destination / "assets/einhoerner-topic-hero.webp")
 
     def test_missing_and_corrupted_asset_fail_closed(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -214,8 +220,9 @@ class LandingHeroManifestV1Tests(unittest.TestCase):
         self.assertFalse((ROOT / "blumen.html").exists())
         self.assertFalse((ROOT / "meerestiere.html").exists())
         self.assertFalse((ROOT / "sport.html").exists())
+        self.assertFalse((ROOT / "einhoerner.html").exists())
         self.assertNotIn("ostern", self.records["topics"])
-        self.assertEqual(set(self.records["topics"]), {"herbst", "bauernhof", "weihnachten", "dinosaurier", "weltraum", "blumen", "meerestiere", "sport"})
+        self.assertEqual(set(self.records["topics"]), {"herbst", "bauernhof", "weihnachten", "dinosaurier", "weltraum", "blumen", "meerestiere", "sport", "einhoerner"})
         for page in ("herbst.html", "fahrzeuge.html"):
             html = (ROOT / page).read_text(encoding="utf-8")
             self.assertNotIn("landing-hero.v1.json", html)

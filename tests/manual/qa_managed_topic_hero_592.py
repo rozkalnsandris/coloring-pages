@@ -38,6 +38,9 @@ MEERESTIERE_ART = json.loads(
 SPORT_ART = json.loads(
     (ROOT / "metadata/landing-hero.v1.json").read_text(encoding="utf-8")
 )["topics"]["sport"]
+EINHOERNER_ART = json.loads(
+    (ROOT / "metadata/landing-hero.v1.json").read_text(encoding="utf-8")
+)["topics"]["einhoerner"]
 TOPICS = {
     "schema": "rozkalns.coloring-pages.topics.v2",
     "revision": 1,
@@ -52,6 +55,8 @@ TOPICS = {
          "kind": "evergreen", "legacy_terms": []},
         {"id": "sport", "label": "Sport", "icon": "⚽",
          "kind": "evergreen", "legacy_terms": []},
+        {"id": "einhoerner", "label": "Einhörner", "icon": "🦄",
+         "kind": "evergreen", "legacy_terms": ["einhorn", "einhörner", "einhoerner"]},
         {"id": "weltraum", "label": "Weltraum", "icon": "🚀",
          "kind": "evergreen", "legacy_terms": []},
         {"id": "dinosaurier", "label": "Dinosaurier", "icon": "🦖",
@@ -81,6 +86,9 @@ CATALOG = [
     {"id": "hero-qa-sport", "title": "Sport-Motiv", "category": "figuren",
      "age": "3-6", "difficulty": "easy", "topics": ["sport"],
      "thumb": "/assets/favicon.svg", "print": "/media/hero-qa-sport/print.png"},
+    {"id": "hero-qa-einhoerner", "title": "Einhörner-Motiv", "category": "figuren",
+     "age": "3-6", "difficulty": "easy", "topics": ["einhoerner"],
+     "thumb": "/assets/favicon.svg", "print": "/media/hero-qa-einhoerner/print.png"},
     {"id": "hero-qa-weltraum", "title": "Weltraum-Motiv", "category": "figuren",
      "age": "3-6", "difficulty": "easy", "topics": ["weltraum"],
      "thumb": "/assets/favicon.svg", "print": "/media/hero-qa-weltraum/print.png"},
@@ -458,6 +466,47 @@ def assert_reviewed_sport(page, width: int) -> None:
     assert_layout(page, width, "sport")
 
 
+def assert_reviewed_einhoerner(page, width: int) -> None:
+    wait_title(page, "Einhörner Ausmalbilder")
+    art = EINHOERNER_ART
+    image = page.locator("[data-focused-topic-art] img")
+    page.wait_for_function(
+        """() => {
+          const img = document.querySelector('[data-focused-topic-art] img');
+          return img && img.complete && img.naturalWidth === 1755
+            && img.naturalHeight === 896;
+        }"""
+    )
+    hero = page.locator("[data-focused-topic-hero]")
+    if (not hero.is_visible() or page.locator("#hero").is_visible()
+            or image.count() != 1 or not image.is_visible()):
+        raise AssertionError(f"{width}px Einhörner art/hero missing")
+    if not hero.evaluate(
+        "(node) => node.classList.contains('topic-landing-hero--with-art')"
+    ):
+        raise AssertionError(f"{width}px Einhörner missing approved art class")
+    for key, expected in (("src", art["image"]), ("alt", art["alt"]),
+                          ("width", str(art["width"])),
+                          ("height", str(art["height"]))):
+        if image.get_attribute(key) != expected:
+            raise AssertionError(f"{width}px Einhörner {key} differs from manifest")
+    if (not page.locator("[data-focused-topic-intro]").is_visible()
+            or page.locator("[data-focused-topic-intro]").inner_text() != art["intro"]
+            or page.locator("[data-focused-topic-breadcrumb]").inner_text() != "Einhörner"
+            or page.locator("[data-filter-topic]").input_value() != "einhoerner"):
+        raise AssertionError(f"{width}px Einhörner intro/breadcrumb/selector mismatch")
+    assert_inside_viewport(
+        page, "[data-focused-topic-hero], [data-focused-topic-art], "
+        "[data-focused-topic-art] img", width,
+    )
+    if width <= 720:
+        title = page.locator("[data-focused-topic-title]").bounding_box()
+        art_box = image.bounding_box()
+        if not title or not art_box or art_box["y"] < title["y"] + title["height"] - 1:
+            raise AssertionError(f"{width}px Einhörner art overlaps mobile heading")
+    assert_layout(page, width, "einhoerner")
+
+
 def assert_label_only(page, width: int, slug: str, label: str) -> None:
     wait_title(page, label + " Ausmalbilder")
     if not page.locator("[data-focused-topic-hero]").is_visible():
@@ -657,6 +706,80 @@ def sport_case(browser, origin: str, width: int) -> None:
     finally:
         page.close()
 
+def einhoerner_case(browser, origin: str, width: int) -> None:
+    """#615: verified Einhörner art, browsing and Back/Forward transitions."""
+    page = browser.new_page(viewport={"width": width, "height": 1000})
+    try:
+        for suffix, payload in (
+            ("catalog.json", CATALOG),
+            ("categories.json", CATEGORIES_FIXTURE),
+            ("topics.json", TOPICS),
+        ):
+            page.route("**/" + suffix, lambda route, _request, data=payload: route.fulfill(
+                status=200, content_type="application/json",
+                body=json.dumps(data, ensure_ascii=False),
+            ))
+        page.goto(origin + "/index.html?topic=einhoerner&campaign=hero-qa",
+                  wait_until="domcontentloaded")
+        assert_reviewed_einhoerner(page, width)
+        chooser = page.locator("[data-filter-topic]")
+        label = page.locator('label[for="filter-topic"]')
+        if (not label.is_visible() or label.inner_text().strip() != "Thema"
+                or chooser.evaluate("el => el.tagName") != "SELECT"):
+            raise AssertionError(f"{width}px Einhörner native Thema selector missing")
+        chooser.focus()
+        if not chooser.evaluate("el => document.activeElement === el"):
+            raise AssertionError(f"{width}px Einhörner keyboard focus missing")
+        chooser.select_option("tanzen")
+        assert_label_only(page, width, "tanzen", "Tanzen")
+        page.go_back()
+        assert_reviewed_einhoerner(page, width)
+        page.go_forward()
+        assert_label_only(page, width, "tanzen", "Tanzen")
+        chooser.select_option("meerestiere")
+        assert_reviewed_meerestiere(page, width)
+        page.go_back()
+        assert_label_only(page, width, "tanzen", "Tanzen")
+        page.go_back()
+        assert_reviewed_einhoerner(page, width)
+        chooser.select_option("")
+        if (page.locator("[data-focused-topic-art] img").count()
+                or page.locator("[data-focused-topic-hero]").is_visible()
+                or not page.locator("#hero").is_visible()):
+            raise AssertionError(f"{width}px Einhörner art leaked into unfiltered home")
+        page.goto(origin + "/index.html?topic=unknown-einhoerner",
+                  wait_until="domcontentloaded")
+        page.wait_for_function(
+            "() => document.querySelector('[data-filter-topic]')?.disabled === false"
+        )
+        if (page.locator("[data-focused-topic-art] img").count()
+                or page.locator("[data-focused-topic-hero]").is_visible()
+                or not page.locator("#hero").is_visible()):
+            raise AssertionError(f"{width}px invalid Einhörner topic fabricated a Hero")
+        # Source-approved art cannot register a Topic absent from runtime.
+        page.unroute("**/topics.json")
+        no_unicorns = dict(TOPICS)
+        no_unicorns["topics"] = [
+            item for item in TOPICS["topics"] if item["id"] != "einhoerner"
+        ]
+        page.route("**/topics.json", lambda route, _request: route.fulfill(
+            status=200, content_type="application/json",
+            body=json.dumps(no_unicorns, ensure_ascii=False),
+        ))
+        page.goto(origin + "/index.html?topic=einhoerner",
+                  wait_until="domcontentloaded")
+        page.wait_for_function(
+            "() => document.querySelector('[data-filter-topic]')?.disabled === false"
+        )
+        if (page.locator("[data-focused-topic-art] img").count()
+                or page.locator("[data-focused-topic-hero]").is_visible()
+                or not page.locator("#hero").is_visible()
+                or page.locator("[data-filter-topic]").input_value()):
+            raise AssertionError(f"{width}px unregistered Einhörner Topic created art")
+        print(f"Einhörner Topic Hero {width}px: approved/history/fallback PASS")
+    finally:
+        page.close()
+
 def assert_accessibility_context(browser, origin: str, width: int,
                                  dpr: int, forced: bool) -> None:
     """#610: independent DPR/forced-color coverage, not native browser zoom."""
@@ -766,6 +889,8 @@ def main() -> None:
                 case(browser, origin, width)
             for width in (320, 390, 412, 768, 1440):
                 sport_case(browser, origin, width)
+            for width in (320, 390, 412, 768, 1440):
+                einhoerner_case(browser, origin, width)
             # Representative mode checks are deliberately separate from the full matrix.
             for width in (390, 721, 1440):
                 assert_accessibility_context(browser, origin, width, dpr=2, forced=False)
