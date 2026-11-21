@@ -112,6 +112,18 @@
           provenance: "docs/TOPIC_HERO_ARTWORK_600.md",
           approval_ref: "coloring-pages#600"
         })
+      }),
+      "winter": Object.freeze({
+        intro: "Winter-Ausmalbilder f\u00fcr Kinder: Entdecke winterliche Malvorlagen und drucke sie kostenlos auf A4 aus.",
+        image: Object.freeze({
+          src: "/assets/winter-topic-hero.webp",
+          width: 1755,
+          height: 896,
+          alt: "Ausmalwiese-Hund mit einem fr\u00f6hlichen Schneemann in einem verschneiten Winterpark",
+          sha256: "402ac180590351e93c8729769344e745f8185752c97aba21985a543130d9e9e3",
+          provenance: "docs/TOPIC_HERO_ARTWORK_617.md",
+          approval_ref: "coloring-pages#617"
+        })
       })
     })
   });
