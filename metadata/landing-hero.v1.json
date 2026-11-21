@@ -100,6 +100,17 @@
       "intro": "Sport-Ausmalbilder für Kinder: Wähle eine Malvorlage aus und drucke sie kostenlos auf A4 aus.",
       "provenance": "docs/TOPIC_HERO_ARTWORK_613.md",
       "approval_ref": "coloring-pages#613"
+    },
+    "einhoerner": {
+      "image": "/assets/einhoerner-topic-hero.webp",
+      "width": 1755,
+      "height": 896,
+      "bytes": 224144,
+      "sha256": "c2a995c219d126c14cfa6b35454f5cf0192820a89b3cb36446566cb7d68ee294",
+      "alt": "Ausmalwiese-Hund neben einem weißen Einhorn mit Regenbogenmähne auf einer bunten Wiese",
+      "intro": "Einhörner-Ausmalbilder für Kinder: Wähle eine Malvorlage aus und drucke sie kostenlos auf A4 aus.",
+      "provenance": "docs/TOPIC_HERO_ARTWORK_615.md",
+      "approval_ref": "coloring-pages#615"
     }
   }
 }
