@@ -14,7 +14,7 @@ from pathlib import Path
 import threading
 
 ROOT = Path(__file__).resolve().parents[2]
-WIDTHS = (320, 360, 361, 390, 412, 540, 541, 768, 1024, 1365, 1440)
+WIDTHS = (320, 360, 361, 390, 412, 540, 541, 720, 721, 768, 1024, 1365, 1440, 1920)
 CATALOG_FIXTURE = [
     {"id": f"mobile-qa-{number}", "title": f"Mobile QA {number}",
      "category": "tiere", "age": "3-6", "difficulty": "easy",

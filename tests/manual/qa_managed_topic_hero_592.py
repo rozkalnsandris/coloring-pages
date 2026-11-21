@@ -13,7 +13,7 @@ from qa_responsive_layout_511 import (  # same-directory, reviewed local QA util
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-WIDTHS = (320, 390, 412, 768, 1440)
+WIDTHS = (320, 390, 412, 720, 721, 768, 1440, 1920)
 ART = json.loads(
     (ROOT / "metadata/landing-hero.v1.json").read_text(encoding="utf-8")
 )["topics"]["herbst"]
