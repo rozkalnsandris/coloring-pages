@@ -19,6 +19,7 @@ on:
       - assets/sport-topic-hero.webp
       - assets/einhoerner-topic-hero.webp
       - assets/winter-topic-hero.webp
+      - assets/advent-topic-hero.webp
       - tests/manual/qa_shared_gallery_filters.py
       - index.html
       - detail.html
