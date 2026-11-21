@@ -44,6 +44,9 @@ EINHOERNER_ART = json.loads(
 WINTER_ART = json.loads(
     (ROOT / "metadata/landing-hero.v1.json").read_text(encoding="utf-8")
 )["topics"]["winter"]
+ADVENT_ART = json.loads(
+    (ROOT / "metadata/landing-hero.v1.json").read_text(encoding="utf-8")
+)["topics"]["advent"]
 TOPICS = {
     "schema": "rozkalns.coloring-pages.topics.v2",
     "revision": 1,
@@ -63,6 +66,9 @@ TOPICS = {
         {"id": "winter", "label": "Winter", "icon": "❄️",
          "kind": "seasonal", "active_from": "12-01", "active_to": "02-29",
          "legacy_terms": ["winter", "schnee", "schneemann", "schneeflocke"]},
+        {"id": "advent", "label": "Advent", "icon": "🕯️",
+         "kind": "seasonal", "active_from": "11-20", "active_to": "12-24",
+         "legacy_terms": ["advent", "adventskranz", "kerze", "kerzen"]},
         {"id": "weltraum", "label": "Weltraum", "icon": "🚀",
          "kind": "evergreen", "legacy_terms": []},
         {"id": "dinosaurier", "label": "Dinosaurier", "icon": "🦖",
@@ -98,6 +104,9 @@ CATALOG = [
     {"id": "hero-qa-winter", "title": "Winter-Motiv", "category": "jahreszeiten",
      "age": "3-6", "difficulty": "easy", "topics": ["winter"],
      "thumb": "/assets/favicon.svg", "print": "/media/hero-qa-winter/print.png"},
+    {"id": "hero-qa-advent", "title": "Advent-Motiv", "category": "jahreszeiten",
+     "age": "3-6", "difficulty": "easy", "topics": ["advent"],
+     "thumb": "/assets/favicon.svg", "print": "/media/hero-qa-advent/print.png"},
     {"id": "hero-qa-weltraum", "title": "Weltraum-Motiv", "category": "figuren",
      "age": "3-6", "difficulty": "easy", "topics": ["weltraum"],
      "thumb": "/assets/favicon.svg", "print": "/media/hero-qa-weltraum/print.png"},
@@ -557,6 +566,47 @@ def assert_reviewed_winter(page, width: int) -> None:
     assert_layout(page, width, "winter")
 
 
+def assert_reviewed_advent(page, width: int) -> None:
+    wait_title(page, "Advent Ausmalbilder")
+    art = ADVENT_ART
+    image = page.locator("[data-focused-topic-art] img")
+    page.wait_for_function(
+        """() => {
+          const img = document.querySelector('[data-focused-topic-art] img');
+          return img && img.complete && img.naturalWidth === 1755
+            && img.naturalHeight === 896;
+        }"""
+    )
+    hero = page.locator("[data-focused-topic-hero]")
+    if (not hero.is_visible() or page.locator("#hero").is_visible()
+            or image.count() != 1 or not image.is_visible()):
+        raise AssertionError(f"{width}px Advent art/hero missing")
+    if not hero.evaluate(
+        "(node) => node.classList.contains('topic-landing-hero--with-art')"
+    ):
+        raise AssertionError(f"{width}px Advent missing approved art class")
+    for key, expected in (("src", art["image"]), ("alt", art["alt"]),
+                          ("width", str(art["width"])),
+                          ("height", str(art["height"]))):
+        if image.get_attribute(key) != expected:
+            raise AssertionError(f"{width}px Advent {key} differs from manifest")
+    if (not page.locator("[data-focused-topic-intro]").is_visible()
+            or page.locator("[data-focused-topic-intro]").inner_text() != art["intro"]
+            or page.locator("[data-focused-topic-breadcrumb]").inner_text() != "Advent"
+            or page.locator("[data-filter-topic]").input_value() != "advent"):
+        raise AssertionError(f"{width}px Advent intro/breadcrumb/selector mismatch")
+    assert_inside_viewport(
+        page, "[data-focused-topic-hero], [data-focused-topic-art], "
+        "[data-focused-topic-art] img", width,
+    )
+    if width <= 720:
+        title = page.locator("[data-focused-topic-title]").bounding_box()
+        art_box = image.bounding_box()
+        if not title or not art_box or art_box["y"] < title["y"] + title["height"] - 1:
+            raise AssertionError(f"{width}px Advent art overlaps mobile heading")
+    assert_layout(page, width, "advent")
+
+
 def assert_label_only(page, width: int, slug: str, label: str) -> None:
     wait_title(page, label + " Ausmalbilder")
     if not page.locator("[data-focused-topic-hero]").is_visible():
@@ -904,6 +954,80 @@ def winter_case(browser, origin: str, width: int) -> None:
     finally:
         page.close()
 
+def advent_case(browser, origin: str, width: int) -> None:
+    """#619: verified Advent art, browsing and Back/Forward transitions."""
+    page = browser.new_page(viewport={"width": width, "height": 1000})
+    try:
+        for suffix, payload in (
+            ("catalog.json", CATALOG),
+            ("categories.json", CATEGORIES_FIXTURE),
+            ("topics.json", TOPICS),
+        ):
+            page.route("**/" + suffix, lambda route, _request, data=payload: route.fulfill(
+                status=200, content_type="application/json",
+                body=json.dumps(data, ensure_ascii=False),
+            ))
+        page.goto(origin + "/index.html?topic=advent&campaign=hero-qa",
+                  wait_until="domcontentloaded")
+        assert_reviewed_advent(page, width)
+        chooser = page.locator("[data-filter-topic]")
+        label = page.locator('label[for="filter-topic"]')
+        if (not label.is_visible() or label.inner_text().strip() != "Thema"
+                or chooser.evaluate("el => el.tagName") != "SELECT"):
+            raise AssertionError(f"{width}px Advent native Thema selector missing")
+        chooser.focus()
+        if not chooser.evaluate("el => document.activeElement === el"):
+            raise AssertionError(f"{width}px Advent keyboard focus missing")
+        chooser.select_option("tanzen")
+        assert_label_only(page, width, "tanzen", "Tanzen")
+        page.go_back()
+        assert_reviewed_advent(page, width)
+        page.go_forward()
+        assert_label_only(page, width, "tanzen", "Tanzen")
+        chooser.select_option("meerestiere")
+        assert_reviewed_meerestiere(page, width)
+        page.go_back()
+        assert_label_only(page, width, "tanzen", "Tanzen")
+        page.go_back()
+        assert_reviewed_advent(page, width)
+        chooser.select_option("")
+        if (page.locator("[data-focused-topic-art] img").count()
+                or page.locator("[data-focused-topic-hero]").is_visible()
+                or not page.locator("#hero").is_visible()):
+            raise AssertionError(f"{width}px Advent art leaked into unfiltered home")
+        page.goto(origin + "/index.html?topic=unknown-advent",
+                  wait_until="domcontentloaded")
+        page.wait_for_function(
+            "() => document.querySelector('[data-filter-topic]')?.disabled === false"
+        )
+        if (page.locator("[data-focused-topic-art] img").count()
+                or page.locator("[data-focused-topic-hero]").is_visible()
+                or not page.locator("#hero").is_visible()):
+            raise AssertionError(f"{width}px invalid Advent topic fabricated a Hero")
+        # Source-approved art cannot register a Topic absent from runtime.
+        page.unroute("**/topics.json")
+        no_advent = dict(TOPICS)
+        no_advent["topics"] = [
+            item for item in TOPICS["topics"] if item["id"] != "advent"
+        ]
+        page.route("**/topics.json", lambda route, _request: route.fulfill(
+            status=200, content_type="application/json",
+            body=json.dumps(no_advent, ensure_ascii=False),
+        ))
+        page.goto(origin + "/index.html?topic=advent",
+                  wait_until="domcontentloaded")
+        page.wait_for_function(
+            "() => document.querySelector('[data-filter-topic]')?.disabled === false"
+        )
+        if (page.locator("[data-focused-topic-art] img").count()
+                or page.locator("[data-focused-topic-hero]").is_visible()
+                or not page.locator("#hero").is_visible()
+                or page.locator("[data-filter-topic]").input_value()):
+            raise AssertionError(f"{width}px unregistered Advent Topic created art")
+        print(f"Advent Topic Hero {width}px: approved/history/fallback PASS")
+    finally:
+        page.close()
+
 def assert_accessibility_context(browser, origin: str, width: int,
                                  dpr: int, forced: bool) -> None:
     """#610: independent DPR/forced-color coverage, not native browser zoom."""
@@ -1017,6 +1141,8 @@ def main() -> None:
                 einhoerner_case(browser, origin, width)
             for width in (320, 390, 412, 768, 1440):
                 winter_case(browser, origin, width)
+            for width in (320, 390, 412, 768, 1440):
+                advent_case(browser, origin, width)
             # Representative mode checks are deliberately separate from the full matrix.
             for width in (390, 721, 1440):
                 assert_accessibility_context(browser, origin, width, dpr=2, forced=False)
