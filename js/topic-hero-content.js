@@ -65,6 +65,18 @@
           approval_ref: "coloring-pages#606"
         })
       }),
+      "sport": Object.freeze({
+        intro: "Sport-Ausmalbilder f\u00fcr Kinder: W\u00e4hle eine Malvorlage aus und drucke sie kostenlos auf A4 aus.",
+        image: Object.freeze({
+          src: "/assets/sport-topic-hero.webp",
+          width: 1755,
+          height: 896,
+          alt: "Ausmalwiese-Hund mit Fu\u00dfball, Basketball und Tennisschl\u00e4ger auf einer Sportwiese",
+          sha256: "5d9d601525d8b63f3505841d289ec62282270fbf8f67bafd2e3a7860032696f9",
+          provenance: "docs/TOPIC_HERO_ARTWORK_613.md",
+          approval_ref: "coloring-pages#613"
+        })
+      }),
       "weihnachten": Object.freeze({
         intro: "Weihnachten-Ausmalbilder f\u00fcr Kinder: W\u00e4hle eine Malvorlage aus und drucke sie kostenlos auf A4 aus.",
         image: Object.freeze({
