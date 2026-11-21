@@ -5,6 +5,18 @@
   const manifest = Object.freeze({
     schema: "rozkalns.ausmalwiese.topic-hero.v1",
     topics: Object.freeze({
+      "advent": Object.freeze({
+        intro: "Advent-Ausmalbilder f\u00fcr Kinder: Entdecke festliche Malvorlagen und drucke sie kostenlos auf A4 aus.",
+        image: Object.freeze({
+          src: "/assets/advent-topic-hero.webp",
+          width: 1755,
+          height: 896,
+          alt: "Ausmalwiese-Hund neben einem Adventskranz mit vier brennenden Kerzen im verschneiten Park",
+          sha256: "ae442cd34ea9feead220a1bd17eb5bf84c1a38f4be126dd8371251f5b54c5960",
+          provenance: "docs/TOPIC_HERO_ARTWORK_619.md",
+          approval_ref: "coloring-pages#619"
+        })
+      }),
       "bauernhof": Object.freeze({
         intro: "Bauernhof-Ausmalbilder f\u00fcr Kinder: W\u00e4hle ein Motiv aus und drucke deine Malvorlage auf A4 aus.",
         image: Object.freeze({
