@@ -34,6 +34,7 @@ class BrowseTopicHeroArt588Tests(unittest.TestCase):
             "assets/sport-topic-hero.webp",
             "assets/einhoerner-topic-hero.webp",
             "assets/winter-topic-hero.webp",
+            "assets/advent-topic-hero.webp",
             "fahrzeuge.html", "herbst.html",
         ):
             target = root / path
@@ -74,7 +75,7 @@ class BrowseTopicHeroArt588Tests(unittest.TestCase):
                 set(validate_manifest_text(
                     (root / "metadata/landing-hero.v1.json").read_text(encoding="utf-8"),
                     root,
-                )["topics"]), {"herbst", "bauernhof", "weihnachten", "dinosaurier", "weltraum", "blumen", "meerestiere", "sport", "einhoerner", "winter", "tanzen"},
+                )["topics"]), {"herbst", "bauernhof", "weihnachten", "dinosaurier", "weltraum", "blumen", "meerestiere", "sport", "einhoerner", "winter", "advent", "tanzen"},
             )
             js = render_browser_js(root)
             self.assertIn('src: "/assets/tanzen-topic-hero.webp"', js)
@@ -152,7 +153,7 @@ class BrowseTopicHeroArt588Tests(unittest.TestCase):
         actual = json.loads(
             (ROOT / "metadata/landing-hero.v1.json").read_text(encoding="utf-8")
         )
-        self.assertEqual(set(actual["topics"]), {"herbst", "bauernhof", "weihnachten", "dinosaurier", "weltraum", "blumen", "meerestiere", "sport", "einhoerner", "winter"})
+        self.assertEqual(set(actual["topics"]), {"herbst", "bauernhof", "weihnachten", "dinosaurier", "weltraum", "blumen", "meerestiere", "sport", "einhoerner", "winter", "advent"})
         self.assertEqual(actual["topics"]["bauernhof"]["approval_ref"], "coloring-pages#594")
         self.assertFalse((ROOT / "bauernhof.html").exists())
         self.assertEqual(actual["topics"]["weihnachten"]["approval_ref"], "coloring-pages#596")
@@ -171,6 +172,8 @@ class BrowseTopicHeroArt588Tests(unittest.TestCase):
         self.assertFalse((ROOT / "einhoerner.html").exists())
         self.assertEqual(actual["topics"]["winter"]["approval_ref"], "coloring-pages#617")
         self.assertFalse((ROOT / "winter.html").exists())
+        self.assertEqual(actual["topics"]["advent"]["approval_ref"], "coloring-pages#619")
+        self.assertFalse((ROOT / "advent.html").exists())
         self.assertNotIn("tanzen", actual["categories"])
 
 
