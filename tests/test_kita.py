@@ -49,6 +49,31 @@ class KitaTests(unittest.TestCase):
         self.assertLess(assets.urls.index(next(x for x in assets.urls if x.startswith('js/app.js'))),
                         assets.urls.index(next(x for x in assets.urls if x.startswith('js/kita.js'))))
 
+    def test_worksheet_discovery_is_static_and_descriptive(self):
+        html = (ROOT / 'kita.html').read_text(encoding='utf-8')
+        main = html.split('<main ', 1)[1].split('</main>', 1)[0]
+        topics = main.split('<section id="themen"', 1)[1].split('</section>', 1)[0]
+        self.assertIn('href="#themen">Arbeitsblätter nach Themen entdecken', main)
+        self.assertLess(main.index('id="themen"'), main.index('id="pakete"'))
+        self.assertLess(main.index('id="themen"'), main.index('data-kita-examples'))
+        self.assertIn('aria-labelledby="kita-topics-title"', topics)
+        for route, label in [
+            ('/lernen', 'Lernaufgaben'),
+            ('/alphabet', 'Alphabet &amp; Buchstaben'),
+            ('/tiere', 'Tier-Malvorlagen'),
+            ('/fahrzeuge', 'Fahrzeug-Malvorlagen'),
+            ('/jahreszeiten', 'Jahreszeiten &amp; Feste'),
+        ]:
+            with self.subTest(route=route):
+                self.assertIn(f'href="{route}">{label}', topics)
+                destination = (ROOT / (route[1:] + '.html')).read_text(encoding='utf-8')
+                self.assertIn(f'rel="canonical" href="https://ausmalwiese.de{route}"', destination)
+        self.assertIn('href="/kita/herbst">Herbst-Paket ansehen', main)
+        self.assertIn('eine kleine Auswahl', main)
+        self.assertIn('href="#themen">Weitere Themen entdecken', main)
+        self.assertIn('href="index.html#neu">Alle Vorlagen ansehen', main)
+        self.assertIn('rel="canonical" href="https://ausmalwiese.de/kita"', html)
+
     def test_kita_trailing_slash_redirect_is_relative_and_query_preserving(self):
         nginx = (ROOT / 'deploy/nginx.conf').read_text()
         redirect = nginx.split('location = /kita/ {', 1)[1].split('}', 1)[0]
