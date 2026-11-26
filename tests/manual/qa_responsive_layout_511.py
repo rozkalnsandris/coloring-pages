@@ -409,6 +409,41 @@ def assert_shared_hero_alignment(page, origin: str, width: int):
         raise AssertionError(f"{width}px clicked Topic hero is obscured by header")
 
 
+def assert_kita_discovery_reflow(page, origin: str, width: int):
+    """CSS-width regression for #623; not native browser zoom evidence."""
+    page.goto(origin + "/kita.html", wait_until="domcontentloaded")
+    page.wait_for_function("() => document.fonts.status === 'loaded'")
+    nav = page.locator("#themen nav")
+    links = nav.locator("a")
+    assert links.count() == 5, f"{width}px missing Kita category links"
+    assert links.evaluate_all("(nodes) => nodes.map(n => n.getAttribute('href'))") == [
+        "/lernen", "/alphabet", "/tiere", "/fahrzeuge", "/jahreszeiten",
+    ]
+    metrics = nav.evaluate("""node => {
+      const rect = node.getBoundingClientRect();
+      const style = getComputedStyle(node);
+      return {left: rect.left, right: rect.right, scroll: node.scrollWidth,
+        client: node.clientWidth, wrap: style.flexWrap,
+        overflow: style.overflowX};
+    }""")
+    assert metrics["wrap"] == "wrap" and metrics["overflow"] == "visible", metrics
+    assert metrics["scroll"] <= metrics["client"] + 1, metrics
+    rows = set()
+    for link in links.all():
+        box = link.bounding_box()
+        assert box and box["height"] >= 44, (width, box)
+        assert box["x"] >= metrics["left"] - 1, (width, box, metrics)
+        assert box["x"] + box["width"] <= metrics["right"] + 1, (width, box, metrics)
+        rows.add(round(box["y"]))
+    if width <= 720:
+        assert len(rows) > 1, f"{width}px expected wrapped Kita links"
+    assert_inside_viewport(page, "#themen nav, #themen nav a", width)
+    assert page.evaluate("document.documentElement.scrollWidth") <= width + 1
+    links.last.focus()
+    assert links.last.evaluate("(node) => node === document.activeElement")
+    assert nav.evaluate("(node) => node.scrollLeft") == 0
+
+
 def run_case(browser, origin: str, width: int):
     page = browser.new_page(viewport={"width": width, "height": 1000})
     try:
@@ -538,6 +573,7 @@ def run_case(browser, origin: str, width: int):
         assert_herbst_illustration(page, origin, width)
         assert_fahrzeuge_illustration(page, origin, width)
         assert_shared_hero_alignment(page, origin, width)
+        assert_kita_discovery_reflow(page, origin, width)
         print(
             f"PASS responsive {width}px: mobileRows={expected_mobile_rows}, "
             "no horizontal overflow"
