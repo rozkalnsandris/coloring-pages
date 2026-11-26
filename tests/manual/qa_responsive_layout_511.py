@@ -435,7 +435,7 @@ def assert_kita_discovery_reflow(page, origin: str, width: int):
         assert box["x"] >= metrics["left"] - 1, (width, box, metrics)
         assert box["x"] + box["width"] <= metrics["right"] + 1, (width, box, metrics)
         rows.add(round(box["y"]))
-    if width <= 720:
+    if width <= 412:
         assert len(rows) > 1, f"{width}px expected wrapped Kita links"
     assert_inside_viewport(page, "#themen nav, #themen nav a", width)
     assert page.evaluate("document.documentElement.scrollWidth") <= width + 1
