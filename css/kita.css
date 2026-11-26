@@ -8,6 +8,15 @@
 }
 .kita-trust li::before { content: "✓"; margin-right: 8px; color: var(--blue-deep); }
 .kita-actions { max-width: 480px; }
+/* Static discovery links must reflow, not inherit the scrollable topic strip. */
+.kita-topic-links {
+  display: flex; flex-wrap: wrap; gap: 10px;
+}
+.kita-topic-links .outline-link {
+  min-width: 0; max-width: 100%; min-height: 44px;
+  white-space: normal; overflow-wrap: anywhere; text-align: center;
+}
+.kita-topic-links .outline-link span { flex: none; }
 .kita-actions a {
   grid-template-columns: minmax(0, 1fr) auto;
   min-height: 56px; padding: 14px 18px;
